@@ -5,21 +5,30 @@
 #pragma once
 #endif // _MSC_VER > 1000
 // AccountCateEditingDlg.h : header file
-//
+#include "Dialog.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // AccountCateEditingDlg dialog
 
-class AccountCateEditingDlg : public CDialog
+class AccountCateEditingDlg : public Dialog
 {
 // Construction
 public:
-	AccountCateEditingDlg(CWnd* pParent = NULL);   // standard constructor
+	AccountCateEditingDlg(
+		CWnd * parent,
+		bool isAdd,
+		CString * cateName,
+		CString * cateDesc,
+		CString * typeName,
+		CString * url,
+		CString * icoPath,
+		CString * startup,
+		CString * keywords
+	);
 
 // Dialog Data
 	//{{AFX_DATA(AccountCateEditingDlg)
-	enum { IDD = IDD_ACCOUNT_CATE_EDTING };
-		// NOTE: the ClassWizard will add data members here
+	enum { IDD = IDD_ACCOUNT_CATE_EDITING };
 	//}}AFX_DATA
 
 
@@ -32,10 +41,22 @@ public:
 
 // Implementation
 protected:
+	int		m_typeIndex;
+	int		m_startupIndex;
+
+	bool m_isAdd;
+	CString * m_cateName;
+	CString * m_cateDesc;
+	CString * m_typeName;
+	CString * m_url;
+	CString * m_icoPath;
+	CString * m_startup;
+	CString * m_keywords;
 
 	// Generated message map functions
 	//{{AFX_MSG(AccountCateEditingDlg)
-		// NOTE: the ClassWizard will add member functions here
+	virtual BOOL OnInitDialog();
+	virtual void OnOK();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 };

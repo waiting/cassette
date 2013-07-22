@@ -5,21 +5,29 @@
 #pragma once
 #endif // _MSC_VER > 1000
 // AccountEditingDlg.h : header file
-//
+#include "Dialog.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // AccountEditingDlg dialog
 
-class AccountEditingDlg : public CDialog
+class AccountEditingDlg : public Dialog
 {
 // Construction
 public:
-	AccountEditingDlg(CWnd* pParent = NULL);   // standard constructor
+	AccountEditingDlg(
+		CWnd * parent,
+		bool isAdd,
+		CString * myName,
+		CString * accountName,
+		CString * accountPwd,
+		int * cateId,
+		int * safeRank,
+		CString * comment
+	);   // standard constructor
 
 // Dialog Data
 	//{{AFX_DATA(AccountEditingDlg)
-	enum { IDD = IDD_ACCOUNT_EDTING };
-		// NOTE: the ClassWizard will add data members here
+	enum { IDD = IDD_ACCOUNT_EDITING };
 	//}}AFX_DATA
 
 
@@ -32,10 +40,24 @@ public:
 
 // Implementation
 protected:
+	bool m_isAdd;
+	CString * m_myName;
+	CString * m_accountName;
+	CString * m_accountPwd;
+	int * m_cateId;
+	int * m_safeRank;
+	CString * m_comment;
 
+	CUIntArray m_cateIds;
+	CUIntArray m_cateIds2;
+	CUIntArray m_typeSafeRanks;
+	int m_cateIndex;
+	int GetSafeRankByCateId( int cateId ) const;
 	// Generated message map functions
 	//{{AFX_MSG(AccountEditingDlg)
-		// NOTE: the ClassWizard will add member functions here
+	virtual BOOL OnInitDialog();
+	virtual void OnOK();
+	afx_msg void OnSelChangeComboCates();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 };

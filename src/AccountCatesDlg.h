@@ -5,12 +5,12 @@
 #pragma once
 #endif // _MSC_VER > 1000
 // AccountCatesDlg.h : header file
-//
+#include "Dialog.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // AccountCatesDlg dialog
 
-class AccountCatesDlg : public CDialog
+class AccountCatesDlg : public Dialog, public IUpdateListView
 {
 // Construction
 public:
@@ -22,6 +22,7 @@ public:
 		// NOTE: the ClassWizard will add data members here
 	//}}AFX_DATA
 
+	virtual void UpdateList( int flag = UPDATE_LOAD_DATA | UPDATE_LIST_ITEMS, long itemIndex = -1 );
 
 // Overrides
 	// ClassWizard generated virtual function overrides
@@ -32,11 +33,26 @@ public:
 
 // Implementation
 protected:
+	CUIntArray m_ids;
+	CStringArray m_cateNames;
+	CStringArray m_cateDescs;
+	CStringArray m_typeNames;
+	CStringArray m_urls;
+	CStringArray m_icoPaths;
+	CStringArray m_startups;
+	CStringArray m_keywordss;
+	CUIntArray m_timeWritens;
 
 	// Generated message map functions
 	//{{AFX_MSG(AccountCatesDlg)
-		// NOTE: the ClassWizard will add member functions here
+	virtual BOOL OnInitDialog();
+	afx_msg void OnListActivated(NMHDR* pNMHDR, LRESULT* pResult);
+	afx_msg void OnListRClick(NMHDR* pNMHDR, LRESULT* pResult);
+	afx_msg void OnAdd();
+	afx_msg void OnModify();
+	afx_msg void OnDelete();
 	//}}AFX_MSG
+	afx_msg void OnUpdateModifyDeleteMenu( CCmdUI * pCmdUI );
 	DECLARE_MESSAGE_MAP()
 };
 

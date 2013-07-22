@@ -22,8 +22,8 @@ void AboutDlg::DoDataExchange(CDataExchange* pDX)
 BEGIN_MESSAGE_MAP(AboutDlg, CDialog)
 //{{AFX_MSG_MAP(AboutDlg)
 	// No message handlers
-	ON_NOTIFY( NM_CLICK, IDC_SYSLINK1, OnSysLink1 )
-	ON_NOTIFY( NM_RETURN, IDC_SYSLINK1, OnSysLink1 )
+	ON_NOTIFY( NM_CLICK, IDC_SYSLINK_WEBSITE, OnSysLink1 )
+	ON_NOTIFY( NM_RETURN, IDC_SYSLINK_WEBSITE, OnSysLink1 )
 //}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 

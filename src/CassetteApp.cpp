@@ -38,6 +38,7 @@ BOOL CassetteApp::InitInstance()
 {
 	AfxEnableControlContainer();
 	InitCommonControls();
+	AfxOleInit();
 	//AfxOleInit();
 	// Standard initialization
 	// If you are not using these features and wish to reduce the size
@@ -63,9 +64,9 @@ BOOL CassetteApp::InitInstance()
 	}
 	
 	if ( !DoSingletonRunning() ) return FALSE;
-	
-	// 以下为启动GUI的代码 ------------------------------------------------------
-	this->LoadSettings(); // 加载ini设置
+
+	// ----------------------------------------------------------------------------------
+	this->LoadSettings(); // 从ini加载设置
 	this->DoSettings();   // 处理设置选项
 	this->InitDatabase(); // 初始化数据库
 
@@ -90,7 +91,7 @@ BOOL CassetteApp::InitInstance()
 	{
 		// 登录对话框
 		UserLoginDlg loginDlg( NULL, &username, &password, &isAutoLogin, &isSavePassword );
-		
+
 		while ( loginDlg.DoModal() == IDOK )
 		{
 			// 保存相关设置
@@ -107,7 +108,7 @@ BOOL CassetteApp::InitInstance()
 				m_settings.password = _T("");
 			}
 			this->SaveSettings( Setting_AutoLogin | Setting_SavePassword | Setting_Username | Setting_Password );
-			
+
 			if ( LoginUser( username, password, &m_loginedUser ) )
 			{
 				isLogined = TRUE;
@@ -198,12 +199,13 @@ void CassetteApp::LoadSettings( UINT flag )
 	string sname = load_string(AFX_IDS_APP_TITLE);
 	ini::section & s = settingsIni( sname.c_str() );
 
-	if ( flag & Setting_AutoRun ) m_settings.isAutoRun = mixed( s.get( _T("AutoRun"), _T("false") ) );
+	if ( flag & Setting_EnabledAutoRun ) m_settings.isEnabledAutoRun = mixed( s.get( _T("EnabledAutoRun"), _T("false") ) );
 	if ( flag & Setting_EnabledHotkey ) m_settings.isEnabledHotkey = mixed( s.get( _T("EnabledHotkey"), _T("true") ) );
 	if ( flag & Setting_EnabledHttpSrv ) m_settings.isEnabledHttpSrv = mixed( s.get( _T("EnabledHttpSrv"), _T("false") ) );
 	if ( flag & Setting_EnabledScheme ) m_settings.isEnabledScheme = mixed( s.get( _T("EnabledScheme"), _T("true") ) );
 	if ( flag & Setting_DatabasePath ) m_settings.databasePath = s.get( _T("DatabasePath"), format( _T("$ROOT$\\%s.db"), load_string(AFX_IDS_APP_TITLE).c_str() ) );
 	if ( flag & Setting_BackupPath ) m_settings.backupPath = s.get( _T("BackupPath"), _T("$ROOT$") );
+
 	if ( flag & Setting_AutoLogin ) m_settings.isAutoLogin = mixed( s.get( _T("AutoLogin"), _T("false") ) );
 	if ( flag & Setting_SavePassword ) m_settings.isSavePassword = mixed( s.get( _T("SavePassword"), _T("false") ) );
 
@@ -218,12 +220,13 @@ void CassetteApp::SaveSettings( UINT flag )
 	string sname = load_string(AFX_IDS_APP_TITLE);
 	ini::section & s = settingsIni( sname.c_str() );
 
-	if ( flag & Setting_AutoRun ) s.set( _T("AutoRun"), (string)mixed(m_settings.isAutoRun) );
+	if ( flag & Setting_EnabledAutoRun ) s.set( _T("EnabledAutoRun"), (string)mixed(m_settings.isEnabledAutoRun) );
 	if ( flag & Setting_EnabledHotkey ) s.set( _T("EnabledHotkey"), (string)mixed(m_settings.isEnabledHotkey) );
 	if ( flag & Setting_EnabledHttpSrv ) s.set( _T("EnabledHttpSrv"), (string)mixed(m_settings.isEnabledHttpSrv) );
 	if ( flag & Setting_EnabledScheme ) s.set( _T("EnabledScheme"), (string)mixed(m_settings.isEnabledScheme) );
 	if ( flag & Setting_DatabasePath ) s.set( _T("DatabasePath"), m_settings.databasePath );
 	if ( flag & Setting_BackupPath ) s.set( _T("BackupPath"), m_settings.backupPath );
+
 	if ( flag & Setting_AutoLogin ) s.set( _T("AutoLogin"), (string)mixed(m_settings.isAutoLogin) );
 	if ( flag & Setting_SavePassword ) s.set( _T("SavePassword"), (string)mixed(m_settings.isSavePassword) );
 
@@ -243,10 +246,10 @@ void CassetteApp::DoSettings( UINT flag )
 		// 是否开启http服务
 		EnableHttpService(m_settings.isEnabledHttpSrv);
 	}
-	if ( flag & Setting_AutoRun )
+	if ( flag & Setting_EnabledAutoRun )
 	{
 		// 是否开机自启动
-		EnableAutoRun(m_settings.isAutoRun);
+		EnableAutoRun(m_settings.isEnabledAutoRun);
 	}
 }
 
@@ -310,7 +313,7 @@ void CassetteApp::EnableScheme( bool isEnabled )
 
 BOOL CassetteApp::DoSingletonRunning()
 {
-	string sharedMemName = format( _T("%s - "), load_string(AFX_IDS_APP_TITLE).c_str() ) + get_self_module_version();
+	string sharedMemName = load_string(IDS_SHAREDMEM_NAME);
 	if ( m_sharedMem.open( sharedMemName.c_str() ) )
 	{
 		HWND hwndMain = m_sharedMem->hMainWnd;
@@ -326,11 +329,7 @@ BOOL CassetteApp::DoSingletonRunning()
 	}
 	else
 	{
-		m_sharedMem.create( sharedMemName.c_str(), sizeof(SharedData) );
+		m_sharedMem.create( sharedMemName.c_str(), sizeof(CassetteSharedData) );
 	}
 	return TRUE;
 }
-
-
-/////////////////////////////////////////////////////////////////////////////
-// CassetteApp message handlers

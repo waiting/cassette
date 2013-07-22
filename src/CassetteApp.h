@@ -17,8 +17,6 @@
 
 /////////////////////////////////////////////////////////////////////////////
 // CassetteApp:
-// See Cassette.cpp for the implementation of this class
-//
 
 class CassetteApp : public CWinApp
 {
@@ -34,12 +32,13 @@ public:
 	//}}AFX_VIRTUAL
 	enum SettingsParametersFlag
 	{
-		Setting_AutoRun = 0x0001,
+		Setting_EnabledAutoRun = 0x0001,
 		Setting_EnabledHotkey = 0x0002,
 		Setting_EnabledHttpSrv = 0x0004,
 		Setting_EnabledScheme = 0x0008,
 		Setting_DatabasePath = 0x0010,
 		Setting_BackupPath = 0x0020,
+
 		Setting_AutoLogin = 0x0040,
 		Setting_SavePassword = 0x0080,
 
@@ -49,23 +48,26 @@ public:
 
 	struct SettingsParameters
 	{
-		bool isAutoRun;          // 是否自启动运行
+		bool isEnabledAutoRun;   // 是否自启动运行
 		bool isEnabledHotkey;    // 是否开启用户热键
 		bool isEnabledHttpSrv;   // 是否开启HTTP服务
 		bool isEnabledScheme;    // 是否注册scheme
 		string databasePath;     // 数据库路径
 		string backupPath;       // 备份路径
+
 		bool isAutoLogin;        // 是否自动登录
 		bool isSavePassword;     // 是否保存密码
+
 		string username;         // 保存的用户名(ec&base64加密)
 		string password;         // 保存的密码(ec&base64加密)
 	};
-	struct SharedData
+
+	struct CassetteSharedData
 	{
 		HWND hMainWnd; // 主窗口句柄
 	};
 protected:
-	shared_memory<SharedData> m_sharedMem;
+	shared_memory<CassetteSharedData> m_sharedMem;
 	sqlite3 * m_db;
 
 	// 开启/关闭开机自动启动
@@ -86,7 +88,7 @@ public:
 	SettingsParameters m_settings; // 程序设置的参数
 
 	// 获取共享内存引用
-	shared_memory<SharedData> & GetSharedMemory() { return m_sharedMem; }
+	shared_memory<CassetteSharedData> & GetSharedMemory() { return m_sharedMem; }
 	// 连接数据库资源
 	void InitDatabase();
 	// 释放数据库资源

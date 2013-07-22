@@ -120,7 +120,7 @@ SOURCE=.\AccountsView.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\AccountTypeEdtingDlg.cpp
+SOURCE=.\AccountTypeEditingDlg.cpp
 # End Source File
 # Begin Source File
 
@@ -204,7 +204,7 @@ SOURCE=.\AccountsView.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\AccountTypeEdtingDlg.h
+SOURCE=.\AccountTypeEditingDlg.h
 # End Source File
 # Begin Source File
 
@@ -333,6 +333,14 @@ SOURCE=..\..\winplus\src\ini.cpp
 # Begin Source File
 
 SOURCE=..\..\winplus\include\ini.hpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\winplus\src\md5.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\winplus\include\md5.hpp
 # End Source File
 # Begin Source File
 

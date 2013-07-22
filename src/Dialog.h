@@ -46,6 +46,10 @@ protected:
 	//{{AFX_MSG(Dialog)
 		// NOTE: the ClassWizard will add member functions here
 	//}}AFX_MSG
+
+	// 当弹出菜单时调用,更新菜单项的状态
+	afx_msg void OnInitMenuPopup( CMenu * pMenu, UINT nIndex, BOOL bSysMenu );
+
 	// 当工具提示需要显示文本时调用
 	afx_msg BOOL OnToolTipText( UINT id, NMHDR * pNMHDR, LRESULT * pResult );
 
