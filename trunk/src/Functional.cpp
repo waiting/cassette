@@ -696,6 +696,59 @@ OccurDbError: // 出错处理
 	return 0;
 }
 
+bool GetAccountType( CString const & typeName, int * safeRank )
+{
+	bool ret = false;
+	
+	sqlite3 * db = g_theApp.GetDatabase();
+	ansi_string sql = string_to_utf8("SELECT * FROM am_account_types WHERE name = ?;");
+	sqlite3_stmt * stmt = NULL;
+	int rc;
+	const char * localError;
+	
+	// 准备语句
+	rc = sqlite3_prepare_v2( db, sql.c_str(), sql.size(), &stmt, NULL );
+	if ( rc != SQLITE_OK ) goto OccurDbError;
+	// 绑定参数
+	// 类型名
+	rc = sqlite3_bind_text( stmt, 1, string_to_utf8( (LPCTSTR)typeName ).c_str(), -1, SQLITE_TRANSIENT );
+	if ( rc != SQLITE_OK ) goto OccurDbError;
+
+	// 执行语句
+	rc = sqlite3_step(stmt);
+	if ( rc == SQLITE_ROW )
+	{
+		ASSERT( typeName == utf8_to_string( (char const *)sqlite3_column_text( stmt, 0 ) ).c_str() );
+		AssignPTR(safeRank) = sqlite3_column_int( stmt, 1 );
+		ret = true;
+		goto ExitProc;
+	}
+	else if ( rc == SQLITE_DONE )
+	{
+		ret = false;
+		goto ExitProc;
+	}
+	else
+	{
+		sqlite3_reset(stmt);
+		goto OccurDbError;
+	}
+	
+ExitProc:
+	// 正常无错误结束
+	sqlite3_reset(stmt);
+	if ( stmt )
+		sqlite3_finalize(stmt);
+	return ret;
+	
+OccurDbError: // 出错处理
+	localError = sqlite3_errmsg(db);
+	if ( stmt )
+		sqlite3_finalize(stmt);
+	MessageBox( *AfxGetMainWnd(), utf8_to_string(localError).c_str(), _T("数据库错误"), MB_OK | MB_ICONERROR );
+	return false;
+}
+
 bool AddAccountType( CString const & typeName, int safeRank )
 {
 	int rowsChanged;

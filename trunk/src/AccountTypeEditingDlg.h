@@ -4,38 +4,47 @@
 #if _MSC_VER > 1000
 #pragma once
 #endif // _MSC_VER > 1000
-// AccountTypeEdtingDlg.h : header file
-//
+// AccountTypeEditingDlg.h : header file
+#include "Dialog.h"
 
 /////////////////////////////////////////////////////////////////////////////
-// AccountTypeEdtingDlg dialog
+// AccountTypeEditingDlg dialog
 
-class AccountTypeEdtingDlg : public CDialog
+class AccountTypeEditingDlg : public Dialog
 {
 // Construction
 public:
-	AccountTypeEdtingDlg(CWnd* pParent = NULL);   // standard constructor
+	AccountTypeEditingDlg(
+		CWnd * parent,
+		bool isAdd,
+		CString * typeName,
+		int * safeRank
+	);
 
 // Dialog Data
-	//{{AFX_DATA(AccountTypeEdtingDlg)
-	enum { IDD = IDD_ACCOUNT_TYPE_EDTING };
+	//{{AFX_DATA(AccountTypeEditingDlg)
+	enum { IDD = IDD_ACCOUNT_TYPE_EDITING };
 		// NOTE: the ClassWizard will add data members here
 	//}}AFX_DATA
 
 
 // Overrides
 	// ClassWizard generated virtual function overrides
-	//{{AFX_VIRTUAL(AccountTypeEdtingDlg)
+	//{{AFX_VIRTUAL(AccountTypeEditingDlg)
 	protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
 	//}}AFX_VIRTUAL
 
 // Implementation
 protected:
+	bool m_isAdd;
+	CString * m_typeName;
+	int * m_safeRank;
 
 	// Generated message map functions
-	//{{AFX_MSG(AccountTypeEdtingDlg)
-		// NOTE: the ClassWizard will add member functions here
+	//{{AFX_MSG(AccountTypeEditingDlg)
+	virtual BOOL OnInitDialog();
+	virtual void OnOK();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 };

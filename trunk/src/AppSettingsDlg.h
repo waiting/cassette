@@ -5,21 +5,26 @@
 #pragma once
 #endif // _MSC_VER > 1000
 // AppSettingsDlg.h : header file
-//
+#include "Dialog.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // AppSettingsDlg dialog
 
-class AppSettingsDlg : public CDialog
+class AppSettingsDlg : public Dialog
 {
 // Construction
 public:
-	AppSettingsDlg(CWnd* pParent = NULL);   // standard constructor
+	AppSettingsDlg( CWnd * pParent, CassetteApp::SettingsParameters * pSettings );
 
 // Dialog Data
 	//{{AFX_DATA(AppSettingsDlg)
 	enum { IDD = IDD_APP_SETTINGS };
-		// NOTE: the ClassWizard will add data members here
+	BOOL	m_IsEnabledAutoRun;
+	BOOL	m_IsEnabledHotkey;
+	BOOL	m_IsEnabledHttpSrv;
+	BOOL	m_IsEnabledScheme;
+	CString	m_BackupPath;
+	CString	m_DatabasePath;
 	//}}AFX_DATA
 
 
@@ -32,10 +37,11 @@ public:
 
 // Implementation
 protected:
-
+	CassetteApp::SettingsParameters * m_pSettings;
 	// Generated message map functions
 	//{{AFX_MSG(AppSettingsDlg)
-		// NOTE: the ClassWizard will add member functions here
+	virtual BOOL OnInitDialog();
+	virtual void OnOK();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 };

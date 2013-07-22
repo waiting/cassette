@@ -61,7 +61,7 @@ BOOL UserLoginDlg::OnInitDialog()
 	Dialog::OnInitDialog();
 
 	m_ToolTips.SetTipTextColor( RGB( 255, 96, 0 ) ); // 设置提示文本颜色
-
+	// 把窗口句柄提交给共享内存,以便激活
 	g_theApp.GetSharedMemory()->hMainWnd = this->GetSafeHwnd();
 	// 修改logo文本样式
 	m_lblLogin.SetColor( RGB( 0, 128, 255 ) );

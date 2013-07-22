@@ -1,5 +1,3 @@
-// UserSettingsDlg.cpp : implementation file
-//
 
 #include "Cassette.h"
 #include "CassetteApp.h"
@@ -14,30 +12,104 @@ static char THIS_FILE[] = __FILE__;
 /////////////////////////////////////////////////////////////////////////////
 // UserSettingsDlg dialog
 
-
-UserSettingsDlg::UserSettingsDlg(CWnd* pParent /*=NULL*/)
-	: CDialog(UserSettingsDlg::IDD, pParent)
+UserSettingsDlg::UserSettingsDlg(
+	CWnd * pParent,
+	CString * username,
+	CString * password,
+	int * protectLevel,
+	int * condone,
+	int * hotkey
+)
+:
+Dialog( UserSettingsDlg::IDD, pParent ),
+m_username(username),
+m_password(password),
+m_protectLevel(protectLevel),
+m_condone(condone),
+m_hotkey(hotkey)
 {
 	//{{AFX_DATA_INIT(UserSettingsDlg)
-		// NOTE: the ClassWizard will add member initialization here
+	m_oldPassword = _T("");
+	m_newPassword = _T("");
+	m_cfmPassword = _T("");
 	//}}AFX_DATA_INIT
 }
 
-
 void UserSettingsDlg::DoDataExchange(CDataExchange* pDX)
 {
-	CDialog::DoDataExchange(pDX);
+	Dialog::DoDataExchange(pDX);
 	//{{AFX_DATA_MAP(UserSettingsDlg)
-		// NOTE: the ClassWizard will add DDX and DDV calls here
+	DDX_Text(pDX, IDC_EDIT_OLDPWD, m_oldPassword);
+	DDX_Text(pDX, IDC_EDIT_NEWPWD, m_newPassword);
+	DDX_Text(pDX, IDC_EDIT_CFMPWD, m_cfmPassword);
 	//}}AFX_DATA_MAP
+	DDX_Text( pDX, IDC_EDIT_USERNAME, *m_username );
+	DDX_CBIndex( pDX, IDC_COMBO_PROTECTLEVEL, *m_protectLevel );
+	DDX_Text( pDX, IDC_EDIT_CONDONE, *m_condone );
 }
 
-
-BEGIN_MESSAGE_MAP(UserSettingsDlg, CDialog)
+BEGIN_MESSAGE_MAP(UserSettingsDlg, Dialog)
 	//{{AFX_MSG_MAP(UserSettingsDlg)
 		// NOTE: the ClassWizard will add message map macros here
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
+bool UserSettingsDlg::IsModifyPassword() const
+{
+	return !( m_oldPassword.IsEmpty() && m_newPassword.IsEmpty() && m_cfmPassword.IsEmpty() );
+}
+
 /////////////////////////////////////////////////////////////////////////////
 // UserSettingsDlg message handlers
+
+BOOL UserSettingsDlg::OnInitDialog()
+{
+	Dialog::OnInitDialog();
+	m_ToolTips.SetTipTextColor( RGB( 255, 96, 0 ) ); // 设置提示文本颜色
+
+	//初始化数据
+	CComboBox * pCboProtectLevel = (CComboBox *)this->GetDlgItem(IDC_COMBO_PROTECTLEVEL);
+	pCboProtectLevel->AddString( _T("一般") );
+	pCboProtectLevel->AddString( _T("强力") );
+	pCboProtectLevel->AddString( _T("绝对") );
+
+	UpdateData(FALSE);
+	// 设置热键值
+	CHotKeyCtrl * pHkCtrl = (CHotKeyCtrl *)this->GetDlgItem(IDC_HOTKEY_CUSTOM);
+	WORD m, vk;
+	m = HIWORD(*m_hotkey);
+	m = MOD_to_HOTKEYF(m);
+	vk = LOWORD(*m_hotkey);
+	pHkCtrl->SetHotKey( vk, m );
+
+	return TRUE;
+}
+
+void UserSettingsDlg::OnOK()
+{
+	UpdateData(TRUE); // 如果是TRUE,从控件获取数据到变量;FALSE,从变量传递数据到控件显示
+	// 获取热键值
+	CHotKeyCtrl * pHkCtrl = (CHotKeyCtrl *)this->GetDlgItem(IDC_HOTKEY_CUSTOM);
+	WORD m, vk;
+	pHkCtrl->GetHotKey( vk, m );
+	m = HOTKEYF_to_MOD(m);
+	*m_hotkey = MAKELONG( vk, m );
+	// 密码处理
+	if ( this->IsModifyPassword() ) // 确实修改密码
+	{
+		// 验证旧密码
+		if ( !VerifyUserPassword( g_theApp.m_loginedUser.m_username, m_oldPassword ) )
+		{
+			WarningError( _T("旧密码不对!"), _T("错误") );
+			return;
+		}
+		if ( m_newPassword != m_cfmPassword )
+		{
+			WarningError( _T("确认密码不一样!"), _T("错误") );
+			return;
+		}
+		*m_password = m_newPassword;
+	}
+
+	this->EndDialog(IDOK);
+}

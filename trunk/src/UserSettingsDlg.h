@@ -5,33 +5,51 @@
 #pragma once
 #endif // _MSC_VER > 1000
 // UserSettingsDlg.h : header file
-//
+#include "Dialog.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // UserSettingsDlg dialog
 
-class UserSettingsDlg : public CDialog
+class UserSettingsDlg : public Dialog
 {
 // Construction
 public:
-	UserSettingsDlg(CWnd* pParent = NULL);   // standard constructor
+	UserSettingsDlg(
+		CWnd * pParent,
+		CString * username,
+		CString * password,
+		int * protectLevel,
+		int * condone,
+		int * hotkey
+	);
+
+	// «∑Ò–ﬁ∏ƒ√‹¬Î
+	bool IsModifyPassword() const;
 
 // Dialog Data
 	//{{AFX_DATA(UserSettingsDlg)
 	enum { IDD = IDD_USER_SETTINGS };
-		// NOTE: the ClassWizard will add data members here
+	CString	m_oldPassword;
+	CString	m_newPassword;
+	CString	m_cfmPassword;
 	//}}AFX_DATA
-
 
 // Overrides
 	// ClassWizard generated virtual function overrides
 	//{{AFX_VIRTUAL(UserSettingsDlg)
 	protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
+	virtual BOOL OnInitDialog();
+	virtual void OnOK();
 	//}}AFX_VIRTUAL
 
 // Implementation
 protected:
+	CString * m_username;
+	CString * m_password;
+	int * m_protectLevel;
+	int * m_condone;
+	int * m_hotkey;
 
 	// Generated message map functions
 	//{{AFX_MSG(UserSettingsDlg)

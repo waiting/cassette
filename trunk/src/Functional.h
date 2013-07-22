@@ -32,6 +32,9 @@ if ( dlg != NULL )\
 	return;\
 }
 
+// get `bool` value
+#define Bool(v) ((v) != FALSE)
+
 //////////////////////////////////////////////////////////////////////////
 // 模板支持
 //////////////////////////////////////////////////////////////////////////
@@ -131,6 +134,9 @@ bool ModifyUser(
 
 // 加载账户类别信息, 返回记录数
 int LoadAccountTypes( CStringArray * typeNames, CUIntArray * safeRanks );
+
+// 获取一个类型
+bool GetAccountType( CString const & typeName, int * safeRank );
 
 // 添加账户类别信息, 成功返回true, 否则返回false.
 bool AddAccountType( CString const & typeName, int safeRank );
@@ -250,18 +256,63 @@ bool ResumeData( CString const & filename );
 CString GetCorrectAccountMyName( CString const & myName );
 
 //////////////////////////////////////////////////////////////////////////
+// 接口
+
+// 更新ListView数据和列表项
+interface IUpdateListView
+{
+	enum
+	{
+		UPDATE_LOAD_DATA = 1,
+		UPDATE_LIST_ITEMS = 2,
+	};
+	// 更新数据和列表项
+	// itemIndex为-1时,加载数据库内全部的数据并更新整个列表,第一次调用请用它
+	// itemIndex为列表项索引时,读取索引指示的数组记录,通过主键查询数该条数据内容
+	// 依据flag的指示进行操作:
+	// UPDATE_LOAD_DATA 从数据库加载数据到数组中储存
+	// UPDATE_LIST_ITEMS 把数组中的数据更新到列表项
+	virtual void UpdateList( int flag = UPDATE_LOAD_DATA | UPDATE_LIST_ITEMS, long itemIndex = -1 ) PURE;
+
+};
+
+//////////////////////////////////////////////////////////////////////////
 
 // 错误提示框
 
 // 警告型错误
-inline int WarningError( CString const & str, CString const & title )
-{
-	return MessageBox( *AfxGetMainWnd(), str, title, MB_OK | MB_ICONEXCLAMATION );
-}
+#define WarningError( str, title )\
+	MessageBox( str, title, MB_OK | MB_ICONEXCLAMATION );
 // 致命型错误
-inline int FatalError( CString const & str, CString const & title )
+#define FatalError( str, title )\
+	MessageBox( str, title, MB_OK | MB_ICONERROR );
+
+
+//////////////////////////////////////////////////////////////////////////
+
+/* 把一个数组载入组合框控件 */
+inline int ComboBoxLoadDataFromArray( CComboBox * pCbo, CStringArray const & arr )
 {
-	return MessageBox( *AfxGetMainWnd(), str, title, MB_OK | MB_ICONERROR );
+	int i;
+	int n = arr.GetSize();
+	for ( i = 0; i < n; ++i )
+	{
+		pCbo->AddString(arr[i]);
+	}
+	return n;
 }
+
+inline int ComboBoxLoadDataFromArray( CComboBox * pCbo, CString * arr, int n )
+{
+	int i;
+	for ( i = 0; i < n; ++i )
+	{
+		pCbo->AddString(arr[i]);
+	}
+	return n;
+}
+
+#define ComboBoxLoadDataFromCArray(cbo,arr) ComboBoxLoadDataFromArray(cbo, arr, countof(arr))
+
 
 #endif // !defined(__FUNCTIONAL_H__)
