@@ -69,9 +69,8 @@ BOOL UserSettingsDlg::OnInitDialog()
 
 	//初始化数据
 	CComboBox * pCboProtectLevel = (CComboBox *)this->GetDlgItem(IDC_COMBO_PROTECTLEVEL);
-	pCboProtectLevel->AddString( _T("一般") );
-	pCboProtectLevel->AddString( _T("强力") );
-	pCboProtectLevel->AddString( _T("绝对") );
+	CString protectLevels[] = { _T("一般"), _T("强力"), _T("绝对") };
+	ComboBoxLoadDataFromCArray( pCboProtectLevel, protectLevels );
 
 	UpdateData(FALSE);
 	// 设置热键值

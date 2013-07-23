@@ -74,6 +74,8 @@ protected:
 	afx_msg void OnAddAccount();
 	afx_msg void OnModifyAccount();
 	afx_msg void OnDelAccount();
+	afx_msg void OnUpdateAccountCates(CCmdUI* pCmdUI);
+	afx_msg void OnUpdateAccountTypes(CCmdUI* pCmdUI);
 	afx_msg void OnAccountCates();
 	afx_msg void OnAccountTypes();
 	afx_msg void OnBackupData();

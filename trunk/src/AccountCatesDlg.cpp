@@ -166,6 +166,8 @@ void AccountCatesDlg::OnListRClick( NMHDR* pNMHDR, LRESULT* pResult )
 
 void AccountCatesDlg::OnAdd()
 {
+	VERIFY_ONCE_DIALOG(onceEditingDlg);
+
 	CString cateName, cateDesc, typeName, url, icoPath, startup, keywords;
 	AccountCateEditingDlg editingDlg(
 		this,
@@ -178,6 +180,9 @@ void AccountCatesDlg::OnAdd()
 		&startup,
 		&keywords
 	);
+
+	SetNullScopeOut setNullScopeOut( onceEditingDlg = &editingDlg );
+
 	if ( IDOK == editingDlg.DoModal() )
 	{
 		int id;
@@ -209,6 +214,8 @@ void AccountCatesDlg::OnAdd()
 
 void AccountCatesDlg::OnModify()
 {
+	VERIFY_ONCE_DIALOG(onceEditingDlg);
+
 	CListCtrl & lst = *(CListCtrl *)GetDlgItem(IDC_LIST_CATES);
 	int index = lst.GetNextItem( -1, LVNI_ALL | LVNI_SELECTED );
 	int id = m_ids[index];
@@ -231,6 +238,7 @@ void AccountCatesDlg::OnModify()
 		&newStartup,
 		&newKeywords
 	);
+	SetNullScopeOut setNullScopeOut( onceEditingDlg = &editingDlg );
 	if ( IDOK == editingDlg.DoModal() )
 	{
 		if ( ModifyAccountCate( id, newCateName, newCateDesc, newTypeName, newUrl, newIcoPath, newStartup, newKeywords ) )

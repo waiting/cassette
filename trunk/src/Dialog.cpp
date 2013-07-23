@@ -13,7 +13,7 @@ static char THIS_FILE[] = __FILE__;
 // Dialog dialog
 
 Dialog::Dialog( UINT nIDTemplate, CWnd * pParentWnd )
-: CDialog( nIDTemplate, pParentWnd )
+: CDialog( nIDTemplate, pParentWnd ), m_nIDTemplate(nIDTemplate)
 {
 	//{{AFX_DATA_INIT(Dialog)
 		// NOTE: the ClassWizard will add member initialization here

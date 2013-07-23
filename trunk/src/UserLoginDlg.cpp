@@ -2,6 +2,7 @@
 #include "Cassette.h"
 #include "CassetteApp.h"
 #include "UserLoginDlg.h"
+#include "UserRegisterDlg.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -46,6 +47,19 @@ END_MESSAGE_MAP()
 
 void UserLoginDlg::OnSysLinkRegister( NMHDR * pNmHdr, LRESULT * pResult )
 {
+	CString username, password;
+	int protectLevel = 0;
+	int hotkey = VK_F11;
+	UserRegisterDlg registerDlg( this, &username, &password, &protectLevel, &hotkey );
+
+	while ( IDOK == registerDlg.DoModal() )
+	{
+		if ( RegisterUser( username, password, protectLevel, hotkey ) )
+		{
+			MessageBox( _T("用户注册成功"), _T("提示"), MB_ICONINFORMATION );
+			break;
+		}
+	}
 
 	*pResult = 0;
 }
@@ -65,7 +79,7 @@ BOOL UserLoginDlg::OnInitDialog()
 	g_theApp.GetSharedMemory()->hMainWnd = this->GetSafeHwnd();
 	// 修改logo文本样式
 	m_lblLogin.SetColor( RGB( 0, 128, 255 ) );
-	m_lblLogin.SetFontSize(240);
+	m_lblLogin.SetFontSize(220);
 	m_lblLogin.ApplyChange();
 
 	return TRUE;  // return TRUE unless you set the focus to a control

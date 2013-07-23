@@ -28,6 +28,7 @@
 #define VERIFY_ONCE_DIALOG(dlg) static CDialog * dlg = NULL;\
 if ( dlg != NULL )\
 {\
+	dlg->SetForegroundWindow();\
 	dlg->SetFocus();\
 	return;\
 }

@@ -17,7 +17,7 @@ static char THIS_FILE[] = __FILE__;
 Label::Label()
 {
 	m_bFontChanged = FALSE;
-	m_strFontName = _T("ËÎÌå");
+	m_strFontName = _T("Î¢ÈíÑÅºÚ");
 	m_uFontSize = 12;
 	m_color = RGB( 0, 0, 0 );
 

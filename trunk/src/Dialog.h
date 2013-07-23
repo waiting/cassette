@@ -28,6 +28,10 @@ public:
 		// NOTE: the ClassWizard will add data members here
 	//}}AFX_DATA
 
+	BOOL Create( CWnd * pParentWnd )
+	{
+		return CDialog::Create( m_nIDTemplate, pParentWnd );
+	}
 
 // Overrides
 	// ClassWizard generated virtual function overrides
@@ -40,6 +44,7 @@ protected:
 
 // Implementation
 protected:
+	UINT m_nIDTemplate;
 	CToolTipCtrl m_ToolTips; // 工具提示控件
 
 	// Generated message map functions

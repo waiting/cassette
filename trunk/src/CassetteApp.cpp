@@ -202,7 +202,7 @@ void CassetteApp::LoadSettings( UINT flag )
 	if ( flag & Setting_EnabledAutoRun ) m_settings.isEnabledAutoRun = mixed( s.get( _T("EnabledAutoRun"), _T("false") ) );
 	if ( flag & Setting_EnabledHotkey ) m_settings.isEnabledHotkey = mixed( s.get( _T("EnabledHotkey"), _T("true") ) );
 	if ( flag & Setting_EnabledHttpSrv ) m_settings.isEnabledHttpSrv = mixed( s.get( _T("EnabledHttpSrv"), _T("false") ) );
-	if ( flag & Setting_EnabledScheme ) m_settings.isEnabledScheme = mixed( s.get( _T("EnabledScheme"), _T("true") ) );
+	if ( flag & Setting_EnabledScheme ) m_settings.isEnabledScheme = mixed( s.get( _T("EnabledScheme"), _T("false") ) );
 	if ( flag & Setting_DatabasePath ) m_settings.databasePath = s.get( _T("DatabasePath"), format( _T("$ROOT$\\%s.db"), load_string(AFX_IDS_APP_TITLE).c_str() ) );
 	if ( flag & Setting_BackupPath ) m_settings.backupPath = s.get( _T("BackupPath"), _T("$ROOT$") );
 

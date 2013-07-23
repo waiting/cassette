@@ -18,7 +18,7 @@ IMPLEMENT_DYNCREATE(AboutWnd, CFrameWnd)
 
 AboutWnd * AboutWnd::ms_pSingleAboutWnd = NULL;
 
-AboutWnd * AboutWnd::GetAboutWnd( CWnd * pParent /*= NULL */ )
+AboutWnd * AboutWnd::GetSingleton( CWnd * pParent /*= NULL */ )
 {
 	if ( ms_pSingleAboutWnd == NULL )
 	{
