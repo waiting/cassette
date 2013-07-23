@@ -32,11 +32,11 @@ void AccountTypesDlg::DoDataExchange(CDataExchange* pDX)
 BEGIN_MESSAGE_MAP(AccountTypesDlg, Dialog)
 	//{{AFX_MSG_MAP(AccountTypesDlg)
 	ON_NOTIFY(NM_DBLCLK, IDC_LIST_TYPES, OnListActivated)
-	ON_NOTIFY(NM_RETURN, IDC_LIST_TYPES, OnListActivated)
 	ON_NOTIFY(NM_RCLICK, IDC_LIST_TYPES, OnListRClick)
 	ON_COMMAND(ID_TYPE_ADD, OnAdd)
 	ON_COMMAND(ID_TYPE_MODIFY, OnModify)
 	ON_COMMAND(ID_TYPE_DELETE, OnDelete)
+	ON_NOTIFY(NM_RETURN, IDC_LIST_TYPES, OnListActivated)
 	//}}AFX_MSG_MAP
 	ON_UPDATE_COMMAND_UI_RANGE(ID_TYPE_MODIFY, ID_TYPE_DELETE, OnUpdateModifyDeleteMenu)
 END_MESSAGE_MAP()
@@ -132,7 +132,6 @@ void AccountTypesDlg::OnListRClick( NMHDR * pNMHDR, LRESULT * pResult )
 	menu.LoadMenu(IDM_OPERATE_TYPES);
 	POINT pt;
 	GetCursorPos(&pt);
-	
 	menu.GetSubMenu(0)->TrackPopupMenu( TPM_LEFTALIGN | TPM_RIGHTBUTTON, pt.x, pt.y, this );
 
 	*pResult = 0;
@@ -140,10 +139,13 @@ void AccountTypesDlg::OnListRClick( NMHDR * pNMHDR, LRESULT * pResult )
 
 void AccountTypesDlg::OnAdd() 
 {
+	VERIFY_ONCE_DIALOG(onceEditingDlg);
+
 	CString typeName;
 	int safeRank = 20;
 
 	AccountTypeEditingDlg editingDlg( this, true, &typeName, &safeRank );
+	SetNullScopeOut setNullScopeOut( onceEditingDlg = &editingDlg );
 	if ( IDOK == editingDlg.DoModal() )
 	{
 		if ( AddAccountType( typeName, safeRank ) )
@@ -166,6 +168,8 @@ void AccountTypesDlg::OnAdd()
 
 void AccountTypesDlg::OnModify() 
 {
+	VERIFY_ONCE_DIALOG(onceEditingDlg);
+
 	CListCtrl & lst = *(CListCtrl *)GetDlgItem(IDC_LIST_TYPES);
 	int index = lst.GetNextItem( -1, LVNI_ALL | LVNI_SELECTED );
 	CString typeName = m_typeNames[index];
@@ -173,6 +177,7 @@ void AccountTypesDlg::OnModify()
 	int newSafeRank = m_safeRanks[index];
 
 	AccountTypeEditingDlg editingDlg( this, false, &newTypeName, &newSafeRank );
+	SetNullScopeOut setNullScopeOut( onceEditingDlg = &editingDlg );
 	if ( IDOK == editingDlg.DoModal() )
 	{
 		if ( ModifyAccountType( typeName, newTypeName, newSafeRank ) )

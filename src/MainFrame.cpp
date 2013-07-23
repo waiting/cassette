@@ -52,15 +52,17 @@ BEGIN_MESSAGE_MAP(MainFrame, CFrameWnd)
 	ON_UPDATE_COMMAND_UI(ID_OPEN_URL, OnUpdateOpenUrl)
 	ON_COMMAND(ID_OPEN_URL, OnOpenUrl)
 	ON_COMMAND(ID_USER_SETTINGS, OnUserSettings)
+	ON_COMMAND(ID_APP_SETTINGS, OnAppSettings)
 	ON_WM_DESTROY()
 	ON_COMMAND(ID_ADD_ACCOUNT, OnAddAccount)
 	ON_COMMAND(ID_MODIFY_ACCOUNT, OnModifyAccount)
 	ON_COMMAND(ID_DEL_ACCOUNT, OnDelAccount)
 	ON_COMMAND(ID_ACCOUNT_CATES, OnAccountCates)
 	ON_COMMAND(ID_ACCOUNT_TYPES, OnAccountTypes)
-	ON_COMMAND(ID_APP_SETTINGS, OnAppSettings)
 	ON_COMMAND(ID_BACKUP_DATA, OnBackupData)
 	ON_COMMAND(ID_RESUME_DATA, OnResumeData)
+	ON_UPDATE_COMMAND_UI(ID_ACCOUNT_CATES, OnUpdateAccountCates)
+	ON_UPDATE_COMMAND_UI(ID_ACCOUNT_TYPES, OnUpdateAccountTypes)
 	//}}AFX_MSG_MAP
 	ON_MESSAGE( WM_HOTKEY, OnHotkey )
 	ON_UPDATE_COMMAND_UI_RANGE(ID_MODIFY_ACCOUNT, ID_DEL_ACCOUNT, OnUpdateOperateAccount)
@@ -118,7 +120,7 @@ int MainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 {
 	if ( CFrameWnd::OnCreate(lpCreateStruct) == -1 )
 		return -1;
-	// create a view to occupy the client area of the frame
+	// 创建一个账户视图占据整个框架窗口的客户区域
 	if ( !m_pAccountsView->Create(
 			NULL,
 			NULL,
@@ -134,8 +136,8 @@ int MainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	}
 	// 更新列表
 	m_pAccountsView->UpdateList();
-	//msgbox( format( "%x", m_pAccountsView->GetDlgCtrlID() ) );
 
+	// 创建一个工具条
 	if ( !m_toolBar.CreateEx(
 			this,
 			/*TBSTYLE_FLAT*/0,
@@ -146,13 +148,14 @@ int MainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		TRACE0("Failed to create toolbar\n");
 		return -1;      // fail to create
 	}
-	
+
+	// 创建状态条	
 	static UINT indicators[] =
 	{
 		ID_SEPARATOR,           // status line indicator
-			//ID_INDICATOR_CAPS,
-			//ID_INDICATOR_NUM,
-			//ID_INDICATOR_SCRL,
+		//ID_INDICATOR_CAPS,
+		//ID_INDICATOR_NUM,
+		//ID_INDICATOR_SCRL,
 	};
 	
 	if ( !m_statusBar.Create(this) || !m_statusBar.SetIndicators( indicators, countof(indicators) ) )
@@ -161,12 +164,11 @@ int MainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		return -1;      // fail to create
 	}
 	
-	// TODO: Delete these three lines if you don't want the toolbar to
-	//  be dockable
+	// 如果你不想要工具条可停靠,可删除下面这3行
 	m_toolBar.EnableDocking(CBRS_ALIGN_ANY);
 	EnableDocking(CBRS_ALIGN_ANY);
 	DockControlBar(&m_toolBar);
-	
+
 	// 设置图标
 	SetIcon( icon( IDR_MAINFRAME, 16, 16 ), TRUE );
 	// 把窗口句柄提交给共享内存,以便激活
@@ -175,6 +177,12 @@ int MainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	UpdateTitle();
 	// 注册热键
 	RefreshHotkey(g_theApp.m_loginedUser.m_hotkey);
+
+	// 创建非模态对话框, CatesDlg, TypesDlg
+	m_catesDlg.Create(this);
+	m_catesDlg.UpdateWindow();
+	m_typesDlg.Create(this);
+	m_typesDlg.UpdateWindow();
 
 	return 0;
 }
@@ -205,7 +213,7 @@ BOOL MainFrame::OnCmdMsg( UINT nID, int nCode, void * pExtra, AFX_CMDHANDLERINFO
 void MainFrame::OnAppAbout()
 {
 	// 只能打开一个窗口
-	AboutWnd * pAbout = AboutWnd::GetAboutWnd(this);
+	AboutWnd * pAbout = AboutWnd::GetSingleton(this);
 	pAbout->ShowWindow(SW_NORMAL);
 	pAbout->SetForegroundWindow();
 	pAbout->SetFocus();
@@ -277,6 +285,8 @@ void MainFrame::OnOpenUrl()
 
 void MainFrame::OnUserSettings() 
 {
+	VERIFY_ONCE_DIALOG(onceSettingsDlg);
+
 	CString username = g_theApp.m_loginedUser.m_username;
 	CString password;
 	int protectLevel = g_theApp.m_loginedUser.m_protectLevel;
@@ -284,6 +294,8 @@ void MainFrame::OnUserSettings()
 	int hotkey = g_theApp.m_loginedUser.m_hotkey;
 
 	UserSettingsDlg settingsDlg( this, &username, &password, &protectLevel, &condone, &hotkey );
+
+	SetNullScopeOut setNullScopeOut( onceSettingsDlg = &settingsDlg );
 
 	if ( IDOK == settingsDlg.DoModal() )
 	{
@@ -300,10 +312,15 @@ void MainFrame::OnUserSettings()
 
 }
 
-void MainFrame::OnAppSettings() 
+void MainFrame::OnAppSettings()
 {
-	AppSettingsDlg settingDlg( this, &g_theApp.m_settings );
-	if ( IDOK == settingDlg.DoModal() )
+	VERIFY_ONCE_DIALOG(onceSettingsDlg);
+
+	AppSettingsDlg settingsDlg( this, &g_theApp.m_settings );
+
+	SetNullScopeOut setNullScopeOut( onceSettingsDlg = &settingsDlg );
+
+	if ( IDOK == settingsDlg.DoModal() )
 	{
 		g_theApp.SaveSettings(
 			CassetteApp::Setting_EnabledAutoRun |
@@ -420,16 +437,46 @@ void MainFrame::OnDelAccount()
 	}
 }
 
+void MainFrame::OnUpdateAccountCates( CCmdUI * pCmdUI ) 
+{
+	pCmdUI->SetCheck( window_is_show( m_catesDlg.GetSafeHwnd() ) );
+}
+
+void MainFrame::OnUpdateAccountTypes( CCmdUI * pCmdUI ) 
+{
+	pCmdUI->SetCheck( window_is_show( m_typesDlg.GetSafeHwnd() ) );
+}
+
 void MainFrame::OnAccountCates() 
 {
-	//AccountCatesDlg catesDlg(this);
-	m_catesDlg.DoModal();
+	if ( window_is_show( m_catesDlg.GetSafeHwnd() ) )
+	{
+		m_catesDlg.ShowWindow(SW_HIDE);
+	}
+	else
+	{
+		CRect rcView, rcCatesDlg;
+		m_pAccountsView->GetWindowRect(&rcView);
+		m_catesDlg.GetWindowRect(&rcCatesDlg);
+		m_catesDlg.SetWindowPos( NULL, rcView.right - rcCatesDlg.Width(), rcView.bottom - rcCatesDlg.Height(), 0, 0, SWP_NOSIZE | SWP_NOZORDER );
+		m_catesDlg.ShowWindow(SW_NORMAL);
+	}
 }
 
 void MainFrame::OnAccountTypes() 
 {
-	//AccountTypesDlg typesDlg(this);
-	m_typesDlg.DoModal();
+	if ( window_is_show( m_typesDlg.GetSafeHwnd() ) )
+	{
+		m_typesDlg.ShowWindow(SW_HIDE);
+	}
+	else
+	{
+		CRect rcView, rcTypesDlg;
+		m_pAccountsView->GetWindowRect(&rcView);
+		m_typesDlg.GetWindowRect(&rcTypesDlg);
+		m_typesDlg.SetWindowPos( NULL, rcView.left, rcView.bottom - rcTypesDlg.Height(), 0, 0, SWP_NOSIZE | SWP_NOZORDER );
+		m_typesDlg.ShowWindow(SW_NORMAL);
+	}
 }
 
 void MainFrame::OnBackupData() 
@@ -467,9 +514,9 @@ LRESULT MainFrame::OnHotkey( WPARAM wParam, LPARAM lParam )
 	switch ( wParam )
 	{
 	case IDC_REGISTERED_HOTKEY:
-		PostMessage( WM_COMMAND, MAKEWPARAM( ID_ACCOUNT_CATES, 0 ), 0 );
+		m_catesDlg.PostMessage( WM_COMMAND, MAKEWPARAM( ID_CATE_ADD, 0 ), 0 );
 		//MessageBox("user pressed hotkey");
-		
+
 		//PostMessage( WM_COMMAND, MAKEWPARAM( ID_ACCOUNT_TYPES, 0 ), 0 );
 		m_TestFlag = !m_TestFlag;
 		break;

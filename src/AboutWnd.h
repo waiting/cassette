@@ -24,7 +24,7 @@ protected:
 	virtual ~AboutWnd();
 public:
 	// 获取关于对话框的实例
-	static AboutWnd * GetAboutWnd( CWnd * pParent = NULL );
+	static AboutWnd * GetSingleton( CWnd * pParent = NULL );
 
 // Operations
 public:

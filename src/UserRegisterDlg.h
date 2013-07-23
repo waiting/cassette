@@ -5,21 +5,27 @@
 #pragma once
 #endif // _MSC_VER > 1000
 // UserRegisterDlg.h : header file
-//
+#include "Dialog.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // UserRegisterDlg dialog
 
-class UserRegisterDlg : public CDialog
+class UserRegisterDlg : public Dialog
 {
 // Construction
 public:
-	UserRegisterDlg(CWnd* pParent = NULL);   // standard constructor
+	UserRegisterDlg(
+		CWnd * parent,
+		CString * username,
+		CString * password,
+		int * protectLevel,
+		int * hotkey
+	);
 
 // Dialog Data
 	//{{AFX_DATA(UserRegisterDlg)
 	enum { IDD = IDD_USER_REGISTER };
-		// NOTE: the ClassWizard will add data members here
+	CString	m_cfmPassword;
 	//}}AFX_DATA
 
 
@@ -32,10 +38,15 @@ public:
 
 // Implementation
 protected:
+	CString * m_username;
+	CString * m_password;
+	int * m_protectLevel;
+	int * m_hotkey;
 
 	// Generated message map functions
 	//{{AFX_MSG(UserRegisterDlg)
-		// NOTE: the ClassWizard will add member functions here
+	virtual BOOL OnInitDialog();
+	virtual void OnOK();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 };
