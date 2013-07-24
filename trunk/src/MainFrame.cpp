@@ -9,6 +9,9 @@
 #include "AppSettingsDlg.h"
 #include "AccountEditingDlg.h"
 
+#include <psapi.h>
+#pragma comment( lib, "psapi" )
+
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #undef THIS_FILE
@@ -514,10 +517,36 @@ LRESULT MainFrame::OnHotkey( WPARAM wParam, LPARAM lParam )
 	switch ( wParam )
 	{
 	case IDC_REGISTERED_HOTKEY:
-		m_catesDlg.PostMessage( WM_COMMAND, MAKEWPARAM( ID_CATE_ADD, 0 ), 0 );
-		//MessageBox("user pressed hotkey");
-
-		//PostMessage( WM_COMMAND, MAKEWPARAM( ID_ACCOUNT_TYPES, 0 ), 0 );
+		{
+			CWnd * pWnd = GetForegroundWindow();
+			if ( pWnd )
+			{
+				// 通过HWND获取进程句柄,进而获取程序路径
+				DWORD processId;
+				GetWindowThreadProcessId( pWnd->GetSafeHwnd(), &processId );
+				HANDLE hProcess = OpenProcess( PROCESS_ALL_ACCESS, FALSE, processId );
+				if ( !hProcess )
+				{
+					break;
+				}
+				CString fullName;
+				GetModuleFileNameEx( hProcess, NULL, fullName.GetBuffer(512), 512 );
+				CloseHandle(hProcess);
+				//msgbox( (LPCTSTR)fullName );
+				msgbox( format("%d,%d,%d,%d,%d,%d,%d,%d,%d",
+					FieldIndex(am_users__id),
+					FieldIndex(am_users__name),
+					FieldIndex(am_users__pwd),
+					FieldIndex(am_users__protect),
+					FieldIndex(am_users__condone),
+					FieldIndex(am_users__cur_condone),
+					FieldIndex(am_users__unlock_time),
+					FieldIndex(am_users__hotkey),
+					FieldIndex(am_users__time)
+				) );
+			}
+		}
+		//m_catesDlg.PostMessage( WM_COMMAND, MAKEWPARAM( ID_CATE_ADD, 0 ), 0 );
 		m_TestFlag = !m_TestFlag;
 		break;
 	}
