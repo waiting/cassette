@@ -170,7 +170,7 @@ void AccountCatesDlg::OnAdd()
 
 	CString cateName, cateDesc, typeName, url, icoPath, startup, keywords;
 	AccountCateEditingDlg editingDlg(
-		this,
+		GetOwner(),
 		true,
 		&cateName,
 		&cateDesc,
@@ -228,7 +228,7 @@ void AccountCatesDlg::OnModify()
 	CString newKeywords = m_keywordss[index];
 
 	AccountCateEditingDlg editingDlg(
-		this,
+		GetOwner(),
 		false,
 		&newCateName,
 		&newCateDesc,
@@ -265,7 +265,7 @@ void AccountCatesDlg::OnModify()
 
 void AccountCatesDlg::OnDelete()
 {
-	if ( IDYES == MessageBox( _T("此操作不可恢复，确定要删除？"), _T("确认"), MB_YESNO ) )
+	if ( IDYES == GetOwner()->MessageBox( _T("此操作不可恢复，确定要删除？"), _T("确认"), MB_YESNO ) )
 	{
 		CListCtrl & lst = *(CListCtrl *)GetDlgItem(IDC_LIST_CATES);
 		int index = lst.GetNextItem( -1, LVNI_ALL | LVNI_SELECTED );

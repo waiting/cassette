@@ -365,7 +365,8 @@ OccurDbError: // 出错处理
 
 bool LoginUser( CString const & username, CString const & password, UserInfo * userInfo )
 {
-	bool retValue = false;
+	bool ret = false;
+	int condone, curCondone;
 
 	sqlite3 * db = g_theApp.GetDatabase();
 	ansi_string sql = string_to_utf8("SELECT * FROM am_users WHERE name = ?;");
@@ -385,6 +386,32 @@ bool LoginUser( CString const & username, CString const & password, UserInfo * u
 	rc = sqlite3_step(stmt);
 	if ( rc == SQLITE_ROW )
 	{
+		// 判断用户是否处于锁定时间中
+		int unlockTime = sqlite3_column_int( stmt, FieldIndex(am_users__unlock_time) );
+		int nowTime = get_utc_time();
+
+		condone = sqlite3_column_int( stmt, FieldIndex(am_users__condone) );
+		curCondone = sqlite3_column_int( stmt, FieldIndex(am_users__cur_condone) );
+
+		if ( nowTime < unlockTime ) // 处于锁定中
+		{
+			int hours = ( unlockTime - nowTime ) / 3600;
+			int minutes = ( ( unlockTime - nowTime ) - hours * 3600 ) / 60;
+			int seconds = ( unlockTime - nowTime ) - hours * 3600 - minutes * 60;
+			AfxGetMainWnd()->WarningError( format( _T("用户锁定中,解锁还需要%d小时%d分%d秒"), hours, minutes, seconds ).c_str(), _T("错误") );
+			ret = false;
+			goto ExitProc;
+		}
+		else
+		{
+			if ( curCondone < 1 ) // 表示这是刚从锁定状态恢复,重置cur_condone=condone
+			{
+				ModifyUserEx( username, am_users__cur_condone, 0, "", "", 0, 0, condone, 0, 0, 0 );
+				curCondone = condone;
+			}
+
+		}
+
 		ansi_string pwdInDb;
 		int size = sqlite3_column_bytes( stmt, 2 );
 		pwdInDb.assign( (char const *)sqlite3_column_blob( stmt, 2 ), size );
@@ -393,9 +420,21 @@ bool LoginUser( CString const & username, CString const & password, UserInfo * u
 		if ( pwd != password )
 		{
 			MessageBox( *AfxGetMainWnd(), _T("密码不正确"), _T("错误"), MB_OK | MB_ICONEXCLAMATION );
-			retValue = false;
+			// 减少当前容错次数
+			curCondone--;
+			ModifyUserEx( username, am_users__cur_condone, 0, "", "", 0, 0, curCondone, 0, 0, 0 );
+			if ( curCondone < 1 ) // 没有容错数,锁定用户
+			{
+				int lockTime = 3600 * 3;
+				ModifyUserEx( username, am_users__unlock_time, 0, "", "", 0, 0, 0, get_utc_time() + lockTime, 0, 0 );
+			}
+			ret = false;
 			goto ExitProc;
 		}
+		// 登录验证成功,重置cur_condone=condone
+		ModifyUserEx( username, am_users__cur_condone, 0, "", "", 0, 0, condone, 0, 0, 0 );
+		curCondone = condone;
+
 		if ( userInfo != NULL )
 		{
 			userInfo->m_id = sqlite3_column_int( stmt, 0 );
@@ -407,13 +446,13 @@ bool LoginUser( CString const & username, CString const & password, UserInfo * u
 			userInfo->m_hotkey = sqlite3_column_int( stmt, 7 );
 			userInfo->m_regTime = sqlite3_column_int( stmt, 8 );
 		}
-		retValue = true;
+		ret = true;
 		goto ExitProc;
 	}
 	else if ( rc == SQLITE_DONE ) // 没有找到用户
 	{
 		MessageBox( *AfxGetMainWnd(), _T("没有此用户"), _T("错误"), MB_OK | MB_ICONEXCLAMATION );
-		retValue = false;
+		ret = false;
 		goto ExitProc;
 	}
 	else
@@ -423,12 +462,12 @@ bool LoginUser( CString const & username, CString const & password, UserInfo * u
 	}
 
 ExitProc:
-	// 正常无错误结束
+	// 无硬性错误的结束
 	sqlite3_reset(stmt);
 	if ( stmt )
 		sqlite3_finalize(stmt);
-	return retValue;
-	
+	return ret;
+
 OccurDbError: // 出错处理
 	localError = sqlite3_errmsg(db);
 	if ( stmt )
@@ -513,14 +552,14 @@ OccurDbError: // 出错处理
 bool VerifyUserPassword( CString const & username, CString const & password )
 {
 	ansi_string encryptPassword;
-	bool retValue = false;
+	bool ret = false;
 	
 	sqlite3 * db = g_theApp.GetDatabase();
 	ansi_string sql = string_to_utf8("SELECT pwd = ? FROM am_users WHERE name = ?;");
 	sqlite3_stmt * stmt = NULL;
 	int rc;
 	const char * localError;
-	
+
 	// 准备语句
 	rc = sqlite3_prepare_v2( db, sql.c_str(), sql.size(), &stmt, NULL );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
@@ -537,12 +576,12 @@ bool VerifyUserPassword( CString const & username, CString const & password )
 	rc = sqlite3_step(stmt);
 	if ( rc == SQLITE_ROW )
 	{
-		retValue = sqlite3_column_int( stmt, 0 ) != 0;
+		ret = sqlite3_column_int( stmt, 0 ) != 0;
 		goto ExitProc;
 	}
-	else if ( rc == SQLITE_DONE ) // 没有找到用户
+	else if ( rc == SQLITE_DONE ) // 没有找到合适的用户
 	{
-		retValue = false;
+		ret = false;
 		goto ExitProc;
 	}
 	else
@@ -556,7 +595,7 @@ ExitProc:
 	sqlite3_reset(stmt);
 	if ( stmt )
 		sqlite3_finalize(stmt);
-	return retValue;
+	return ret;
 	
 OccurDbError: // 出错处理
 	localError = sqlite3_errmsg(db);
@@ -568,50 +607,132 @@ OccurDbError: // 出错处理
 
 bool ModifyUser( CString const & username, bool isModifyPassword, CString const & newUsername, CString const & newPassword, int newProtectLevel, int newCondone, int newCurCondone, int newHotkey )
 {
+	return ModifyUserEx(
+		username,
+		am_users__name |
+		( isModifyPassword ? am_users__pwd : 0 ) |
+		am_users__protect |
+		am_users__condone |
+		am_users__cur_condone |
+		am_users__hotkey,
+		0,
+		newUsername,
+		newPassword,
+		newProtectLevel,
+		newCondone,
+		newCurCondone,
+		0,
+		newHotkey,
+		0
+	);
+}
+
+bool ModifyUserEx( CString const & username, UINT modifiedFieldBits, int newId, CString const & newUsername, CString const & newPassword, int newProtectLevel, int newCondone, int newCurCondone, int newUnlockTime, int newHotkey, int newTime )
+{
 	ansi_string encryptPassword;
 	int rowsChanged;
 	int paramIndex;
-	
+
 	sqlite3 * db = g_theApp.GetDatabase();
-	ansi_string sql = string_to_utf8("UPDATE am_users SET name = ?" + ansi_string( isModifyPassword ? ", pwd = ?" : "" ) + ", protect = ?, condone = ?, cur_condone = ?, hotkey = ? WHERE name = ?;");
+	ansi_string_array modifiedFields;
+	if ( modifiedFieldBits & am_users__id )
+		modifiedFields.push_back("id = ?");
+	if ( modifiedFieldBits & am_users__name )
+		modifiedFields.push_back("name = ?");
+	if ( modifiedFieldBits & am_users__pwd )
+		modifiedFields.push_back("pwd = ?");
+	if ( modifiedFieldBits & am_users__protect )
+		modifiedFields.push_back("protect = ?");
+	if ( modifiedFieldBits & am_users__condone )
+		modifiedFields.push_back("condone = ?");
+	if ( modifiedFieldBits & am_users__cur_condone )
+		modifiedFields.push_back("cur_condone = ?");
+	if ( modifiedFieldBits & am_users__unlock_time )
+		modifiedFields.push_back("unlock_time = ?");
+	if ( modifiedFieldBits & am_users__hotkey )
+		modifiedFields.push_back("hotkey = ?");
+	if ( modifiedFieldBits & am_users__time )
+		modifiedFields.push_back("time = ?");
+
+	ansi_string sql = string_to_utf8(
+		"UPDATE am_users SET " + str_join( ", ", modifiedFields ) + " WHERE name = ?;"
+	);
 	sqlite3_stmt * stmt = NULL;
 	int rc;
 	const char * localError;
 
-
 	// 准备语句
 	rc = sqlite3_prepare_v2( db, sql.c_str(), sql.size(), &stmt, NULL );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
+
 	// 绑定参数
 	paramIndex = 0;
-	// 新用户名
-	rc = sqlite3_bind_text( stmt, ++paramIndex, string_to_utf8( (LPCTSTR)newUsername ).c_str(), -1, SQLITE_TRANSIENT );
-	if ( rc != SQLITE_OK ) goto OccurDbError;
 
-	if ( isModifyPassword )
+	// 新ID
+	if ( modifiedFieldBits & am_users__id )
 	{
-		// 新密码
+		rc = sqlite3_bind_int( stmt, ++paramIndex, newId );
+		if ( rc != SQLITE_OK ) goto OccurDbError;
+	}
+
+	// 新用户名
+	if ( modifiedFieldBits & am_users__name )
+	{
+		rc = sqlite3_bind_text( stmt, ++paramIndex, string_to_utf8( (LPCTSTR)newUsername ).c_str(), -1, SQLITE_TRANSIENT );
+		if ( rc != SQLITE_OK ) goto OccurDbError;
+	}
+	
+	// 新密码
+	if ( modifiedFieldBits & am_users__pwd )
+	{
 		encryptPassword = EncryptContent( string_to_utf8( (LPCTSTR)newPassword ) );
 		rc = sqlite3_bind_blob( stmt, ++paramIndex, encryptPassword.c_str(), encryptPassword.size(), SQLITE_TRANSIENT );
 		if ( rc != SQLITE_OK ) goto OccurDbError;
 	}
 
 	// 新保护级别
-	rc = sqlite3_bind_int( stmt, ++paramIndex, newProtectLevel );
-	if ( rc != SQLITE_OK ) goto OccurDbError;
-
+	if ( modifiedFieldBits & am_users__protect )
+	{
+		rc = sqlite3_bind_int( stmt, ++paramIndex, newProtectLevel );
+		if ( rc != SQLITE_OK ) goto OccurDbError;
+	}
+	
 	// 新容错数
-	rc = sqlite3_bind_int( stmt, ++paramIndex, newCondone );
-	if ( rc != SQLITE_OK ) goto OccurDbError;
-
+	if ( modifiedFieldBits & am_users__condone )
+	{
+		rc = sqlite3_bind_int( stmt, ++paramIndex, newCondone );
+		if ( rc != SQLITE_OK ) goto OccurDbError;
+	}
+	
 	// 新当前容错数
-	rc = sqlite3_bind_int( stmt, ++paramIndex, newCurCondone );
-	if ( rc != SQLITE_OK ) goto OccurDbError;
+	if ( modifiedFieldBits & am_users__cur_condone )
+	{
+		rc = sqlite3_bind_int( stmt, ++paramIndex, newCurCondone );
+		if ( rc != SQLITE_OK ) goto OccurDbError;
+	}
 
+	// 新解锁时刻
+	if ( modifiedFieldBits & am_users__unlock_time )
+	{
+		rc = sqlite3_bind_int( stmt, ++paramIndex, newUnlockTime );
+		if ( rc != SQLITE_OK ) goto OccurDbError;
+	}
+	
 	// 新热键
-	rc = sqlite3_bind_int( stmt, ++paramIndex, newHotkey );
-	if ( rc != SQLITE_OK ) goto OccurDbError;
+	if ( modifiedFieldBits & am_users__hotkey )
+	{
+		rc = sqlite3_bind_int( stmt, ++paramIndex, newHotkey );
+		if ( rc != SQLITE_OK ) goto OccurDbError;
+	}
 
+	// 新录入时刻
+	if ( modifiedFieldBits & am_users__time )
+	{
+		rc = sqlite3_bind_int( stmt, ++paramIndex, newTime );
+		if ( rc != SQLITE_OK ) goto OccurDbError;
+	}
+
+	// where子句
 	// 用户名
 	rc = sqlite3_bind_text( stmt, ++paramIndex, string_to_utf8( (LPCTSTR)username ).c_str(), -1, SQLITE_TRANSIENT );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
@@ -633,7 +754,7 @@ bool ModifyUser( CString const & username, bool isModifyPassword, CString const 
 		goto OccurDbError;
 	}
 
-	// 正常无错误结束
+	// 无硬性错误的结束
 	if ( stmt )
 		sqlite3_finalize(stmt);
 	return rowsChanged == 1;
@@ -645,7 +766,6 @@ OccurDbError: // 出错处理
 	MessageBox( *AfxGetMainWnd(), utf8_to_string(localError).c_str(), _T("数据库错误"), MB_OK | MB_ICONERROR );
 	return false;
 }
-
 
 int LoadAccountTypes( CStringArray * typeNames, CUIntArray * safeRanks )
 {

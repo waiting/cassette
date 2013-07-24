@@ -133,6 +133,38 @@ bool ModifyUser(
 	int newHotkey
 );
 
+enum FieldBits__am_users
+{
+	am_users__id          = bin0<0000000001>::val,
+	am_users__name        = bin0<0000000010>::val,
+	am_users__pwd         = bin0<0000000100>::val,
+	am_users__protect     = bin0<0000001000>::val,
+	am_users__condone     = bin0<0000010000>::val,
+	am_users__cur_condone = bin0<0000100000>::val,
+	am_users__unlock_time = bin0<0001000000>::val,
+	am_users__hotkey      = bin0<0010000000>::val,
+	am_users__time        = bin0<0100000000>::val,
+};
+
+inline int FieldIndex( UINT fieldBitFlag )
+{
+	return (int)( log(fieldBitFlag) / log(2) + 0.0000005 );
+}
+
+bool ModifyUserEx(
+	CString const & username,
+	UINT modifiedFieldBits,
+	int newId,
+	CString const & newUsername,
+	CString const & newPassword,
+	int newProtectLevel,
+	int newCondone,
+	int newCurCondone,
+	int newUnlockTime,
+	int newHotkey,
+	int newTime
+);
+
 // 加载账户类别信息, 返回记录数
 int LoadAccountTypes( CStringArray * typeNames, CUIntArray * safeRanks );
 

@@ -144,8 +144,10 @@ void AccountTypesDlg::OnAdd()
 	CString typeName;
 	int safeRank = 20;
 
-	AccountTypeEditingDlg editingDlg( this, true, &typeName, &safeRank );
+	AccountTypeEditingDlg editingDlg( GetOwner(), true, &typeName, &safeRank );
+
 	SetNullScopeOut setNullScopeOut( onceEditingDlg = &editingDlg );
+
 	if ( IDOK == editingDlg.DoModal() )
 	{
 		if ( AddAccountType( typeName, safeRank ) )
@@ -176,8 +178,10 @@ void AccountTypesDlg::OnModify()
 	CString newTypeName = m_typeNames[index];
 	int newSafeRank = m_safeRanks[index];
 
-	AccountTypeEditingDlg editingDlg( this, false, &newTypeName, &newSafeRank );
+	AccountTypeEditingDlg editingDlg( GetOwner(), false, &newTypeName, &newSafeRank );
+
 	SetNullScopeOut setNullScopeOut( onceEditingDlg = &editingDlg );
+
 	if ( IDOK == editingDlg.DoModal() )
 	{
 		if ( ModifyAccountType( typeName, newTypeName, newSafeRank ) )
@@ -197,7 +201,7 @@ void AccountTypesDlg::OnModify()
 
 void AccountTypesDlg::OnDelete() 
 {
-	if ( IDYES == MessageBox( _T("此操作不可恢复，确定要删除？"), _T("确认"), MB_YESNO ) )
+	if ( IDYES == GetOwner()->MessageBox( _T("此操作不可恢复，确定要删除？"), _T("确认"), MB_YESNO ) )
 	{
 		CListCtrl & lst = *(CListCtrl *)GetDlgItem(IDC_LIST_TYPES);
 		int index = lst.GetNextItem( -1, LVNI_ALL | LVNI_SELECTED );

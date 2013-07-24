@@ -88,7 +88,7 @@ BOOL UserLoginDlg::OnInitDialog()
 
 void UserLoginDlg::OnOK() 
 {
-	this->UpdateData(TRUE);
+	UpdateData(TRUE);
 
 	if ( m_username->IsEmpty() )
 	{
@@ -96,10 +96,11 @@ void UserLoginDlg::OnOK()
 		return;
 	}
 
-	if ( !VerifyUserPassword( *m_username, *m_password ) )
+	/*if ( !VerifyUserPassword( *m_username, *m_password ) )
 	{
 		WarningError( _T("ÃÜÂë²»ÕıÈ·"), _T("´íÎó") );
 		return;
-	}
-	Dialog::OnOK();
+	}*/
+
+	EndDialog(IDOK);
 }
