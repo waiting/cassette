@@ -366,7 +366,6 @@ OccurDbError: // 出错处理
 bool LoginUser( CString const & username, CString const & password, UserInfo * userInfo )
 {
 	bool ret = false;
-	int condone, curCondone;
 
 	sqlite3 * db = g_theApp.GetDatabase();
 	ansi_string sql = string_to_utf8("SELECT * FROM am_users WHERE name = ?;");
@@ -387,6 +386,7 @@ bool LoginUser( CString const & username, CString const & password, UserInfo * u
 	if ( rc == SQLITE_ROW )
 	{
 		// 判断用户是否处于锁定时间中
+		int condone, curCondone;
 		int unlockTime = sqlite3_column_int( stmt, FieldIndex(am_users__unlock_time) );
 		int nowTime = get_utc_time();
 
@@ -412,17 +412,20 @@ bool LoginUser( CString const & username, CString const & password, UserInfo * u
 
 		}
 
+		// 验证密码
 		ansi_string pwdInDb;
 		int size = sqlite3_column_bytes( stmt, 2 );
 		pwdInDb.assign( (char const *)sqlite3_column_blob( stmt, 2 ), size );
 		CString pwd = utf8_to_string( DecryptContent(pwdInDb) ).c_str();
-		// 验证密码
 		if ( pwd != password )
 		{
-			MessageBox( *AfxGetMainWnd(), _T("密码不正确"), _T("错误"), MB_OK | MB_ICONEXCLAMATION );
 			// 减少当前容错次数
 			curCondone--;
+
 			ModifyUserEx( username, am_users__cur_condone, 0, "", "", 0, 0, curCondone, 0, 0, 0 );
+
+			AfxGetMainWnd()->WarningError( format( _T("密码不正确，你还剩%d次机会"), curCondone ).c_str(), _T("错误") );
+
 			if ( curCondone < 1 ) // 没有容错数,锁定用户
 			{
 				int lockTime = 3600 * 3;
@@ -478,7 +481,7 @@ OccurDbError: // 出错处理
 
 bool LoadUser( CString const & username, UserInfo * userInfo )
 {
-	bool retValue = false;
+	bool ret = false;
 
 	sqlite3 * db = g_theApp.GetDatabase();
 	ansi_string sql = string_to_utf8("SELECT * FROM am_users WHERE name = ?;");
@@ -509,7 +512,7 @@ bool LoadUser( CString const & username, UserInfo * userInfo )
 			userInfo->m_hotkey = sqlite3_column_int( stmt, 7 );
 			userInfo->m_regTime = sqlite3_column_int( stmt, 8 );
 		}
-		retValue = true;
+		ret = true;
 		goto ExitProc;
 	}
 	else if ( rc == SQLITE_DONE ) // 没有找到用户
@@ -525,7 +528,7 @@ bool LoadUser( CString const & username, UserInfo * userInfo )
 			userInfo->m_hotkey = 0;
 			userInfo->m_regTime = 0;
 		}
-		retValue = false;
+		ret = false;
 		goto ExitProc;
 	}
 	else
@@ -539,7 +542,7 @@ ExitProc:
 	sqlite3_reset(stmt);
 	if ( stmt )
 		sqlite3_finalize(stmt);
-	return retValue;
+	return ret;
 
 OccurDbError: // 出错处理
 	localError = sqlite3_errmsg(db);
@@ -981,18 +984,42 @@ OccurDbError: // 出错处理
 
 bool DeleteAccountType( CString const & typeName )
 {
-	int rowsChanged;
+	int rowsChanged = 0;
 	
 	sqlite3 * db = g_theApp.GetDatabase();
-	ansi_string sql = string_to_utf8("DELETE FROM am_account_types WHERE name = ?;");
+	ansi_string sql2, sql;
+	sqlite3_stmt * stmt2 = NULL;
 	sqlite3_stmt * stmt = NULL;
 	int rc;
 	const char * localError;
-	
+
 	// 准备语句
+	sql2 = string_to_utf8("SELECT COUNT(*) > 0 FROM am_account_cates WHERE type = ?;");
+	rc = sqlite3_prepare_v2( db, sql2.c_str(), sql2.size(), &stmt2, NULL );
+	if ( rc != SQLITE_OK ) goto OccurDbError;
+
+	// 绑定参数
+	// 类型名
+	rc = sqlite3_bind_text( stmt2, 1, string_to_utf8( (LPCTSTR)typeName ).c_str(), -1, SQLITE_TRANSIENT );
+	if ( rc != SQLITE_OK ) goto OccurDbError;
+
+	// 执行语句,判断是否执行删除类型操作
+	rc = sqlite3_step(stmt2);
+	if ( rc != SQLITE_ROW ) goto OccurDbError;
+
+	if ( sqlite3_column_int( stmt2, 0 ) )
+	{
+		// 不能删除此类型
+		AfxGetMainWnd()->WarningError( _T("该类型下关联有账户种类，因此不能删除"), _T("错误") );
+		goto ExitProc;
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	// 准备语句
+	sql = string_to_utf8("DELETE FROM am_account_types WHERE name = ?;");
 	rc = sqlite3_prepare_v2( db, sql.c_str(), sql.size(), &stmt, NULL );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
-	
+
 	// 绑定参数
 	// 类型名
 	rc = sqlite3_bind_text( stmt, 1, string_to_utf8( (LPCTSTR)typeName ).c_str(), -1, SQLITE_TRANSIENT );
@@ -1004,27 +1031,29 @@ bool DeleteAccountType( CString const & typeName )
 	{
 		rowsChanged = sqlite3_changes(db);
 		rc = sqlite3_reset(stmt);
-		if ( rc != SQLITE_OK )
-		{
-			goto OccurDbError;
-		}
+		if ( rc != SQLITE_OK ) goto OccurDbError;
 	}
 	else
 	{
-		rc = sqlite3_reset(stmt);
+		sqlite3_reset(stmt);
 		goto OccurDbError;
 	}
-	
-	// 正常无错误结束
+
+ExitProc:
+	// 无硬性错误的结束
+	if ( stmt2 )
+		sqlite3_finalize(stmt2);
 	if ( stmt )
 		sqlite3_finalize(stmt);
 	return rowsChanged == 1;
-	
+
 OccurDbError: // 出错处理
 	localError = sqlite3_errmsg(db);
+	if ( stmt2 )
+		sqlite3_finalize(stmt2);
 	if ( stmt )
 		sqlite3_finalize(stmt);
-	MessageBox( *AfxGetMainWnd(), utf8_to_string(localError).c_str(), _T("数据库错误"), MB_OK | MB_ICONERROR );
+	AfxGetMainWnd()->FatalError( utf8_to_string(localError).c_str(), _T("数据库错误") );
 	return false;
 }
 
@@ -1325,15 +1354,39 @@ OccurDbError: // 出错处理
 
 bool DeleteAccountCate( int id )
 {
-	int rowsChanged;
-	
+	int rowsChanged = 0;
+
 	sqlite3 * db = g_theApp.GetDatabase();
-	ansi_string sql = string_to_utf8("DELETE FROM am_account_cates WHERE id = ?;");
+	ansi_string sql, sql2;
+	sqlite3_stmt * stmt2 = NULL;
 	sqlite3_stmt * stmt = NULL;
 	int rc;
 	const char * localError;
-	
+
 	// 准备语句
+	sql2 = string_to_utf8("SELECT COUNT(*) > 0 FROM am_accounts WHERE cate = ?;");
+	rc = sqlite3_prepare_v2( db, sql2.c_str(), sql2.size(), &stmt2, NULL );
+	if ( rc != SQLITE_OK ) goto OccurDbError;
+	
+	// 绑定参数
+	// Cate ID
+	rc = sqlite3_bind_int( stmt2, 1, id );
+	if ( rc != SQLITE_OK ) goto OccurDbError;
+	
+	// 执行语句,判断是否执行删除类型操作
+	rc = sqlite3_step(stmt2);
+	if ( rc != SQLITE_ROW ) goto OccurDbError;
+	
+	if ( sqlite3_column_int( stmt2, 0 ) )
+	{
+		// 不能删除此类型
+		AfxGetMainWnd()->WarningError( _T("该种类下关联有账户，因此不能删除"), _T("错误") );
+		goto ExitProc;
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	// 准备语句
+	sql = string_to_utf8("DELETE FROM am_account_cates WHERE id = ?;");
 	rc = sqlite3_prepare_v2( db, sql.c_str(), sql.size(), &stmt, NULL );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 	
@@ -1355,20 +1408,25 @@ bool DeleteAccountCate( int id )
 	}
 	else
 	{
-		rc = sqlite3_reset(stmt);
+		sqlite3_reset(stmt);
 		goto OccurDbError;
 	}
-	
-	// 正常无错误结束
+
+ExitProc:
+	// 无硬性错误的结束
+	if ( stmt2 )
+		sqlite3_finalize(stmt2);
 	if ( stmt )
 		sqlite3_finalize(stmt);
 	return rowsChanged == 1;
 	
 OccurDbError: // 出错处理
 	localError = sqlite3_errmsg(db);
+	if ( stmt2 )
+		sqlite3_finalize(stmt2);
 	if ( stmt )
 		sqlite3_finalize(stmt);
-	MessageBox( *AfxGetMainWnd(), utf8_to_string(localError).c_str(), _T("数据库错误"), MB_OK | MB_ICONERROR );
+	AfxGetMainWnd()->FatalError( utf8_to_string(localError).c_str(), _T("数据库错误") );
 	return false;
 }
 
