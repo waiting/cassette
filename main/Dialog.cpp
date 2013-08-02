@@ -22,8 +22,9 @@ Dialog::Dialog( UINT nIDTemplate, CWnd * pParentWnd )
 
 BEGIN_MESSAGE_MAP(Dialog, CDialog)
 	//{{AFX_MSG_MAP(Dialog)
-	ON_NOTIFY_EX( TTN_NEEDTEXT, 0, OnToolTipText )
+	ON_WM_DRAWITEM()
 	//}}AFX_MSG_MAP
+	ON_NOTIFY_EX( TTN_NEEDTEXT, 0, OnToolTipText )
 	ON_WM_INITMENUPOPUP()
 END_MESSAGE_MAP()
 
@@ -69,11 +70,18 @@ BOOL Dialog::OnInitDialog()
 
 	//m_ToolTips.SetTipTextColor( RGB( 255, 96, 0 ) ); // 设置提示文本颜色
 
-	// 枚举子窗口,并将其添加ToolTips
+	// 枚举子窗口,并将其添加ToolTips,添加拥有者自绘风格
 	CWnd * pChildWnd;
 	if ( pChildWnd = this->GetWindow(GW_CHILD) ) do
 	{
 		m_ToolTips.AddTool(pChildWnd);
+		CString clsName;
+		GetClassName( pChildWnd->GetSafeHwnd(), clsName.GetBuffer(256), 256 );
+		clsName.MakeUpper();
+		if ( clsName == _T("STATIC") )
+		{
+			//pChildWnd->ModifyStyle( 0, SS_OWNERDRAW );
+		}
 	}
 	while ( pChildWnd = pChildWnd->GetWindow(GW_HWNDNEXT) );
 	
@@ -163,4 +171,10 @@ void Dialog::OnInitMenuPopup( CMenu * pMenu, UINT nIndex, BOOL bSysMenu )
 		}
 		state.m_nIndexMax = nCount;
 	}
+}
+
+void Dialog::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct) 
+{
+
+	CDialog::OnDrawItem(nIDCtl, lpDrawItemStruct);
 }
