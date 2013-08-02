@@ -8,6 +8,7 @@
 #include "UserSettingsDlg.h"
 #include "AppSettingsDlg.h"
 #include "AccountEditingDlg.h"
+#include "ImageList.h"
 
 #include <psapi.h>
 #pragma comment( lib, "psapi" )
@@ -152,6 +153,18 @@ int MainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		TRACE0("Failed to create toolbar\n");
 		return -1;      // fail to create
 	}
+	ImageList imgList;
+	imgList.Create( 64, 64, ILC_COLOR32, 5, 1 );
+	using namespace Gdiplus;
+	//Bitmap bm( string_to_unicode( module_path() + "\\..\\..\\res\\" + "Toolbar.png" ).c_str() );
+	IStreamPtr pPngStm = create_stream_from_resource( IDR_PNG_TOOLBAR, _T("PNG") );
+	Bitmap bm( pPngStm );
+	imgList.AddAlphaImage(bm);
+
+	m_toolBar.GetToolBarCtrl().SetImageList(&imgList);
+
+	imgList.Detach();
+
 
 	// ´´½¨×´Ì¬Ìõ	
 	static UINT indicators[] =

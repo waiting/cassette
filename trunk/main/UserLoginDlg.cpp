@@ -3,6 +3,7 @@
 #include "CassetteApp.h"
 #include "UserLoginDlg.h"
 #include "UserRegisterDlg.h"
+#include "ForgetPwdStep1Dlg.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -66,6 +67,8 @@ void UserLoginDlg::OnSysLinkRegister( NMHDR * pNmHdr, LRESULT * pResult )
 
 void UserLoginDlg::OnSysLinkForgetPwd( NMHDR * pNmHdr, LRESULT * pResult )
 {
+	ForgetPwdStep1Dlg dlg(this);
+	dlg.DoModal();
 
 	*pResult = 0;
 }

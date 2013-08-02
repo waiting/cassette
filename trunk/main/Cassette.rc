@@ -89,7 +89,7 @@ IDR_MAINFRAME           BITMAP  MOVEABLE PURE   "..\\res\\Toolbar.bmp"
 // Toolbar
 //
 
-IDR_MAINFRAME TOOLBAR DISCARDABLE  16, 15
+IDR_MAINFRAME TOOLBAR DISCARDABLE  64, 64
 BEGIN
     BUTTON      ID_ADD_ACCOUNT
     BUTTON      ID_MODIFY_ACCOUNT
@@ -205,18 +205,21 @@ END
 // Dialog
 //
 
-IDD_ABOUTBOX DIALOG DISCARDABLE  0, 0, 235, 69
+IDD_FORGETPWD1 DIALOG DISCARDABLE  0, 0, 137, 125
 STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "关于 Cassette"
+CAPTION "找回密码 - 步骤1"
 FONT 9, "宋体"
 BEGIN
-    ICON            IDR_MAINFRAME,IDC_STATIC,10,10,20,20
-    LTEXT           "Cassette 0.1.0 Alpha",IDC_STATIC,40,10,119,8,
-                    SS_NOPREFIX
-    LTEXT           "X86PRO.COM 版权所有 (C) 2013",IDC_STATIC,40,25,119,8
-    DEFPUSHBUTTON   "确定",IDOK,178,7,50,14,WS_GROUP
-    CONTROL         "<a href=""http://www.x86pro.com"">www.x86pro.com</a>",
-                    IDC_SYSLINK_WEBSITE,"SysLink",WS_TABSTOP,40,40,75,10
+    DEFPUSHBUTTON   "继续",IDOK,23,104,40,14,WS_GROUP
+    LTEXT           "账户名称",IDC_STATIC,11,66,33,8
+    EDITTEXT        IDC_EDIT_ACCOUNTNAME,46,64,80,14,ES_AUTOHSCROLL
+    LTEXT           "账户种类",IDC_STATIC,11,46,33,8
+    COMBOBOX        IDC_COMBO_CATES,46,44,80,30,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    EDITTEXT        IDC_EDIT_ACCOUNTPWD,46,84,80,14,ES_PASSWORD | 
+                    ES_AUTOHSCROLL
+    LTEXT           "账户密码",IDC_STATIC,11,86,33,8
+    PUSHBUTTON      "退出",IDCANCEL,73,104,40,14,WS_GROUP
 END
 
 IDD_USER_LOGIN DIALOG DISCARDABLE  0, 0, 152, 115
@@ -224,8 +227,8 @@ STYLE DS_MODALFRAME | WS_MINIMIZEBOX | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "用户登录"
 FONT 9, "宋体"
 BEGIN
-    ICON            IDI_ICON2,IDC_STATIC,20,5,20,20
-    CTEXT           "用户登录",IDC_LABEL_LOGIN,45,5,85,25,SS_CENTERIMAGE
+    ICON            IDI_ICON2,IDC_STATIC,20,4,20,20
+    CTEXT           "用户登录",IDC_LABEL_LOGIN,45,0,85,30,SS_CENTERIMAGE
     LTEXT           "用户名",IDC_STATIC,9,37,25,8
     EDITTEXT        IDC_EDIT_USERNAME,38,35,65,14,ES_AUTOHSCROLL
     LTEXT           "密码",IDC_STATIC,17,57,17,8
@@ -449,12 +452,12 @@ END
 #ifdef APSTUDIO_INVOKED
 GUIDELINES DESIGNINFO DISCARDABLE 
 BEGIN
-    IDD_ABOUTBOX, DIALOG
+    IDD_FORGETPWD1, DIALOG
     BEGIN
         LEFTMARGIN, 7
-        RIGHTMARGIN, 228
+        RIGHTMARGIN, 130
         TOPMARGIN, 7
-        BOTTOMMARGIN, 62
+        BOTTOMMARGIN, 118
     END
 
     IDD_USER_LOGIN, DIALOG
@@ -544,6 +547,7 @@ IDR_HTML_ABOUT          HTML    DISCARDABLE     "..\\res\\about.html"
 //
 
 IDR_PNG_ABOUT_IMAGE     PNG     DISCARDABLE     "..\\res\\AccountMaster_01.png"
+IDR_PNG_TOOLBAR         PNG     DISCARDABLE     "..\\res\\Toolbar.png"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -557,7 +561,11 @@ IDR_SQL_DBSCHEMA        SQL     DISCARDABLE     "..\\res\\dbschema.sql"
 // KEY
 //
 
-IDR_KEY_DB              KEY     DISCARDABLE     "..\\res\\db.key"
+IDR_KEY_DB KEY DISCARDABLE 
+BEGIN
+
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //

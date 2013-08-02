@@ -49,7 +49,7 @@ protected:
 
 	// Generated message map functions
 	//{{AFX_MSG(Dialog)
-		// NOTE: the ClassWizard will add member functions here
+	afx_msg void OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct);
 	//}}AFX_MSG
 
 	// 当弹出菜单时调用,更新菜单项的状态

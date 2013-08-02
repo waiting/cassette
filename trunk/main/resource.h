@@ -2,7 +2,7 @@
 // Microsoft Developer Studio generated include file.
 // Used by Cassette.rc
 //
-#define IDD_ABOUTBOX                    100
+#define IDD_FORGETPWD1                  100
 #define IDR_MAINFRAME                   128
 #define IDI_ICON2                       129
 #define IDI_ICON3                       130
@@ -22,6 +22,7 @@
 #define IDM_OPERATE_ACCOUNTS            145
 #define IDM_OPERATE_CATES               146
 #define IDR_SQL_DBSCHEMA                147
+#define IDR_PNG_TOOLBAR                 149
 #define IDR_KEY_DB                      200
 #define IDC_REGISTERED_HOTKEY           998
 #define IDC_SYSLINK_WEBSITE             1000
@@ -86,9 +87,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        149
+#define _APS_NEXT_RESOURCE_VALUE        150
 #define _APS_NEXT_COMMAND_VALUE         32792
-#define _APS_NEXT_CONTROL_VALUE         1036
+#define _APS_NEXT_CONTROL_VALUE         1038
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

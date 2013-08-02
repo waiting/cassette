@@ -92,10 +92,6 @@ LINK32=link.exe
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
 # Begin Source File
 
-SOURCE=.\AboutDlg.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=.\AboutView.cpp
 # End Source File
 # Begin Source File
@@ -148,7 +144,15 @@ SOURCE=.\Dialog.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\ForgetPwdStep1Dlg.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\Functional.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\ImageList.cpp
 # End Source File
 # Begin Source File
 
@@ -174,10 +178,6 @@ SOURCE=.\UserSettingsDlg.cpp
 # Begin Group "Header Files"
 
 # PROP Default_Filter "h;hpp;hxx;hm;inl"
-# Begin Source File
-
-SOURCE=.\AboutDlg.h
-# End Source File
 # Begin Source File
 
 SOURCE=.\AboutView.h
@@ -228,7 +228,15 @@ SOURCE=.\Dialog.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\ForgetPwdStep1Dlg.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\Functional.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\ImageList.h
 # End Source File
 # Begin Source File
 
@@ -272,11 +280,11 @@ SOURCE=..\res\AccountMaster_03.ico
 # End Source File
 # Begin Source File
 
-SOURCE=..\res\Cassette.ico
+SOURCE=.\res\Cassette.ico
 # End Source File
 # Begin Source File
 
-SOURCE=.\res\Cassette.ico
+SOURCE=..\res\Cassette.ico
 # End Source File
 # Begin Source File
 
@@ -284,11 +292,11 @@ SOURCE=.\res\Cassette.rc2
 # End Source File
 # Begin Source File
 
-SOURCE=..\res\Toolbar.bmp
+SOURCE=.\res\Toolbar.bmp
 # End Source File
 # Begin Source File
 
-SOURCE=.\res\Toolbar.bmp
+SOURCE=..\res\Toolbar.bmp
 # End Source File
 # End Group
 # Begin Group "winplus"
@@ -442,6 +450,10 @@ SOURCE=..\res\db.key
 # Begin Source File
 
 SOURCE=..\res\dbschema.sql
+# End Source File
+# Begin Source File
+
+SOURCE=..\res\Toolbar.png
 # End Source File
 # End Target
 # End Project
