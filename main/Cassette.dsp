@@ -152,10 +152,6 @@ SOURCE=.\Functional.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\ImageList.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=.\Label.cpp
 # End Source File
 # Begin Source File
@@ -236,10 +232,6 @@ SOURCE=.\Functional.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\ImageList.h
-# End Source File
-# Begin Source File
-
 SOURCE=.\Label.h
 # End Source File
 # Begin Source File
@@ -297,6 +289,10 @@ SOURCE=.\res\Toolbar.bmp
 # Begin Source File
 
 SOURCE=..\res\Toolbar.bmp
+# End Source File
+# Begin Source File
+
+SOURCE=..\res\toolbar1.bmp
 # End Source File
 # End Group
 # Begin Group "winplus"
