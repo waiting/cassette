@@ -80,6 +80,12 @@
 #define ID_CATE_DELETE                  32789
 #define ID_LIST_STYLE_REPORT            32790
 #define ID_LIST_STYLE_ICON              32791
+#define ID_BUTTON32792                  32792
+#define ID_BUTTON32793                  32793
+#define ID_BUTTON32794                  32794
+#define ID_BUTTON32795                  32795
+#define ID_BUTTON32796                  32796
+#define ID_BUTTON32797                  32797
 #define IDS_SHAREDMEM_NAME              61204
 
 // Next default values for new objects
@@ -87,8 +93,8 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        150
-#define _APS_NEXT_COMMAND_VALUE         32792
+#define _APS_NEXT_RESOURCE_VALUE        154
+#define _APS_NEXT_COMMAND_VALUE         32799
 #define _APS_NEXT_CONTROL_VALUE         1038
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

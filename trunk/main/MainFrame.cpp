@@ -8,7 +8,6 @@
 #include "UserSettingsDlg.h"
 #include "AppSettingsDlg.h"
 #include "AccountEditingDlg.h"
-#include "ImageList.h"
 
 #include <psapi.h>
 #pragma comment( lib, "psapi" )
@@ -153,17 +152,15 @@ int MainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		TRACE0("Failed to create toolbar\n");
 		return -1;      // fail to create
 	}
-	ImageList imgList;
-	imgList.Create( 64, 64, ILC_COLOR32, 5, 1 );
-	using namespace Gdiplus;
-	//Bitmap bm( string_to_unicode( module_path() + "\\..\\..\\res\\" + "Toolbar.png" ).c_str() );
-	IStreamPtr pPngStm = create_stream_from_resource( IDR_PNG_TOOLBAR, _T("PNG") );
-	Bitmap bm( pPngStm );
-	imgList.AddAlphaImage(bm);
-
+	// 载入工具条图片
+	// 资源文件中可改变工具条按钮大小,比较方便
+	// 图片和工具条按钮大小应该匹配
+	CImageList imgList;
+	imgList.Create( 48, 48, ILC_COLOR32, 5, 1 );
+	ImageList_Add32bpp( imgList.GetSafeHandle(), IDR_MAINFRAME, IMAGE_BITMAP );
+	//ImageList_AddAlphaImage( imgList.GetSafeHandle(), IDR_PNG_TOOLBAR, _T("PNG") );
 	m_toolBar.GetToolBarCtrl().SetImageList(&imgList);
-
-	imgList.Detach();
+	imgList.Detach();//*/
 
 
 	// 创建状态条	
