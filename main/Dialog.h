@@ -12,7 +12,7 @@
 #pragma once
 #endif // _MSC_VER > 1000
 // Dialog.h : header file
-//
+#include "Label.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // Dialog dialog
@@ -46,11 +46,14 @@ protected:
 protected:
 	UINT m_nIDTemplate;
 	CToolTipCtrl m_ToolTips; // 工具提示控件
+	Label m_allLabel; // 标签，用于子类化Static，自绘
 
 	// Generated message map functions
 	//{{AFX_MSG(Dialog)
 	afx_msg void OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct);
+	afx_msg HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
 	//}}AFX_MSG
+	afx_msg BOOL OnEraseBkgnd( CDC * pDC );
 
 	// 当弹出菜单时调用,更新菜单项的状态
 	afx_msg void OnInitMenuPopup( CMenu * pMenu, UINT nIndex, BOOL bSysMenu );

@@ -1,5 +1,3 @@
-// Label.cpp : implementation file
-//
 
 #include "Cassette.h"
 #include "CassetteApp.h"

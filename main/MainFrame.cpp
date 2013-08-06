@@ -9,9 +9,6 @@
 #include "AppSettingsDlg.h"
 #include "AccountEditingDlg.h"
 
-#include <psapi.h>
-#pragma comment( lib, "psapi" )
-
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #undef THIS_FILE
@@ -101,6 +98,46 @@ void MainFrame::UpdateList( int flag, long itemIndex )
 	IfPTR(m_pAccountsView)->UpdateList( flag, itemIndex );
 }
 
+void MainFrame::DoAddAccount( CWnd * parent )
+{
+	VERIFY_ONCE_DIALOG(onceEditingDlg);
+
+	CString myName;
+	CString accountName;
+	CString accountPwd;
+	int cateId = 0;
+	int safeRank = 20;
+	CString comment;
+	
+	AccountEditingDlg editingDlg( parent, true, &myName, &accountName, &accountPwd, &cateId, &safeRank, &comment );
+	
+	SetNullScopeOut setNullScopeOut( onceEditingDlg = &editingDlg );
+
+	if ( IDOK == editingDlg.DoModal() )
+	{
+		if ( AddAccount( myName, accountName, accountPwd, cateId, safeRank, comment ) )
+		{
+			CListCtrl & lst = m_pAccountsView->GetListCtrl();
+			// 向list加入一项
+			int itemIndex;
+			itemIndex = lst.GetItemCount();
+			lst.InsertItem( itemIndex, myName );
+			
+			// 向数组添加一项
+			m_pAccountsView->m_myNames.Add(myName);
+			m_pAccountsView->m_accountNames.Add("");
+			m_pAccountsView->m_accountPwds.Add("");
+			m_pAccountsView->m_cateIds.Add(0);
+			m_pAccountsView->m_safeRanks.Add(0);
+			m_pAccountsView->m_times.Add(0);
+			m_pAccountsView->m_comments.Add("");
+			
+			UpdateList( UPDATE_LOAD_DATA | UPDATE_LIST_ITEMS, itemIndex );
+			lst.SetItemState( itemIndex, LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED );
+		}
+	}
+}
+
 /////////////////////////////////////////////////////////////////////////////
 // MainFrame diagnostics
 
@@ -156,14 +193,14 @@ int MainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	// 资源文件中可改变工具条按钮大小,比较方便
 	// 图片和工具条按钮大小应该匹配
 	CImageList imgList;
-	imgList.Create( 48, 48, ILC_COLOR32, 5, 1 );
+	imgList.Create( 48, 48, ILC_COLOR32, 0, 1 );
 	ImageList_Add32bpp( imgList.GetSafeHandle(), IDR_MAINFRAME, IMAGE_BITMAP );
 	//ImageList_AddAlphaImage( imgList.GetSafeHandle(), IDR_PNG_TOOLBAR, _T("PNG") );
 	m_toolBar.GetToolBarCtrl().SetImageList(&imgList);
 	imgList.Detach();//*/
 
 
-	// 创建状态条	
+	// 创建状态条
 	static UINT indicators[] =
 	{
 		ID_SEPARATOR,           // status line indicator
@@ -361,41 +398,13 @@ void MainFrame::OnAppSettings()
 
 void MainFrame::OnAddAccount() 
 {
-	CString myName;
-	CString accountName;
-	CString accountPwd;
-	int cateId = 0;
-	int safeRank = 20;
-	CString comment;
-
-	AccountEditingDlg editingDlg( this, true, &myName, &accountName, &accountPwd, &cateId, &safeRank, &comment );
-	if ( IDOK == editingDlg.DoModal() )
-	{
-		if ( AddAccount( myName, accountName, accountPwd, cateId, safeRank, comment ) )
-		{
-			CListCtrl & lst = m_pAccountsView->GetListCtrl();
-			// 向list加入一项
-			int itemIndex;
-			itemIndex = lst.GetItemCount();
-			lst.InsertItem( itemIndex, myName );
-
-			// 向数组添加一项
-			m_pAccountsView->m_myNames.Add(myName);
-			m_pAccountsView->m_accountNames.Add("");
-			m_pAccountsView->m_accountPwds.Add("");
-			m_pAccountsView->m_cateIds.Add(0);
-			m_pAccountsView->m_safeRanks.Add(0);
-			m_pAccountsView->m_times.Add(0);
-			m_pAccountsView->m_comments.Add("");
-
-			UpdateList( UPDATE_LOAD_DATA | UPDATE_LIST_ITEMS, itemIndex );
-			lst.SetItemState( itemIndex, LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED );
-		}
-	}
+	DoAddAccount(this);
 }
 
 void MainFrame::OnModifyAccount() 
 {
+	VERIFY_ONCE_DIALOG(onceEditingDlg);
+
 	CListCtrl & lst = this->m_pAccountsView->GetListCtrl();
 	int index = lst.GetNextItem( -1, LVNI_ALL | LVNI_SELECTED );
 	CString myName = m_pAccountsView->m_myNames[index];
@@ -407,6 +416,9 @@ void MainFrame::OnModifyAccount()
 	CString newComment = m_pAccountsView->m_comments[index];
 
 	AccountEditingDlg editingDlg( this, false, &newMyName, &newAccountName, &newAccountPwd, &newCateId, &newSafeRank, &newComment );
+	
+	SetNullScopeOut setNullScopeOut( onceEditingDlg = &editingDlg );
+
 	if ( IDOK == editingDlg.DoModal() )
 	{
 		if ( ModifyAccount( myName, newMyName, newAccountName, newAccountPwd, newCateId, newSafeRank, newComment ) )
@@ -526,42 +538,36 @@ void MainFrame::OnResumeData()
 	}
 }
 
-LRESULT MainFrame::OnHotkey( WPARAM wParam, LPARAM lParam )
+LRESULT MainFrame::OnHotkey( WPARAM wHotkeyId, LPARAM lParam )
 {
-	switch ( wParam )
+	switch ( wHotkeyId )
 	{
 	case IDC_REGISTERED_HOTKEY:
 		{
+			// 取得当前活动的前台窗口
 			CWnd * pWnd = GetForegroundWindow();
 			if ( pWnd )
 			{
 				// 通过HWND获取进程句柄,进而获取程序路径
-				DWORD processId;
-				GetWindowThreadProcessId( pWnd->GetSafeHwnd(), &processId );
-				HANDLE hProcess = OpenProcess( PROCESS_ALL_ACCESS, FALSE, processId );
-				if ( !hProcess )
+				// 判断是浏览器还是软件
+				string exeName;
+				file_path( GetAppPathFromHWND( pWnd->GetSafeHwnd() ), &exeName );
+				strlwr(&exeName[0]);
+				bool isBrowser = IsBrowserExeName( exeName.c_str(), NULL );
+				string caption = window_get_text( pWnd->GetSafeHwnd() ); // 当前窗口标题
+				if ( isBrowser ) // 若是浏览器，说明是网站
 				{
-					break;
+
 				}
-				CString fullName;
-				GetModuleFileNameEx( hProcess, NULL, fullName.GetBuffer(512), 512 );
-				CloseHandle(hProcess);
-				//msgbox( (LPCTSTR)fullName );
-				msgbox( format("%d,%d,%d,%d,%d,%d,%d,%d,%d",
-					FieldIndex(am_users__id),
-					FieldIndex(am_users__name),
-					FieldIndex(am_users__pwd),
-					FieldIndex(am_users__protect),
-					FieldIndex(am_users__condone),
-					FieldIndex(am_users__cur_condone),
-					FieldIndex(am_users__unlock_time),
-					FieldIndex(am_users__hotkey),
-					FieldIndex(am_users__time)
-				) );
+				else // 否则为软件
+				{
+
+				}
+				m_catesDlg.DoAdd(pWnd);
+
 			}
 		}
-		//m_catesDlg.PostMessage( WM_COMMAND, MAKEWPARAM( ID_CATE_ADD, 0 ), 0 );
-		m_TestFlag = !m_TestFlag;
+
 		break;
 	}
 	return 0L;

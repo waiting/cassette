@@ -1879,8 +1879,6 @@ bool GetAccount(
 
 		size = sqlite3_column_bytes( stmt, 1 );
 		encryptAccountName.assign( (char const *)sqlite3_column_blob( stmt, 1 ), size );
-		// 这里是个bug,数据库存的BLOB数据并未进行过UTF8加密,因此现在进行修复
-		// 利用GUI重新设定数据库内的名字即可
 		AssignPTR(accountName) = utf8_to_string( DecryptContent(encryptAccountName) ).c_str();
 
 		size = sqlite3_column_bytes( stmt, 2 );
@@ -2104,4 +2102,56 @@ OccurDbError: // 出错处理
 		sqlite3_finalize(stmt);
 	AfxGetMainWnd()->FatalError( utf8_to_string(localError).c_str(), _T("数据库错误") );
 	return 0;
+}
+
+bool IsBrowserExeName( CString const & exeName, CString * browserTitle )
+{
+	bool ret = false;
+	
+	sqlite3 * db = g_theApp.GetDatabase();
+	ansi_string sql = string_to_utf8("SELECT title FROM am_browsers WHERE exe_name = ?;");
+	sqlite3_stmt * stmt = NULL;
+	int rc;
+	const char * localError;
+
+	// 准备语句
+	rc = sqlite3_prepare_v2( db, sql.c_str(), sql.size(), &stmt, NULL );
+	if ( rc != SQLITE_OK ) goto OccurDbError;
+	// 绑定参数
+	rc = sqlite3_bind_text( stmt, 1, string_to_utf8( (LPCTSTR)exeName ).c_str(), -1, SQLITE_TRANSIENT );
+	if ( rc != SQLITE_OK ) goto OccurDbError;
+
+	// 执行语句
+	rc = sqlite3_step(stmt);
+	if ( rc == SQLITE_ROW )
+	{
+		AssignPTR(browserTitle) = utf8_to_string( (char const *)sqlite3_column_text( stmt, 0 ) ).c_str();
+		ret = true;
+		goto ExitProc;
+	}
+	else if ( rc == SQLITE_DONE )
+	{
+		ret = false;
+		goto ExitProc;
+	}
+	else
+	{
+		sqlite3_reset(stmt);
+		goto OccurDbError;
+	}
+	
+ExitProc:
+	// 正常无错误结束
+	sqlite3_reset(stmt);
+	if ( stmt )
+		sqlite3_finalize(stmt);
+	return ret;
+	
+OccurDbError: // 出错处理
+	localError = sqlite3_errmsg(db);
+	if ( stmt )
+		sqlite3_finalize(stmt);
+	AfxGetMainWnd()->FatalError( utf8_to_string(localError).c_str(), _T("数据库错误") );
+	return false;
+
 }

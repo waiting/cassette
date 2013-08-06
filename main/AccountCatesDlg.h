@@ -14,7 +14,7 @@ class AccountCatesDlg : public Dialog, public IUpdateListView
 {
 // Construction
 public:
-	AccountCatesDlg(CWnd* pParent = NULL);   // standard constructor
+	AccountCatesDlg( CWnd* pParent = NULL );   // standard constructor
 
 // Dialog Data
 	//{{AFX_DATA(AccountCatesDlg)
@@ -23,6 +23,8 @@ public:
 	//}}AFX_DATA
 
 	virtual void UpdateList( int flag = UPDATE_LOAD_DATA | UPDATE_LIST_ITEMS, long itemIndex = -1 );
+	// 弹出添加对话框
+	void DoAdd( CWnd * parent );
 
 // Overrides
 	// ClassWizard generated virtual function overrides

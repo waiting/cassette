@@ -144,6 +144,10 @@ SOURCE=.\Dialog.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\MyCore\EienLog.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\ForgetPwdStep1Dlg.cpp
 # End Source File
 # Begin Source File
@@ -169,6 +173,10 @@ SOURCE=.\UserRegisterDlg.cpp
 # Begin Source File
 
 SOURCE=.\UserSettingsDlg.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\MyCore\utils.cpp
 # End Source File
 # End Group
 # Begin Group "Header Files"

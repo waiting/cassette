@@ -30,7 +30,7 @@ void AccountCatesDlg::DoDataExchange(CDataExchange* pDX)
 	//}}AFX_DATA_MAP
 }
 
-BEGIN_MESSAGE_MAP(AccountCatesDlg, Dialog)
+BEGIN_MESSAGE_MAP( AccountCatesDlg, Dialog )
 	//{{AFX_MSG_MAP(AccountCatesDlg)
 	ON_NOTIFY(NM_DBLCLK, IDC_LIST_CATES, OnListActivated)
 	ON_NOTIFY(NM_RETURN, IDC_LIST_CATES, OnListActivated)
@@ -114,6 +114,53 @@ void AccountCatesDlg::UpdateList( int flag /*= UPDATE_LOAD_DATA | UPDATE_LIST_IT
 
 }
 
+void AccountCatesDlg::DoAdd( CWnd * parent )
+{
+	VERIFY_ONCE_DIALOG(onceEditingDlg);
+	
+	CString cateName, cateDesc, typeName, url, icoPath, startup, keywords;
+	AccountCateEditingDlg editingDlg(
+		parent,
+		true,
+		&cateName,
+		&cateDesc,
+		&typeName,
+		&url,
+		&icoPath,
+		&startup,
+		&keywords
+	);
+	
+	SetNullScopeOut setNullScopeOut( onceEditingDlg = &editingDlg );
+	
+	if ( IDOK == editingDlg.DoModal() )
+	{
+		int id;
+		id = AddAccountCate( cateName, cateDesc, typeName, url, icoPath, startup, keywords );
+		if ( id != 0 )
+		{
+			CListCtrl & lst = *(CListCtrl *)GetDlgItem(IDC_LIST_CATES);
+			// 向list加入一项
+			int itemIndex;
+			itemIndex = lst.GetItemCount();
+			lst.InsertItem( itemIndex, format( _T("%d"), id ).c_str() );
+			
+			// 向数组添加一项
+			m_ids.Add(id);
+			m_cateNames.Add(_T(""));
+			m_cateDescs.Add(_T(""));
+			m_typeNames.Add(_T(""));
+			m_urls.Add(_T(""));
+			m_icoPaths.Add(_T(""));
+			m_startups.Add(_T(""));
+			m_keywordss.Add(_T(""));
+			m_timeWritens.Add(0);
+			
+			UpdateList( UPDATE_LOAD_DATA | UPDATE_LIST_ITEMS, itemIndex );
+			lst.SetItemState( itemIndex, LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED );
+		}
+	}
+}
 /////////////////////////////////////////////////////////////////////////////
 // AccountCatesDlg message handlers
 
@@ -167,50 +214,7 @@ void AccountCatesDlg::OnListRClick( NMHDR* pNMHDR, LRESULT* pResult )
 
 void AccountCatesDlg::OnAdd()
 {
-	VERIFY_ONCE_DIALOG(onceEditingDlg);
-
-	CString cateName, cateDesc, typeName, url, icoPath, startup, keywords;
-	AccountCateEditingDlg editingDlg(
-		GetOwner(),
-		true,
-		&cateName,
-		&cateDesc,
-		&typeName,
-		&url,
-		&icoPath,
-		&startup,
-		&keywords
-	);
-
-	SetNullScopeOut setNullScopeOut( onceEditingDlg = &editingDlg );
-
-	if ( IDOK == editingDlg.DoModal() )
-	{
-		int id;
-		id = AddAccountCate( cateName, cateDesc, typeName, url, icoPath, startup, keywords );
-		if ( id != 0 )
-		{
-			CListCtrl & lst = *(CListCtrl *)GetDlgItem(IDC_LIST_CATES);
-			// 向list加入一项
-			int itemIndex;
-			itemIndex = lst.GetItemCount();
-			lst.InsertItem( itemIndex, format( _T("%d"), id ).c_str() );
-
-			// 向数组添加一项
-			m_ids.Add(id);
-			m_cateNames.Add(_T(""));
-			m_cateDescs.Add(_T(""));
-			m_typeNames.Add(_T(""));
-			m_urls.Add(_T(""));
-			m_icoPaths.Add(_T(""));
-			m_startups.Add(_T(""));
-			m_keywordss.Add(_T(""));
-			m_timeWritens.Add(0);
-
-			UpdateList( UPDATE_LOAD_DATA | UPDATE_LIST_ITEMS, itemIndex );
-			lst.SetItemState( itemIndex, LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED );
-		}
-	}
+	DoAdd( GetOwner() );
 }
 
 void AccountCatesDlg::OnModify()
