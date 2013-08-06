@@ -60,7 +60,9 @@ protected:  // control bar embedded members
 	   当settings为关闭热键时:
 	     清空先前注册的热键, hotkey忽略 */
 	void RefreshHotkey( int hotkey );
-// Generated message map functions
+	// 弹出添加账户的对话框
+	void DoAddAccount( CWnd * parent );
+
 protected:
 	//{{AFX_MSG(MainFrame)
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
@@ -83,7 +85,7 @@ protected:
 	afx_msg void OnBackupData();
 	afx_msg void OnResumeData();
 	//}}AFX_MSG
-	afx_msg LRESULT OnHotkey( WPARAM wParam, LPARAM lParam );
+	afx_msg LRESULT OnHotkey( WPARAM wHotkeyId, LPARAM lParam );
 	afx_msg void OnUpdateOperateAccount( CCmdUI * pCmdUI );
 public:
 	// wParam = 1:主界面List更新

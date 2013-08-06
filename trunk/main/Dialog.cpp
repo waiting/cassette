@@ -22,8 +22,11 @@ Dialog::Dialog( UINT nIDTemplate, CWnd * pParentWnd )
 
 BEGIN_MESSAGE_MAP(Dialog, CDialog)
 	//{{AFX_MSG_MAP(Dialog)
-	ON_WM_DRAWITEM()
 	//}}AFX_MSG_MAP
+
+	//ON_WM_DRAWITEM()
+	//ON_WM_CTLCOLOR()
+	//ON_WM_ERASEBKGND()
 	ON_NOTIFY_EX( TTN_NEEDTEXT, 0, OnToolTipText )
 	ON_WM_INITMENUPOPUP()
 END_MESSAGE_MAP()
@@ -71,20 +74,20 @@ BOOL Dialog::OnInitDialog()
 	//m_ToolTips.SetTipTextColor( RGB( 255, 96, 0 ) ); // 设置提示文本颜色
 
 	// 枚举子窗口,并将其添加ToolTips,添加拥有者自绘风格
-	CWnd * pChildWnd;
-	if ( pChildWnd = this->GetWindow(GW_CHILD) ) do
+	HWND hChildWnd;
+	if ( hChildWnd = ::GetWindow( GetSafeHwnd(), GW_CHILD ) ) do
 	{
+		CWnd * pChildWnd =  CWnd::FromHandle(hChildWnd);
 		m_ToolTips.AddTool(pChildWnd);
 		CString clsName;
-		GetClassName( pChildWnd->GetSafeHwnd(), clsName.GetBuffer(256), 256 );
+		GetClassName( hChildWnd, clsName.GetBuffer(256), 256 );
 		clsName.MakeUpper();
 		if ( clsName == _T("STATIC") )
 		{
-			//pChildWnd->ModifyStyle( 0, SS_OWNERDRAW );
 		}
 	}
-	while ( pChildWnd = pChildWnd->GetWindow(GW_HWNDNEXT) );
-	
+	while ( hChildWnd = ::GetWindow( hChildWnd, GW_HWNDNEXT ) );
+
 	m_ToolTips.Activate(TRUE);
 
 	return bRet;
@@ -177,4 +180,72 @@ void Dialog::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
 {
 
 	CDialog::OnDrawItem(nIDCtl, lpDrawItemStruct);
+}
+
+BOOL Dialog::OnEraseBkgnd( CDC * pDC )
+{
+	using namespace Gdiplus;
+	Graphics g( pDC->GetSafeHdc() );
+	Rect clientRect = rect_gdi_to_gdiplus<Rect>( window_get_client(GetSafeHwnd()) );
+
+	LinearGradientBrush brush(
+		clientRect,
+		Color( 0xe3,0xbf,0xcd),
+		/*Color( 255,255,255 )*/colorref_to_color( 0x7c3d56),
+		LinearGradientModeForwardDiagonal
+	);
+	g.FillRectangle( &brush, clientRect );//*/
+
+	return 1;CDialog::OnEraseBkgnd(pDC);
+}
+
+HBRUSH Dialog::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor) 
+{
+	HBRUSH hbr;
+	hbr = CDialog::OnCtlColor(pDC, pWnd, nCtlColor);
+
+	switch ( nCtlColor )
+	{
+	case CTLCOLOR_STATIC:
+		{
+			CString clsName;
+			GetClassName( pWnd->GetSafeHwnd(), clsName.GetBuffer(256), 256 );
+			clsName.MakeUpper();
+
+			DWORD dwStyle = pWnd->GetStyle();
+
+			if ( (dwStyle & BS_GROUPBOX) == BS_GROUPBOX ) // Static框架
+			{
+				pDC->SetBkMode(TRANSPARENT);
+				pDC->SetTextColor( RGB(255,255,255) );
+				//hbr = (HBRUSH)GetStockObject(NULL_BRUSH);
+			}
+			else if ( (dwStyle & BS_AUTOCHECKBOX) == BS_AUTOCHECKBOX ) // checkbox
+			{
+				pDC->SetBkMode(TRANSPARENT);
+				//hbr = (HBRUSH)GetStockObject(NULL_BRUSH);
+			}
+			else if ( clsName == "SYSLINK" )
+			{
+				LOG( window_get_text(*pWnd) );
+				pDC->SetBkMode(TRANSPARENT);
+				hbr = (HBRUSH)GetStockObject(NULL_BRUSH);
+			}
+			else if ( clsName == "STATIC" && (dwStyle & SS_ICON) == SS_ICON )
+			{
+				hbr = (HBRUSH)GetStockObject(NULL_BRUSH);
+			}
+			else if ( clsName == "STATIC" ) // 标签
+			{
+				pDC->SetBkMode(TRANSPARENT);
+				hbr = (HBRUSH)GetStockObject(NULL_BRUSH);
+			}
+		}
+		break;
+	case CTLCOLOR_BTN:
+		hbr = (HBRUSH)GetStockObject(NULL_BRUSH);
+		break;
+	}
+
+	return hbr;
 }

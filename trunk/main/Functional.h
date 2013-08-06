@@ -14,13 +14,6 @@
 #define countof(arr) ( sizeof(arr) / sizeof(arr[0]) )
 #endif
 
-// 缓冲区转换为ansi_string二进制串
-#define BufferToAnsiString( buf, size ) ansi_string( (char const *)(buf), (size_t)(size) )
-
-// if pointer
-#define IfPTR(ptr) if( (ptr) != NULL ) (ptr)
-#define AssignPTR(ptr) if( (ptr) != NULL ) *(ptr)
-
 // bind blob data
 #define BlobBind( i, v ) Bind( i, (unsigned char const *)v.c_str(), v.size() )
 
@@ -28,6 +21,7 @@
 #define VERIFY_ONCE_DIALOG(dlg) static CDialog * dlg = NULL;\
 if ( dlg != NULL )\
 {\
+	dlg->SetWindowPos( &wndTop, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE );\
 	dlg->SetForegroundWindow();\
 	dlg->SetFocus();\
 	return;\
@@ -293,6 +287,9 @@ int LoadTableNames( sqlite3 * db, string_array * tableNames, string const & like
 
 // 获取数据库的DDL,返回SQL语句条数
 int DumpDDL( sqlite3 * db, string * ddl, string const & like = _T("am\\_%") );
+
+// 判断ExeName是否为一个浏览器
+bool IsBrowserExeName( CString const & exeName, CString * browserTitle );
 
 
 //////////////////////////////////////////////////////////////////////////

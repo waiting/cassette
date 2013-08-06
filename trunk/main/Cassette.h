@@ -30,6 +30,11 @@
 #include <winplus.hpp>
 #include <sqlite3.h>
 
+// 调试日志支持
+#include "utils.h"
+#define DISABLED_LOG
+#include "EienLog.h"
+
 //{{AFX_INSERT_LOCATION}}
 // Microsoft Visual C++ will insert additional declarations immediately before the previous line.
 

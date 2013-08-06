@@ -61,13 +61,6 @@ END
 
 /////////////////////////////////////////////////////////////////////////////
 //
-// 24
-//
-
-1                       24      DISCARDABLE     "..\\res\\AccountMaster.manifest"
-
-/////////////////////////////////////////////////////////////////////////////
-//
 // Icon
 //
 
@@ -96,6 +89,12 @@ BEGIN
     BUTTON      ID_DEL_ACCOUNT
     SEPARATOR
     BUTTON      ID_OPEN_URL
+    SEPARATOR
+    BUTTON      ID_USER_SETTINGS
+    BUTTON      ID_APP_SETTINGS
+    SEPARATOR
+    BUTTON      ID_ACCOUNT_TYPES
+    BUTTON      ID_ACCOUNT_CATES
     SEPARATOR
     BUTTON      ID_APP_ABOUT
 END
@@ -222,14 +221,14 @@ BEGIN
     PUSHBUTTON      "退出",IDCANCEL,73,104,40,14,WS_GROUP
 END
 
-IDD_USER_LOGIN DIALOG DISCARDABLE  0, 0, 152, 115
+IDD_USER_LOGIN DIALOGEX 0, 0, 152, 115
 STYLE DS_MODALFRAME | WS_MINIMIZEBOX | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "用户登录"
-FONT 9, "宋体"
+FONT 9, "宋体", 0, 0, 0x1
 BEGIN
-    ICON            IDI_ICON2,IDC_STATIC,20,4,20,20
+    ICON            IDI_ICON2,IDC_STATIC,20,4,20,20,0,WS_EX_TRANSPARENT
     CTEXT           "用户登录",IDC_LABEL_LOGIN,45,0,85,30,SS_CENTERIMAGE
-    LTEXT           "用户名",IDC_STATIC,9,37,25,8
+    LTEXT           "用户名",IDC_STATIC,9,37,25,8,0,WS_EX_TRANSPARENT
     EDITTEXT        IDC_EDIT_USERNAME,38,35,65,14,ES_AUTOHSCROLL
     LTEXT           "密码",IDC_STATIC,17,57,17,8
     EDITTEXT        IDC_EDIT_PASSWORD,38,55,65,14,ES_PASSWORD | 
@@ -547,7 +546,6 @@ IDR_HTML_ABOUT          HTML    DISCARDABLE     "..\\res\\about.html"
 //
 
 IDR_PNG_ABOUT_IMAGE     PNG     DISCARDABLE     "..\\res\\AccountMaster_01.png"
-IDR_PNG_TOOLBAR         PNG     DISCARDABLE     "..\\res\\Toolbar.png"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -566,6 +564,13 @@ BEGIN
 
 END
 
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// 24
+//
+
+1                       24      DISCARDABLE     "..\\res\\AccountMaster.manifest"
 
 /////////////////////////////////////////////////////////////////////////////
 //
