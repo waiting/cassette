@@ -14,8 +14,8 @@ static char THIS_FILE[] = __FILE__;
 /////////////////////////////////////////////////////////////////////////////
 // UserLoginDlg dialog
 
-UserLoginDlg::UserLoginDlg( CWnd * pParent, CString * username, CString * password, BOOL * autoLogin, BOOL * savePwd )
-: Dialog(UserLoginDlg::IDD, pParent), m_username(username), m_password(password), m_autoLogin(autoLogin), m_savePwd(savePwd)
+UserLoginDlg::UserLoginDlg( CWnd * parent, CString * username, CString * password, BOOL * autoLogin, BOOL * savePwd )
+: Dialog(UserLoginDlg::IDD, parent), m_username(username), m_password(password), m_autoLogin(autoLogin), m_savePwd(savePwd)
 {
 	//{{AFX_DATA_INIT(UserLoginDlg)
 	//}}AFX_DATA_INIT
@@ -48,14 +48,15 @@ END_MESSAGE_MAP()
 
 void UserLoginDlg::OnSysLinkRegister( NMHDR * pNmHdr, LRESULT * pResult )
 {
-	CString username, password;
-	int protectLevel = 0;
-	int hotkey = VK_F11;
-	UserRegisterDlg registerDlg( this, &username, &password, &protectLevel, &hotkey );
+	User newUser;
+	newUser.m_protectLevel = 0;
+	newUser.m_hotkey = VK_F11;
+
+	UserRegisterDlg registerDlg( this, &newUser );
 
 	while ( IDOK == registerDlg.DoModal() )
 	{
-		if ( RegisterUser( username, password, protectLevel, hotkey ) )
+		if ( RegisterUser( g_theApp.GetDatabase(), newUser ) )
 		{
 			MessageBox( _T("用户注册成功"), _T("提示"), MB_ICONINFORMATION );
 			break;

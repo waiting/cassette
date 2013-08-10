@@ -18,17 +18,17 @@ IMPLEMENT_DYNCREATE(AboutWnd, CFrameWnd)
 
 AboutWnd * AboutWnd::ms_pSingleAboutWnd = NULL;
 
-AboutWnd * AboutWnd::GetSingleton( CWnd * pParent /*= NULL */ )
+AboutWnd * AboutWnd::GetSingleton( CWnd * parent /*= NULL */ )
 {
 	if ( ms_pSingleAboutWnd == NULL )
 	{
-		ms_pSingleAboutWnd = new AboutWnd(pParent);
+		ms_pSingleAboutWnd = new AboutWnd(parent);
 		ms_pSingleAboutWnd->UpdateWindow();
 	}
 	return ms_pSingleAboutWnd;
 }
 
-AboutWnd::AboutWnd( CWnd * pParent /*= NULL*/ )
+AboutWnd::AboutWnd( CWnd * parent /*= NULL*/ )
 {
 	m_pAboutView = new AboutView();
 	this->Create(
@@ -36,7 +36,7 @@ AboutWnd::AboutWnd( CWnd * pParent /*= NULL*/ )
 		(_T("¹ØÓÚ - ") + load_string(AFX_IDS_APP_TITLE)).c_str(),
 		WS_OVERLAPPEDWINDOW,
 		CRect( 0, 0, 480, 340 ),
-		pParent
+		parent
 	);
 
 }

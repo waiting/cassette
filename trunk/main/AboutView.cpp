@@ -26,7 +26,7 @@ AboutView::~AboutView()
 {
 }
 
-void AboutView::DoDataExchange(CDataExchange* pDX)
+void AboutView::DoDataExchange( CDataExchange * pDX )
 {
 	CHtmlView::DoDataExchange(pDX);
 	//{{AFX_DATA_MAP(AboutView)

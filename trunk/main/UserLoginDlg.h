@@ -16,7 +16,7 @@ class UserLoginDlg : public Dialog
 // Construction
 public:
 	UserLoginDlg(
-		CWnd * pParent,
+		CWnd * parent,
 		CString * username,
 		CString * password,
 		BOOL * autoLogin,

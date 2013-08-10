@@ -14,8 +14,8 @@ static char THIS_FILE[] = __FILE__;
 /////////////////////////////////////////////////////////////////////////////
 // AccountTypesDlg dialog
 
-AccountTypesDlg::AccountTypesDlg(CWnd* pParent /*=NULL*/)
-: Dialog(AccountTypesDlg::IDD, pParent)
+AccountTypesDlg::AccountTypesDlg( CWnd * parent )
+: Dialog(AccountTypesDlg::IDD, parent)
 {
 	//{{AFX_DATA_INIT(AccountTypesDlg)
 		// NOTE: the ClassWizard will add member initialization here
@@ -51,17 +51,11 @@ void AccountTypesDlg::UpdateList( int flag, long itemIndex )
 	{
 		if ( itemIndex == -1 )
 		{
-			count = LoadAccountTypes(
-				&m_typeNames,
-				&m_safeRanks
-			);
+			count = LoadAccountTypes( g_theApp.GetDatabase(), &m_types );
 		}
 		else
 		{
-			GetAccountType(
-				m_typeNames[itemIndex],
-				(int *)&m_safeRanks[itemIndex]
-			);
+			GetAccountType( g_theApp.GetDatabase(), m_types[itemIndex].m_typeName, &m_types[itemIndex] );
 		}
 	}
 	
@@ -71,21 +65,21 @@ void AccountTypesDlg::UpdateList( int flag, long itemIndex )
 		{
 			if ( !( flag & UPDATE_LOAD_DATA ) ) // 如果没有载入操作，需要从数组获取数量信息
 			{
-				count = m_typeNames.GetSize();
+				count = m_types.GetSize();
 			}
 			// Clear all items
 			lst.DeleteAllItems();
 			int i;
 			for ( i = 0; i < count; ++i )
 			{
-				lst.InsertItem( i, m_typeNames[i] );
-				lst.SetItem( i, 1, LVIF_TEXT, format( _T("%d"), m_safeRanks[i] ).c_str(), 0, 0, 0, 0 );
+				lst.InsertItem( i, m_types[i].m_typeName );
+				lst.SetItem( i, 1, LVIF_TEXT, format( _T("%d"), m_types[i].m_safeRank ).c_str(), 0, 0, 0, 0 );
 			}
 		}
 		else
 		{
-			lst.SetItem( itemIndex, 0, LVIF_TEXT, m_typeNames[itemIndex], 0, 0, 0, 0 );
-			lst.SetItem( itemIndex, 1, LVIF_TEXT, format( _T("%d"), m_safeRanks[itemIndex] ).c_str(), 0, 0, 0, 0 );
+			lst.SetItem( itemIndex, 0, LVIF_TEXT, m_types[itemIndex].m_typeName, 0, 0, 0, 0 );
+			lst.SetItem( itemIndex, 1, LVIF_TEXT, format( _T("%d"), m_types[itemIndex].m_safeRank ).c_str(), 0, 0, 0, 0 );
 		}
 	}
 
@@ -141,27 +135,25 @@ void AccountTypesDlg::OnListRClick( NMHDR * pNMHDR, LRESULT * pResult )
 void AccountTypesDlg::OnAdd() 
 {
 	VERIFY_ONCE_DIALOG(onceEditingDlg);
+	AccountType newType;
+	newType.m_safeRank = 20;
 
-	CString typeName;
-	int safeRank = 20;
-
-	AccountTypeEditingDlg editingDlg( GetOwner(), true, &typeName, &safeRank );
+	AccountTypeEditingDlg editingDlg( GetOwner(), true, &newType );
 
 	SetNullScopeOut setNullScopeOut( onceEditingDlg = &editingDlg );
 
 	if ( IDOK == editingDlg.DoModal() )
 	{
-		if ( AddAccountType( typeName, safeRank ) )
+		if ( AddAccountType( g_theApp.GetDatabase(), newType ) )
 		{
 			CListCtrl & lst = *(CListCtrl *)GetDlgItem(IDC_LIST_TYPES);
 			// 向list加入一项
 			int itemIndex;
 			itemIndex = lst.GetItemCount();
-			lst.InsertItem( itemIndex, typeName );
+			lst.InsertItem( itemIndex, newType.m_typeName );
 
 			// 向数组添加一项
-			m_typeNames.Add(typeName);
-			m_safeRanks.Add(0);
+			m_types.Add(newType);
 
 			UpdateList( UPDATE_LOAD_DATA | UPDATE_LIST_ITEMS, itemIndex );
 			lst.SetItemState( itemIndex, LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED );
@@ -175,25 +167,25 @@ void AccountTypesDlg::OnModify()
 
 	CListCtrl & lst = *(CListCtrl *)GetDlgItem(IDC_LIST_TYPES);
 	int index = lst.GetNextItem( -1, LVNI_ALL | LVNI_SELECTED );
-	CString typeName = m_typeNames[index];
-	CString newTypeName = m_typeNames[index];
-	int newSafeRank = m_safeRanks[index];
+	CString typeName = m_types[index].m_typeName;
+	AccountType newType;
+	newType.m_typeName = m_types[index].m_typeName;
+	newType.m_safeRank = m_types[index].m_safeRank;
 
-	AccountTypeEditingDlg editingDlg( GetOwner(), false, &newTypeName, &newSafeRank );
+	AccountTypeEditingDlg editingDlg( GetOwner(), false, &newType );
 
 	SetNullScopeOut setNullScopeOut( onceEditingDlg = &editingDlg );
 
 	if ( IDOK == editingDlg.DoModal() )
 	{
-		if ( ModifyAccountType( typeName, newTypeName, newSafeRank ) )
+		if ( ModifyAccountType( g_theApp.GetDatabase(), typeName, newType ) )
 		{
-			m_typeNames[index] = newTypeName;
-			m_safeRanks[index] = newSafeRank;
+			m_types[index] = newType;
 
 			UpdateList( UPDATE_LIST_ITEMS, index );
 			LVFINDINFO fi;
 			fi.flags = LVFI_PARTIAL | LVFI_STRING;
-			fi.psz = newTypeName;
+			fi.psz = newType.m_typeName;
 			int itemIndex = lst.FindItem(&fi);
 			lst.SetItemState( itemIndex, LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED );
 			GetOwner()->PostMessage( WM_UPDATELIST_ALL, MainFrame::UpdateList_Main | MainFrame::UpdateList_CatesDlg );
@@ -209,12 +201,11 @@ void AccountTypesDlg::OnDelete()
 		int index = lst.GetNextItem( -1, LVNI_ALL | LVNI_SELECTED );
 		CString typeName;
 		typeName = lst.GetItemText( index, 0 );
-		if ( DeleteAccountType(typeName) )
+		if ( DeleteAccountType( g_theApp.GetDatabase(), typeName ) )
 		{
 			lst.DeleteItem(index);
 
-			m_typeNames.RemoveAt(index);
-			m_safeRanks.RemoveAt(index);
+			m_types.RemoveAt(index);
 
 			index = index < lst.GetItemCount() ? index : lst.GetItemCount() - 1;
 			lst.SetItemState( index, LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED );

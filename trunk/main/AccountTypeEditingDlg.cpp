@@ -11,8 +11,8 @@ static char THIS_FILE[] = __FILE__;
 
 /////////////////////////////////////////////////////////////////////////////
 // AccountTypeEditingDlg dialog
-AccountTypeEditingDlg::AccountTypeEditingDlg( CWnd * parent, bool isAdd, CString * typeName, int * safeRank )
-: Dialog(AccountTypeEditingDlg::IDD, parent), m_isAdd(isAdd), m_typeName(typeName), m_safeRank(safeRank)
+AccountTypeEditingDlg::AccountTypeEditingDlg( CWnd * parent, bool isAdd, AccountType * type )
+: Dialog(AccountTypeEditingDlg::IDD, parent), m_isAdd(isAdd), m_type(type)
 {
 	//{{AFX_DATA_INIT(AccountTypeEditingDlg)
 		// NOTE: the ClassWizard will add member initialization here
@@ -25,8 +25,8 @@ void AccountTypeEditingDlg::DoDataExchange(CDataExchange* pDX)
 	//{{AFX_DATA_MAP(AccountTypeEditingDlg)
 		// NOTE: the ClassWizard will add DDX and DDV calls here
 	//}}AFX_DATA_MAP
-	DDX_Text(pDX, IDC_EDIT_TYPENAME, *m_typeName);
-	DDX_Text(pDX, IDC_EDIT_SAFERANK, *m_safeRank);
+	DDX_Text(pDX, IDC_EDIT_TYPENAME, m_type->m_typeName);
+	DDX_Text(pDX, IDC_EDIT_SAFERANK, m_type->m_safeRank);
 }
 
 BEGIN_MESSAGE_MAP(AccountTypeEditingDlg, Dialog)

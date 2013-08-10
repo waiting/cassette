@@ -14,7 +14,7 @@ class AccountCatesDlg : public Dialog, public IUpdateListView
 {
 // Construction
 public:
-	AccountCatesDlg( CWnd* pParent = NULL );   // standard constructor
+	AccountCatesDlg( CWnd * parent = NULL );   // standard constructor
 
 // Dialog Data
 	//{{AFX_DATA(AccountCatesDlg)
@@ -35,15 +35,7 @@ public:
 
 // Implementation
 protected:
-	CUIntArray m_ids;
-	CStringArray m_cateNames;
-	CStringArray m_cateDescs;
-	CStringArray m_typeNames;
-	CStringArray m_urls;
-	CStringArray m_icoPaths;
-	CStringArray m_startups;
-	CStringArray m_keywordss;
-	CUIntArray m_timeWritens;
+	AccountCateArray m_cates;
 
 	// Generated message map functions
 	//{{AFX_MSG(AccountCatesDlg)

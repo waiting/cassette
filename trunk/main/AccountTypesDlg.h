@@ -14,7 +14,7 @@ class AccountTypesDlg : public Dialog, public IUpdateListView
 {
 // Construction
 public:
-	AccountTypesDlg( CWnd * pParent = NULL );   // standard constructor
+	AccountTypesDlg( CWnd * parent = NULL );   // standard constructor
 
 // Dialog Data
 	//{{AFX_DATA(AccountTypesDlg)
@@ -33,8 +33,7 @@ public:
 
 // Implementation
 protected:
-	CStringArray m_typeNames;
-	CUIntArray m_safeRanks;
+	AccountTypeArray m_types;
 
 	// Generated message map functions
 	//{{AFX_MSG(AccountTypesDlg)

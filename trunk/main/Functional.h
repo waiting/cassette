@@ -79,53 +79,47 @@ CString GetExecutablePath();
 // 数据库相关操作
 //////////////////////////////////////////////////////////////////////////
 
-// 注册用户, 注册成功返回true, 否则false.
-bool RegisterUser( CString const & username, CString const & password, int protectLevel, UINT32 hotkey );
-// 代表一个用户
-class UserInfo
+struct Fields
 {
-public:
-	int m_id;
-	CString m_username;
-	CString m_password;
-	int m_protectLevel;
-	int m_condone;
-	int m_curCondone;
-	int m_unlockTime;
-	int m_hotkey;
-	int m_regTime;
-
-	UserInfo()
+	// 绑定int参数,索引起始为1
+	static int _bindInt( sqlite3_stmt * stmt, int sqlParamIndex, int val )
 	{
-		m_id = 0;
-		m_protectLevel = 0;
-		m_condone = 0;
-		m_curCondone = 0;
-		m_unlockTime = 0;
-		m_hotkey = 0;
-		m_regTime = 0;
+		return sqlite3_bind_int( stmt, sqlParamIndex, val );
+	}
+	// 绑定string参数,索引起始为1
+	static int _bindString( sqlite3_stmt * stmt, int sqlParamIndex, CString const & val )
+	{
+		// 转为utf8再绑定
+		return sqlite3_bind_text( stmt, sqlParamIndex, string_to_utf8( (LPCTSTR)val ).c_str(), -1, SQLITE_TRANSIENT );
+	}
+	// 绑定blob参数,索引起始为1
+	static int _bindBlob( sqlite3_stmt * stmt, int sqlParamIndex, LPCVOID data, int size )
+	{
+		return sqlite3_bind_blob( stmt, sqlParamIndex, data, size, SQLITE_TRANSIENT );
+	}
+
+	// 获取字段int值,字段索引起始为0
+	static int _getInt( sqlite3_stmt * stmt, int sqlFieldIndex )
+	{
+		return sqlite3_column_int( stmt, sqlFieldIndex );
+	}
+	// 获取字段string值,字段索引起始为0
+	static CString _getString( sqlite3_stmt * stmt, int sqlFieldIndex )
+	{
+		char const * sUTF8 = (char const *)sqlite3_column_text( stmt, sqlFieldIndex );
+		return utf8_to_string( sUTF8 ? sUTF8 : "" ).c_str();
+	}
+	// 获取字段blob值,字段索引起始为0
+	static void _getBlob( sqlite3_stmt * stmt, int sqlFieldIndex, ansi_string * blob )
+	{
+		int size;
+		size = sqlite3_column_bytes( stmt, sqlFieldIndex );
+		blob->assign( (char const *)sqlite3_column_blob( stmt, sqlFieldIndex ), size );
 	}
 };
 
-// 登录用户, 执行验证成功返回true,并获取User数据, 否则返回false.
-bool LoginUser( CString const & username, CString const & password, UserInfo * userInfo );
-// 载入用户信息
-bool LoadUser( CString const & username, UserInfo * userInfo );
-// 删除用户
-bool DeleteUser( CString const & username );
-// 验证用户密码
-bool VerifyUserPassword( CString const & username, CString const & password );
-// 修改用户信息
-bool ModifyUser(
-	CString const & username,
-	bool isModifyPassword,
-	CString const & newUsername,
-	CString const & newPassword,
-	int newProtectLevel,
-	int newCondone,
-	int newCurCondone,
-	int newHotkey
-);
+// Users -----------------------------------------------------------------
+// 代表一个用户的相关数据
 
 enum FieldBits__am_users
 {
@@ -140,147 +134,483 @@ enum FieldBits__am_users
 	am_users__time        = bin0<0100000000>::val,
 };
 
+// 当查询全部字段时才可用这个函数确定字段索引
 inline int FieldIndex( UINT fieldBitFlag )
 {
 	return (int)( log(fieldBitFlag) / log(2) + 0.0000005 );
 }
 
-bool ModifyUserEx(
-	CString const & username,
-	UINT modifiedFieldBits,
-	int newId,
-	CString const & newUsername,
-	CString const & newPassword,
-	int newProtectLevel,
-	int newCondone,
-	int newCurCondone,
-	int newUnlockTime,
-	int newHotkey,
-	int newTime
-);
+struct User : public Fields
+{
+	int m_id;
+	CString m_username;
+	CString m_password;
+	int m_protectLevel;
+	int m_condone;
+	int m_curCondone;
+	int m_unlockTime;
+	int m_hotkey;
+	int m_regTime;
 
-// 加载账户类别信息, 返回记录数
-int LoadAccountTypes( CStringArray * typeNames, CUIntArray * safeRanks );
+	User & operator = ( User const & other )
+	{
+		if ( this != &other )
+		{
+			m_id = other.m_id;
+			m_username = other.m_username;
+			m_password = other.m_password;
+			m_protectLevel = other.m_protectLevel;
+			m_condone = other.m_condone;
+			m_curCondone = other.m_curCondone;
+			m_unlockTime = other.m_unlockTime;
+			m_hotkey = other.m_hotkey;
+			m_regTime = other.m_regTime;
+		}
+		return *this;
+	}
+
+	// 绑定数据到指定的SQL语句的占位符的索引,基于1
+
+	int bindId( sqlite3_stmt * stmt, int sqlParamIndex ) const
+	{
+		return _bindInt( stmt, sqlParamIndex, m_id );
+	}
+	int bindUsername( sqlite3_stmt * stmt, int sqlParamIndex ) const
+	{
+		return _bindString( stmt, sqlParamIndex, m_username );
+	}
+	int bindPassword( sqlite3_stmt * stmt, int sqlParamIndex ) const
+	{
+		ansi_string encrypt;
+		encrypt = EncryptContent( string_to_utf8( (LPCTSTR)m_password ) );
+		return _bindBlob( stmt, sqlParamIndex, encrypt.c_str(), encrypt.size() );
+	}
+	int bindProtectLevel( sqlite3_stmt * stmt, int sqlParamIndex ) const
+	{
+		return _bindInt( stmt, sqlParamIndex, m_protectLevel );
+	}
+	int bindCondone( sqlite3_stmt * stmt, int sqlParamIndex ) const
+	{
+		return _bindInt( stmt, sqlParamIndex, m_condone );
+	}
+	int bindCurCondone( sqlite3_stmt * stmt, int sqlParamIndex ) const
+	{
+		return _bindInt( stmt, sqlParamIndex, m_curCondone );
+	}
+	int bindUnlockTime( sqlite3_stmt * stmt, int sqlParamIndex ) const
+	{
+		return _bindInt( stmt, sqlParamIndex, m_unlockTime );
+	}
+	int bindHotkey( sqlite3_stmt * stmt, int sqlParamIndex ) const
+	{
+		return _bindInt( stmt, sqlParamIndex, m_hotkey );
+	}
+	int bindRegTime( sqlite3_stmt * stmt, int sqlParamIndex ) const
+	{
+		return _bindInt( stmt, sqlParamIndex, m_regTime );
+	}
+
+	// 从STMT读取数据到变量,字段索引值基于0
+
+	void loadId( sqlite3_stmt * stmt, int sqlFieldIndex )
+	{
+		m_id = _getInt( stmt, sqlFieldIndex );
+	}
+	void loadUsername( sqlite3_stmt * stmt, int sqlFieldIndex )
+	{
+		m_username = _getString( stmt, sqlFieldIndex );
+	}
+	void loadPassword( sqlite3_stmt * stmt, int sqlFieldIndex )
+	{
+		ansi_string encrypt;
+		_getBlob( stmt, sqlFieldIndex, &encrypt );
+		m_password = utf8_to_string( DecryptContent(encrypt) ).c_str();
+	}
+	void loadProtectLevel( sqlite3_stmt * stmt, int sqlFieldIndex )
+	{
+		m_protectLevel = _getInt( stmt, sqlFieldIndex );
+	}
+	void loadCondone( sqlite3_stmt * stmt, int sqlFieldIndex )
+	{
+		m_condone = _getInt( stmt, sqlFieldIndex );
+	}
+	void loadCurCondone( sqlite3_stmt * stmt, int sqlFieldIndex )
+	{
+		m_curCondone = _getInt( stmt, sqlFieldIndex );
+	}
+	void loadUnlockTime( sqlite3_stmt * stmt, int sqlFieldIndex )
+	{
+		m_unlockTime = _getInt( stmt, sqlFieldIndex );
+	}
+	void loadHotkey( sqlite3_stmt * stmt, int sqlFieldIndex )
+	{
+		m_hotkey = _getInt( stmt, sqlFieldIndex );
+	}
+	void loadRegTime( sqlite3_stmt * stmt, int sqlFieldIndex )
+	{
+		m_regTime = _getInt( stmt, sqlFieldIndex );
+	}
+
+	User()
+	{
+		m_id = 0;
+		m_protectLevel = 0;
+		m_condone = 0;
+		m_curCondone = 0;
+		m_unlockTime = 0;
+		m_hotkey = 0;
+		m_regTime = 0;
+	}
+};
+
+// 注册用户, 注册成功返回true, 否则false
+// user忽略m_id,m_condone,m_curCondone,m_unlockTime,m_regTime
+bool RegisterUser( sqlite3 * db, User const & newUser );
+
+// 登录用户, 执行验证成功返回true,并获取User数据, 否则返回false.
+bool LoginUser( sqlite3 * db, CString const & username, CString const & password, User * userData );
+// 载入用户信息
+bool LoadUser( sqlite3 * db, CString const & username, User * userData );
+// 删除用户
+bool DeleteUser( sqlite3 * db, CString const & username );
+// 验证用户密码
+bool VerifyUserPassword( sqlite3 * db, CString const & username, CString const & password );
+// 修改用户信息
+bool ModifyUserEx( sqlite3 * db, CString const & username, UINT modifiedFieldBits, User const & newUser );
+
+// Types -----------------------------------------------------------------
+
+//一条账户类型相关数据
+struct AccountType : public Fields
+{
+	CString m_typeName;
+	int m_safeRank;
+
+	AccountType & operator = ( AccountType const & other )
+	{
+		if ( this != &other )
+		{
+			m_typeName = other.m_typeName;
+			m_safeRank = other.m_safeRank;
+		}
+		return *this;
+	}
+
+	int bindTypeName( sqlite3_stmt * stmt, int sqlParamIndex ) const
+	{
+		return _bindString( stmt, sqlParamIndex, m_typeName );
+	}
+	int bindSafeRank( sqlite3_stmt * stmt, int sqlParamIndex ) const
+	{
+		return _bindInt( stmt, sqlParamIndex, m_safeRank );
+	}
+	
+	void loadTypeName( sqlite3_stmt * stmt, int sqlFieldIndex )
+	{
+		m_typeName = _getString( stmt, sqlFieldIndex );
+	}
+	void loadSafeRank( sqlite3_stmt * stmt, int sqlFieldIndex )
+	{
+		m_safeRank = _getInt( stmt, sqlFieldIndex );
+	}
+
+	AccountType()
+	{
+		m_safeRank = 0;
+	}
+};
+
+typedef CArray<AccountType, AccountType const &> AccountTypeArray;
+
+// 加载账户类别信息,返回记录数
+int LoadAccountTypes( sqlite3 * db, AccountTypeArray * types );
 
 // 获取一个类型
-bool GetAccountType( CString const & typeName, int * safeRank );
+bool GetAccountType( sqlite3 * db, CString const & typeName, AccountType * type );
 
 // 添加账户类别信息, 成功返回true, 否则返回false.
-bool AddAccountType( CString const & typeName, int safeRank );
+bool AddAccountType( sqlite3 * db, AccountType const & newType );
 // 修改账户类别信息, 成功返回true, 否则返回false.
-bool ModifyAccountType( CString const & typeName, CString const & newTypeName, int newSafeRank );
+bool ModifyAccountType( sqlite3 * db, CString const & typeName, AccountType const & newType );
 // 删除账户类别信息, 成功返回true, 否则返回false.
-bool DeleteAccountType( CString const & typeName );
+bool DeleteAccountType( sqlite3 * db, CString const & typeName );
+
+// Cates -----------------------------------------------------------------
+struct AccountCate : public Fields
+{
+	int m_id;
+	CString m_cateName;
+	CString m_cateDesc;
+	CString m_typeName;
+	CString m_url;
+	CString m_icoPath;
+	CString m_startup;
+	CString m_keywords;
+	int m_timeWriten;
+
+	AccountCate & operator = ( AccountCate const & other )
+	{
+		if ( this != &other )
+		{
+			m_id = other.m_id;
+			m_cateName = other.m_cateName;
+			m_cateDesc = other.m_cateDesc;
+			m_typeName = other.m_typeName;
+			m_url = other.m_url;
+			m_icoPath = other.m_icoPath;
+			m_startup = other.m_startup;
+			m_keywords = other.m_keywords;
+			m_timeWriten = other.m_timeWriten;
+		}
+		return *this;
+	}
+
+	int bindId( sqlite3_stmt * stmt, int sqlParamIndex ) const
+	{
+		return _bindInt( stmt, sqlParamIndex, m_id );
+	}
+	int bindCateName( sqlite3_stmt * stmt, int sqlParamIndex ) const
+	{
+		return _bindString( stmt, sqlParamIndex, m_cateName );
+	}
+	int bindCateDesc( sqlite3_stmt * stmt, int sqlParamIndex ) const
+	{
+		return _bindString( stmt, sqlParamIndex, m_cateDesc );
+	}
+	int bindTypeName( sqlite3_stmt * stmt, int sqlParamIndex ) const
+	{
+		return _bindString( stmt, sqlParamIndex, m_typeName );
+	}
+	int bindUrl( sqlite3_stmt * stmt, int sqlParamIndex ) const
+	{
+		return _bindString( stmt, sqlParamIndex, m_url );
+	}
+	int bindIcoPath( sqlite3_stmt * stmt, int sqlParamIndex ) const
+	{
+		return _bindString( stmt, sqlParamIndex, m_icoPath );
+	}
+	int bindStartup( sqlite3_stmt * stmt, int sqlParamIndex ) const
+	{
+		return _bindString( stmt, sqlParamIndex, m_startup );
+	}
+	int bindKeywords( sqlite3_stmt * stmt, int sqlParamIndex ) const
+	{
+		return _bindString( stmt, sqlParamIndex, m_keywords );
+	}
+	int bindTimeWriten( sqlite3_stmt * stmt, int sqlParamIndex ) const
+	{
+		return _bindInt( stmt, sqlParamIndex, m_timeWriten );
+	}
+	
+	void loadId( sqlite3_stmt * stmt, int sqlFieldIndex )
+	{
+		m_id = _getInt( stmt, sqlFieldIndex );
+	}
+	void loadCateName( sqlite3_stmt * stmt, int sqlFieldIndex )
+	{
+		m_cateName = _getString( stmt, sqlFieldIndex );
+	}
+	void loadCateDesc( sqlite3_stmt * stmt, int sqlFieldIndex )
+	{
+		m_cateDesc = _getString( stmt, sqlFieldIndex );
+	}
+	void loadTypeName( sqlite3_stmt * stmt, int sqlFieldIndex )
+	{
+		m_typeName = _getString( stmt, sqlFieldIndex );
+	}
+	void loadUrl( sqlite3_stmt * stmt, int sqlFieldIndex )
+	{
+		m_url = _getString( stmt, sqlFieldIndex );
+	}
+	void loadIcoPath( sqlite3_stmt * stmt, int sqlFieldIndex )
+	{
+		m_icoPath = _getString( stmt, sqlFieldIndex );
+	}
+	void loadStartup( sqlite3_stmt * stmt, int sqlFieldIndex )
+	{
+		m_startup = _getString( stmt, sqlFieldIndex );
+	}
+	void loadKeywords( sqlite3_stmt * stmt, int sqlFieldIndex )
+	{
+		m_keywords = _getString( stmt, sqlFieldIndex );
+	}
+	void loadTimeWriten( sqlite3_stmt * stmt, int sqlFieldIndex )
+	{
+		m_timeWriten = _getInt( stmt, sqlFieldIndex );
+	}
+
+	AccountCate()
+	{
+		m_id = 0;
+		m_timeWriten = 0;
+	}
+
+};
+
+typedef CArray<AccountCate, AccountCate const &> AccountCateArray;
 
 // 载入账户种类信息, 返回记录数
-int LoadAccountCates(
-	CUIntArray * ids,
-	CStringArray * cateNames,
-	CStringArray * cateDescs,
-	CStringArray * typeNames,
-	CStringArray * urls,
-	CStringArray * icoPaths,
-	CStringArray * startups,
-	CStringArray * keywordss,
-	CUIntArray * timeWritens
-);
+int LoadAccountCates( sqlite3 * db, AccountCateArray * cates );
 
 // 载入一条账户种类信息
-bool GetAccountCate(
-	int id,
-	CString * cateName,
-	CString * cateDesc,
-	CString * typeName,
-	CString * url,
-	CString * icoPath,
-	CString * startup,
-	CString * keywords,
-	int * timeWriten
-);
+bool GetAccountCate( sqlite3 * db, int id, AccountCate * cate );
 
 // 添加账户种类信息，成功返回ID，失败返回0
-int AddAccountCate(
-	CString const & cateName,
-	CString const & cateDesc,
-	CString const & typeName,
-	CString const & url,
-	CString const & icoPath,
-	CString const & startup,
-	CString const & keywords
-);
+// newCate忽略m_id,m_timeWriten
+int AddAccountCate( sqlite3 * db, AccountCate const & newCate );
+
 // 修改账户种类信息
-bool ModifyAccountCate(
-	int id,
-	CString const & newCateName,
-	CString const & newCateDesc,
-	CString const & newTypeName,
-	CString const & newUrl,
-	CString const & newIcoPath,
-	CString const & newStartup,
-	CString const & newKeywords
-);
+// newCate忽略m_id,m_timeWriten
+bool ModifyAccountCate( sqlite3 * db, int id, AccountCate const & newCate );
+
 // 删除账户种类信息
-bool DeleteAccountCate( int id );
+bool DeleteAccountCate( sqlite3 * db, int id );
 
 // 载入所有账户种类的ID以及相应的安全值
-int LoadAccountCatesSafeRank( CUIntArray * cateIds, CUIntArray * typeSafeRanks );
+int LoadAccountCatesSafeRank( sqlite3 * db, CUIntArray * cateIds, CUIntArray * typeSafeRanks );
 
 // 获取指定cateId的类别
-bool GetTypeByCateId( int cateId, CString * typeName, int * safeRank );
+bool GetTypeByCateId( sqlite3 * db, int cateId, AccountType * type );
+
+// Accounts --------------------------------------------------------------
+struct Account : public Fields
+{
+	CString m_myName;
+	CString m_accountName;
+	CString m_accountPwd;
+	int m_cateId;
+	int m_userId;
+	int m_safeRank;
+	CString m_comment;
+	int m_time;
+
+	Account & operator = ( Account const & other )
+	{
+		if ( this != &other )
+		{
+			m_myName = other.m_myName;
+			m_accountName = other.m_accountName;
+			m_accountPwd = other.m_accountPwd;
+			m_cateId = other.m_cateId;
+			m_userId = other.m_userId;
+			m_safeRank = other.m_safeRank;
+			m_comment = other.m_comment;
+			m_time = other.m_time;
+		}
+		return *this;
+	}
+
+	int bindMyName( sqlite3_stmt * stmt, int sqlParamIndex ) const
+	{
+		return _bindString( stmt, sqlParamIndex, m_myName );
+	}
+	int bindAccountName( sqlite3_stmt * stmt, int sqlParamIndex ) const
+	{
+		ansi_string encrypt;
+		encrypt = EncryptContent( string_to_utf8( (LPCTSTR)m_accountName ) );
+		return _bindBlob( stmt, sqlParamIndex, encrypt.c_str(), encrypt.size() );
+	}
+	int bindAccountPwd( sqlite3_stmt * stmt, int sqlParamIndex ) const
+	{
+		ansi_string encrypt;
+		encrypt = EncryptContent( string_to_utf8( (LPCTSTR)m_accountPwd ) );
+		return _bindBlob( stmt, sqlParamIndex, encrypt.c_str(), encrypt.size() );
+	}
+	int bindCateId( sqlite3_stmt * stmt, int sqlParamIndex ) const
+	{
+		return _bindInt( stmt, sqlParamIndex, m_cateId );
+	}
+	int bindUserId( sqlite3_stmt * stmt, int sqlParamIndex ) const
+	{
+		return _bindInt( stmt, sqlParamIndex, m_userId );
+	}
+	int bindSafeRank( sqlite3_stmt * stmt, int sqlParamIndex ) const
+	{
+		return _bindInt( stmt, sqlParamIndex, m_safeRank );
+	}
+	int bindComment( sqlite3_stmt * stmt, int sqlParamIndex ) const
+	{
+		return _bindString( stmt, sqlParamIndex, m_comment );
+	}
+	int bindTime( sqlite3_stmt * stmt, int sqlParamIndex ) const
+	{
+		return _bindInt( stmt, sqlParamIndex, m_time );
+	}
+
+	void loadMyName( sqlite3_stmt * stmt, int sqlFieldIndex )
+	{
+		m_myName = _getString( stmt, sqlFieldIndex );
+	}
+	void loadAccountName( sqlite3_stmt * stmt, int sqlFieldIndex )
+	{
+		ansi_string encrypt;
+		_getBlob( stmt, sqlFieldIndex, &encrypt );
+		m_accountName = utf8_to_string( DecryptContent(encrypt) ).c_str();
+	}
+	void loadAccountPwd( sqlite3_stmt * stmt, int sqlFieldIndex )
+	{
+		ansi_string encrypt;
+		_getBlob( stmt, sqlFieldIndex, &encrypt );
+		m_accountPwd = utf8_to_string( DecryptContent(encrypt) ).c_str();
+	}
+	void loadCateId( sqlite3_stmt * stmt, int sqlFieldIndex )
+	{
+		m_cateId = _getInt( stmt, sqlFieldIndex );
+	}
+	void loadUserId( sqlite3_stmt * stmt, int sqlFieldIndex )
+	{
+		m_userId = _getInt( stmt, sqlFieldIndex );
+	}
+	void loadSafeRank( sqlite3_stmt * stmt, int sqlFieldIndex )
+	{
+		m_safeRank = _getInt( stmt, sqlFieldIndex );
+	}
+	void loadComment( sqlite3_stmt * stmt, int sqlFieldIndex )
+	{
+		m_comment = _getString( stmt, sqlFieldIndex );
+	}
+	void loadTime( sqlite3_stmt * stmt, int sqlFieldIndex )
+	{
+		m_time = _getInt( stmt, sqlFieldIndex );
+	}
+
+	Account()
+	{
+		m_cateId = 0;
+		m_userId = 0;
+		m_safeRank = 0;
+		m_time = 0;
+	}
+
+};
+
+typedef CArray<Account, Account const &> AccountArray;
 
 // 载入当前登录用户所有的账户信息
-int LoadAccounts(
-	CStringArray * myNames,
-	CStringArray * accountNames,
-	CStringArray * accountPwds,
-	CUIntArray * cateIds,
-	CUIntArray * safeRanks,
-	CStringArray * comments,
-	CUIntArray * times
-);
+int LoadAccounts( sqlite3 * db, int userId, AccountArray * accounts );
 
 // 获取当前登录用户的一个账户信息
-bool GetAccount(
-	CString const & myName,
-	CString * accountName,
-	CString * accountPwd,
-	int * cateId,
-	int * safeRank,
-	CString * comment,
-	int * time
-);
+// 主键(user,myname)
+bool GetAccount( sqlite3 * db, int userId, CString const & myName, Account * account );
 
 // 添加一个当前登录用户的账户，成功true，失败false。
 // 主键(user,myname)
 // 意味着每个用户(user)拥有账户的myname必须不同，否则失败。修改时也一样。
-bool AddAccount(
-	CString const & myName,
-	CString const & accountName,
-	CString const & accountPwd,
-	int cateId,
-	int safeRank,
-	CString const & comment
-);
+// newAccount忽略m_time
+bool AddAccount( sqlite3 * db, Account const & newAccount );
+
 // 修改一个当前登录用户的账户
 // 主键(user,myname)
-bool ModifyAccount(
-	CString const & myName,
-	CString const & newMyName,
-	CString const & newAccountName,
-	CString const & newAccountPwd,
-	int newCateId,
-	int newSafeRank,
-	CString const & newComment
-);
-// 删除一个当前登录用户的账户
-bool DeleteAccount( CString const & myName );
+// newAccount忽略m_time
+bool ModifyAccount( sqlite3 * db, int userId, CString const & myName, Account const & newAccount );
 
-// 备份数据
-bool BackupData( CString const & filename );
-// 恢复数据
-bool ResumeData( CString const & filename );
+// 删除一个当前登录用户的账户
+bool DeleteAccount( sqlite3 * db, int userId, CString const & myName );
+
+// Others ----------------------------------------------------------------
+
 // 取得一个正确的Account MyName以便添加账户
-CString GetCorrectAccountMyName( CString const & myName );
+CString GetCorrectAccountMyName( sqlite3 * db, int userId, CString const & myName );
 
 // 获取数据库全部表名
 int LoadTableNames( sqlite3 * db, string_array * tableNames, string const & like = _T("am\\_%") );
@@ -289,11 +619,12 @@ int LoadTableNames( sqlite3 * db, string_array * tableNames, string const & like
 int DumpDDL( sqlite3 * db, string * ddl, string const & like = _T("am\\_%") );
 
 // 判断ExeName是否为一个浏览器
-bool IsBrowserExeName( CString const & exeName, CString * browserTitle );
+bool IsBrowserExeName( sqlite3 * db, CString const & exeName, CString * browserTitle );
 
 
 //////////////////////////////////////////////////////////////////////////
 // 接口
+//////////////////////////////////////////////////////////////////////////
 
 // 更新ListView数据和列表项
 interface IUpdateListView

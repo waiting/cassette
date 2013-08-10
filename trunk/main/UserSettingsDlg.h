@@ -14,14 +14,7 @@ class UserSettingsDlg : public Dialog
 {
 // Construction
 public:
-	UserSettingsDlg(
-		CWnd * pParent,
-		CString * username,
-		CString * password,
-		int * protectLevel,
-		int * condone,
-		int * hotkey
-	);
+	UserSettingsDlg( CWnd * parent, User * user );
 
 	// «∑Ò–ﬁ∏ƒ√‹¬Î
 	bool IsModifyPassword() const;
@@ -45,11 +38,7 @@ public:
 
 // Implementation
 protected:
-	CString * m_username;
-	CString * m_password;
-	int * m_protectLevel;
-	int * m_condone;
-	int * m_hotkey;
+	User * m_user;
 
 	// Generated message map functions
 	//{{AFX_MSG(UserSettingsDlg)

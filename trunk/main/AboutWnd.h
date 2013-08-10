@@ -20,7 +20,7 @@ class AboutWnd : public CFrameWnd
 private:
 	static AboutWnd * ms_pSingleAboutWnd;
 protected:
-	AboutWnd( CWnd * pParent = NULL );
+	AboutWnd( CWnd * parent = NULL );
 	virtual ~AboutWnd();
 public:
 	// 获取关于对话框的实例

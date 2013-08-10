@@ -243,12 +243,12 @@ CString GetExecutablePath()
 	return ( module_path() + dir_sep ).c_str();
 }
 
-bool RegisterUser( CString const & username, CString const & password, int protectLevel, UINT32 hotkey )
-{
-	ansi_string encryptPassword;
-	int rowsChanged;
+//Database//////////////////////////////////////////////////////////////////////////
 
-	sqlite3 * db = g_theApp.GetDatabase();
+bool RegisterUser( sqlite3 * db, User const & newUser )
+{
+	int rowsChanged = 0;
+
 	ansi_string sql = string_to_utf8("INSERT INTO am_users( name, pwd, protect, condone, cur_condone, unlock_time, hotkey, time ) VALUES( ?, ?, ?, ?, ?, ?, ?, ? );");
 	sqlite3_stmt * stmt = NULL;
 	int rc;
@@ -257,31 +257,31 @@ bool RegisterUser( CString const & username, CString const & password, int prote
 	// 准备语句
 	rc = sqlite3_prepare_v2( db, sql.c_str(), sql.size(), &stmt, NULL );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
+
 	// 绑定参数
 	// 用户名
-	rc = sqlite3_bind_text( stmt, 1, string_to_utf8( (LPCTSTR)username ).c_str(), -1, SQLITE_TRANSIENT );
+	rc = newUser.bindUsername( stmt, 1 );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 	// 密码
-	encryptPassword = EncryptContent( string_to_utf8( (LPCTSTR)password ) );
-	rc = sqlite3_bind_blob( stmt, 2, encryptPassword.c_str(), encryptPassword.size(), SQLITE_TRANSIENT );
+	rc = newUser.bindPassword( stmt, 2 );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 	// 保护级别
-	rc = sqlite3_bind_int( stmt, 3, protectLevel );
+	rc = newUser.bindProtectLevel( stmt, 3 );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 	// 容错数
-	rc = sqlite3_bind_int( stmt, 4, 3 );
+	rc = newUser._bindInt( stmt, 4, 3 );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 	// 当前剩余容错数
-	rc = sqlite3_bind_int( stmt, 5, 3 );
+	rc = newUser._bindInt( stmt, 5, 3 );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 	// 解锁时刻
-	rc = sqlite3_bind_int( stmt, 6, (int)get_utc_time() );
+	rc = newUser._bindInt( stmt, 6, (int)get_utc_time() );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 	// 热键
-	rc = sqlite3_bind_int( stmt, 7, (int)hotkey );
+	rc = newUser.bindHotkey( stmt, 7 );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 	// 注册时刻
-	rc = sqlite3_bind_int( stmt, 8, (int)get_utc_time() );
+	rc = newUser._bindInt( stmt, 8, (int)get_utc_time() );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 
 	// 执行语句
@@ -310,64 +310,16 @@ OccurDbError: // 出错处理
 	localError = sqlite3_errmsg(db);
 	if ( stmt )
 		sqlite3_finalize(stmt);
-	MessageBox( *AfxGetMainWnd(), utf8_to_string(localError).c_str(), _T("数据库错误"), MB_OK | MB_ICONERROR );
+	AfxGetMainWnd()->FatalError( utf8_to_string(localError).c_str(), _T("数据库错误") );
 	return false;
 }
 
-bool DeleteUser( CString const & username )
+bool LoginUser( sqlite3 * db, CString const & username, CString const & password, User * userData )
 {
-	int rowsChanged;
+	User tmpUserInfo;
 
-	sqlite3 * db = g_theApp.GetDatabase();
-	ansi_string sql = string_to_utf8("DELETE FROM am_users WHERE name = ?;");
-	sqlite3_stmt * stmt = NULL;
-	int rc;
-	const char * localError;
-
-	// 准备语句
-	rc = sqlite3_prepare_v2( db, sql.c_str(), sql.size(), &stmt, NULL );
-	if ( rc != SQLITE_OK ) goto OccurDbError;
-	// 绑定参数
-	// 用户名
-	rc = sqlite3_bind_text( stmt, 1, string_to_utf8( (LPCTSTR)username ).c_str(), -1, SQLITE_TRANSIENT );
-	if ( rc != SQLITE_OK ) goto OccurDbError;
-	
-	// 执行语句
-	rc = sqlite3_step(stmt);
-	if ( rc == SQLITE_DONE )
-	{
-		rowsChanged = sqlite3_changes(db);
-		rc = sqlite3_reset(stmt);
-		if ( rc != SQLITE_OK )
-		{
-			goto OccurDbError;
-		}
-	}
-	else
-	{
-		rc = sqlite3_reset(stmt);
-		goto OccurDbError;
-	}
-	
-	// 正常无错误结束
-	if ( stmt )
-		sqlite3_finalize(stmt);
-	return rowsChanged == 1;
-	
-OccurDbError: // 出错处理
-	localError = sqlite3_errmsg(db);
-	if ( stmt )
-		sqlite3_finalize(stmt);
-	MessageBox( *AfxGetMainWnd(), utf8_to_string(localError).c_str(), _T("数据库错误"), MB_OK | MB_ICONERROR );
-	return false;
-}
-
-
-bool LoginUser( CString const & username, CString const & password, UserInfo * userInfo )
-{
 	bool ret = false;
 
-	sqlite3 * db = g_theApp.GetDatabase();
 	ansi_string sql = string_to_utf8("SELECT * FROM am_users WHERE name = ?;");
 	sqlite3_stmt * stmt = NULL;
 	int rc;
@@ -378,83 +330,78 @@ bool LoginUser( CString const & username, CString const & password, UserInfo * u
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 	// 绑定参数
 	// 用户名
-	rc = sqlite3_bind_text( stmt, 1, string_to_utf8( (LPCTSTR)username ).c_str(), -1, SQLITE_TRANSIENT );
+	rc = Fields::_bindString( stmt, 1, username );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
-	
+
 	// 执行语句
 	rc = sqlite3_step(stmt);
 	if ( rc == SQLITE_ROW )
 	{
 		// 判断用户是否处于锁定时间中
-		int condone, curCondone;
-		int unlockTime = sqlite3_column_int( stmt, FieldIndex(am_users__unlock_time) );
-		int nowTime = get_utc_time();
+		tmpUserInfo.loadUnlockTime( stmt, FieldIndex(am_users__unlock_time) );
+		int nowTime = (int)get_utc_time();
 
-		condone = sqlite3_column_int( stmt, FieldIndex(am_users__condone) );
-		curCondone = sqlite3_column_int( stmt, FieldIndex(am_users__cur_condone) );
+		tmpUserInfo.loadCondone( stmt, FieldIndex(am_users__condone) );
+		tmpUserInfo.loadCurCondone( stmt, FieldIndex(am_users__cur_condone) );
 
-		if ( nowTime < unlockTime ) // 处于锁定中
+		if ( nowTime < tmpUserInfo.m_unlockTime ) // 当前时刻小于锁定时刻说明处于锁定中
 		{
-			int hours = ( unlockTime - nowTime ) / 3600;
-			int minutes = ( ( unlockTime - nowTime ) - hours * 3600 ) / 60;
-			int seconds = ( unlockTime - nowTime ) - hours * 3600 - minutes * 60;
-			AfxGetMainWnd()->WarningError( format( _T("用户锁定中,解锁还需要%d小时%d分%d秒"), hours, minutes, seconds ).c_str(), _T("错误") );
+			int hours = ( tmpUserInfo.m_unlockTime - nowTime ) / 3600;
+			int minutes = ( ( tmpUserInfo.m_unlockTime - nowTime ) - hours * 3600 ) / 60;
+			int seconds = ( tmpUserInfo.m_unlockTime - nowTime ) - hours * 3600 - minutes * 60;
+			AfxGetMainWnd()->WarningError( format( _T("用户锁定中，解锁还需要%d小时%d分%d秒"), hours, minutes, seconds ).c_str(), _T("错误") );
 			ret = false;
 			goto ExitProc;
 		}
 		else
 		{
-			if ( curCondone < 1 ) // 表示这是刚从锁定状态恢复,重置cur_condone=condone
+			if ( tmpUserInfo.m_curCondone < 1 ) // 表示这是刚从锁定状态恢复,重置cur_condone=condone
 			{
-				ModifyUserEx( username, am_users__cur_condone, 0, "", "", 0, 0, condone, 0, 0, 0 );
-				curCondone = condone;
+				tmpUserInfo.m_curCondone = tmpUserInfo.m_condone;
+				ModifyUserEx( db, username, am_users__cur_condone, tmpUserInfo );
 			}
-
 		}
 
 		// 验证密码
-		ansi_string pwdInDb;
-		int size = sqlite3_column_bytes( stmt, 2 );
-		pwdInDb.assign( (char const *)sqlite3_column_blob( stmt, 2 ), size );
-		CString pwd = utf8_to_string( DecryptContent(pwdInDb) ).c_str();
-		if ( pwd != password )
+		tmpUserInfo.loadPassword( stmt, FieldIndex(am_users__pwd) );
+		if ( tmpUserInfo.m_password != password )
 		{
 			// 减少当前容错次数
-			curCondone--;
+			tmpUserInfo.m_curCondone--;
+			ModifyUserEx( db, username, am_users__cur_condone, tmpUserInfo );
 
-			ModifyUserEx( username, am_users__cur_condone, 0, "", "", 0, 0, curCondone, 0, 0, 0 );
+			AfxGetMainWnd()->WarningError( format( _T("密码不正确，你还剩%d次机会"), tmpUserInfo.m_curCondone ).c_str(), _T("错误") );
 
-			AfxGetMainWnd()->WarningError( format( _T("密码不正确，你还剩%d次机会"), curCondone ).c_str(), _T("错误") );
-
-			if ( curCondone < 1 ) // 没有容错数,锁定用户
+			if ( tmpUserInfo.m_curCondone < 1 ) // 没有容错数,锁定用户
 			{
 				int lockTime = 3600 * 3;
-				ModifyUserEx( username, am_users__unlock_time, 0, "", "", 0, 0, 0, get_utc_time() + lockTime, 0, 0 );
+				tmpUserInfo.m_unlockTime = get_utc_time() + lockTime;
+				ModifyUserEx( db, username, am_users__unlock_time, tmpUserInfo );
 			}
 			ret = false;
 			goto ExitProc;
 		}
 		// 登录验证成功,重置cur_condone=condone
-		ModifyUserEx( username, am_users__cur_condone, 0, "", "", 0, 0, condone, 0, 0, 0 );
-		curCondone = condone;
+		tmpUserInfo.m_curCondone = tmpUserInfo.m_condone;
+		ModifyUserEx( db, username, am_users__cur_condone, tmpUserInfo );
 
-		if ( userInfo != NULL )
+		if ( userData != NULL )
 		{
-			userInfo->m_id = sqlite3_column_int( stmt, 0 );
-			userInfo->m_username = utf8_to_string( (char const *)sqlite3_column_text( stmt, 1 ) ).c_str();
-			userInfo->m_protectLevel = sqlite3_column_int( stmt, 3 );
-			userInfo->m_condone = sqlite3_column_int( stmt, 4 );
-			userInfo->m_curCondone = sqlite3_column_int( stmt, 5 );
-			userInfo->m_unlockTime = sqlite3_column_int( stmt, 6 );
-			userInfo->m_hotkey = sqlite3_column_int( stmt, 7 );
-			userInfo->m_regTime = sqlite3_column_int( stmt, 8 );
+			userData->loadId( stmt, 0 );
+			userData->loadUsername( stmt, 1 );
+			userData->loadProtectLevel( stmt, 3 );
+			userData->loadCondone( stmt, 4 );
+			userData->loadCurCondone( stmt, 5 );
+			userData->loadUnlockTime( stmt, 6 );
+			userData->loadHotkey( stmt, 7 );
+			userData->loadRegTime( stmt, 8 );
 		}
 		ret = true;
 		goto ExitProc;
 	}
 	else if ( rc == SQLITE_DONE ) // 没有找到用户
 	{
-		MessageBox( *AfxGetMainWnd(), _T("没有此用户"), _T("错误"), MB_OK | MB_ICONEXCLAMATION );
+		AfxGetMainWnd()->WarningError( _T("没有此用户"), _T("错误") );
 		ret = false;
 		goto ExitProc;
 	}
@@ -475,15 +422,14 @@ OccurDbError: // 出错处理
 	localError = sqlite3_errmsg(db);
 	if ( stmt )
 		sqlite3_finalize(stmt);
-	MessageBox( *AfxGetMainWnd(), utf8_to_string(localError).c_str(), _T("数据库错误"), MB_OK | MB_ICONERROR );
+	AfxGetMainWnd()->FatalError( utf8_to_string(localError).c_str(), _T("数据库错误") );
 	return false;
 }
 
-bool LoadUser( CString const & username, UserInfo * userInfo )
+bool LoadUser( sqlite3 * db, CString const & username, User * userData )
 {
 	bool ret = false;
 
-	sqlite3 * db = g_theApp.GetDatabase();
 	ansi_string sql = string_to_utf8("SELECT * FROM am_users WHERE name = ?;");
 	sqlite3_stmt * stmt = NULL;
 	int rc;
@@ -494,40 +440,29 @@ bool LoadUser( CString const & username, UserInfo * userInfo )
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 	// 绑定参数
 	// 用户名
-	rc = sqlite3_bind_text( stmt, 1, string_to_utf8( (LPCTSTR)username ).c_str(), -1, SQLITE_TRANSIENT );
+	rc = Fields::_bindString( stmt, 1, username );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
-	
+
 	// 执行语句
 	rc = sqlite3_step(stmt);
 	if ( rc == SQLITE_ROW )
 	{
-		if ( userInfo != NULL )
+		if ( userData != NULL )
 		{
-			userInfo->m_id = sqlite3_column_int( stmt, 0 );
-			userInfo->m_username = utf8_to_string( (char const *)sqlite3_column_text( stmt, 1 ) ).c_str();
-			userInfo->m_protectLevel = sqlite3_column_int( stmt, 3 );
-			userInfo->m_condone = sqlite3_column_int( stmt, 4 );
-			userInfo->m_curCondone = sqlite3_column_int( stmt, 5 );
-			userInfo->m_unlockTime = sqlite3_column_int( stmt, 6 );
-			userInfo->m_hotkey = sqlite3_column_int( stmt, 7 );
-			userInfo->m_regTime = sqlite3_column_int( stmt, 8 );
+			userData->loadId( stmt, 0 );
+			userData->loadUsername( stmt, 1 );
+			userData->loadProtectLevel( stmt, 3 );
+			userData->loadCondone( stmt, 4 );
+			userData->loadCurCondone( stmt, 5 );
+			userData->loadUnlockTime( stmt, 6 );
+			userData->loadHotkey( stmt, 7 );
+			userData->loadRegTime( stmt, 8 );
 		}
 		ret = true;
 		goto ExitProc;
 	}
 	else if ( rc == SQLITE_DONE ) // 没有找到用户
 	{
-		if ( userInfo )
-		{
-			userInfo->m_id = 0;
-			userInfo->m_username = _T("Guest");
-			userInfo->m_protectLevel = 0;
-			userInfo->m_condone = 0;
-			userInfo->m_curCondone = 0;
-			userInfo->m_unlockTime = 0x7fffff;
-			userInfo->m_hotkey = 0;
-			userInfo->m_regTime = 0;
-		}
 		ret = false;
 		goto ExitProc;
 	}
@@ -548,16 +483,62 @@ OccurDbError: // 出错处理
 	localError = sqlite3_errmsg(db);
 	if ( stmt )
 		sqlite3_finalize(stmt);
-	MessageBox( *AfxGetMainWnd(), utf8_to_string(localError).c_str(), _T("数据库错误"), MB_OK | MB_ICONERROR );
+	AfxGetMainWnd()->FatalError( utf8_to_string(localError).c_str(), _T("数据库错误") );
 	return false;
 }
 
-bool VerifyUserPassword( CString const & username, CString const & password )
+bool DeleteUser( sqlite3 * db, CString const & username )
+{
+	int rowsChanged = 0;
+
+	ansi_string sql = string_to_utf8("DELETE FROM am_users WHERE name = ?;");
+	sqlite3_stmt * stmt = NULL;
+	int rc;
+	const char * localError;
+
+	// 准备语句
+	rc = sqlite3_prepare_v2( db, sql.c_str(), sql.size(), &stmt, NULL );
+	if ( rc != SQLITE_OK ) goto OccurDbError;
+	// 绑定参数
+	// 用户名
+	rc = Fields::_bindString( stmt, 1, username );
+	if ( rc != SQLITE_OK ) goto OccurDbError;
+
+	// 执行语句
+	rc = sqlite3_step(stmt);
+	if ( rc == SQLITE_DONE )
+	{
+		rowsChanged = sqlite3_changes(db);
+		rc = sqlite3_reset(stmt);
+		if ( rc != SQLITE_OK )
+		{
+			goto OccurDbError;
+		}
+	}
+	else
+	{
+		sqlite3_reset(stmt);
+		goto OccurDbError;
+	}
+	
+	// 正常无错误结束
+	if ( stmt )
+		sqlite3_finalize(stmt);
+	return rowsChanged == 1;
+	
+OccurDbError: // 出错处理
+	localError = sqlite3_errmsg(db);
+	if ( stmt )
+		sqlite3_finalize(stmt);
+	AfxGetMainWnd()->FatalError( utf8_to_string(localError).c_str(), _T("数据库错误") );
+	return false;
+}
+
+bool VerifyUserPassword( sqlite3 * db, CString const & username, CString const & password )
 {
 	ansi_string encryptPassword;
 	bool ret = false;
-	
-	sqlite3 * db = g_theApp.GetDatabase();
+
 	ansi_string sql = string_to_utf8("SELECT pwd = ? FROM am_users WHERE name = ?;");
 	sqlite3_stmt * stmt = NULL;
 	int rc;
@@ -568,18 +549,18 @@ bool VerifyUserPassword( CString const & username, CString const & password )
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 	// 绑定参数
 	// 用户名
-	rc = sqlite3_bind_text( stmt, 2, string_to_utf8( (LPCTSTR)username ).c_str(), -1, SQLITE_TRANSIENT );
+	rc = Fields::_bindString( stmt, 2, username );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 	// 密码
 	encryptPassword = EncryptContent( string_to_utf8( (LPCTSTR)password ) );
-	rc = sqlite3_bind_blob( stmt, 1, encryptPassword.c_str(), encryptPassword.size(), SQLITE_TRANSIENT );
+	rc = Fields::_bindBlob( stmt, 1, encryptPassword.c_str(), encryptPassword.size() );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 
 	// 执行语句
 	rc = sqlite3_step(stmt);
 	if ( rc == SQLITE_ROW )
 	{
-		ret = sqlite3_column_int( stmt, 0 ) != 0;
+		ret = Fields::_getInt( stmt, 0 ) != 0;
 		goto ExitProc;
 	}
 	else if ( rc == SQLITE_DONE ) // 没有找到合适的用户
@@ -604,39 +585,15 @@ OccurDbError: // 出错处理
 	localError = sqlite3_errmsg(db);
 	if ( stmt )
 		sqlite3_finalize(stmt);
-	MessageBox( *AfxGetMainWnd(), utf8_to_string(localError).c_str(), _T("数据库错误"), MB_OK | MB_ICONERROR );
+	AfxGetMainWnd()->FatalError( utf8_to_string(localError).c_str(), _T("数据库错误") );
 	return false;
 }
 
-bool ModifyUser( CString const & username, bool isModifyPassword, CString const & newUsername, CString const & newPassword, int newProtectLevel, int newCondone, int newCurCondone, int newHotkey )
+bool ModifyUserEx( sqlite3 * db, CString const & username, UINT modifiedFieldBits, User const & newUser )
 {
-	return ModifyUserEx(
-		username,
-		am_users__name |
-		( isModifyPassword ? am_users__pwd : 0 ) |
-		am_users__protect |
-		am_users__condone |
-		am_users__cur_condone |
-		am_users__hotkey,
-		0,
-		newUsername,
-		newPassword,
-		newProtectLevel,
-		newCondone,
-		newCurCondone,
-		0,
-		newHotkey,
-		0
-	);
-}
-
-bool ModifyUserEx( CString const & username, UINT modifiedFieldBits, int newId, CString const & newUsername, CString const & newPassword, int newProtectLevel, int newCondone, int newCurCondone, int newUnlockTime, int newHotkey, int newTime )
-{
-	ansi_string encryptPassword;
-	int rowsChanged;
-	int paramIndex;
-
-	sqlite3 * db = g_theApp.GetDatabase();
+	int rowsChanged = 0;
+	int paramIndex = 0;
+	// 生成SQL
 	ansi_string_array modifiedFields;
 	if ( modifiedFieldBits & am_users__id )
 		modifiedFields.push_back("id = ?");
@@ -669,75 +626,73 @@ bool ModifyUserEx( CString const & username, UINT modifiedFieldBits, int newId, 
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 
 	// 绑定参数
-	paramIndex = 0;
 
 	// 新ID
 	if ( modifiedFieldBits & am_users__id )
 	{
-		rc = sqlite3_bind_int( stmt, ++paramIndex, newId );
+		rc = newUser.bindId( stmt, ++paramIndex );
 		if ( rc != SQLITE_OK ) goto OccurDbError;
 	}
 
 	// 新用户名
 	if ( modifiedFieldBits & am_users__name )
 	{
-		rc = sqlite3_bind_text( stmt, ++paramIndex, string_to_utf8( (LPCTSTR)newUsername ).c_str(), -1, SQLITE_TRANSIENT );
+		rc = newUser.bindUsername( stmt, ++paramIndex );
 		if ( rc != SQLITE_OK ) goto OccurDbError;
 	}
 	
 	// 新密码
 	if ( modifiedFieldBits & am_users__pwd )
 	{
-		encryptPassword = EncryptContent( string_to_utf8( (LPCTSTR)newPassword ) );
-		rc = sqlite3_bind_blob( stmt, ++paramIndex, encryptPassword.c_str(), encryptPassword.size(), SQLITE_TRANSIENT );
+		rc = newUser.bindPassword( stmt, ++paramIndex );
 		if ( rc != SQLITE_OK ) goto OccurDbError;
 	}
 
 	// 新保护级别
 	if ( modifiedFieldBits & am_users__protect )
 	{
-		rc = sqlite3_bind_int( stmt, ++paramIndex, newProtectLevel );
+		rc = newUser.bindProtectLevel( stmt, ++paramIndex );
 		if ( rc != SQLITE_OK ) goto OccurDbError;
 	}
 	
 	// 新容错数
 	if ( modifiedFieldBits & am_users__condone )
 	{
-		rc = sqlite3_bind_int( stmt, ++paramIndex, newCondone );
+		rc = newUser.bindCondone( stmt, ++paramIndex );
 		if ( rc != SQLITE_OK ) goto OccurDbError;
 	}
 	
 	// 新当前容错数
 	if ( modifiedFieldBits & am_users__cur_condone )
 	{
-		rc = sqlite3_bind_int( stmt, ++paramIndex, newCurCondone );
+		rc = newUser.bindCurCondone( stmt, ++paramIndex );
 		if ( rc != SQLITE_OK ) goto OccurDbError;
 	}
 
 	// 新解锁时刻
 	if ( modifiedFieldBits & am_users__unlock_time )
 	{
-		rc = sqlite3_bind_int( stmt, ++paramIndex, newUnlockTime );
+		rc = newUser.bindUnlockTime( stmt, ++paramIndex );
 		if ( rc != SQLITE_OK ) goto OccurDbError;
 	}
-	
+
 	// 新热键
 	if ( modifiedFieldBits & am_users__hotkey )
 	{
-		rc = sqlite3_bind_int( stmt, ++paramIndex, newHotkey );
+		rc = newUser.bindHotkey( stmt, ++paramIndex );
 		if ( rc != SQLITE_OK ) goto OccurDbError;
 	}
 
 	// 新录入时刻
 	if ( modifiedFieldBits & am_users__time )
 	{
-		rc = sqlite3_bind_int( stmt, ++paramIndex, newTime );
+		rc = newUser.bindRegTime( stmt, ++paramIndex );
 		if ( rc != SQLITE_OK ) goto OccurDbError;
 	}
 
 	// where子句
 	// 用户名
-	rc = sqlite3_bind_text( stmt, ++paramIndex, string_to_utf8( (LPCTSTR)username ).c_str(), -1, SQLITE_TRANSIENT );
+	rc = Fields::_bindString( stmt, ++paramIndex, username );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 
 	// 执行语句
@@ -753,7 +708,7 @@ bool ModifyUserEx( CString const & username, UINT modifiedFieldBits, int newId, 
 	}
 	else
 	{
-		rc = sqlite3_reset(stmt);
+		sqlite3_reset(stmt);
 		goto OccurDbError;
 	}
 
@@ -766,17 +721,15 @@ OccurDbError: // 出错处理
 	localError = sqlite3_errmsg(db);
 	if ( stmt )
 		sqlite3_finalize(stmt);
-	MessageBox( *AfxGetMainWnd(), utf8_to_string(localError).c_str(), _T("数据库错误"), MB_OK | MB_ICONERROR );
+	AfxGetMainWnd()->FatalError( utf8_to_string(localError).c_str(), _T("数据库错误") );
 	return false;
 }
 
-int LoadAccountTypes( CStringArray * typeNames, CUIntArray * safeRanks )
+int LoadAccountTypes( sqlite3 * db, AccountTypeArray * types )
 {
 	int count = 0;
-	IfPTR(typeNames)->RemoveAll();
-	IfPTR(safeRanks)->RemoveAll();
+	IfPTR(types)->RemoveAll();
 
-	sqlite3 * db = g_theApp.GetDatabase();
 	ansi_string sql = string_to_utf8("SELECT * FROM am_account_types ORDER BY rank;");
 	sqlite3_stmt * stmt = NULL;
 	int rc;
@@ -789,8 +742,10 @@ int LoadAccountTypes( CStringArray * typeNames, CUIntArray * safeRanks )
 	// 执行语句
 	while ( ( rc = sqlite3_step(stmt) ) == SQLITE_ROW )
 	{
-		IfPTR(typeNames)->Add( utf8_to_string( (char const *)sqlite3_column_text( stmt, 0 ) ).c_str() );
-		IfPTR(safeRanks)->Add( sqlite3_column_int( stmt, 1 ) );
+		AccountType t;
+		t.loadTypeName( stmt, 0 );
+		t.loadSafeRank( stmt, 1 );
+		IfPTR(types)->Add(t);
 		count++;
 	}
 	
@@ -815,15 +770,14 @@ OccurDbError: // 出错处理
 	localError = sqlite3_errmsg(db);
 	if ( stmt )
 		sqlite3_finalize(stmt);
-	MessageBox( *AfxGetMainWnd(), utf8_to_string(localError).c_str(), _T("数据库错误"), MB_OK | MB_ICONERROR );
+	AfxGetMainWnd()->FatalError( utf8_to_string(localError).c_str(), _T("数据库错误") );
 	return 0;
 }
 
-bool GetAccountType( CString const & typeName, int * safeRank )
+bool GetAccountType( sqlite3 * db, CString const & typeName, AccountType * type )
 {
 	bool ret = false;
-	
-	sqlite3 * db = g_theApp.GetDatabase();
+
 	ansi_string sql = string_to_utf8("SELECT * FROM am_account_types WHERE name = ?;");
 	sqlite3_stmt * stmt = NULL;
 	int rc;
@@ -834,15 +788,15 @@ bool GetAccountType( CString const & typeName, int * safeRank )
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 	// 绑定参数
 	// 类型名
-	rc = sqlite3_bind_text( stmt, 1, string_to_utf8( (LPCTSTR)typeName ).c_str(), -1, SQLITE_TRANSIENT );
+	rc = Fields::_bindString( stmt, 1, typeName );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 
 	// 执行语句
 	rc = sqlite3_step(stmt);
 	if ( rc == SQLITE_ROW )
 	{
-		ASSERT( typeName == utf8_to_string( (char const *)sqlite3_column_text( stmt, 0 ) ).c_str() );
-		AssignPTR(safeRank) = sqlite3_column_int( stmt, 1 );
+		IfPTR(type)->loadTypeName( stmt, 0 );
+		IfPTR(type)->loadSafeRank( stmt, 1 );
 		ret = true;
 		goto ExitProc;
 	}
@@ -868,15 +822,14 @@ OccurDbError: // 出错处理
 	localError = sqlite3_errmsg(db);
 	if ( stmt )
 		sqlite3_finalize(stmt);
-	MessageBox( *AfxGetMainWnd(), utf8_to_string(localError).c_str(), _T("数据库错误"), MB_OK | MB_ICONERROR );
+	AfxGetMainWnd()->FatalError( utf8_to_string(localError).c_str(), _T("数据库错误") );
 	return false;
 }
 
-bool AddAccountType( CString const & typeName, int safeRank )
+bool AddAccountType( sqlite3 * db, AccountType const & newType )
 {
-	int rowsChanged;
-	
-	sqlite3 * db = g_theApp.GetDatabase();
+	int rowsChanged = 0;
+
 	ansi_string sql = string_to_utf8("INSERT INTO am_account_types( name, rank ) VALUES( ?, ? );");
 	sqlite3_stmt * stmt = NULL;
 	int rc;
@@ -888,11 +841,11 @@ bool AddAccountType( CString const & typeName, int safeRank )
 
 	// 绑定参数
 	// 类型名
-	rc = sqlite3_bind_text( stmt, 1, string_to_utf8( (LPCTSTR)typeName ).c_str(), -1, SQLITE_TRANSIENT );
+	rc = newType.bindTypeName( stmt, 1 );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 	
 	// 安全值
-	rc = sqlite3_bind_int( stmt, 2, safeRank );
+	rc = newType.bindSafeRank( stmt, 2 );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 	
 	// 执行语句
@@ -908,7 +861,7 @@ bool AddAccountType( CString const & typeName, int safeRank )
 	}
 	else
 	{
-		rc = sqlite3_reset(stmt);
+		sqlite3_reset(stmt);
 		goto OccurDbError;
 	}
 	
@@ -921,15 +874,14 @@ OccurDbError: // 出错处理
 	localError = sqlite3_errmsg(db);
 	if ( stmt )
 		sqlite3_finalize(stmt);
-	MessageBox( *AfxGetMainWnd(), utf8_to_string(localError).c_str(), _T("数据库错误"), MB_OK | MB_ICONERROR );
+	AfxGetMainWnd()->FatalError( utf8_to_string(localError).c_str(), _T("数据库错误") );
 	return false;
 }
 
-bool ModifyAccountType( CString const & typeName, CString const & newTypeName, int newSafeRank )
+bool ModifyAccountType( sqlite3 * db, CString const & typeName, AccountType const & newType )
 {
-	int rowsChanged;
-	
-	sqlite3 * db = g_theApp.GetDatabase();
+	int rowsChanged = 0;
+
 	ansi_string sql = string_to_utf8("UPDATE am_account_types SET name = ?, rank = ? WHERE name = ?;");
 	sqlite3_stmt * stmt = NULL;
 	int rc;
@@ -941,15 +893,15 @@ bool ModifyAccountType( CString const & typeName, CString const & newTypeName, i
 	
 	// 绑定参数
 	// 新类型名
-	rc = sqlite3_bind_text( stmt, 1, string_to_utf8( (LPCTSTR)newTypeName ).c_str(), -1, SQLITE_TRANSIENT );
+	rc = newType.bindTypeName( stmt, 1 );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
-	
+
 	// 新安全值
-	rc = sqlite3_bind_int( stmt, 2, newSafeRank );
+	rc = newType.bindSafeRank( stmt, 2 );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 	
 	// 类型名
-	rc = sqlite3_bind_text( stmt, 3, string_to_utf8( (LPCTSTR)typeName ).c_str(), -1, SQLITE_TRANSIENT );
+	rc = Fields::_bindString( stmt, 3, typeName );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 
 	// 执行语句
@@ -978,36 +930,35 @@ OccurDbError: // 出错处理
 	localError = sqlite3_errmsg(db);
 	if ( stmt )
 		sqlite3_finalize(stmt);
-	MessageBox( *AfxGetMainWnd(), utf8_to_string(localError).c_str(), _T("数据库错误"), MB_OK | MB_ICONERROR );
+	AfxGetMainWnd()->FatalError( utf8_to_string(localError).c_str(), _T("数据库错误") );
 	return false;
 }
 
-bool DeleteAccountType( CString const & typeName )
+bool DeleteAccountType( sqlite3 * db, CString const & typeName )
 {
 	int rowsChanged = 0;
-	
-	sqlite3 * db = g_theApp.GetDatabase();
-	ansi_string sql2, sql;
+
+	ansi_string sql1, sql2;
+	sqlite3_stmt * stmt1 = NULL;
 	sqlite3_stmt * stmt2 = NULL;
-	sqlite3_stmt * stmt = NULL;
 	int rc;
 	const char * localError;
 
 	// 准备语句
-	sql2 = string_to_utf8("SELECT COUNT(*) > 0 FROM am_account_cates WHERE type = ?;");
-	rc = sqlite3_prepare_v2( db, sql2.c_str(), sql2.size(), &stmt2, NULL );
+	sql1 = string_to_utf8("SELECT COUNT(*) > 0 FROM am_account_cates WHERE type = ?;");
+	rc = sqlite3_prepare_v2( db, sql1.c_str(), sql1.size(), &stmt1, NULL );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 
 	// 绑定参数
 	// 类型名
-	rc = sqlite3_bind_text( stmt2, 1, string_to_utf8( (LPCTSTR)typeName ).c_str(), -1, SQLITE_TRANSIENT );
+	rc = Fields::_bindString( stmt1, 1, typeName );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 
 	// 执行语句,判断是否执行删除类型操作
-	rc = sqlite3_step(stmt2);
+	rc = sqlite3_step(stmt1);
 	if ( rc != SQLITE_ROW ) goto OccurDbError;
 
-	if ( sqlite3_column_int( stmt2, 0 ) )
+	if ( Fields::_getInt( stmt1, 0 ) )
 	{
 		// 不能删除此类型
 		AfxGetMainWnd()->WarningError( _T("该类型下关联有账户种类，因此不能删除"), _T("错误") );
@@ -1016,72 +967,53 @@ bool DeleteAccountType( CString const & typeName )
 
 	//////////////////////////////////////////////////////////////////////////
 	// 准备语句
-	sql = string_to_utf8("DELETE FROM am_account_types WHERE name = ?;");
-	rc = sqlite3_prepare_v2( db, sql.c_str(), sql.size(), &stmt, NULL );
+	sql2 = string_to_utf8("DELETE FROM am_account_types WHERE name = ?;");
+	rc = sqlite3_prepare_v2( db, sql2.c_str(), sql2.size(), &stmt2, NULL );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 
 	// 绑定参数
 	// 类型名
-	rc = sqlite3_bind_text( stmt, 1, string_to_utf8( (LPCTSTR)typeName ).c_str(), -1, SQLITE_TRANSIENT );
+	rc = Fields::_bindString( stmt2, 1, typeName );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 
 	// 执行语句
-	rc = sqlite3_step(stmt);
+	rc = sqlite3_step(stmt2);
 	if ( rc == SQLITE_DONE )
 	{
 		rowsChanged = sqlite3_changes(db);
-		rc = sqlite3_reset(stmt);
+		rc = sqlite3_reset(stmt2);
 		if ( rc != SQLITE_OK ) goto OccurDbError;
 	}
 	else
 	{
-		sqlite3_reset(stmt);
+		sqlite3_reset(stmt2);
 		goto OccurDbError;
 	}
 
 ExitProc:
 	// 无硬性错误的结束
+	if ( stmt1 )
+		sqlite3_finalize(stmt1);
 	if ( stmt2 )
 		sqlite3_finalize(stmt2);
-	if ( stmt )
-		sqlite3_finalize(stmt);
 	return rowsChanged == 1;
 
 OccurDbError: // 出错处理
 	localError = sqlite3_errmsg(db);
+	if ( stmt1 )
+		sqlite3_finalize(stmt1);
 	if ( stmt2 )
 		sqlite3_finalize(stmt2);
-	if ( stmt )
-		sqlite3_finalize(stmt);
 	AfxGetMainWnd()->FatalError( utf8_to_string(localError).c_str(), _T("数据库错误") );
 	return false;
 }
 
-int LoadAccountCates(
-	CUIntArray * ids,
-	CStringArray * cateNames,
-	CStringArray * cateDescs,
-	CStringArray * typeNames,
-	CStringArray * urls,
-	CStringArray * icoPaths,
-	CStringArray * startups,
-	CStringArray * keywordss,
-	CUIntArray * timeWritens
-)
+int LoadAccountCates( sqlite3 * db, AccountCateArray * cates )
 {
-	IfPTR(ids)->RemoveAll();
-	IfPTR(cateNames)->RemoveAll();
-	IfPTR(cateDescs)->RemoveAll();
-	IfPTR(typeNames)->RemoveAll();
-	IfPTR(urls)->RemoveAll();
-	IfPTR(icoPaths)->RemoveAll();
-	IfPTR(startups)->RemoveAll();
-	IfPTR(keywordss)->RemoveAll();
-	IfPTR(timeWritens)->RemoveAll();
+	IfPTR(cates)->RemoveAll();
 
 	int count = 0;
 
-	sqlite3 * db = g_theApp.GetDatabase();
 	ansi_string sql = string_to_utf8("SELECT * FROM am_account_cates ORDER BY id;");
 	sqlite3_stmt * stmt = NULL;
 	int rc;
@@ -1094,15 +1026,17 @@ int LoadAccountCates(
 	// 执行语句
 	while ( ( rc = sqlite3_step(stmt) ) == SQLITE_ROW )
 	{
-		IfPTR(ids)->Add( sqlite3_column_int( stmt, 0 ) );
-		IfPTR(cateNames)->Add( utf8_to_string( (char const *)sqlite3_column_text( stmt, 1 ) ).c_str() );
-		IfPTR(cateDescs)->Add( utf8_to_string( (char const *)sqlite3_column_text( stmt, 2 ) ).c_str() );
-		IfPTR(typeNames)->Add( utf8_to_string( (char const *)sqlite3_column_text( stmt, 3 ) ).c_str() );
-		IfPTR(urls)->Add( utf8_to_string( (char const *)sqlite3_column_text( stmt, 4 ) ).c_str() );
-		IfPTR(icoPaths)->Add( utf8_to_string( (char const *)sqlite3_column_text( stmt, 5 ) ).c_str() );
-		IfPTR(startups)->Add( utf8_to_string( (char const *)sqlite3_column_text( stmt, 6 ) ).c_str() );
-		IfPTR(keywordss)->Add( utf8_to_string( (char const *)sqlite3_column_text( stmt, 7 ) ).c_str() );
-		IfPTR(timeWritens)->Add( sqlite3_column_int( stmt, 8 ) );
+		AccountCate cate;
+		cate.loadId( stmt, 0 );//Add( sqlite3_column_int( stmt, 0 ) );
+		cate.loadCateName( stmt, 1 );//Add( utf8_to_string( (char const *)sqlite3_column_text( stmt, 1 ) ).c_str() );
+		cate.loadCateDesc( stmt, 2 );//Add( utf8_to_string( (char const *)sqlite3_column_text( stmt, 2 ) ).c_str() );
+		cate.loadTypeName( stmt, 3 );//Add( utf8_to_string( (char const *)sqlite3_column_text( stmt, 3 ) ).c_str() );
+		cate.loadUrl( stmt, 4 );//Add( utf8_to_string( (char const *)sqlite3_column_text( stmt, 4 ) ).c_str() );
+		cate.loadIcoPath( stmt, 5 );//Add( utf8_to_string( (char const *)sqlite3_column_text( stmt, 5 ) ).c_str() );
+		cate.loadStartup( stmt, 6 );//Add( utf8_to_string( (char const *)sqlite3_column_text( stmt, 6 ) ).c_str() );
+		cate.loadKeywords( stmt, 7 );//Add( utf8_to_string( (char const *)sqlite3_column_text( stmt, 7 ) ).c_str() );
+		cate.loadTimeWriten( stmt, 8 );//Add( sqlite3_column_int( stmt, 8 ) );
+		IfPTR(cates)->Add(cate);
 
 		count++;
 	}
@@ -1128,15 +1062,14 @@ OccurDbError: // 出错处理
 	localError = sqlite3_errmsg(db);
 	if ( stmt )
 		sqlite3_finalize(stmt);
-	MessageBox( *AfxGetMainWnd(), utf8_to_string(localError).c_str(), _T("数据库错误"), MB_OK | MB_ICONERROR );
+	AfxGetMainWnd()->FatalError( utf8_to_string(localError).c_str(), _T("数据库错误") );
 	return 0;
 }
 
-bool GetAccountCate( int id, CString * cateName, CString * cateDesc, CString * typeName, CString * url, CString * icoPath, CString * startup, CString * keywords, int * timeWriten )
+bool GetAccountCate( sqlite3 * db, int id, AccountCate * cate )
 {
 	bool ret = false;
 
-	sqlite3 * db = g_theApp.GetDatabase();
 	ansi_string sql = string_to_utf8("SELECT * FROM am_account_cates WHERE id = ?;");
 	sqlite3_stmt * stmt = NULL;
 	int rc;
@@ -1147,22 +1080,22 @@ bool GetAccountCate( int id, CString * cateName, CString * cateDesc, CString * t
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 	// 绑定参数
 	// cateId
-	rc = sqlite3_bind_int( stmt, 1, id );
+	rc = Fields::_bindInt( stmt, 1, id );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 	
 	// 执行语句
 	rc = sqlite3_step(stmt);
 	if ( rc == SQLITE_ROW )
 	{
-		ASSERT( id == sqlite3_column_int( stmt, 0 ) );
-		AssignPTR(cateName) = utf8_to_string( (char const *)sqlite3_column_text( stmt, 1 ) ).c_str();
-		AssignPTR(cateDesc) = utf8_to_string( (char const *)sqlite3_column_text( stmt, 2 ) ).c_str();
-		AssignPTR(typeName) = utf8_to_string( (char const *)sqlite3_column_text( stmt, 3 ) ).c_str();
-		AssignPTR(url) = utf8_to_string( (char const *)sqlite3_column_text( stmt, 4 ) ).c_str();
-		AssignPTR(icoPath) = utf8_to_string( (char const *)sqlite3_column_text( stmt, 5 ) ).c_str();
-		AssignPTR(startup) = utf8_to_string( (char const *)sqlite3_column_text( stmt, 6 ) ).c_str();
-		AssignPTR(keywords) = utf8_to_string( (char const *)sqlite3_column_text( stmt, 7 ) ).c_str();
-		AssignPTR(timeWriten) = sqlite3_column_int( stmt, 8 );
+		IfPTR(cate)->loadId( stmt, 0 );
+		IfPTR(cate)->loadCateName( stmt, 1 );
+		IfPTR(cate)->loadCateDesc( stmt, 2 );
+		IfPTR(cate)->loadTypeName( stmt, 3 );
+		IfPTR(cate)->loadUrl( stmt, 4 );
+		IfPTR(cate)->loadIcoPath( stmt, 5 );
+		IfPTR(cate)->loadStartup( stmt, 6 );
+		IfPTR(cate)->loadKeywords( stmt, 7 );
+		IfPTR(cate)->loadTimeWriten( stmt, 8 );
 		ret = true;
 		goto ExitProc;
 	}
@@ -1188,15 +1121,14 @@ OccurDbError: // 出错处理
 	localError = sqlite3_errmsg(db);
 	if ( stmt )
 		sqlite3_finalize(stmt);
-	MessageBox( *AfxGetMainWnd(), utf8_to_string(localError).c_str(), _T("数据库错误"), MB_OK | MB_ICONERROR );
+	AfxGetMainWnd()->FatalError( utf8_to_string(localError).c_str(), _T("数据库错误") );
 	return false;
 }
 
-int AddAccountCate( CString const & cateName, CString const & cateDesc, CString const & typeName, CString const & url, CString const & icoPath, CString const & startup, CString const & keywords )
+int AddAccountCate( sqlite3 * db, AccountCate const & newCate )
 {
-	int rowsChanged;
-	
-	sqlite3 * db = g_theApp.GetDatabase();
+	int rowsChanged = 0;
+
 	ansi_string sql = string_to_utf8("INSERT INTO am_account_cates( name, desc, type, url, icon, startup, keywords, time ) VALUES( ?, ?, ?, ?, ?, ?, ?, ? );");
 	sqlite3_stmt * stmt = NULL;
 	int rc;
@@ -1205,38 +1137,38 @@ int AddAccountCate( CString const & cateName, CString const & cateDesc, CString 
 	// 准备语句
 	rc = sqlite3_prepare_v2( db, sql.c_str(), sql.size(), &stmt, NULL );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
-	
+
 	// 绑定参数
 	// 种类名
-	rc = sqlite3_bind_text( stmt, 1, string_to_utf8( (LPCTSTR)cateName ).c_str(), -1, SQLITE_TRANSIENT );
+	rc = newCate.bindCateName( stmt, 1 );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
-	
+
 	// 种类描述
-	rc = sqlite3_bind_text( stmt, 2, string_to_utf8( (LPCTSTR)cateDesc ).c_str(), -1, SQLITE_TRANSIENT );
+	rc = newCate.bindCateDesc( stmt, 2 );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 
 	// 类型名
-	rc = sqlite3_bind_text( stmt, 3, string_to_utf8( (LPCTSTR)typeName ).c_str(), -1, SQLITE_TRANSIENT );
+	rc = newCate.bindTypeName( stmt, 3 );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 
 	// URL
-	rc = sqlite3_bind_text( stmt, 4, string_to_utf8( (LPCTSTR)url ).c_str(), -1, SQLITE_TRANSIENT );
+	rc = newCate.bindUrl( stmt, 4 );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 
 	// 图标路径
-	rc = sqlite3_bind_text( stmt, 5, string_to_utf8( (LPCTSTR)icoPath ).c_str(), -1, SQLITE_TRANSIENT );
+	rc = newCate.bindIcoPath( stmt, 5 );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 
 	// 启动方式
-	rc = sqlite3_bind_text( stmt, 6, string_to_utf8( (LPCTSTR)startup ).c_str(), -1, SQLITE_TRANSIENT );
+	rc = newCate.bindStartup( stmt, 6 );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
-	
+
 	// 关键字
-	rc = sqlite3_bind_text( stmt, 7, string_to_utf8( (LPCTSTR)keywords ).c_str(), -1, SQLITE_TRANSIENT );
+	rc = newCate.bindKeywords( stmt, 7 );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 
 	// 写入时间
-	rc = sqlite3_bind_int( stmt, 8, (int)get_utc_time() );
+	rc = Fields::_bindInt( stmt, 8, (int)get_utc_time() );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 	
 	// 执行语句
@@ -1245,14 +1177,11 @@ int AddAccountCate( CString const & cateName, CString const & cateDesc, CString 
 	{
 		rowsChanged = sqlite3_changes(db);
 		rc = sqlite3_reset(stmt);
-		if ( rc != SQLITE_OK )
-		{
-			goto OccurDbError;
-		}
+		if ( rc != SQLITE_OK ) goto OccurDbError;
 	}
 	else
 	{
-		rc = sqlite3_reset(stmt);
+		sqlite3_reset(stmt);
 		goto OccurDbError;
 	}
 	
@@ -1271,55 +1200,54 @@ OccurDbError: // 出错处理
 	localError = sqlite3_errmsg(db);
 	if ( stmt )
 		sqlite3_finalize(stmt);
-	MessageBox( *AfxGetMainWnd(), utf8_to_string(localError).c_str(), _T("数据库错误"), MB_OK | MB_ICONERROR );
+	AfxGetMainWnd()->FatalError( utf8_to_string(localError).c_str(), _T("数据库错误") );
 	return 0;
 }
 
-bool ModifyAccountCate( int id, CString const & newCateName, CString const & newCateDesc, CString const & newTypeName, CString const & newUrl, CString const & newIcoPath, CString const & newStartup, CString const & newKeywords )
+bool ModifyAccountCate( sqlite3 * db, int id, AccountCate const & newCate )
 {
-	int rowsChanged;
-	
-	sqlite3 * db = g_theApp.GetDatabase();
+	int rowsChanged = 0;
+
 	ansi_string sql = string_to_utf8("UPDATE am_account_cates SET name = ?, desc = ?, type = ?, url = ?, icon = ?, startup = ?, keywords = ? WHERE id = ?;");
 	sqlite3_stmt * stmt = NULL;
 	int rc;
 	const char * localError;
-	
+
 	// 准备语句
 	rc = sqlite3_prepare_v2( db, sql.c_str(), sql.size(), &stmt, NULL );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
-	
+
 	// 绑定参数
 	// 新种类名
-	rc = sqlite3_bind_text( stmt, 1, string_to_utf8( (LPCTSTR)newCateName ).c_str(), -1, SQLITE_TRANSIENT );
+	rc = newCate.bindCateName( stmt, 1 );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
-	
+
 	// 新种类描述
-	rc = sqlite3_bind_text( stmt, 2, string_to_utf8( (LPCTSTR)newCateDesc ).c_str(), -1, SQLITE_TRANSIENT );
+	rc = newCate.bindCateDesc( stmt, 2 );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
-	
+
 	// 新类型名
-	rc = sqlite3_bind_text( stmt, 3, string_to_utf8( (LPCTSTR)newTypeName ).c_str(), -1, SQLITE_TRANSIENT );
+	rc = newCate.bindTypeName( stmt, 3 );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
-	
+
 	// 新URL
-	rc = sqlite3_bind_text( stmt, 4, string_to_utf8( (LPCTSTR)newUrl ).c_str(), -1, SQLITE_TRANSIENT );
+	rc = newCate.bindUrl( stmt, 4 );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
-	
+
 	// 新图标路径
-	rc = sqlite3_bind_text( stmt, 5, string_to_utf8( (LPCTSTR)newIcoPath ).c_str(), -1, SQLITE_TRANSIENT );
+	rc = newCate.bindIcoPath( stmt, 5 );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
-	
+
 	// 新启动方式
-	rc = sqlite3_bind_text( stmt, 6, string_to_utf8( (LPCTSTR)newStartup ).c_str(), -1, SQLITE_TRANSIENT );
+	rc = newCate.bindStartup( stmt, 6 );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
-	
+
 	// 新关键字
-	rc = sqlite3_bind_text( stmt, 7, string_to_utf8( (LPCTSTR)newKeywords ).c_str(), -1, SQLITE_TRANSIENT );
+	rc = newCate.bindKeywords( stmt, 7 );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
-	
+
 	// CateId
-	rc = sqlite3_bind_int( stmt, 8, id );
+	rc = Fields::_bindInt( stmt, 8, id );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 
 	// 执行语句
@@ -1328,17 +1256,14 @@ bool ModifyAccountCate( int id, CString const & newCateName, CString const & new
 	{
 		rowsChanged = sqlite3_changes(db);
 		rc = sqlite3_reset(stmt);
-		if ( rc != SQLITE_OK )
-		{
-			goto OccurDbError;
-		}
+		if ( rc != SQLITE_OK ) goto OccurDbError;
 	}
 	else
 	{
-		rc = sqlite3_reset(stmt);
+		sqlite3_reset(stmt);
 		goto OccurDbError;
 	}
-	
+
 	// 正常无错误结束
 	if ( stmt )
 		sqlite3_finalize(stmt);
@@ -1348,36 +1273,35 @@ OccurDbError: // 出错处理
 	localError = sqlite3_errmsg(db);
 	if ( stmt )
 		sqlite3_finalize(stmt);
-	MessageBox( *AfxGetMainWnd(), utf8_to_string(localError).c_str(), _T("数据库错误"), MB_OK | MB_ICONERROR );
+	AfxGetMainWnd()->FatalError( utf8_to_string(localError).c_str(), _T("数据库错误") );
 	return false;
 }
 
-bool DeleteAccountCate( int id )
+bool DeleteAccountCate( sqlite3 * db, int id )
 {
 	int rowsChanged = 0;
 
-	sqlite3 * db = g_theApp.GetDatabase();
-	ansi_string sql, sql2;
+	ansi_string sql1, sql2;
+	sqlite3_stmt * stmt1 = NULL;
 	sqlite3_stmt * stmt2 = NULL;
-	sqlite3_stmt * stmt = NULL;
 	int rc;
 	const char * localError;
 
 	// 准备语句
-	sql2 = string_to_utf8("SELECT COUNT(*) > 0 FROM am_accounts WHERE cate = ?;");
-	rc = sqlite3_prepare_v2( db, sql2.c_str(), sql2.size(), &stmt2, NULL );
+	sql1 = string_to_utf8("SELECT COUNT(*) > 0 FROM am_accounts WHERE cate = ?;");
+	rc = sqlite3_prepare_v2( db, sql1.c_str(), sql1.size(), &stmt1, NULL );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
-	
+
 	// 绑定参数
 	// Cate ID
-	rc = sqlite3_bind_int( stmt2, 1, id );
+	rc = Fields::_bindInt( stmt1, 1, id );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
-	
+
 	// 执行语句,判断是否执行删除类型操作
-	rc = sqlite3_step(stmt2);
+	rc = sqlite3_step(stmt1);
 	if ( rc != SQLITE_ROW ) goto OccurDbError;
-	
-	if ( sqlite3_column_int( stmt2, 0 ) )
+
+	if ( Fields::_getInt( stmt1, 0 ) )
 	{
 		// 不能删除此类型
 		AfxGetMainWnd()->WarningError( _T("该种类下关联有账户，因此不能删除"), _T("错误") );
@@ -1386,58 +1310,54 @@ bool DeleteAccountCate( int id )
 
 	//////////////////////////////////////////////////////////////////////////
 	// 准备语句
-	sql = string_to_utf8("DELETE FROM am_account_cates WHERE id = ?;");
-	rc = sqlite3_prepare_v2( db, sql.c_str(), sql.size(), &stmt, NULL );
+	sql2 = string_to_utf8("DELETE FROM am_account_cates WHERE id = ?;");
+	rc = sqlite3_prepare_v2( db, sql2.c_str(), sql2.size(), &stmt2, NULL );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 	
 	// 绑定参数
 	// CateId
-	rc = sqlite3_bind_int( stmt, 1, id );
+	rc = Fields::_bindInt( stmt2, 1, id );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 
 	// 执行语句
-	rc = sqlite3_step(stmt);
+	rc = sqlite3_step(stmt2);
 	if ( rc == SQLITE_DONE )
 	{
 		rowsChanged = sqlite3_changes(db);
-		rc = sqlite3_reset(stmt);
-		if ( rc != SQLITE_OK )
-		{
-			goto OccurDbError;
-		}
+		rc = sqlite3_reset(stmt2);
+		if ( rc != SQLITE_OK ) goto OccurDbError;
 	}
 	else
 	{
-		sqlite3_reset(stmt);
+		sqlite3_reset(stmt2);
 		goto OccurDbError;
 	}
 
 ExitProc:
 	// 无硬性错误的结束
+	if ( stmt1 )
+		sqlite3_finalize(stmt1);
 	if ( stmt2 )
 		sqlite3_finalize(stmt2);
-	if ( stmt )
-		sqlite3_finalize(stmt);
 	return rowsChanged == 1;
 	
 OccurDbError: // 出错处理
 	localError = sqlite3_errmsg(db);
+	if ( stmt1 )
+		sqlite3_finalize(stmt1);
 	if ( stmt2 )
 		sqlite3_finalize(stmt2);
-	if ( stmt )
-		sqlite3_finalize(stmt);
 	AfxGetMainWnd()->FatalError( utf8_to_string(localError).c_str(), _T("数据库错误") );
 	return false;
 }
 
-int LoadAccountCatesSafeRank( CUIntArray * cateIds, CUIntArray * typeSafeRanks )
+int LoadAccountCatesSafeRank( sqlite3 * db, CUIntArray * cateIds, CUIntArray * typeSafeRanks )
 {
 	IfPTR(cateIds)->RemoveAll();
 	IfPTR(typeSafeRanks)->RemoveAll();
 
 	int count = 0;
-	
-	sqlite3 * db = g_theApp.GetDatabase();
+
 	ansi_string sql = string_to_utf8("SELECT c.id, t.rank from am_account_cates AS c Left JOIN am_account_types AS t ON t.name = c.type;");
 	sqlite3_stmt * stmt = NULL;
 	int rc;
@@ -1472,20 +1392,19 @@ ExitProc:
 	if ( stmt )
 		sqlite3_finalize(stmt);
 	return count;
-	
+
 OccurDbError: // 出错处理
 	localError = sqlite3_errmsg(db);
 	if ( stmt )
 		sqlite3_finalize(stmt);
-	MessageBox( *AfxGetMainWnd(), utf8_to_string(localError).c_str(), _T("数据库错误"), MB_OK | MB_ICONERROR );
+	AfxGetMainWnd()->FatalError( utf8_to_string(localError).c_str(), _T("数据库错误") );
 	return 0;
 }
 
-bool GetTypeByCateId( int cateId, CString * typeName, int * safeRank )
+bool GetTypeByCateId( sqlite3 * db, int cateId, AccountType * type )
 {
 	bool ret = false;
-	
-	sqlite3 * db = g_theApp.GetDatabase();
+
 	ansi_string sql = string_to_utf8("SELECT c.id, t.name, t.rank FROM am_account_cates AS c Left JOIN am_account_types AS t ON t.name = c.type WHERE c.id = ?;");
 	sqlite3_stmt * stmt = NULL;
 	int rc;
@@ -1496,17 +1415,16 @@ bool GetTypeByCateId( int cateId, CString * typeName, int * safeRank )
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 	// 绑定参数
 	// cateId
-	rc = sqlite3_bind_int( stmt, 1, cateId );
+	rc = Fields::_bindInt( stmt, 1, cateId );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
-	
+
 	// 执行语句
 	rc = sqlite3_step(stmt);
 	if ( rc == SQLITE_ROW )
 	{
-		char const * sUTF8 = (char const *)sqlite3_column_text( stmt, 1 );
-		ASSERT( cateId == sqlite3_column_int( stmt, 0 ) );
-		AssignPTR(typeName) = utf8_to_string( sUTF8 ? sUTF8 : "" ).c_str();
-		AssignPTR(safeRank) = sqlite3_column_int( stmt, 2 );
+		ASSERT( cateId == Fields::_getInt( stmt, 0 ) );
+		IfPTR(type)->loadTypeName( stmt, 1 );
+		IfPTR(type)->loadSafeRank( stmt, 2 );
 		ret = true;
 		goto ExitProc;
 	}
@@ -1532,245 +1450,16 @@ OccurDbError: // 出错处理
 	localError = sqlite3_errmsg(db);
 	if ( stmt )
 		sqlite3_finalize(stmt);
-	MessageBox( *AfxGetMainWnd(), utf8_to_string(localError).c_str(), _T("数据库错误"), MB_OK | MB_ICONERROR );
+	AfxGetMainWnd()->FatalError( utf8_to_string(localError).c_str(), _T("数据库错误") );
 	return false;
 }
 
-bool AddAccount( CString const & myName, CString const & accountName, CString const & accountPwd, int cateId, int safeRank, CString const & comment )
+int LoadAccounts( sqlite3 * db, int userId, AccountArray * accounts )
 {
-	ansi_string encryptAccountName, encryptAccountPwd;
-
-	int rowsChanged;
-	
-	sqlite3 * db = g_theApp.GetDatabase();
-	ansi_string sql = string_to_utf8("INSERT INTO am_accounts( myname, account_name, account_pwd, cate, user, safe_rank, comment, time ) VALUES( ?, ?, ?, ?, ?, ?, ?, ? );");
-	sqlite3_stmt * stmt = NULL;
-	int rc;
-	const char * localError;
-	
-	// 准备语句
-	rc = sqlite3_prepare_v2( db, sql.c_str(), sql.size(), &stmt, NULL );
-	if ( rc != SQLITE_OK ) goto OccurDbError;
-	
-	// 绑定参数
-	// 账户自定种类名
-	rc = sqlite3_bind_text( stmt, 1, string_to_utf8( (LPCTSTR)myName ).c_str(), -1, SQLITE_TRANSIENT );
-	if ( rc != SQLITE_OK ) goto OccurDbError;
-	
-	// 账户名
-	encryptAccountName = EncryptContent( string_to_utf8( (LPCTSTR)accountName ) );
-	rc = sqlite3_bind_blob( stmt, 2, encryptAccountName.c_str(), encryptAccountName.size(), SQLITE_TRANSIENT );
-	if ( rc != SQLITE_OK ) goto OccurDbError;
-
-	// 账户密码
-	encryptAccountPwd = EncryptContent( string_to_utf8( (LPCTSTR)accountPwd ) );
-	rc = sqlite3_bind_blob( stmt, 3, encryptAccountPwd.c_str(), encryptAccountPwd.size(), SQLITE_TRANSIENT );
-	if ( rc != SQLITE_OK ) goto OccurDbError;
-
-	// CateId
-	rc = sqlite3_bind_int( stmt, 4, cateId );
-	if ( rc != SQLITE_OK ) goto OccurDbError;
-
-	// 所属用户
-	rc = sqlite3_bind_int( stmt, 5, g_theApp.m_loginedUser.m_id );
-	if ( rc != SQLITE_OK ) goto OccurDbError;
-
-	// 安全权值
-	rc = sqlite3_bind_int( stmt, 6, safeRank );
-	if ( rc != SQLITE_OK ) goto OccurDbError;
-
-	// 备注
-	rc = sqlite3_bind_text( stmt, 7, string_to_utf8( (LPCTSTR)comment ).c_str(), -1, SQLITE_TRANSIENT );
-	if ( rc != SQLITE_OK ) goto OccurDbError;
-
-	// 写入时间
-	rc = sqlite3_bind_int( stmt, 8, (int)get_utc_time() );
-	if ( rc != SQLITE_OK ) goto OccurDbError;
-
-	// 执行语句
-	rc = sqlite3_step(stmt);
-	if ( rc == SQLITE_DONE )
-	{
-		rowsChanged = sqlite3_changes(db);
-		rc = sqlite3_reset(stmt);
-		if ( rc != SQLITE_OK )
-		{
-			goto OccurDbError;
-		}
-	}
-	else
-	{
-		rc = sqlite3_reset(stmt);
-		goto OccurDbError;
-	}
-	
-	// 正常无错误结束
-	if ( stmt )
-		sqlite3_finalize(stmt);
-	return rowsChanged == 1;
-	
-OccurDbError: // 出错处理
-	localError = sqlite3_errmsg(db);
-	if ( stmt )
-		sqlite3_finalize(stmt);
-	MessageBox( *AfxGetMainWnd(), utf8_to_string(localError).c_str(), _T("数据库错误"), MB_OK | MB_ICONERROR );
-	return false;
-}
-
-bool ModifyAccount( CString const & myName, CString const & newMyName, CString const & newAccountName, CString const & newAccountPwd, int newCateId, int newSafeRank, CString const & newComment )
-{
-	ansi_string encryptAccountName, encryptAccountPwd;
-	int rowsChanged;
-	
-	sqlite3 * db = g_theApp.GetDatabase();
-	ansi_string sql = string_to_utf8("UPDATE am_accounts SET myname = ?, account_name = ?, account_pwd = ?, cate = ?, safe_rank = ?, comment = ? WHERE user = ? AND myname = ?;");
-	sqlite3_stmt * stmt = NULL;
-	int rc;
-	const char * localError;
-	
-	// 准备语句
-	rc = sqlite3_prepare_v2( db, sql.c_str(), sql.size(), &stmt, NULL );
-	if ( rc != SQLITE_OK ) goto OccurDbError;
-	
-	// 绑定参数
-	// 新账户自定种类名
-	rc = sqlite3_bind_text( stmt, 1, string_to_utf8( (LPCTSTR)newMyName ).c_str(), -1, SQLITE_TRANSIENT );
-	if ( rc != SQLITE_OK ) goto OccurDbError;
-	
-	// 新账户名
-	encryptAccountName = EncryptContent( string_to_utf8( (LPCTSTR)newAccountName ) );
-	rc = sqlite3_bind_blob( stmt, 2, encryptAccountName.c_str(), encryptAccountName.size(), SQLITE_TRANSIENT );
-	if ( rc != SQLITE_OK ) goto OccurDbError;
-	
-	// 新账户密码
-	encryptAccountPwd = EncryptContent( string_to_utf8( (LPCTSTR)newAccountPwd ) );
-	rc = sqlite3_bind_blob( stmt, 3, encryptAccountPwd.c_str(), encryptAccountPwd.size(), SQLITE_TRANSIENT );
-	if ( rc != SQLITE_OK ) goto OccurDbError;
-	
-	// 新CateId
-	rc = sqlite3_bind_int( stmt, 4, newCateId );
-	if ( rc != SQLITE_OK ) goto OccurDbError;
-	
-	// 新安全权值
-	rc = sqlite3_bind_int( stmt, 5, newSafeRank );
-	if ( rc != SQLITE_OK ) goto OccurDbError;
-	
-	// 新备注
-	rc = sqlite3_bind_text( stmt, 6, string_to_utf8( (LPCTSTR)newComment ).c_str(), -1, SQLITE_TRANSIENT );
-	if ( rc != SQLITE_OK ) goto OccurDbError;
-
-	// 所属用户
-	rc = sqlite3_bind_int( stmt, 7, g_theApp.m_loginedUser.m_id );
-	if ( rc != SQLITE_OK ) goto OccurDbError;
-
-	// 账户自定种类名
-	rc = sqlite3_bind_text( stmt, 8, string_to_utf8( (LPCTSTR)myName ).c_str(), -1, SQLITE_TRANSIENT );
-	if ( rc != SQLITE_OK ) goto OccurDbError;
-
-	// 执行语句
-	rc = sqlite3_step(stmt);
-	if ( rc == SQLITE_DONE )
-	{
-		rowsChanged = sqlite3_changes(db);
-		rc = sqlite3_reset(stmt);
-		if ( rc != SQLITE_OK )
-		{
-			goto OccurDbError;
-		}
-	}
-	else
-	{
-		rc = sqlite3_reset(stmt);
-		goto OccurDbError;
-	}
-	
-	// 正常无错误结束
-	if ( stmt )
-		sqlite3_finalize(stmt);
-	return rowsChanged == 1;
-	
-OccurDbError: // 出错处理
-	localError = sqlite3_errmsg(db);
-	if ( stmt )
-		sqlite3_finalize(stmt);
-	MessageBox( *AfxGetMainWnd(), utf8_to_string(localError).c_str(), _T("数据库错误"), MB_OK | MB_ICONERROR );
-	return false;
-}
-
-bool DeleteAccount( CString const & myName )
-{
-	int rowsChanged;
-	
-	sqlite3 * db = g_theApp.GetDatabase();
-	ansi_string sql = string_to_utf8("DELETE FROM am_accounts WHERE user = ? AND myname = ?;");
-	sqlite3_stmt * stmt = NULL;
-	int rc;
-	const char * localError;
-	
-	// 准备语句
-	rc = sqlite3_prepare_v2( db, sql.c_str(), sql.size(), &stmt, NULL );
-	if ( rc != SQLITE_OK ) goto OccurDbError;
-	
-	// 绑定参数
-	// 所属用户
-	rc = sqlite3_bind_int( stmt, 1, g_theApp.m_loginedUser.m_id );
-	if ( rc != SQLITE_OK ) goto OccurDbError;
-
-	// 自定种类名
-	rc = sqlite3_bind_text( stmt, 2, string_to_utf8( (LPCTSTR)myName ).c_str(), -1, SQLITE_TRANSIENT );
-	if ( rc != SQLITE_OK ) goto OccurDbError;
-	
-	// 执行语句
-	rc = sqlite3_step(stmt);
-	if ( rc == SQLITE_DONE )
-	{
-		rowsChanged = sqlite3_changes(db);
-		rc = sqlite3_reset(stmt);
-		if ( rc != SQLITE_OK )
-		{
-			goto OccurDbError;
-		}
-	}
-	else
-	{
-		rc = sqlite3_reset(stmt);
-		goto OccurDbError;
-	}
-	
-	// 正常无错误结束
-	if ( stmt )
-		sqlite3_finalize(stmt);
-	return rowsChanged == 1;
-	
-OccurDbError: // 出错处理
-	localError = sqlite3_errmsg(db);
-	if ( stmt )
-		sqlite3_finalize(stmt);
-	MessageBox( *AfxGetMainWnd(), utf8_to_string(localError).c_str(), _T("数据库错误"), MB_OK | MB_ICONERROR );
-	return false;
-}
-
-int LoadAccounts(
-	CStringArray * myNames,
-	CStringArray * accountNames,
-	CStringArray * accountPwds,
-	CUIntArray * cateIds,
-	CUIntArray * safeRanks,
-	CStringArray * comments,
-	CUIntArray * times
-)
-{
-	IfPTR(myNames)->RemoveAll();
-	IfPTR(accountNames)->RemoveAll();
-	IfPTR(accountPwds)->RemoveAll();
-	IfPTR(cateIds)->RemoveAll();
-	IfPTR(safeRanks)->RemoveAll();
-	IfPTR(comments)->RemoveAll();
-	IfPTR(times)->RemoveAll();
+	IfPTR(accounts)->RemoveAll();
 
 	int count = 0;
 
-	sqlite3 * db = g_theApp.GetDatabase();
 	ansi_string sql = string_to_utf8("SELECT * FROM am_accounts WHERE user = ? ORDER BY cate;");
 	sqlite3_stmt * stmt = NULL;
 	int rc;
@@ -1781,35 +1470,22 @@ int LoadAccounts(
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 	// 参数绑定
 	// 所属用户
-	rc = sqlite3_bind_int( stmt, 1, g_theApp.m_loginedUser.m_id );
+	rc = Fields::_bindInt( stmt, 1, userId );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 
 	// 执行语句
 	while ( ( rc = sqlite3_step(stmt) ) == SQLITE_ROW )
 	{
-		int size;
-		ansi_string encryptAccountName, encryptAccountPwd;
-
-		IfPTR(myNames)->Add( utf8_to_string( (char const *)sqlite3_column_text( stmt, 0 ) ).c_str() );
-
-		size = sqlite3_column_bytes( stmt, 1 );
-		encryptAccountName.assign( (char const *)sqlite3_column_blob( stmt, 1 ), size );
-		// 这里是个bug,数据库存的BLOB数据并未进行过UTF8加密,因此现在进行修复
-		// 利用GUI重新设定数据库内的名字即可
-		IfPTR(accountNames)->Add( utf8_to_string( DecryptContent(encryptAccountName) ).c_str() );
-
-		size = sqlite3_column_bytes( stmt, 2 );
-		encryptAccountPwd.assign( (char const *)sqlite3_column_blob( stmt, 2 ), size );
-		IfPTR(accountPwds)->Add( utf8_to_string( DecryptContent(encryptAccountPwd) ).c_str() );
-
-		IfPTR(cateIds)->Add( sqlite3_column_int( stmt, 3 ) );
-
-		ASSERT( g_theApp.m_loginedUser.m_id == sqlite3_column_int( stmt, 4 ) );
-
-		IfPTR(safeRanks)->Add( sqlite3_column_int( stmt, 5 ) );
-		IfPTR(comments)->Add( utf8_to_string( (char const *)sqlite3_column_text( stmt, 6 ) ).c_str() );
-		IfPTR(times)->Add( sqlite3_column_int( stmt, 7 ) );
-
+		Account account;
+		account.loadMyName( stmt, 0 );
+		account.loadAccountName( stmt, 1 );
+		account.loadAccountPwd( stmt, 2 );
+		account.loadCateId( stmt, 3 );
+		account.loadUserId( stmt, 4 );
+		account.loadSafeRank( stmt, 5 );
+		account.loadComment( stmt, 6 );
+		account.loadTime( stmt, 7 );
+		IfPTR(accounts)->Add(account);
 		count++;
 	}
 	
@@ -1834,64 +1510,43 @@ OccurDbError: // 出错处理
 	localError = sqlite3_errmsg(db);
 	if ( stmt )
 		sqlite3_finalize(stmt);
-	MessageBox( *AfxGetMainWnd(), utf8_to_string(localError).c_str(), _T("数据库错误"), MB_OK | MB_ICONERROR );
+	AfxGetMainWnd()->FatalError( utf8_to_string(localError).c_str(), _T("数据库错误") );
 	return 0;
 }
 
-bool GetAccount(
-	CString const & myName,
-	CString * accountName,
-	CString * accountPwd,
-	int * cateId,
-	int * safeRank,
-	CString * comment,
-	int * time
-)
+bool GetAccount( sqlite3 * db, int userId, CString const & myName, Account * account )
 {
 	bool ret = false;
-	
-	sqlite3 * db = g_theApp.GetDatabase();
+
 	ansi_string sql = string_to_utf8("SELECT * FROM am_accounts WHERE user = ? AND myname = ?;");
 	sqlite3_stmt * stmt = NULL;
 	int rc;
 	const char * localError;
-	
+
 	// 准备语句
 	rc = sqlite3_prepare_v2( db, sql.c_str(), sql.size(), &stmt, NULL );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 	// 绑定参数
 	// 所属用户
-	rc = sqlite3_bind_int( stmt, 1, g_theApp.m_loginedUser.m_id );
+	rc = Fields::_bindInt( stmt, 1, userId );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 
 	// 自定种类名
-	rc = sqlite3_bind_text( stmt, 2, string_to_utf8( (LPCTSTR)myName ).c_str(), -1, SQLITE_TRANSIENT );
+	rc = Fields::_bindString( stmt, 2, myName );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 
 	// 执行语句
 	rc = sqlite3_step(stmt);
 	if ( rc == SQLITE_ROW )
 	{
-		int size;
-		ansi_string encryptAccountName, encryptAccountPwd;
-
-		ASSERT( myName == utf8_to_string( (char const *)sqlite3_column_text( stmt, 0 ) ).c_str() );
-
-		size = sqlite3_column_bytes( stmt, 1 );
-		encryptAccountName.assign( (char const *)sqlite3_column_blob( stmt, 1 ), size );
-		AssignPTR(accountName) = utf8_to_string( DecryptContent(encryptAccountName) ).c_str();
-
-		size = sqlite3_column_bytes( stmt, 2 );
-		encryptAccountPwd.assign( (char const *)sqlite3_column_blob( stmt, 2 ), size );
-		AssignPTR(accountPwd) = utf8_to_string( DecryptContent(encryptAccountPwd) ).c_str();
-
-		AssignPTR(cateId) = sqlite3_column_int( stmt, 3 );
-
-		ASSERT( g_theApp.m_loginedUser.m_id == sqlite3_column_int( stmt, 4 ) );
-
-		AssignPTR(safeRank) = sqlite3_column_int( stmt, 5 );
-		AssignPTR(comment) = utf8_to_string( (char const *)sqlite3_column_text( stmt, 6 ) ).c_str();
-		AssignPTR(time) = sqlite3_column_int( stmt, 7 );
+		IfPTR(account)->loadMyName( stmt, 0 );
+		IfPTR(account)->loadAccountName( stmt, 1 );
+		IfPTR(account)->loadAccountPwd( stmt, 2 );
+		IfPTR(account)->loadCateId( stmt, 3 );
+		IfPTR(account)->loadUserId( stmt, 4 );
+		IfPTR(account)->loadSafeRank( stmt, 5 );
+		IfPTR(account)->loadComment( stmt, 6 );
+		IfPTR(account)->loadTime( stmt, 7 );
 		ret = true;
 		goto ExitProc;
 	}
@@ -1917,39 +1572,215 @@ OccurDbError: // 出错处理
 	localError = sqlite3_errmsg(db);
 	if ( stmt )
 		sqlite3_finalize(stmt);
-	MessageBox( *AfxGetMainWnd(), utf8_to_string(localError).c_str(), _T("数据库错误"), MB_OK | MB_ICONERROR );
+	AfxGetMainWnd()->FatalError( utf8_to_string(localError).c_str(), _T("数据库错误") );
 	return false;
 }
 
-bool BackupData( CString const & filename )
+bool AddAccount( sqlite3 * db, Account const & newAccount )
 {
-	bool ret = false;
-	g_theApp.CloseDatabase();
-	ret = FALSE != CopyFile( ExplainCustomVars(g_theApp.m_settings.databasePath).c_str(), filename, FALSE );
-	g_theApp.OpenDatabase();
-	return ret;
+	int rowsChanged = 0;
+
+	ansi_string sql = string_to_utf8("INSERT INTO am_accounts( myname, account_name, account_pwd, cate, user, safe_rank, comment, time ) VALUES( ?, ?, ?, ?, ?, ?, ?, ? );");
+	sqlite3_stmt * stmt = NULL;
+	int rc;
+	const char * localError;
+
+	// 准备语句
+	rc = sqlite3_prepare_v2( db, sql.c_str(), sql.size(), &stmt, NULL );
+	if ( rc != SQLITE_OK ) goto OccurDbError;
+	
+	// 绑定参数
+	// 账户自定种类名
+	rc = newAccount.bindMyName( stmt, 1 );
+	if ( rc != SQLITE_OK ) goto OccurDbError;
+	
+	// 账户名
+	rc = newAccount.bindAccountName( stmt, 2 );
+	if ( rc != SQLITE_OK ) goto OccurDbError;
+
+	// 账户密码
+	rc = newAccount.bindAccountPwd( stmt, 3 );
+	if ( rc != SQLITE_OK ) goto OccurDbError;
+
+	// CateId
+	rc = newAccount.bindCateId( stmt, 4 );
+	if ( rc != SQLITE_OK ) goto OccurDbError;
+
+	// 所属用户
+	rc = newAccount.bindUserId( stmt, 5 );
+	if ( rc != SQLITE_OK ) goto OccurDbError;
+
+	// 安全权值
+	rc = newAccount.bindSafeRank( stmt, 6 );
+	if ( rc != SQLITE_OK ) goto OccurDbError;
+
+	// 备注
+	rc = newAccount.bindComment( stmt, 7 );
+	if ( rc != SQLITE_OK ) goto OccurDbError;
+
+	// 写入时间
+	rc = Fields::_bindInt( stmt, 8, (int)get_utc_time() );
+	if ( rc != SQLITE_OK ) goto OccurDbError;
+
+	// 执行语句
+	rc = sqlite3_step(stmt);
+	if ( rc == SQLITE_DONE )
+	{
+		rowsChanged = sqlite3_changes(db);
+		rc = sqlite3_reset(stmt);
+		if ( rc != SQLITE_OK ) goto OccurDbError;
+	}
+	else
+	{
+		sqlite3_reset(stmt);
+		goto OccurDbError;
+	}
+
+	// 正常无错误结束
+	if ( stmt )
+		sqlite3_finalize(stmt);
+	return rowsChanged == 1;
+
+OccurDbError: // 出错处理
+	localError = sqlite3_errmsg(db);
+	if ( stmt )
+		sqlite3_finalize(stmt);
+	AfxGetMainWnd()->FatalError( utf8_to_string(localError).c_str(), _T("数据库错误") );
+	return false;
 }
 
-bool ResumeData( CString const & filename )
+bool ModifyAccount( sqlite3 * db, int userId, CString const & myName, Account const & newAccount )
 {
-	bool ret = false;
-	g_theApp.CloseDatabase();
-	ret = FALSE != CopyFile( filename, ExplainCustomVars(g_theApp.m_settings.databasePath).c_str(), FALSE );
-	g_theApp.OpenDatabase();
-	return ret;
+	int rowsChanged = 0;
+
+	ansi_string sql = string_to_utf8("UPDATE am_accounts SET myname = ?, account_name = ?, account_pwd = ?, cate = ?, safe_rank = ?, comment = ? WHERE user = ? AND myname = ?;");
+	sqlite3_stmt * stmt = NULL;
+	int rc;
+	const char * localError;
+
+	// 准备语句
+	rc = sqlite3_prepare_v2( db, sql.c_str(), sql.size(), &stmt, NULL );
+	if ( rc != SQLITE_OK ) goto OccurDbError;
+
+	// 绑定参数
+	// 新账户自定种类名
+	rc = newAccount.bindMyName( stmt, 1 );
+	if ( rc != SQLITE_OK ) goto OccurDbError;
+
+	// 新账户名
+	rc = newAccount.bindAccountName( stmt, 2 );
+	if ( rc != SQLITE_OK ) goto OccurDbError;
+
+	// 新账户密码
+	rc = newAccount.bindAccountPwd( stmt, 3 );
+	if ( rc != SQLITE_OK ) goto OccurDbError;
+
+	// 新CateId
+	rc = newAccount.bindCateId( stmt, 4 );
+	if ( rc != SQLITE_OK ) goto OccurDbError;
+
+	// 新安全权值
+	rc = newAccount.bindSafeRank( stmt, 5 );
+	if ( rc != SQLITE_OK ) goto OccurDbError;
+
+	// 新备注
+	rc = newAccount.bindComment( stmt, 6 );
+	if ( rc != SQLITE_OK ) goto OccurDbError;
+
+	// 所属用户
+	rc = Fields::_bindInt( stmt, 7, userId );
+	if ( rc != SQLITE_OK ) goto OccurDbError;
+
+	// 账户自定名
+	rc = Fields::_bindString( stmt, 8, myName );
+	if ( rc != SQLITE_OK ) goto OccurDbError;
+
+	// 执行语句
+	rc = sqlite3_step(stmt);
+	if ( rc == SQLITE_DONE )
+	{
+		rowsChanged = sqlite3_changes(db);
+		rc = sqlite3_reset(stmt);
+		if ( rc != SQLITE_OK ) goto OccurDbError;
+	}
+	else
+	{
+		sqlite3_reset(stmt);
+		goto OccurDbError;
+	}
+	
+	// 正常无错误结束
+	if ( stmt )
+		sqlite3_finalize(stmt);
+	return rowsChanged == 1;
+	
+OccurDbError: // 出错处理
+	localError = sqlite3_errmsg(db);
+	if ( stmt )
+		sqlite3_finalize(stmt);
+	AfxGetMainWnd()->FatalError( utf8_to_string(localError).c_str(), _T("数据库错误") );
+	return false;
 }
 
-CString GetCorrectAccountMyName( CString const & myName )
+bool DeleteAccount( sqlite3 * db, int userId, CString const & myName )
+{
+	int rowsChanged = 0;
+
+	ansi_string sql = string_to_utf8("DELETE FROM am_accounts WHERE user = ? AND myname = ?;");
+	sqlite3_stmt * stmt = NULL;
+	int rc;
+	const char * localError;
+
+	// 准备语句
+	rc = sqlite3_prepare_v2( db, sql.c_str(), sql.size(), &stmt, NULL );
+	if ( rc != SQLITE_OK ) goto OccurDbError;
+
+	// 绑定参数
+	// 所属用户
+	rc = Fields::_bindInt( stmt, 1, userId );
+	if ( rc != SQLITE_OK ) goto OccurDbError;
+
+	// 自定名
+	rc = Fields::_bindString( stmt, 2, myName );
+	if ( rc != SQLITE_OK ) goto OccurDbError;
+
+	// 执行语句
+	rc = sqlite3_step(stmt);
+	if ( rc == SQLITE_DONE )
+	{
+		rowsChanged = sqlite3_changes(db);
+		rc = sqlite3_reset(stmt);
+		if ( rc != SQLITE_OK ) goto OccurDbError;
+	}
+	else
+	{
+		sqlite3_reset(stmt);
+		goto OccurDbError;
+	}
+
+	// 正常无错误结束
+	if ( stmt )
+		sqlite3_finalize(stmt);
+	return rowsChanged == 1;
+	
+OccurDbError: // 出错处理
+	localError = sqlite3_errmsg(db);
+	if ( stmt )
+		sqlite3_finalize(stmt);
+	AfxGetMainWnd()->FatalError( utf8_to_string(localError).c_str(), _T("数据库错误") );
+	return false;
+}
+
+CString GetCorrectAccountMyName( sqlite3 * db, int userId, CString const & myName )
 {
 	CString result;
 	int number = 0;
 
-	sqlite3 * db = g_theApp.GetDatabase();
 	ansi_string sql = string_to_utf8("SELECT myname FROM am_accounts WHERE user = ? AND myname = ?;");
 	sqlite3_stmt * stmt = NULL;
 	int rc;
 	const char * localError;
-	
+
 	// 准备语句
 	rc = sqlite3_prepare_v2( db, sql.c_str(), sql.size(), &stmt, NULL );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
@@ -1957,11 +1788,11 @@ CString GetCorrectAccountMyName( CString const & myName )
 	result = myName;
 	// 参数绑定
 	// 所属用户
-	rc = sqlite3_bind_int( stmt, 1, g_theApp.m_loginedUser.m_id );
+	rc = Fields::_bindInt( stmt, 1, userId );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 
 	// 自定种类名
-	rc = sqlite3_bind_text( stmt, 2, string_to_utf8( (LPCTSTR)result ).c_str(), -1, SQLITE_TRANSIENT );
+	rc = Fields::_bindString( stmt, 2, result );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 
 	// 执行语句
@@ -1969,17 +1800,16 @@ CString GetCorrectAccountMyName( CString const & myName )
 	{
 		rc = sqlite3_reset(stmt);
 		if ( rc != SQLITE_OK ) goto OccurDbError;
-		number++;
+		++number;
 		result.Format( _T("%s%d"), (LPCTSTR)myName, number );
 		// 参数绑定
 		// 所属用户
-		rc = sqlite3_bind_int( stmt, 1, g_theApp.m_loginedUser.m_id );
+		rc = Fields::_bindInt( stmt, 1, userId );
 		if ( rc != SQLITE_OK ) goto OccurDbError;
 		
 		// 自定种类名
-		rc = sqlite3_bind_text( stmt, 2, string_to_utf8( (LPCTSTR)result ).c_str(), -1, SQLITE_TRANSIENT );
+		rc = Fields::_bindString( stmt, 2, result );
 		if ( rc != SQLITE_OK ) goto OccurDbError;
-
 	}
 
 	if ( rc == SQLITE_DONE ) // 数据已完或没有数据
@@ -1988,7 +1818,7 @@ CString GetCorrectAccountMyName( CString const & myName )
 	}
 	else
 	{
-		rc = sqlite3_reset(stmt);
+		sqlite3_reset(stmt);
 		goto OccurDbError;
 	}
 
@@ -2003,7 +1833,7 @@ OccurDbError: // 出错处理
 	localError = sqlite3_errmsg(db);
 	if ( stmt )
 		sqlite3_finalize(stmt);
-	MessageBox( *AfxGetMainWnd(), utf8_to_string(localError).c_str(), _T("数据库错误"), MB_OK | MB_ICONERROR );
+	AfxGetMainWnd()->FatalError( utf8_to_string(localError).c_str(), _T("数据库错误") );
 	return _T("");
 }
 
@@ -2104,11 +1934,10 @@ OccurDbError: // 出错处理
 	return 0;
 }
 
-bool IsBrowserExeName( CString const & exeName, CString * browserTitle )
+bool IsBrowserExeName( sqlite3 * db, CString const & exeName, CString * browserTitle )
 {
 	bool ret = false;
 	
-	sqlite3 * db = g_theApp.GetDatabase();
 	ansi_string sql = string_to_utf8("SELECT title FROM am_browsers WHERE exe_name = ?;");
 	sqlite3_stmt * stmt = NULL;
 	int rc;

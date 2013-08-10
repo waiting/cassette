@@ -14,13 +14,7 @@ class UserRegisterDlg : public Dialog
 {
 // Construction
 public:
-	UserRegisterDlg(
-		CWnd * parent,
-		CString * username,
-		CString * password,
-		int * protectLevel,
-		int * hotkey
-	);
+	UserRegisterDlg( CWnd * parent, User * user );
 
 // Dialog Data
 	//{{AFX_DATA(UserRegisterDlg)
@@ -38,10 +32,7 @@ public:
 
 // Implementation
 protected:
-	CString * m_username;
-	CString * m_password;
-	int * m_protectLevel;
-	int * m_hotkey;
+	User * m_user;
 
 	// Generated message map functions
 	//{{AFX_MSG(UserRegisterDlg)

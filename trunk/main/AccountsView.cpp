@@ -51,66 +51,55 @@ void AccountsView::UpdateList( int flag, long itemIndex )
 	{
 		if ( itemIndex == -1 )
 		{
-			count = LoadAccounts(
-				&m_myNames,
-				&m_accountNames,
-				&m_accountPwds,
-				&m_cateIds,
-				&m_safeRanks,
-				&m_comments,
-				&m_times
-			);
+			count = LoadAccounts( g_theApp.GetDatabase(), g_theApp.m_loginedUser.m_id, &m_accounts );
 		}
 		else
 		{
 			// 用myname获取记录
 			GetAccount(
-				m_myNames[itemIndex],
-				&m_accountNames[itemIndex],
-				&m_accountPwds[itemIndex],
-				(int *)&m_cateIds[itemIndex],
-				(int *)&m_safeRanks[itemIndex],
-				&m_comments[itemIndex],
-				(int *)&m_times[itemIndex]
+				g_theApp.GetDatabase(),
+				g_theApp.m_loginedUser.m_id,
+				m_accounts[itemIndex].m_myName,
+				&m_accounts[itemIndex]
 			);
 		}
 	}
-	
+
 	if ( flag & UPDATE_LIST_ITEMS )
 	{
 		if ( itemIndex == -1 )
 		{
 			if ( !( flag & UPDATE_LOAD_DATA ) ) // 如果没有载入操作，需要从数组获取数量信息
 			{
-				count = m_myNames.GetSize();
+				count = m_accounts.GetSize();
 			}
 			// Clear all items
 			lst.DeleteAllItems();
 			int i;
 			for ( i = 0; i < count; ++i )
 			{
-				lst.InsertItem( i, m_myNames[i] );
-				lst.SetItem( i, 1, LVIF_TEXT, m_accountNames[i], 0, 0, 0, 0 );
-				CString typeName;
-				GetTypeByCateId( m_cateIds[i], &typeName, NULL );
-				lst.SetItem( i, 2, LVIF_TEXT, typeName, 0, 0, 0, 0 );
-				lst.SetItem( i, 3, LVIF_TEXT, format( _T("%d"), m_safeRanks[i] ).c_str(), 0, 0, 0, 0 );
-				CTime dateTime(m_times[i]);
+				lst.InsertItem( i, m_accounts[i].m_myName );
+				lst.SetItem( i, 1, LVIF_TEXT, m_accounts[i].m_accountName, 0, 0, 0, 0 );
+				AccountType type;
+				GetTypeByCateId( g_theApp.GetDatabase(), m_accounts[i].m_cateId, &type );
+				lst.SetItem( i, 2, LVIF_TEXT, type.m_typeName, 0, 0, 0, 0 );
+				lst.SetItem( i, 3, LVIF_TEXT, format( _T("%d"), m_accounts[i].m_safeRank ).c_str(), 0, 0, 0, 0 );
+				CTime dateTime(m_accounts[i].m_time);
 				lst.SetItem( i, 4, LVIF_TEXT, dateTime.Format( _T("%Y-%m-%dT%H:%M:%S") ), 0, 0, 0, 0 );
-				lst.SetItem( i, 5, LVIF_TEXT, m_comments[i], 0, 0, 0, 0 );
+				lst.SetItem( i, 5, LVIF_TEXT, m_accounts[i].m_comment, 0, 0, 0, 0 );
 			}
 		}
 		else
 		{
-			lst.SetItem( itemIndex, 0, LVIF_TEXT, m_myNames[itemIndex], 0, 0, 0, 0 );
-			lst.SetItem( itemIndex, 1, LVIF_TEXT, m_accountNames[itemIndex], 0, 0, 0, 0 );
-			CString typeName;
-			GetTypeByCateId( m_cateIds[itemIndex], &typeName, NULL );
-			lst.SetItem( itemIndex, 2, LVIF_TEXT, typeName, 0, 0, 0, 0 );
-			lst.SetItem( itemIndex, 3, LVIF_TEXT, format( _T("%d"), m_safeRanks[itemIndex] ).c_str(), 0, 0, 0, 0 );
-			CTime dateTime(m_times[itemIndex]);
+			lst.SetItem( itemIndex, 0, LVIF_TEXT, m_accounts[itemIndex].m_myName, 0, 0, 0, 0 );
+			lst.SetItem( itemIndex, 1, LVIF_TEXT, m_accounts[itemIndex].m_accountName, 0, 0, 0, 0 );
+			AccountType type;
+			GetTypeByCateId( g_theApp.GetDatabase(), m_accounts[itemIndex].m_cateId, &type );
+			lst.SetItem( itemIndex, 2, LVIF_TEXT, type.m_typeName, 0, 0, 0, 0 );
+			lst.SetItem( itemIndex, 3, LVIF_TEXT, format( _T("%d"), m_accounts[itemIndex].m_safeRank ).c_str(), 0, 0, 0, 0 );
+			CTime dateTime(m_accounts[itemIndex].m_time);
 			lst.SetItem( itemIndex, 4, LVIF_TEXT, dateTime.Format( _T("%Y-%m-%dT%H:%M:%S") ), 0, 0, 0, 0 );
-			lst.SetItem( itemIndex, 5, LVIF_TEXT, m_comments[itemIndex], 0, 0, 0, 0 );
+			lst.SetItem( itemIndex, 5, LVIF_TEXT, m_accounts[itemIndex].m_comment, 0, 0, 0, 0 );
 		}
 	}
 }
