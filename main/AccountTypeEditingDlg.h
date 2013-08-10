@@ -14,12 +14,7 @@ class AccountTypeEditingDlg : public Dialog
 {
 // Construction
 public:
-	AccountTypeEditingDlg(
-		CWnd * parent,
-		bool isAdd,
-		CString * typeName,
-		int * safeRank
-	);
+	AccountTypeEditingDlg( CWnd * parent, bool isAdd, AccountType * type );
 
 // Dialog Data
 	//{{AFX_DATA(AccountTypeEditingDlg)
@@ -38,8 +33,7 @@ public:
 // Implementation
 protected:
 	bool m_isAdd;
-	CString * m_typeName;
-	int * m_safeRank;
+	AccountType * m_type;
 
 	// Generated message map functions
 	//{{AFX_MSG(AccountTypeEditingDlg)

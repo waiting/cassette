@@ -12,25 +12,8 @@ static char THIS_FILE[] = __FILE__;
 /////////////////////////////////////////////////////////////////////////////
 // AccountCateEditingDlg dialog
 
-AccountCateEditingDlg::AccountCateEditingDlg(
-	CWnd * parent,
-	bool isAdd,
-	CString * cateName,
-	CString * cateDesc,
-	CString * typeName,
-	CString * url,
-	CString * icoPath,
-	CString * startup,
-	CString * keywords
-) : Dialog(AccountCateEditingDlg::IDD, parent),
-m_isAdd(isAdd),
-m_cateName(cateName),
-m_cateDesc(cateDesc),
-m_typeName(typeName),
-m_url(url),
-m_icoPath(icoPath),
-m_startup(startup),
-m_keywords(keywords)
+AccountCateEditingDlg::AccountCateEditingDlg( CWnd * parent, bool isAdd, AccountCate * cate )
+: Dialog(AccountCateEditingDlg::IDD, parent), m_isAdd(isAdd), m_cate(cate)
 {
 	//{{AFX_DATA_INIT(AccountCateEditingDlg)
 	//}}AFX_DATA_INIT
@@ -43,15 +26,15 @@ void AccountCateEditingDlg::DoDataExchange(CDataExchange* pDX)
 	Dialog::DoDataExchange(pDX);
 	//{{AFX_DATA_MAP(AccountCateEditingDlg)
 	//}}AFX_DATA_MAP
-	DDX_Text(pDX, IDC_EDIT_CATENAME, *m_cateName);
-	DDX_Text(pDX, IDC_EDIT_CATEDESC, *m_cateDesc);
+	DDX_Text(pDX, IDC_EDIT_CATENAME, m_cate->m_cateName);
+	DDX_Text(pDX, IDC_EDIT_CATEDESC, m_cate->m_cateDesc);
 	DDX_CBIndex(pDX, IDC_COMBO_TYPES, m_typeIndex);
-	DDX_Text(pDX, IDC_COMBO_TYPES, *m_typeName);
-	DDX_Text(pDX, IDC_EDIT_URL, *m_url);
-	DDX_Text(pDX, IDC_EDIT_ICOPATH, *m_icoPath);
+	DDX_Text(pDX, IDC_COMBO_TYPES, m_cate->m_typeName);
+	DDX_Text(pDX, IDC_EDIT_URL, m_cate->m_url);
+	DDX_Text(pDX, IDC_EDIT_ICOPATH, m_cate->m_icoPath);
 	DDX_CBIndex(pDX, IDC_COMBO_STARTUP, m_startupIndex);
-	DDX_Text(pDX, IDC_COMBO_STARTUP, *m_startup);
-	DDX_Text(pDX, IDC_EDIT_KEYWORDS, *m_keywords);
+	DDX_Text(pDX, IDC_COMBO_STARTUP, m_cate->m_startup);
+	DDX_Text(pDX, IDC_EDIT_KEYWORDS, m_cate->m_keywords);
 }
 
 BEGIN_MESSAGE_MAP(AccountCateEditingDlg, Dialog)
@@ -69,11 +52,14 @@ BOOL AccountCateEditingDlg::OnInitDialog()
 	m_ToolTips.SetTipTextColor( RGB( 255, 96, 0 ) ); // 设置提示文本颜色
 	// 设置标题
 	SetWindowText( m_isAdd ? _T("添加账户种类...") : _T("修改账户种类...") );
-
-	CStringArray typeNames;
-	int n = LoadAccountTypes( &typeNames, NULL );
+	int i, n;
+	AccountTypeArray types;
+	n = LoadAccountTypes( g_theApp.GetDatabase(), &types );
 	CComboBox * pCboTypes = (CComboBox *)GetDlgItem(IDC_COMBO_TYPES);
-	ComboBoxLoadDataFromArray( pCboTypes, typeNames );
+	for ( i = 0; i < n; ++i )
+	{
+		pCboTypes->AddString(types[i].m_typeName);
+	}
 
 	CComboBox * pCboStartups = (CComboBox *)GetDlgItem(IDC_COMBO_STARTUP);
 	CString startups[] = { _T("网站"), _T("软件"), _T("其他") };
@@ -82,10 +68,9 @@ BOOL AccountCateEditingDlg::OnInitDialog()
 	m_typeIndex = 0;
 	m_startupIndex = 0;
 
-	int i;
-	for ( i = 0; i < typeNames.GetSize(); ++i )
+	for ( i = 0; i < n; ++i )
 	{
-		if ( *m_typeName == typeNames[i] )
+		if ( m_cate->m_typeName == types[i].m_typeName )
 		{
 			m_typeIndex = i;
 			break;
@@ -94,7 +79,7 @@ BOOL AccountCateEditingDlg::OnInitDialog()
 
 	for ( i = 0; i < countof(startups); ++i )
 	{
-		if ( *m_startup == startups[i] )
+		if ( m_cate->m_startup == startups[i] )
 		{
 			m_startupIndex = i;
 			break;
@@ -110,12 +95,12 @@ BOOL AccountCateEditingDlg::OnInitDialog()
 void AccountCateEditingDlg::OnOK() 
 {
 	UpdateData(TRUE);
-	if ( m_cateName->IsEmpty() )
+	if ( m_cate->m_cateName.IsEmpty() )
 	{
 		WarningError( _T("名称不能为空"), _T("错误") );
 		return;
 	}
-	if ( m_keywords->IsEmpty() )
+	if ( m_cate->m_keywords.IsEmpty() )
 	{
 		WarningError( _T("关键字不能为空"), _T("错误") );
 		return;

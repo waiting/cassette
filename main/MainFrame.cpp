@@ -101,37 +101,28 @@ void MainFrame::UpdateList( int flag, long itemIndex )
 void MainFrame::DoAddAccount( CWnd * parent )
 {
 	VERIFY_ONCE_DIALOG(onceEditingDlg);
+	Account newAccount;
+	newAccount.m_userId = g_theApp.m_loginedUser.m_id;
+	newAccount.m_cateId = 0;
+	newAccount.m_safeRank = 20;
 
-	CString myName;
-	CString accountName;
-	CString accountPwd;
-	int cateId = 0;
-	int safeRank = 20;
-	CString comment;
-	
-	AccountEditingDlg editingDlg( parent, true, &myName, &accountName, &accountPwd, &cateId, &safeRank, &comment );
-	
+	AccountEditingDlg editingDlg( parent, true, &newAccount );
+
 	SetNullScopeOut setNullScopeOut( onceEditingDlg = &editingDlg );
 
 	if ( IDOK == editingDlg.DoModal() )
 	{
-		if ( AddAccount( myName, accountName, accountPwd, cateId, safeRank, comment ) )
+		if ( AddAccount( g_theApp.GetDatabase(), newAccount ) )
 		{
 			CListCtrl & lst = m_pAccountsView->GetListCtrl();
 			// 向list加入一项
 			int itemIndex;
 			itemIndex = lst.GetItemCount();
-			lst.InsertItem( itemIndex, myName );
+			lst.InsertItem( itemIndex, newAccount.m_myName );
 			
 			// 向数组添加一项
-			m_pAccountsView->m_myNames.Add(myName);
-			m_pAccountsView->m_accountNames.Add("");
-			m_pAccountsView->m_accountPwds.Add("");
-			m_pAccountsView->m_cateIds.Add(0);
-			m_pAccountsView->m_safeRanks.Add(0);
-			m_pAccountsView->m_times.Add(0);
-			m_pAccountsView->m_comments.Add("");
-			
+			m_pAccountsView->m_accounts.Add(newAccount);
+
 			UpdateList( UPDATE_LOAD_DATA | UPDATE_LIST_ITEMS, itemIndex );
 			lst.SetItemState( itemIndex, LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED );
 		}
@@ -301,11 +292,11 @@ void MainFrame::OnUpdateOpenUrl( CCmdUI * pCmdUI )
 	pCmdUI->Enable(FALSE);
 	if ( index != -1 )
 	{
-		CString startup, cateName, url;
-		GetAccountCate( this->m_pAccountsView->m_cateIds[index], &cateName, NULL, NULL, &url, NULL, &startup, NULL, NULL );
-		if ( !url.IsEmpty() && startup != _T("其他") )
+		AccountCate cate;
+		GetAccountCate( g_theApp.GetDatabase(), this->m_pAccountsView->m_accounts[index].m_cateId, &cate );
+		if ( !cate.m_url.IsEmpty() && cate.m_startup != _T("其他") )
 		{
-			pCmdUI->SetText( _T("打开") + cateName + _T("(&Go)\tCtrl+G") );
+			pCmdUI->SetText( _T("打开") + cate.m_cateName + _T("(&Go)\tCtrl+G") );
 			pCmdUI->Enable(TRUE);
 		}
 	}
@@ -319,17 +310,17 @@ void MainFrame::OnOpenUrl()
 {
 	CListCtrl & lst = this->m_pAccountsView->GetListCtrl();
 	int index = lst.GetNextItem( -1, LVNI_ALL | LVNI_SELECTED );
-	int cateId = this->m_pAccountsView->m_cateIds[index];
-	CString url, startup;
-	if ( GetAccountCate( cateId, NULL, NULL, NULL, &url, NULL, &startup, NULL, NULL ) )
+	int cateId = this->m_pAccountsView->m_accounts[index].m_cateId;
+	AccountCate cate;
+	if ( GetAccountCate( g_theApp.GetDatabase(), this->m_pAccountsView->m_accounts[index].m_cateId, &cate ) )
 	{
-		if ( startup == _T("网站") )
+		if ( cate.m_startup == _T("网站") )
 		{
-			ShellExecute( NULL, _T("open"), url, NULL, NULL, SW_NORMAL );
+			ShellExecute( NULL, _T("open"), cate.m_url, NULL, NULL, SW_NORMAL );
 		}
-		else if ( startup == _T("软件") )
+		else if ( cate.m_startup == _T("软件") )
 		{
-			ShellExecute( NULL, NULL, url, NULL, NULL, SW_NORMAL );
+			ShellExecute( NULL, NULL, cate.m_url, NULL, NULL, SW_NORMAL );
 		}
 	}
 }
@@ -338,26 +329,30 @@ void MainFrame::OnUserSettings()
 {
 	VERIFY_ONCE_DIALOG(onceSettingsDlg);
 
-	CString username = g_theApp.m_loginedUser.m_username;
-	CString password;
-	int protectLevel = g_theApp.m_loginedUser.m_protectLevel;
-	int condone = g_theApp.m_loginedUser.m_condone;
-	int hotkey = g_theApp.m_loginedUser.m_hotkey;
+	User user;
+	user = g_theApp.m_loginedUser;
 
-	UserSettingsDlg settingsDlg( this, &username, &password, &protectLevel, &condone, &hotkey );
+	UserSettingsDlg settingsDlg( this, &user );
 
 	SetNullScopeOut setNullScopeOut( onceSettingsDlg = &settingsDlg );
 
 	if ( IDOK == settingsDlg.DoModal() )
 	{
-		if ( ModifyUser( g_theApp.m_loginedUser.m_username, settingsDlg.IsModifyPassword(), username, password, protectLevel, condone, g_theApp.m_loginedUser.m_curCondone, hotkey ) )
+		if ( ModifyUserEx(
+			g_theApp.GetDatabase(),
+			g_theApp.m_loginedUser.m_username,
+			am_users__name |
+			( settingsDlg.IsModifyPassword() ? am_users__pwd : 0 ) |
+			am_users__protect |
+			am_users__condone |
+			am_users__cur_condone |
+			am_users__hotkey,
+			user
+		) )
 		{
-			g_theApp.m_loginedUser.m_username = username;
+			g_theApp.m_loginedUser = user;
 			this->UpdateTitle();
-			g_theApp.m_loginedUser.m_protectLevel = protectLevel;
-			g_theApp.m_loginedUser.m_condone = condone;
-			g_theApp.m_loginedUser.m_hotkey = hotkey;
-			this->RefreshHotkey(hotkey);
+			this->RefreshHotkey(user.m_hotkey);
 		}
 	}
 
@@ -407,33 +402,23 @@ void MainFrame::OnModifyAccount()
 
 	CListCtrl & lst = this->m_pAccountsView->GetListCtrl();
 	int index = lst.GetNextItem( -1, LVNI_ALL | LVNI_SELECTED );
-	CString myName = m_pAccountsView->m_myNames[index];
-	CString newMyName = m_pAccountsView->m_myNames[index];
-	CString newAccountName = m_pAccountsView->m_accountNames[index];
-	CString newAccountPwd = m_pAccountsView->m_accountPwds[index];
-	int newCateId = m_pAccountsView->m_cateIds[index];
-	int newSafeRank = m_pAccountsView->m_safeRanks[index];
-	CString newComment = m_pAccountsView->m_comments[index];
+	CString myName = m_pAccountsView->m_accounts[index].m_myName;
+	Account newAccount = m_pAccountsView->m_accounts[index];
 
-	AccountEditingDlg editingDlg( this, false, &newMyName, &newAccountName, &newAccountPwd, &newCateId, &newSafeRank, &newComment );
-	
+	AccountEditingDlg editingDlg( this, false, &newAccount );
+
 	SetNullScopeOut setNullScopeOut( onceEditingDlg = &editingDlg );
 
 	if ( IDOK == editingDlg.DoModal() )
 	{
-		if ( ModifyAccount( myName, newMyName, newAccountName, newAccountPwd, newCateId, newSafeRank, newComment ) )
+		if ( ModifyAccount( g_theApp.GetDatabase(), g_theApp.m_loginedUser.m_id, myName, newAccount ) )
 		{
-			m_pAccountsView->m_myNames[index] = newMyName;
-			m_pAccountsView->m_accountNames[index] = newAccountName;
-			m_pAccountsView->m_accountPwds[index] = newAccountPwd;
-			m_pAccountsView->m_cateIds[index] = newCateId;
-			m_pAccountsView->m_safeRanks[index] = newSafeRank;
-			m_pAccountsView->m_comments[index] = newComment;
+			m_pAccountsView->m_accounts[index] = newAccount;
 
 			UpdateList( UPDATE_LIST_ITEMS, index );
 			LVFINDINFO fi;
 			fi.flags = LVFI_PARTIAL | LVFI_STRING;
-			fi.psz = newMyName;
+			fi.psz = newAccount.m_myName;
 			int itemIndex = lst.FindItem(&fi);
 			lst.SetItemState( itemIndex, LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED );
 		}
@@ -448,17 +433,11 @@ void MainFrame::OnDelAccount()
 		int index = lst.GetNextItem( -1, LVNI_ALL | LVNI_SELECTED );
 		CString myName;
 		myName = lst.GetItemText( index, 0 );
-		if ( DeleteAccount(myName) )
+		if ( DeleteAccount( g_theApp.GetDatabase(), g_theApp.m_loginedUser.m_id, myName ) )
 		{
 			lst.DeleteItem(index);
 
-			m_pAccountsView->m_myNames.RemoveAt(index);
-			m_pAccountsView->m_accountNames.RemoveAt(index);
-			m_pAccountsView->m_accountPwds.RemoveAt(index);
-			m_pAccountsView->m_cateIds.RemoveAt(index);
-			m_pAccountsView->m_safeRanks.RemoveAt(index);
-			m_pAccountsView->m_comments.RemoveAt(index);
-			m_pAccountsView->m_times.RemoveAt(index);
+			m_pAccountsView->m_accounts.RemoveAt(index);
 
 			index = index < lst.GetItemCount() ? index : lst.GetItemCount() - 1;
 			lst.SetItemState( index, LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED );
@@ -516,7 +495,7 @@ void MainFrame::OnBackupData()
 	{
 		backupPath = dlg.get_dirpath().c_str();
 
-		if ( BackupData( dlg.get_filepath().c_str() ) )
+		if ( g_theApp.BackupData( dlg.get_filepath().c_str() ) )
 		{
 			MessageBox( _T("备份成功"), _T("提示"), MB_ICONINFORMATION );
 		}
@@ -531,7 +510,7 @@ void MainFrame::OnResumeData()
 	{
 		backupPath = dlg.get_dirpath().c_str();
 
-		if ( ResumeData( dlg.get_filepath().c_str() ) )
+		if ( g_theApp.ResumeData( dlg.get_filepath().c_str() ) )
 		{
 			MessageBox( _T("恢复成功"), _T("提示"), MB_ICONINFORMATION );
 		}
@@ -553,7 +532,7 @@ LRESULT MainFrame::OnHotkey( WPARAM wHotkeyId, LPARAM lParam )
 				string exeName;
 				file_path( GetAppPathFromHWND( pWnd->GetSafeHwnd() ), &exeName );
 				strlwr(&exeName[0]);
-				bool isBrowser = IsBrowserExeName( exeName.c_str(), NULL );
+				bool isBrowser = IsBrowserExeName( g_theApp.GetDatabase(), exeName.c_str(), NULL );
 				string caption = window_get_text( pWnd->GetSafeHwnd() ); // 当前窗口标题
 				if ( isBrowser ) // 若是浏览器，说明是网站
 				{

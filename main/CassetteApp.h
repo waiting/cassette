@@ -84,20 +84,24 @@ protected:
 	BOOL DoSingletonRunning();
 public:
 	// 代表已登录用户
-	UserInfo m_loginedUser;
+	User m_loginedUser;
 	BOOL m_viaAutoLogin; // 是否通过自动登录方式登录
 	SettingsParameters m_settings; // 程序设置的参数
 
 	// 获取共享内存引用
 	shared_memory<CassetteSharedData> & GetSharedMemory() { return m_sharedMem; }
 	// 初始化数据表和数据
-	void InitDatabase();
+	void InitDatabaseSchema();
 	// 打开数据库资源
 	void OpenDatabase();
 	// 关闭数据库资源
 	void CloseDatabase();
+	// 备份数据
+	bool BackupData( CString const & filename );
+	// 恢复数据
+	bool ResumeData( CString const & filename );
 	// 获取数据库
-	sqlite3 * GetDatabase() { return m_db; }
+	sqlite3 * GetDatabase() const { return m_db; }
 	// 处理选项设置
 	// 从ini读取设置到变量中,flag指示是什么设置
 	void LoadSettings( UINT flag = (UINT)-1 );

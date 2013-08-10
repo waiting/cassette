@@ -88,7 +88,7 @@ BOOL CassetteApp::InitInstance()
 		password = DecryptContent( Base64Decode(m_settings.password) ).c_str();
 	}
 
-	if ( isAutoLogin && !username.IsEmpty() && LoginUser( username, password, &m_loginedUser ) ) // 自动登录
+	if ( isAutoLogin && !username.IsEmpty() && LoginUser( g_theApp.GetDatabase(), username, password, &m_loginedUser ) ) // 自动登录
 	{
 		m_viaAutoLogin = TRUE;
 		isLogined = TRUE;
@@ -100,7 +100,7 @@ BOOL CassetteApp::InitInstance()
 
 		while ( loginDlg.DoModal() == IDOK )
 		{
-			if ( LoginUser( username, password, &m_loginedUser ) )
+			if ( LoginUser( g_theApp.GetDatabase(), username, password, &m_loginedUser ) )
 			{
 				// 保存登录相关设置
 				m_settings.isAutoLogin = isAutoLogin != FALSE;
@@ -146,7 +146,7 @@ int CassetteApp::ExitInstance()
 
 //////////////////////////////////////////////////////////////////////////
 
-void CassetteApp::InitDatabase()
+void CassetteApp::InitDatabaseSchema()
 {
 	ansi_string sql;
 	string_array sqls;
@@ -154,7 +154,6 @@ void CassetteApp::InitDatabase()
 	Resource ResSQL( IDR_SQL_DBSCHEMA, _T("SQL") );
 	if ( !ResSQL ) goto OccurDbError;
 	sql.resize( ResSQL.getSize() );
-	//CopyMemory( &sql[0], ResSQL.getData(), sql.size() );
 	ResSQL.copyTo( &sql[0], sql.size() );
 	nSQLs = str_split( sql, _T(";"), &sqls );
 	for ( i = 0; i < nSQLs; ++i )
@@ -208,7 +207,7 @@ void CassetteApp::OpenDatabase()
 
 	if ( isNeedInit )
 	{
-		InitDatabase();
+		InitDatabaseSchema();
 	}
 
 	return;
@@ -229,6 +228,24 @@ void CassetteApp::CloseDatabase()
 		sqlite3_close(m_db);
 		m_db = NULL;
 	}
+}
+
+bool CassetteApp::BackupData( CString const & filename )
+{
+	bool ret = false;
+	CloseDatabase();
+	ret = FALSE != CopyFile( ExplainCustomVars(g_theApp.m_settings.databasePath).c_str(), filename, FALSE );
+	OpenDatabase();
+	return ret;
+}
+
+bool CassetteApp::ResumeData( CString const & filename )
+{
+	bool ret = false;
+	CloseDatabase();
+	ret = FALSE != CopyFile( filename, ExplainCustomVars(g_theApp.m_settings.databasePath).c_str(), FALSE );
+	OpenDatabase();
+	return ret;
 }
 
 void CassetteApp::LoadSettings( UINT flag )

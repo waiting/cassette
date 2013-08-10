@@ -11,45 +11,26 @@ static char THIS_FILE[] = __FILE__;
 
 /////////////////////////////////////////////////////////////////////////////
 // AccountEditingDlg dialog
-AccountEditingDlg::AccountEditingDlg(
-	CWnd * parent,
-	bool isAdd,
-	CString * myName,
-	CString * accountName,
-	CString * accountPwd,
-	int * cateId,
-	int * safeRank,
-	CString * comment
-)
-:
-Dialog( AccountEditingDlg::IDD, parent ),
-m_isAdd(isAdd),
-m_myName(myName),
-m_accountName(accountName),
-m_accountPwd(accountPwd),
-m_cateId(cateId),
-m_safeRank(safeRank),
-m_comment(comment)
+AccountEditingDlg::AccountEditingDlg( CWnd * parent, bool isAdd, Account * account )
+: Dialog( AccountEditingDlg::IDD, parent ), m_isAdd(isAdd), m_account(account)
 {
 	//{{AFX_DATA_INIT(AccountEditingDlg)
-
 	//}}AFX_DATA_INIT
 }
 
-void AccountEditingDlg::DoDataExchange(CDataExchange* pDX)
+void AccountEditingDlg::DoDataExchange( CDataExchange * pDX )
 {
 	Dialog::DoDataExchange(pDX);
 	//{{AFX_DATA_MAP(AccountEditingDlg)
 
 	//}}AFX_DATA_MAP
 	DDX_CBIndex(pDX, IDC_COMBO_CATES, m_cateIndex);
-	DDX_Text(pDX, IDC_EDIT_ACCOUNTNAME, *m_accountName);
-	DDX_Text(pDX, IDC_EDIT_ACCOUNTPWD, *m_accountPwd);
-	DDX_Text(pDX, IDC_EDIT_COMMENT, *m_comment);
-	DDX_Text(pDX, IDC_EDIT_MYNAME, *m_myName);
-	DDX_Text(pDX, IDC_EDIT_SAFERANK, *m_safeRank);
+	DDX_Text(pDX, IDC_EDIT_MYNAME, m_account->m_myName);
+	DDX_Text(pDX, IDC_EDIT_ACCOUNTNAME, m_account->m_accountName);
+	DDX_Text(pDX, IDC_EDIT_ACCOUNTPWD, m_account->m_accountPwd);
+	DDX_Text(pDX, IDC_EDIT_SAFERANK, m_account->m_safeRank);
+	DDX_Text(pDX, IDC_EDIT_COMMENT, m_account->m_comment);
 }
-
 
 BEGIN_MESSAGE_MAP(AccountEditingDlg, Dialog)
 	//{{AFX_MSG_MAP(AccountEditingDlg)
@@ -83,10 +64,9 @@ BOOL AccountEditingDlg::OnInitDialog()
 	SetWindowText( m_isAdd ? _T("添加账户...") : _T("修改账户...") );
 
 	// 载入种类信息
-	CStringArray cateNames;
 	int catesCount;
-	catesCount = LoadAccountCates( &m_cateIds, &cateNames, NULL, NULL, NULL, NULL, NULL, NULL, NULL );
-	LoadAccountCatesSafeRank( &m_cateIds2, &m_typeSafeRanks );
+	catesCount = LoadAccountCates( g_theApp.GetDatabase(), &m_cates );
+	LoadAccountCatesSafeRank( g_theApp.GetDatabase(), &m_cateIds2, &m_typeSafeRanks );
 	// 内部的选择框是通过索引来确定选择项的，因此外部传递的CateID需要转换为索引
 	// 这样才能选中相应的Cate
 	m_cateIndex = -1;
@@ -94,7 +74,7 @@ BOOL AccountEditingDlg::OnInitDialog()
 	// ID to Index
 	for ( i = 0; i < catesCount; ++i )
 	{
-		if ( m_cateIds[i] == *m_cateId )
+		if ( m_cates[i].m_id == m_account->m_cateId )
 		{
 			m_cateIndex = i;
 			break;
@@ -104,7 +84,7 @@ BOOL AccountEditingDlg::OnInitDialog()
 	CComboBox * pCboCates = (CComboBox *)GetDlgItem(IDC_COMBO_CATES);
 	for ( i = 0; i < catesCount; ++i )
 	{
-		pCboCates->AddString(cateNames[i]);
+		pCboCates->AddString(m_cates[i].m_cateName);
 	}
 
 	UpdateData(FALSE);
@@ -117,7 +97,7 @@ void AccountEditingDlg::OnOK()
 {
 	UpdateData(TRUE);
 
-	if ( m_myName->IsEmpty() )
+	if ( m_account->m_myName.IsEmpty() )
 	{
 		WarningError( _T("名称不能为空"), _T("错误") );
 		return;
@@ -129,9 +109,9 @@ void AccountEditingDlg::OnOK()
 		return;
 	}
 	// Index to Id
-	*m_cateId = m_cateIds[m_cateIndex];
+	m_account->m_cateId = m_cates[m_cateIndex].m_id;
 
-	this->EndDialog(IDOK);
+	EndDialog(IDOK);
 }
 
 void AccountEditingDlg::OnSelChangeComboCates() 
@@ -139,10 +119,10 @@ void AccountEditingDlg::OnSelChangeComboCates()
 	if ( !m_isAdd ) return; // 只有添加账户时需要此功能
 	UpdateData(TRUE);
 	CComboBox * pCboCates = (CComboBox *)GetDlgItem(IDC_COMBO_CATES);
-	*m_safeRank = GetSafeRankByCateId(m_cateIds[m_cateIndex]);
+	m_account->m_safeRank = GetSafeRankByCateId(m_cates[m_cateIndex].m_id);
 	CString tmpMyName;
 	pCboCates->GetLBText( m_cateIndex, tmpMyName );
 	tmpMyName = _T("我的") + tmpMyName + _T("账户");
-	*m_myName = GetCorrectAccountMyName(tmpMyName);
+	m_account->m_myName = GetCorrectAccountMyName( g_theApp.GetDatabase(), g_theApp.m_loginedUser.m_id, tmpMyName );
 	UpdateData(FALSE);
 }

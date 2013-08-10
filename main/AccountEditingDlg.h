@@ -14,16 +14,7 @@ class AccountEditingDlg : public Dialog
 {
 // Construction
 public:
-	AccountEditingDlg(
-		CWnd * parent,
-		bool isAdd,
-		CString * myName,
-		CString * accountName,
-		CString * accountPwd,
-		int * cateId,
-		int * safeRank,
-		CString * comment
-	);   // standard constructor
+	AccountEditingDlg( CWnd * parent, bool isAdd, Account * account );
 
 // Dialog Data
 	//{{AFX_DATA(AccountEditingDlg)
@@ -41,14 +32,9 @@ public:
 // Implementation
 protected:
 	bool m_isAdd;
-	CString * m_myName;
-	CString * m_accountName;
-	CString * m_accountPwd;
-	int * m_cateId;
-	int * m_safeRank;
-	CString * m_comment;
+	Account * m_account;
 
-	CUIntArray m_cateIds;
+	AccountCateArray m_cates;
 	CUIntArray m_cateIds2;
 	CUIntArray m_typeSafeRanks;
 	int m_cateIndex;

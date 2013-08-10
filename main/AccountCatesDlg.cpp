@@ -14,8 +14,8 @@ static char THIS_FILE[] = __FILE__;
 /////////////////////////////////////////////////////////////////////////////
 // AccountCatesDlg dialog
 
-AccountCatesDlg::AccountCatesDlg(CWnd* pParent /*=NULL*/)
-: Dialog(AccountCatesDlg::IDD, pParent)
+AccountCatesDlg::AccountCatesDlg( CWnd * parent /*=NULL*/)
+: Dialog(AccountCatesDlg::IDD, parent)
 {
 	//{{AFX_DATA_INIT(AccountCatesDlg)
 		// NOTE: the ClassWizard will add member initialization here
@@ -51,64 +51,44 @@ void AccountCatesDlg::UpdateList( int flag /*= UPDATE_LOAD_DATA | UPDATE_LIST_IT
 	{
 		if ( itemIndex == -1 )
 		{
-			count = LoadAccountCates(
-				&m_ids,
-				&m_cateNames,
-				&m_cateDescs,
-				&m_typeNames,
-				&m_urls,
-				&m_icoPaths,
-				&m_startups,
-				&m_keywordss,
-				&m_timeWritens
-			);
+			count = LoadAccountCates( g_theApp.GetDatabase(), &m_cates );
 		}
 		else
 		{
 			// 用ID获取记录
-			GetAccountCate(
-				m_ids[itemIndex],
-				&m_cateNames[itemIndex],
-				&m_cateDescs[itemIndex],
-				&m_typeNames[itemIndex],
-				&m_urls[itemIndex],
-				&m_icoPaths[itemIndex],
-				&m_startups[itemIndex],
-				&m_keywordss[itemIndex],
-				(int *)&m_timeWritens[itemIndex]
-			);
+			GetAccountCate( g_theApp.GetDatabase(), m_cates[itemIndex].m_id, &m_cates[itemIndex] );
 		}
 	}
-	
+
 	if ( flag & UPDATE_LIST_ITEMS )
 	{
 		if ( itemIndex == -1 )
 		{
 			if ( !( flag & UPDATE_LOAD_DATA ) ) // 如果没有载入操作，需要从数组获取数量信息
 			{
-				count = m_ids.GetSize();
+				count = m_cates.GetSize();
 			}
 			// Clear all items
 			lst.DeleteAllItems();
 			int i;
 			for ( i = 0; i < count; ++i )
 			{
-				lst.InsertItem( i, format( _T("%d"), m_ids[i] ).c_str() );
-				lst.SetItem( i, 1, LVIF_TEXT, m_cateNames[i], 0, 0, 0, 0 );
-				lst.SetItem( i, 2, LVIF_TEXT, m_typeNames[i], 0, 0, 0, 0 );
-				lst.SetItem( i, 3, LVIF_TEXT, m_urls[i], 0, 0, 0, 0 );
-				lst.SetItem( i, 4, LVIF_TEXT, m_startups[i], 0, 0, 0, 0 );
-				lst.SetItem( i, 5, LVIF_TEXT, m_keywordss[i], 0, 0, 0, 0 );
+				lst.InsertItem( i, format( _T("%d"), m_cates[i].m_id ).c_str() );
+				lst.SetItem( i, 1, LVIF_TEXT, m_cates[i].m_cateName, 0, 0, 0, 0 );
+				lst.SetItem( i, 2, LVIF_TEXT, m_cates[i].m_typeName, 0, 0, 0, 0 );
+				lst.SetItem( i, 3, LVIF_TEXT, m_cates[i].m_url, 0, 0, 0, 0 );
+				lst.SetItem( i, 4, LVIF_TEXT, m_cates[i].m_startup, 0, 0, 0, 0 );
+				lst.SetItem( i, 5, LVIF_TEXT, m_cates[i].m_keywords, 0, 0, 0, 0 );
 			}
 		}
 		else
 		{
-			lst.SetItem( itemIndex, 0, LVIF_TEXT, format( _T("%d"), m_ids[itemIndex] ).c_str(), 0, 0, 0, 0 );
-			lst.SetItem( itemIndex, 1, LVIF_TEXT, m_cateNames[itemIndex], 0, 0, 0, 0 );
-			lst.SetItem( itemIndex, 2, LVIF_TEXT, m_typeNames[itemIndex], 0, 0, 0, 0 );
-			lst.SetItem( itemIndex, 3, LVIF_TEXT, m_urls[itemIndex], 0, 0, 0, 0 );
-			lst.SetItem( itemIndex, 4, LVIF_TEXT, m_startups[itemIndex], 0, 0, 0, 0 );
-			lst.SetItem( itemIndex, 5, LVIF_TEXT, m_keywordss[itemIndex], 0, 0, 0, 0 );
+			lst.SetItem( itemIndex, 0, LVIF_TEXT, format( _T("%d"), m_cates[itemIndex].m_id ).c_str(), 0, 0, 0, 0 );
+			lst.SetItem( itemIndex, 1, LVIF_TEXT, m_cates[itemIndex].m_cateName, 0, 0, 0, 0 );
+			lst.SetItem( itemIndex, 2, LVIF_TEXT, m_cates[itemIndex].m_typeName, 0, 0, 0, 0 );
+			lst.SetItem( itemIndex, 3, LVIF_TEXT, m_cates[itemIndex].m_url, 0, 0, 0, 0 );
+			lst.SetItem( itemIndex, 4, LVIF_TEXT, m_cates[itemIndex].m_startup, 0, 0, 0, 0 );
+			lst.SetItem( itemIndex, 5, LVIF_TEXT, m_cates[itemIndex].m_keywords, 0, 0, 0, 0 );
 		}
 	}
 
@@ -117,26 +97,16 @@ void AccountCatesDlg::UpdateList( int flag /*= UPDATE_LOAD_DATA | UPDATE_LIST_IT
 void AccountCatesDlg::DoAdd( CWnd * parent )
 {
 	VERIFY_ONCE_DIALOG(onceEditingDlg);
-	
-	CString cateName, cateDesc, typeName, url, icoPath, startup, keywords;
-	AccountCateEditingDlg editingDlg(
-		parent,
-		true,
-		&cateName,
-		&cateDesc,
-		&typeName,
-		&url,
-		&icoPath,
-		&startup,
-		&keywords
-	);
-	
+
+	AccountCate cate;
+	AccountCateEditingDlg editingDlg( parent, true, &cate );
+
 	SetNullScopeOut setNullScopeOut( onceEditingDlg = &editingDlg );
 	
 	if ( IDOK == editingDlg.DoModal() )
 	{
 		int id;
-		id = AddAccountCate( cateName, cateDesc, typeName, url, icoPath, startup, keywords );
+		id = AddAccountCate( g_theApp.GetDatabase(), cate );
 		if ( id != 0 )
 		{
 			CListCtrl & lst = *(CListCtrl *)GetDlgItem(IDC_LIST_CATES);
@@ -146,16 +116,10 @@ void AccountCatesDlg::DoAdd( CWnd * parent )
 			lst.InsertItem( itemIndex, format( _T("%d"), id ).c_str() );
 			
 			// 向数组添加一项
-			m_ids.Add(id);
-			m_cateNames.Add(_T(""));
-			m_cateDescs.Add(_T(""));
-			m_typeNames.Add(_T(""));
-			m_urls.Add(_T(""));
-			m_icoPaths.Add(_T(""));
-			m_startups.Add(_T(""));
-			m_keywordss.Add(_T(""));
-			m_timeWritens.Add(0);
-			
+			AccountCate tmp;
+			tmp.m_id = id;
+			m_cates.Add(tmp);
+
 			UpdateList( UPDATE_LOAD_DATA | UPDATE_LIST_ITEMS, itemIndex );
 			lst.SetItemState( itemIndex, LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED );
 		}
@@ -223,38 +187,17 @@ void AccountCatesDlg::OnModify()
 
 	CListCtrl & lst = *(CListCtrl *)GetDlgItem(IDC_LIST_CATES);
 	int index = lst.GetNextItem( -1, LVNI_ALL | LVNI_SELECTED );
-	int id = m_ids[index];
-	CString newCateName = m_cateNames[index];
-	CString newCateDesc = m_cateDescs[index];
-	CString newTypeName = m_typeNames[index];
-	CString newUrl = m_urls[index];
-	CString newIcoPath = m_icoPaths[index];
-	CString newStartup = m_startups[index];
-	CString newKeywords = m_keywordss[index];
+	AccountCate newCate;
+	int id = m_cates[index].m_id;
+	newCate = m_cates[index];
 
-	AccountCateEditingDlg editingDlg(
-		GetOwner(),
-		false,
-		&newCateName,
-		&newCateDesc,
-		&newTypeName,
-		&newUrl,
-		&newIcoPath,
-		&newStartup,
-		&newKeywords
-	);
+	AccountCateEditingDlg editingDlg( GetOwner(), false, &newCate );
 	SetNullScopeOut setNullScopeOut( onceEditingDlg = &editingDlg );
 	if ( IDOK == editingDlg.DoModal() )
 	{
-		if ( ModifyAccountCate( id, newCateName, newCateDesc, newTypeName, newUrl, newIcoPath, newStartup, newKeywords ) )
+		if ( ModifyAccountCate( g_theApp.GetDatabase(), id, newCate ) )
 		{
-			m_cateNames[index] = newCateName;
-			m_cateDescs[index] = newCateDesc;
-			m_typeNames[index] = newTypeName;
-			m_urls[index] = newUrl;
-			m_icoPaths[index] = newIcoPath;
-			m_startups[index] = newStartup;
-			m_keywordss[index] = newKeywords;
+			m_cates[index] = newCate;
 
 			UpdateList( UPDATE_LIST_ITEMS, index );
 			CString strId;
@@ -277,19 +220,11 @@ void AccountCatesDlg::OnDelete()
 		int index = lst.GetNextItem( -1, LVNI_ALL | LVNI_SELECTED );
 		CString strId;
 		strId = lst.GetItemText( index, 0 );
-		if ( DeleteAccountCate( mixed((LPCTSTR)strId) ) )
+		if ( DeleteAccountCate( g_theApp.GetDatabase(), mixed( (LPCTSTR)strId ) ) )
 		{
 			lst.DeleteItem(index);
 
-			m_ids.RemoveAt(index);
-			m_cateNames.RemoveAt(index);
-			m_cateDescs.RemoveAt(index);
-			m_typeNames.RemoveAt(index);
-			m_urls.RemoveAt(index);
-			m_icoPaths.RemoveAt(index);
-			m_startups.RemoveAt(index);
-			m_keywordss.RemoveAt(index);
-			m_timeWritens.RemoveAt(index);
+			m_cates.RemoveAt(index);
 
 			index = index < lst.GetItemCount() ? index : lst.GetItemCount() - 1;
 			lst.SetItemState( index, LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED );

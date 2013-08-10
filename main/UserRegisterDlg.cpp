@@ -13,17 +13,8 @@ static char THIS_FILE[] = __FILE__;
 
 /////////////////////////////////////////////////////////////////////////////
 // UserRegisterDlg dialog
-UserRegisterDlg::UserRegisterDlg(
-	CWnd * parent,
-	CString * username,
-	CString * password,
-	int * protectLevel,
-	int * hotkey
-): Dialog(UserRegisterDlg::IDD, parent),
-m_username(username),
-m_password(password),
-m_protectLevel(protectLevel),
-m_hotkey(hotkey)
+UserRegisterDlg::UserRegisterDlg( CWnd * parent, User * user )
+: Dialog(UserRegisterDlg::IDD, parent), m_user(user)
 {
 	//{{AFX_DATA_INIT(UserRegisterDlg)
 	m_cfmPassword = _T("");
@@ -36,9 +27,9 @@ void UserRegisterDlg::DoDataExchange(CDataExchange* pDX)
 	//{{AFX_DATA_MAP(UserRegisterDlg)
 	DDX_Text(pDX, IDC_EDIT_CFMPWD, m_cfmPassword);
 	//}}AFX_DATA_MAP
-	DDX_Text( pDX, IDC_EDIT_USERNAME, *m_username );
-	DDX_Text( pDX, IDC_EDIT_PASSWORD, *m_password );
-	DDX_CBIndex( pDX, IDC_COMBO_PROTECTLEVEL, *m_protectLevel );
+	DDX_Text( pDX, IDC_EDIT_USERNAME, m_user->m_username );
+	DDX_Text( pDX, IDC_EDIT_PASSWORD, m_user->m_password );
+	DDX_CBIndex( pDX, IDC_COMBO_PROTECTLEVEL, m_user->m_protectLevel );
 }
 
 BEGIN_MESSAGE_MAP(UserRegisterDlg, Dialog)
@@ -57,14 +48,14 @@ BOOL UserRegisterDlg::OnInitDialog()
 	CComboBox * pCboProtectLevel = (CComboBox *)this->GetDlgItem(IDC_COMBO_PROTECTLEVEL);
 	CString protectLevels[] = { _T("一般"), _T("强力"), _T("绝对") };
 	ComboBoxLoadDataFromCArray( pCboProtectLevel, protectLevels );
-	
+
 	UpdateData(FALSE);
 	// 设置热键值
 	CHotKeyCtrl * pHkCtrl = (CHotKeyCtrl *)this->GetDlgItem(IDC_HOTKEY_CUSTOM);
 	WORD m, vk;
-	m = HIWORD(*m_hotkey);
+	m = HIWORD(m_user->m_hotkey);
 	m = MOD_to_HOTKEYF(m);
-	vk = LOWORD(*m_hotkey);
+	vk = LOWORD(m_user->m_hotkey);
 	pHkCtrl->SetHotKey( vk, m );
 
 	return TRUE;  // return TRUE unless you set the focus to a control
@@ -79,15 +70,15 @@ void UserRegisterDlg::OnOK()
 	WORD m, vk;
 	pHkCtrl->GetHotKey( vk, m );
 	m = HOTKEYF_to_MOD(m);
-	*m_hotkey = MAKELONG( vk, m );
+	m_user->m_hotkey = MAKELONG( vk, m );
 
-	if ( m_username->IsEmpty() )
+	if ( m_user->m_username.IsEmpty() )
 	{
 		WarningError( _T("用户名不能为空"), _T("错误") );
 		return;
 	}
 
-	if ( *m_password != m_cfmPassword )
+	if ( m_user->m_password != m_cfmPassword )
 	{
 		WarningError( _T("确认密码不一样"), _T("错误") );
 		return;

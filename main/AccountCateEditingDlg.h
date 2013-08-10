@@ -14,17 +14,7 @@ class AccountCateEditingDlg : public Dialog
 {
 // Construction
 public:
-	AccountCateEditingDlg(
-		CWnd * parent,
-		bool isAdd,
-		CString * cateName,
-		CString * cateDesc,
-		CString * typeName,
-		CString * url,
-		CString * icoPath,
-		CString * startup,
-		CString * keywords
-	);
+	AccountCateEditingDlg( CWnd * parent, bool isAdd, AccountCate * cate );
 
 // Dialog Data
 	//{{AFX_DATA(AccountCateEditingDlg)
@@ -36,7 +26,7 @@ public:
 	// ClassWizard generated virtual function overrides
 	//{{AFX_VIRTUAL(AccountCateEditingDlg)
 	protected:
-	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
+	virtual void DoDataExchange( CDataExchange * pDX );    // DDX/DDV support
 	//}}AFX_VIRTUAL
 
 // Implementation
@@ -45,14 +35,7 @@ protected:
 	int		m_startupIndex;
 
 	bool m_isAdd;
-	CString * m_cateName;
-	CString * m_cateDesc;
-	CString * m_typeName;
-	CString * m_url;
-	CString * m_icoPath;
-	CString * m_startup;
-	CString * m_keywords;
-
+	AccountCate * m_cate;
 	// Generated message map functions
 	//{{AFX_MSG(AccountCateEditingDlg)
 	virtual BOOL OnInitDialog();
