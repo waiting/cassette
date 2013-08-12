@@ -120,6 +120,7 @@ void AccountEditingDlg::OnSelChangeComboCates()
 	UpdateData(TRUE);
 	CComboBox * pCboCates = (CComboBox *)GetDlgItem(IDC_COMBO_CATES);
 	m_account->m_safeRank = GetSafeRankByCateId(m_cates[m_cateIndex].m_id);
+	m_account->m_comment = m_cates[m_cateIndex].m_cateDesc;
 	CString tmpMyName;
 	pCboCates->GetLBText( m_cateIndex, tmpMyName );
 	tmpMyName = _T("нр╣д") + tmpMyName + _T("ук╩╖");

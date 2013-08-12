@@ -43,7 +43,7 @@ public:
 	virtual void Dump(CDumpContext& dc) const;
 #endif
 
-protected:  // control bar embedded members
+protected:
 	CStatusBar m_statusBar;
 	CToolBar m_toolBar;
 	class AccountsView * m_pAccountsView;
@@ -61,7 +61,7 @@ protected:  // control bar embedded members
 	     清空先前注册的热键, hotkey忽略 */
 	void RefreshHotkey( int hotkey );
 	// 弹出添加账户的对话框
-	void DoAddAccount( CWnd * parent );
+	void DoAddAccount( CWnd * parent, Account * newAccount );
 
 protected:
 	//{{AFX_MSG(MainFrame)
