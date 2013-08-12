@@ -98,30 +98,26 @@ void MainFrame::UpdateList( int flag, long itemIndex )
 	IfPTR(m_pAccountsView)->UpdateList( flag, itemIndex );
 }
 
-void MainFrame::DoAddAccount( CWnd * parent )
+void MainFrame::DoAddAccount( CWnd * parent, Account * newAccount )
 {
 	VERIFY_ONCE_DIALOG(onceEditingDlg);
-	Account newAccount;
-	newAccount.m_userId = g_theApp.m_loginedUser.m_id;
-	newAccount.m_cateId = 0;
-	newAccount.m_safeRank = 20;
 
-	AccountEditingDlg editingDlg( parent, true, &newAccount );
+	AccountEditingDlg editingDlg( parent, true, newAccount );
 
 	SetNullScopeOut setNullScopeOut( onceEditingDlg = &editingDlg );
 
 	if ( IDOK == editingDlg.DoModal() )
 	{
-		if ( AddAccount( g_theApp.GetDatabase(), newAccount ) )
+		if ( AddAccount( g_theApp.GetDatabase(), *newAccount ) )
 		{
 			CListCtrl & lst = m_pAccountsView->GetListCtrl();
 			// 向list加入一项
 			int itemIndex;
 			itemIndex = lst.GetItemCount();
-			lst.InsertItem( itemIndex, newAccount.m_myName );
+			lst.InsertItem( itemIndex, newAccount->m_myName );
 			
 			// 向数组添加一项
-			m_pAccountsView->m_accounts.Add(newAccount);
+			m_pAccountsView->m_accounts.Add(*newAccount);
 
 			UpdateList( UPDATE_LOAD_DATA | UPDATE_LIST_ITEMS, itemIndex );
 			lst.SetItemState( itemIndex, LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED );
@@ -391,12 +387,17 @@ void MainFrame::OnAppSettings()
 	}
 }
 
-void MainFrame::OnAddAccount() 
+void MainFrame::OnAddAccount()
 {
-	DoAddAccount(this);
+	Account newAccount;
+	newAccount.m_userId = g_theApp.m_loginedUser.m_id;
+	newAccount.m_cateId = 0;
+	newAccount.m_safeRank = 20;
+
+	DoAddAccount( this, &newAccount );
 }
 
-void MainFrame::OnModifyAccount() 
+void MainFrame::OnModifyAccount()
 {
 	VERIFY_ONCE_DIALOG(onceEditingDlg);
 
@@ -425,7 +426,7 @@ void MainFrame::OnModifyAccount()
 	}
 }
 
-void MainFrame::OnDelAccount() 
+void MainFrame::OnDelAccount()
 {
 	if ( IDYES == MessageBox( _T("此操作不可恢复，确定要删除？"), _T("确认"), MB_YESNO ) )
 	{
@@ -445,17 +446,17 @@ void MainFrame::OnDelAccount()
 	}
 }
 
-void MainFrame::OnUpdateAccountCates( CCmdUI * pCmdUI ) 
+void MainFrame::OnUpdateAccountCates( CCmdUI * pCmdUI )
 {
 	pCmdUI->SetCheck( window_is_show( m_catesDlg.GetSafeHwnd() ) );
 }
 
-void MainFrame::OnUpdateAccountTypes( CCmdUI * pCmdUI ) 
+void MainFrame::OnUpdateAccountTypes( CCmdUI * pCmdUI )
 {
 	pCmdUI->SetCheck( window_is_show( m_typesDlg.GetSafeHwnd() ) );
 }
 
-void MainFrame::OnAccountCates() 
+void MainFrame::OnAccountCates()
 {
 	if ( window_is_show( m_catesDlg.GetSafeHwnd() ) )
 	{
@@ -471,7 +472,7 @@ void MainFrame::OnAccountCates()
 	}
 }
 
-void MainFrame::OnAccountTypes() 
+void MainFrame::OnAccountTypes()
 {
 	if ( window_is_show( m_typesDlg.GetSafeHwnd() ) )
 	{
@@ -487,7 +488,7 @@ void MainFrame::OnAccountTypes()
 	}
 }
 
-void MainFrame::OnBackupData() 
+void MainFrame::OnBackupData()
 {
 	static CString backupPath = ExplainCustomVars(g_theApp.m_settings.backupPath).c_str();
 	file_dialog dlg( GetSafeHwnd(), FALSE, _T("请输入备份后要存储文件的名称"), _T("bak") );
@@ -502,7 +503,7 @@ void MainFrame::OnBackupData()
 	}
 }
 
-void MainFrame::OnResumeData() 
+void MainFrame::OnResumeData()
 {
 	static CString backupPath = ExplainCustomVars(g_theApp.m_settings.backupPath).c_str();
 	file_dialog dlg( GetSafeHwnd(), TRUE, _T("请输入要恢复的文件名称") );
@@ -529,20 +530,47 @@ LRESULT MainFrame::OnHotkey( WPARAM wHotkeyId, LPARAM lParam )
 			{
 				// 通过HWND获取进程句柄,进而获取程序路径
 				// 判断是浏览器还是软件
-				string exeName;
-				file_path( GetAppPathFromHWND( pWnd->GetSafeHwnd() ), &exeName );
+				string exeName, exePath;
+				exePath = GetAppPathFromHWND( pWnd->GetSafeHwnd() );
+				file_path( exePath, &exeName );
 				strlwr(&exeName[0]);
-				bool isBrowser = IsBrowserExeName( g_theApp.GetDatabase(), exeName.c_str(), NULL );
-				string caption = window_get_text( pWnd->GetSafeHwnd() ); // 当前窗口标题
+				CString browserTitle;
+				bool isBrowser = IsBrowserExeName( g_theApp.GetDatabase(), exeName.c_str(), &browserTitle );
+				string curWndTitle = window_get_text( pWnd->GetSafeHwnd() ); // 当前窗口标题
+
+				AccountCate cate;
 				if ( isBrowser ) // 若是浏览器，说明是网站
 				{
+					int pos = curWndTitle.rfind( _T(" - ") );
+					if ( pos != -1 )
+					{
+						curWndTitle = curWndTitle.substr( 0, pos );
+					}
+					cate.m_cateName = curWndTitle.c_str();
+					cate.m_startup = _T("网站");
 
 				}
 				else // 否则为软件
 				{
-
+					cate.m_cateName = curWndTitle.c_str();
+					cate.m_startup = _T("软件");
+					cate.m_url = exePath.c_str();
+					cate.m_icoPath = (exePath + _T(",0")).c_str();
 				}
-				m_catesDlg.DoAdd(pWnd);
+
+				// 根据窗口标题和关键字匹配以及是否为浏览器判断是哪个种类
+				// 如果没有种类符合,则添加种类;否则将显示相关种类的所有账户
+				// 如果没有账户,则添加账户
+				int cateIndex = m_catesDlg.GetCateIndexMatchWndTitle( curWndTitle.c_str(), isBrowser );
+				if ( cateIndex == -1 )
+				{
+					m_catesDlg.DoAdd( pWnd, &cate );
+				}
+				else
+				{
+					msgbox((LPCTSTR)m_catesDlg.m_cates[cateIndex].m_cateName);
+				}
+
 
 			}
 		}

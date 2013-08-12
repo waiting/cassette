@@ -24,7 +24,10 @@ public:
 
 	virtual void UpdateList( int flag = UPDATE_LOAD_DATA | UPDATE_LIST_ITEMS, long itemIndex = -1 );
 	// 弹出添加对话框
-	void DoAdd( CWnd * parent );
+	void DoAdd( CWnd * parent, AccountCate * cate );
+	// 根据窗口标题和关键字匹配以及是否为浏览器判断是哪个种类
+	// 返回种类在数组中的索引
+	int GetCateIndexMatchWndTitle( CString const & wndTitle, bool isBrowser ) const;
 
 // Overrides
 	// ClassWizard generated virtual function overrides
@@ -35,7 +38,7 @@ public:
 
 // Implementation
 protected:
-	AccountCateArray m_cates;
+	AccountCateArray m_cates;// 存储种类信息的数组
 
 	// Generated message map functions
 	//{{AFX_MSG(AccountCatesDlg)
@@ -48,6 +51,7 @@ protected:
 	//}}AFX_MSG
 	afx_msg void OnUpdateModifyDeleteMenu( CCmdUI * pCmdUI );
 	DECLARE_MESSAGE_MAP()
+	friend class MainFrame;
 };
 
 //{{AFX_INSERT_LOCATION}}

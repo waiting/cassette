@@ -94,19 +94,18 @@ void AccountCatesDlg::UpdateList( int flag /*= UPDATE_LOAD_DATA | UPDATE_LIST_IT
 
 }
 
-void AccountCatesDlg::DoAdd( CWnd * parent )
+void AccountCatesDlg::DoAdd( CWnd * parent, AccountCate * cate )
 {
 	VERIFY_ONCE_DIALOG(onceEditingDlg);
 
-	AccountCate cate;
-	AccountCateEditingDlg editingDlg( parent, true, &cate );
+	AccountCateEditingDlg editingDlg( parent, true, cate );
 
 	SetNullScopeOut setNullScopeOut( onceEditingDlg = &editingDlg );
 	
 	if ( IDOK == editingDlg.DoModal() )
 	{
 		int id;
-		id = AddAccountCate( g_theApp.GetDatabase(), cate );
+		id = AddAccountCate( g_theApp.GetDatabase(), *cate );
 		if ( id != 0 )
 		{
 			CListCtrl & lst = *(CListCtrl *)GetDlgItem(IDC_LIST_CATES);
@@ -114,7 +113,7 @@ void AccountCatesDlg::DoAdd( CWnd * parent )
 			int itemIndex;
 			itemIndex = lst.GetItemCount();
 			lst.InsertItem( itemIndex, format( _T("%d"), id ).c_str() );
-			
+
 			// 向数组添加一项
 			AccountCate tmp;
 			tmp.m_id = id;
@@ -125,6 +124,89 @@ void AccountCatesDlg::DoAdd( CWnd * parent )
 		}
 	}
 }
+//支持|符号
+int FindEx( CString const & text, CString const & pattern, int * patternIndex = NULL )
+{
+	string_array subs = str_split( (LPCTSTR)pattern, _T("|") );
+	multi_match mm( subs, NULL );
+	multi_match::match_result r = mm.search( (LPCTSTR)text );
+	AssignPTR(patternIndex) = r.item;
+	return r.pos;
+}
+
+int AccountCatesDlg::GetCateIndexMatchWndTitle( CString const & wndTitle, bool isBrowser ) const
+{
+	//载入关键字
+	std::vector<string_array> keywordsArr;
+	int i, j;
+	int catesCount = m_cates.GetSize(); // 种类数
+	int oneItemKeywordMaxCount = 0;//单个种类关键词最大数
+	for ( i = 0; i < catesCount; ++i )
+	{
+		string_array keywords;
+		int m = str_split( (LPCTSTR)m_cates[i].m_keywords, _T(","), &keywords );
+		if ( m > oneItemKeywordMaxCount ) oneItemKeywordMaxCount = m;
+		keywordsArr.push_back(keywords);
+	}
+
+	std::vector<int> checkCateIndexs; // 待检测的CateIndex
+	for ( i = 0; i < catesCount; ++i )
+	{
+		if ( isBrowser )
+		{
+			if ( m_cates[i].m_startup == _T("网站") )
+			{
+				checkCateIndexs.push_back(i);
+			}
+		}
+		else
+		{
+			if ( m_cates[i].m_startup == _T("软件") )
+			{
+				checkCateIndexs.push_back(i);
+			}
+		}
+	}
+
+	for ( i = 0; i < oneItemKeywordMaxCount; ++i )
+	{
+		for ( j = 0; j < checkCateIndexs.size(); )
+		{
+			string_array & keywords = keywordsArr[checkCateIndexs[j]];
+			if ( i < keywords.size() )
+			{
+				if ( FindEx( wndTitle, keywords[i].c_str() ) == -1 )
+				{
+					checkCateIndexs.erase( checkCateIndexs.begin() + j );
+					continue;
+				}
+			}
+			++j;
+		}
+	}
+	// 判断所属种类索引
+	if ( checkCateIndexs.size() == 0 )
+	{
+		return -1;
+	}
+	else
+	{
+		int m = 0, mIndex = 0;
+		// 选出关键字最多的那个
+		for ( i = 0; i < checkCateIndexs.size(); ++i )
+		{
+			if ( keywordsArr[checkCateIndexs[i]].size() > m )
+			{
+				m = keywordsArr[checkCateIndexs[i]].size();
+				mIndex = i;
+			}
+		}
+
+		return checkCateIndexs[mIndex];
+	}
+	return -1;
+}
+
 /////////////////////////////////////////////////////////////////////////////
 // AccountCatesDlg message handlers
 
@@ -178,7 +260,8 @@ void AccountCatesDlg::OnListRClick( NMHDR* pNMHDR, LRESULT* pResult )
 
 void AccountCatesDlg::OnAdd()
 {
-	DoAdd( GetOwner() );
+	AccountCate cate;
+	DoAdd( GetOwner(), &cate );
 }
 
 void AccountCatesDlg::OnModify()

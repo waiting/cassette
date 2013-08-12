@@ -1454,13 +1454,14 @@ OccurDbError: // 出错处理
 	return false;
 }
 
-int LoadAccounts( sqlite3 * db, int userId, AccountArray * accounts )
+int LoadAccounts( sqlite3 * db, int userId, AccountArray * accounts, int cateId )
 {
 	IfPTR(accounts)->RemoveAll();
 
 	int count = 0;
+	int paramIndex = 0;
 
-	ansi_string sql = string_to_utf8("SELECT * FROM am_accounts WHERE user = ? ORDER BY cate;");
+	ansi_string sql = string_to_utf8( string("SELECT * FROM am_accounts WHERE user = ?") + ( cateId != -1 ? " AND cate = ?" : "" ) + " ORDER BY cate;" );
 	sqlite3_stmt * stmt = NULL;
 	int rc;
 	const char * localError;
@@ -1470,8 +1471,14 @@ int LoadAccounts( sqlite3 * db, int userId, AccountArray * accounts )
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 	// 参数绑定
 	// 所属用户
-	rc = Fields::_bindInt( stmt, 1, userId );
+	rc = Fields::_bindInt( stmt, ++paramIndex, userId );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
+	// 所属种类
+	if ( cateId != -1 )
+	{
+		rc = Fields::_bindInt( stmt, ++paramIndex, cateId );
+		if ( rc != SQLITE_OK ) goto OccurDbError;
+	}
 
 	// 执行语句
 	while ( ( rc = sqlite3_step(stmt) ) == SQLITE_ROW )
@@ -1484,7 +1491,7 @@ int LoadAccounts( sqlite3 * db, int userId, AccountArray * accounts )
 		account.loadUserId( stmt, 4 );
 		account.loadSafeRank( stmt, 5 );
 		account.loadComment( stmt, 6 );
-		account.loadTime( stmt, 7 );
+		account.loadTime( stmt, 7 );//*/
 		IfPTR(accounts)->Add(account);
 		count++;
 	}

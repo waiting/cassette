@@ -137,7 +137,7 @@ enum FieldBits__am_users
 // 当查询全部字段时才可用这个函数确定字段索引
 inline int FieldIndex( UINT fieldBitFlag )
 {
-	return (int)( log(fieldBitFlag) / log(2) + 0.0000005 );
+	return (int)( log((double)fieldBitFlag) / log(2.0) + 0.0000005 );
 }
 
 struct User : public Fields
@@ -586,25 +586,25 @@ struct Account : public Fields
 
 typedef CArray<Account, Account const &> AccountArray;
 
-// 载入当前登录用户所有的账户信息
-int LoadAccounts( sqlite3 * db, int userId, AccountArray * accounts );
+// 载入指定用户所有的账户信息,可指定种类:-1为全部种类
+int LoadAccounts( sqlite3 * db, int userId, AccountArray * accounts, int cateId = -1 );
 
-// 获取当前登录用户的一个账户信息
+// 获取指定用户的一个账户信息
 // 主键(user,myname)
 bool GetAccount( sqlite3 * db, int userId, CString const & myName, Account * account );
 
-// 添加一个当前登录用户的账户，成功true，失败false。
+// 添加一个指定用户的账户，成功true，失败false。
 // 主键(user,myname)
 // 意味着每个用户(user)拥有账户的myname必须不同，否则失败。修改时也一样。
 // newAccount忽略m_time
 bool AddAccount( sqlite3 * db, Account const & newAccount );
 
-// 修改一个当前登录用户的账户
+// 修改一个指定用户的账户
 // 主键(user,myname)
 // newAccount忽略m_time
 bool ModifyAccount( sqlite3 * db, int userId, CString const & myName, Account const & newAccount );
 
-// 删除一个当前登录用户的账户
+// 删除一个指定用户的账户
 bool DeleteAccount( sqlite3 * db, int userId, CString const & myName );
 
 // Others ----------------------------------------------------------------
