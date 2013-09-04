@@ -96,6 +96,7 @@ void AccountCatesDlg::UpdateList( int flag /*= UPDATE_LOAD_DATA | UPDATE_LIST_IT
 
 void AccountCatesDlg::DoAdd( CWnd * parent, AccountCate * cate )
 {
+	VERIFY_RUNONLY_OTHER_HPROCESS(parent);
 	VERIFY_ONCE_DIALOG(onceEditingDlg);
 
 	AccountCateEditingDlg editingDlg( parent, true, cate );
@@ -124,6 +125,7 @@ void AccountCatesDlg::DoAdd( CWnd * parent, AccountCate * cate )
 		}
 	}
 }
+
 //Ö§³Ö|·ûºÅ
 int FindEx( CString const & text, CString const & pattern, int * patternIndex = NULL )
 {

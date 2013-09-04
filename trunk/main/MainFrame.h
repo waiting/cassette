@@ -12,6 +12,7 @@
 #include "AccountCatesDlg.h"
 #include "AccountTypesDlg.h"
 
+// 更新所有列表,wParam指示要更新的列表
 #define WM_UPDATELIST_ALL ( WM_USER + 1 )
 
 class MainFrame : public CFrameWnd, public IUpdateListView
@@ -63,6 +64,8 @@ protected:
 	// 弹出添加账户的对话框
 	void DoAddAccount( CWnd * parent, Account * newAccount );
 
+	// 执行智能热键操作
+	void DoIntelligentHotkey();
 protected:
 	//{{AFX_MSG(MainFrame)
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);

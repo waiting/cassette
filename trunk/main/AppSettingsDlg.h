@@ -25,6 +25,7 @@ public:
 	BOOL	m_IsEnabledScheme;
 	CString	m_BackupPath;
 	CString	m_DatabasePath;
+	CString m_WordslibPath;
 	//}}AFX_DATA
 
 

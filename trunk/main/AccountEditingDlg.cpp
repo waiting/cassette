@@ -89,6 +89,9 @@ BOOL AccountEditingDlg::OnInitDialog()
 
 	UpdateData(FALSE);
 
+	if ( m_isAdd && m_cateIndex != -1 ) // 如果选择了种类,触发组合框选择改变事件
+		SendMessage( WM_COMMAND, MAKEWPARAM( IDC_COMBO_CATES, CBN_SELCHANGE ), (LPARAM)pCboCates->GetSafeHwnd() );
+
 	return TRUE;  // return TRUE unless you set the focus to a control
 	              // EXCEPTION: OCX Property Pages should return FALSE
 }

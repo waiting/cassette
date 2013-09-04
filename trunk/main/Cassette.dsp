@@ -112,6 +112,10 @@ SOURCE=.\AccountEditingDlg.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\AccountIntegratedWnd.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\AccountsView.cpp
 # End Source File
 # Begin Source File
@@ -204,6 +208,10 @@ SOURCE=.\AccountEditingDlg.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\AccountIntegratedWnd.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\AccountsView.h
 # End Source File
 # Begin Source File
@@ -289,6 +297,10 @@ SOURCE=..\res\Cassette.ico
 # Begin Source File
 
 SOURCE=.\res\Cassette.rc2
+# End Source File
+# Begin Source File
+
+SOURCE=..\res\IntegratedBackground.bmp
 # End Source File
 # Begin Source File
 

@@ -34,7 +34,7 @@ protected:
 	bool m_isAdd;
 	Account * m_account;
 
-	AccountCateArray m_cates;
+	AccountCateArray m_cates; // 存储种类信息
 	CUIntArray m_cateIds2;
 	CUIntArray m_typeSafeRanks;
 	int m_cateIndex;

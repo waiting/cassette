@@ -39,12 +39,13 @@ public:
 		Setting_EnabledScheme = 0x0008,
 		Setting_DatabasePath = 0x0010,
 		Setting_BackupPath = 0x0020,
+		Setting_WordslibPath = 0x0040,
 
-		Setting_AutoLogin = 0x0040,
-		Setting_SavePassword = 0x0080,
+		Setting_AutoLogin = 0x0080,
+		Setting_SavePassword = 0x0100,
 
-		Setting_Username = 0x0100,
-		Setting_Password = 0x0200,
+		Setting_Username = 0x0200,
+		Setting_Password = 0x0400,
 	};
 
 	struct SettingsParameters
@@ -55,6 +56,7 @@ public:
 		bool isEnabledScheme;    // 是否注册scheme
 		string databasePath;     // 数据库路径
 		string backupPath;       // 备份路径
+		string wordslibPath;     // 词库路径
 
 		bool isAutoLogin;        // 是否自动登录
 		bool isSavePassword;     // 是否保存密码
@@ -68,8 +70,9 @@ public:
 		HWND hMainWnd; // 主窗口句柄
 	};
 protected:
-	shared_memory<CassetteSharedData> m_sharedMem;
+	shared_memory<CassetteSharedData> m_sharedMem;//共享内存
 	sqlite3 * m_db;
+	wordslib * m_wordslib;//词库
 
 	// 开启/关闭开机自动启动
 	void EnableAutoRun( bool isEnabled, bool isForce = false );
@@ -96,12 +99,18 @@ public:
 	void OpenDatabase();
 	// 关闭数据库资源
 	void CloseDatabase();
+	// open wordslib
+	void OpenWordslib();
+	void CloseWordslib();
+	// close wordslib
+	// 获取数据库
+	sqlite3 * GetDatabase() const { return m_db; }
+	// get wordslib
+	wordslib * GetWordslib() const { return m_wordslib; }
 	// 备份数据
 	bool BackupData( CString const & filename );
 	// 恢复数据
 	bool ResumeData( CString const & filename );
-	// 获取数据库
-	sqlite3 * GetDatabase() const { return m_db; }
 	// 处理选项设置
 	// 从ini读取设置到变量中,flag指示是什么设置
 	void LoadSettings( UINT flag = (UINT)-1 );
