@@ -8,6 +8,7 @@
 #include "UserSettingsDlg.h"
 #include "AppSettingsDlg.h"
 #include "AccountEditingDlg.h"
+#include "AccountIntegratedWnd.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -100,6 +101,7 @@ void MainFrame::UpdateList( int flag, long itemIndex )
 
 void MainFrame::DoAddAccount( CWnd * parent, Account * newAccount )
 {
+	VERIFY_RUNONLY_OTHER_HPROCESS(parent);
 	VERIFY_ONCE_DIALOG(onceEditingDlg);
 
 	AccountEditingDlg editingDlg( parent, true, newAccount );
@@ -168,8 +170,8 @@ int MainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	// 创建一个工具条
 	if ( !m_toolBar.CreateEx(
 			this,
-			/*TBSTYLE_FLAT*/0,
-			WS_CHILD | WS_VISIBLE | CBRS_TOP | CBRS_GRIPPER | CBRS_TOOLTIPS | CBRS_FLYBY | CBRS_SIZE_DYNAMIC
+			TBSTYLE_FLAT | TBSTYLE_LIST /*| TBSTYLE_TRANSPARENT | TBSTYLE_TOOLTIPS*/,
+			WS_CHILD | WS_VISIBLE | CBRS_TOP /*| CBRS_GRIPPER*/ | CBRS_TOOLTIPS | CBRS_FLYBY | CBRS_SIZE_DYNAMIC
 		) || !m_toolBar.LoadToolBar(IDR_MAINFRAME)
 	)
 	{
@@ -186,6 +188,10 @@ int MainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	m_toolBar.GetToolBarCtrl().SetImageList(&imgList);
 	imgList.Detach();//*/
 
+	// 如果你不想要工具条可停靠,可删除下面这3行
+	m_toolBar.EnableDocking(CBRS_ALIGN_ANY);
+	EnableDocking(CBRS_ALIGN_ANY);
+	DockControlBar(&m_toolBar);
 
 	// 创建状态条
 	static UINT indicators[] =
@@ -202,10 +208,6 @@ int MainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		return -1;      // fail to create
 	}
 	
-	// 如果你不想要工具条可停靠,可删除下面这3行
-	m_toolBar.EnableDocking(CBRS_ALIGN_ANY);
-	EnableDocking(CBRS_ALIGN_ANY);
-	DockControlBar(&m_toolBar);
 
 	// 设置图标
 	SetIcon( icon( IDR_MAINFRAME, 16, 16 ), TRUE );
@@ -370,7 +372,8 @@ void MainFrame::OnAppSettings()
 			CassetteApp::Setting_EnabledHttpSrv |
 			CassetteApp::Setting_EnabledScheme |
 			CassetteApp::Setting_DatabasePath |
-			CassetteApp::Setting_BackupPath
+			CassetteApp::Setting_BackupPath |
+			CassetteApp::Setting_WordslibPath
 		);
 		g_theApp.DoSettings(
 			CassetteApp::Setting_EnabledAutoRun |
@@ -378,10 +381,9 @@ void MainFrame::OnAppSettings()
 			CassetteApp::Setting_EnabledHttpSrv |
 			CassetteApp::Setting_EnabledScheme |
 			CassetteApp::Setting_DatabasePath |
-			CassetteApp::Setting_BackupPath
+			CassetteApp::Setting_BackupPath |
+			CassetteApp::Setting_WordslibPath
 		);
-		g_theApp.CloseDatabase();
-		g_theApp.OpenDatabase();
 		PostMessage( WM_UPDATELIST_ALL, -1, 0 );
 		RefreshHotkey(g_theApp.m_loginedUser.m_hotkey);
 	}
@@ -523,58 +525,7 @@ LRESULT MainFrame::OnHotkey( WPARAM wHotkeyId, LPARAM lParam )
 	switch ( wHotkeyId )
 	{
 	case IDC_REGISTERED_HOTKEY:
-		{
-			// 取得当前活动的前台窗口
-			CWnd * pWnd = GetForegroundWindow();
-			if ( pWnd )
-			{
-				// 通过HWND获取进程句柄,进而获取程序路径
-				// 判断是浏览器还是软件
-				string exeName, exePath;
-				exePath = GetAppPathFromHWND( pWnd->GetSafeHwnd() );
-				file_path( exePath, &exeName );
-				strlwr(&exeName[0]);
-				CString browserTitle;
-				bool isBrowser = IsBrowserExeName( g_theApp.GetDatabase(), exeName.c_str(), &browserTitle );
-				string curWndTitle = window_get_text( pWnd->GetSafeHwnd() ); // 当前窗口标题
-
-				AccountCate cate;
-				if ( isBrowser ) // 若是浏览器，说明是网站
-				{
-					int pos = curWndTitle.rfind( _T(" - ") );
-					if ( pos != -1 )
-					{
-						curWndTitle = curWndTitle.substr( 0, pos );
-					}
-					cate.m_cateName = curWndTitle.c_str();
-					cate.m_startup = _T("网站");
-
-				}
-				else // 否则为软件
-				{
-					cate.m_cateName = curWndTitle.c_str();
-					cate.m_startup = _T("软件");
-					cate.m_url = exePath.c_str();
-					cate.m_icoPath = (exePath + _T(",0")).c_str();
-				}
-
-				// 根据窗口标题和关键字匹配以及是否为浏览器判断是哪个种类
-				// 如果没有种类符合,则添加种类;否则将显示相关种类的所有账户
-				// 如果没有账户,则添加账户
-				int cateIndex = m_catesDlg.GetCateIndexMatchWndTitle( curWndTitle.c_str(), isBrowser );
-				if ( cateIndex == -1 )
-				{
-					m_catesDlg.DoAdd( pWnd, &cate );
-				}
-				else
-				{
-					msgbox((LPCTSTR)m_catesDlg.m_cates[cateIndex].m_cateName);
-				}
-
-
-			}
-		}
-
+		DoIntelligentHotkey();
 		break;
 	}
 	return 0L;
@@ -589,4 +540,103 @@ LRESULT MainFrame::OnUpdateListAll( WPARAM wParam, LPARAM lParam )
 	if ( wParam & UpdateList_CatesDlg )
 		m_catesDlg.UpdateList();
 	return 0L;
+}
+
+void MainFrame::DoIntelligentHotkey()
+{
+	// 取得当前活动的前台窗口
+	CWnd * pCurWnd = GetForegroundWindow();
+	if ( !pCurWnd ) return;
+
+	// 通过HWND获取进程句柄,进而获取程序路径
+	// 判断是浏览器还是软件
+	string exeName, exePath;
+	exePath = GetAppPathFromHWND(*pCurWnd);
+	file_path( exePath, &exeName );
+	strlwr(&exeName[0]);
+	CString browserTitle;
+	bool isBrowser = IsBrowserExeName( g_theApp.GetDatabase(), exeName.c_str(), &browserTitle );
+	string curWndTitle = window_get_text( pCurWnd->GetSafeHwnd() ); // 当前窗口标题
+	
+	AccountCate cate;
+	if ( isBrowser ) // 若是浏览器，说明是网站
+	{
+		int pos = curWndTitle.rfind( _T(" - ") );
+		if ( pos != -1 )
+		{
+			curWndTitle = curWndTitle.substr( 0, pos );
+		}
+		cate.m_cateName = curWndTitle.c_str();
+		cate.m_startup = _T("网站");
+		
+	}
+	else // 否则为软件
+	{
+		cate.m_cateName = curWndTitle.c_str();
+		cate.m_startup = _T("软件");
+		cate.m_url = exePath.c_str();
+		cate.m_icoPath = (exePath + _T(",0")).c_str();
+	}
+
+	// 根据窗口标题和关键字匹配以及是否为浏览器判断是哪个种类
+	// 如果没有种类符合,则添加种类;否则将显示相关种类的所有账户
+	// 如果没有账户,则添加账户
+	int cateIndex = m_catesDlg.GetCateIndexMatchWndTitle( curWndTitle.c_str(), isBrowser );
+	if ( cateIndex == -1 )
+	{
+		string_array autoKeywords;
+		g_theApp.GetWordslib()->split_words( curWndTitle, &autoKeywords );
+		cate.m_keywords = str_join( _T(","), autoKeywords ).c_str();
+		m_catesDlg.DoAdd( pCurWnd, &cate );
+	}
+	else // 有该种类
+	{
+		AccountArray accounts;
+		int accountsCount = LoadAccounts( g_theApp.GetDatabase(), g_theApp.m_loginedUser.m_id, &accounts, m_catesDlg.m_cates[cateIndex].m_id );
+		if ( accountsCount < 1 )
+		{
+			Account newAccount;
+			newAccount.m_cateId = m_catesDlg.m_cates[cateIndex].m_id;
+			newAccount.m_userId = g_theApp.m_loginedUser.m_id;
+			DoAddAccount( pCurWnd, &newAccount );
+		}
+		else // 有账户数据
+		{
+			CRect rcCurWnd = window_get_client(*pCurWnd);
+			// 计算综合窗口的位置
+			Gdiplus::Size siIntegratedWnd( 240, 300 );
+			CRect rcIntegratedWnd = rect_gdiplus_to_gdi<RECT>(
+					Gdiplus::Rect( Gdiplus::Point(
+					rcCurWnd.Width()-siIntegratedWnd.Width,
+					rcCurWnd.Height()-siIntegratedWnd.Height
+				),
+					siIntegratedWnd
+				)
+			);
+			pCurWnd->ClientToScreen(&rcIntegratedWnd);
+
+			AccountIntegratedWnd * pIntegratedWnd = NULL;
+			if ( pIntegratedWnd = AccountIntegratedWnd::GetDisplayedWnd(*pCurWnd) )
+			{
+				//pIntegratedWnd->RefreshAccountsInfo( AccountCate const & cate, AccountArray const & accounts );
+				pIntegratedWnd->SetWindowPos( NULL, rcIntegratedWnd.left, rcIntegratedWnd.top, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE );
+			}
+			else
+			{
+				pIntegratedWnd = new AccountIntegratedWnd(
+					pCurWnd,
+					m_catesDlg.m_cates[cateIndex].m_cateName,
+					WS_SYSMENU,
+					WS_EX_LAYERED,
+					rcIntegratedWnd
+				);
+				//pIntegratedWnd->RefreshAccountsInfo( AccountCate const & cate, AccountArray const & accounts );
+				//pIntegratedWnd->UpdateWindow();
+				pIntegratedWnd->ShowWindow(SW_NORMAL);
+
+				pCurWnd->SetWindowPos( &wndTop, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE );
+
+			}
+		}
+	}
 }

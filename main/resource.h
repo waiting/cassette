@@ -23,6 +23,7 @@
 #define IDM_OPERATE_CATES               146
 #define IDR_SQL_DBSCHEMA                147
 #define IDR_PNG_TOOLBAR                 149
+#define IDR_INTEGRATEDBKIMG             150
 #define IDR_KEY_DB                      200
 #define IDC_REGISTERED_HOTKEY           998
 #define IDC_SYSLINK_WEBSITE             1000
@@ -55,6 +56,7 @@
 #define IDC_EDIT_DATABASEPATH           1027
 #define IDC_EDIT_BACKUPPATH             1028
 #define IDC_EDIT_TYPENAME               1029
+#define IDC_EDIT_WORDSLIBPATH           1029
 #define IDC_EDIT_SAFERANK               1030
 #define IDC_EDIT_MYNAME                 1031
 #define IDC_EDIT_ACCOUNTNAME            1032

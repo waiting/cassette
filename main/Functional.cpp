@@ -211,16 +211,18 @@ int raw_decrypt( unsigned char const * encrypt_data, int data_size, unsigned cha
 ansi_string EncryptContent( ansi_string const & content )
 {
 	ansi_string res(content);
-	int outSize;
-	raw_encrypt( (unsigned char *)content.c_str(), content.size(), (unsigned char *)&res[0], res.size(), &outSize );
+	int outSize = 0;
+	if ( res.size() > 0 )
+		raw_encrypt( (unsigned char *)content.c_str(), content.size(), (unsigned char *)&res[0], res.size(), &outSize );
 	return res;
 }
 
 ansi_string DecryptContent( ansi_string const & encryptContent )
 {
 	ansi_string res(encryptContent);
-	int outSize;
-	raw_decrypt( (unsigned char *)encryptContent.c_str(), encryptContent.size(), (unsigned char *)&res[0], res.size(), &outSize );
+	int outSize = 0;
+	if ( res.size() > 0 )
+		raw_decrypt( (unsigned char *)encryptContent.c_str(), encryptContent.size(), (unsigned char *)&res[0], res.size(), &outSize );
 	return res;
 }
 

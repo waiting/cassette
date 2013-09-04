@@ -28,6 +28,7 @@
 
 #include <RegOperate.h>
 #include <winplus.hpp>
+using namespace Gdiplus;
 #include <sqlite3.h>
 
 // 调试日志支持

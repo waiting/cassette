@@ -21,6 +21,7 @@ AppSettingsDlg::AppSettingsDlg( CWnd * pParent, CassetteApp::SettingsParameters 
 	m_IsEnabledScheme = pSettings->isEnabledScheme;
 	m_BackupPath = pSettings->backupPath.c_str();
 	m_DatabasePath = pSettings->databasePath.c_str();
+	m_WordslibPath = pSettings->wordslibPath.c_str();
 	//}}AFX_DATA_INIT
 }
 
@@ -34,6 +35,7 @@ void AppSettingsDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_CHECK_ENABLESCHEME, m_IsEnabledScheme);
 	DDX_Text(pDX, IDC_EDIT_BACKUPPATH, m_BackupPath);
 	DDX_Text(pDX, IDC_EDIT_DATABASEPATH, m_DatabasePath);
+	DDX_Text(pDX, IDC_EDIT_WORDSLIBPATH, m_WordslibPath);
 	//}}AFX_DATA_MAP
 }
 
@@ -67,6 +69,7 @@ void AppSettingsDlg::OnOK()
 	m_pSettings->isEnabledScheme = m_IsEnabledScheme != FALSE;
 	m_pSettings->backupPath = m_BackupPath;
 	m_pSettings->databasePath = m_DatabasePath;
+	m_pSettings->wordslibPath = m_WordslibPath;
 
 	EndDialog(IDOK);
 }

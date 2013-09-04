@@ -11,12 +11,10 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
-
-/////////////////////////////////////////////////////////////////////////////
 // The one and only CassetteApp object
 CassetteApp g_theApp;
-
-gdiplus_init g_init;
+// GDI+ initialize
+gdiplus_init g_initGdiplus;
 /////////////////////////////////////////////////////////////////////////////
 // CassetteApp
 
@@ -35,6 +33,7 @@ CassetteApp::CassetteApp()
 	// TODO: add construction code here,
 	// Place all significant initialization in InitInstance
 	m_db = NULL;
+	m_wordslib = NULL;
 	m_viaAutoLogin = FALSE;
 }
 
@@ -72,9 +71,10 @@ BOOL CassetteApp::InitInstance()
 	if ( !DoSingletonRunning() ) return FALSE;
 
 	// ----------------------------------------------------------------------------------
-	this->LoadSettings(); // 从ini加载设置
-	this->DoSettings();   // 处理设置选项
-	this->OpenDatabase(); // 打开数据库
+	LoadSettings(); // 从ini加载设置
+	DoSettings();   // 处理设置选项
+	//OpenDatabase(); // 打开数据库  移到DoSettings()中去了
+	//OpenWordslib(); // 打开词库  移到DoSettings()中去了
 
 	BOOL isLogined = FALSE; // 是否已经登录
 	m_viaAutoLogin = FALSE;
@@ -139,7 +139,8 @@ BOOL CassetteApp::InitInstance()
 
 int CassetteApp::ExitInstance()
 {
-	this->CloseDatabase();
+	CloseDatabase();
+	CloseWordslib();
 	
 	return CWinApp::ExitInstance();
 }
@@ -230,6 +231,29 @@ void CassetteApp::CloseDatabase()
 	}
 }
 
+
+void CassetteApp::OpenWordslib()
+{
+	string wordslibPath = ExplainCustomVars(m_settings.wordslibPath);
+	try
+	{
+		m_wordslib = new wordslib(wordslibPath);
+	}
+	catch ( wordslib_exception const & e )
+	{
+		AfxMessageBox( e.what() );
+	}
+}
+
+void CassetteApp::CloseWordslib()
+{
+	if ( m_wordslib != NULL )
+	{
+		delete m_wordslib;
+		m_wordslib = NULL;
+	}
+}
+
 bool CassetteApp::BackupData( CString const & filename )
 {
 	bool ret = false;
@@ -260,6 +284,7 @@ void CassetteApp::LoadSettings( UINT flag )
 	if ( flag & Setting_EnabledScheme ) m_settings.isEnabledScheme = mixed( s.get( _T("EnabledScheme"), _T("false") ) );
 	if ( flag & Setting_DatabasePath ) m_settings.databasePath = s.get( _T("DatabasePath"), format( _T("$ROOT$\\%s.db"), load_string(AFX_IDS_APP_TITLE).c_str() ) );
 	if ( flag & Setting_BackupPath ) m_settings.backupPath = s.get( _T("BackupPath"), _T("$ROOT$") );
+	if ( flag & Setting_WordslibPath ) m_settings.wordslibPath = s.get( _T("WordslibPath"), _T("$ROOT$\\words.wl") );
 
 	if ( flag & Setting_AutoLogin ) m_settings.isAutoLogin = mixed( s.get( _T("AutoLogin"), _T("false") ) );
 	if ( flag & Setting_SavePassword ) m_settings.isSavePassword = mixed( s.get( _T("SavePassword"), _T("false") ) );
@@ -281,6 +306,7 @@ void CassetteApp::SaveSettings( UINT flag )
 	if ( flag & Setting_EnabledScheme ) s.set( _T("EnabledScheme"), (string)mixed(m_settings.isEnabledScheme) );
 	if ( flag & Setting_DatabasePath ) s.set( _T("DatabasePath"), m_settings.databasePath );
 	if ( flag & Setting_BackupPath ) s.set( _T("BackupPath"), m_settings.backupPath );
+	if ( flag & Setting_WordslibPath ) s.set( _T("WordslibPath"), m_settings.wordslibPath );
 
 	if ( flag & Setting_AutoLogin ) s.set( _T("AutoLogin"), (string)mixed(m_settings.isAutoLogin) );
 	if ( flag & Setting_SavePassword ) s.set( _T("SavePassword"), (string)mixed(m_settings.isSavePassword) );
@@ -305,6 +331,16 @@ void CassetteApp::DoSettings( UINT flag )
 	{
 		// 是否开机自启动
 		EnableAutoRun(m_settings.isEnabledAutoRun);
+	}
+	if ( flag & Setting_DatabasePath )
+	{
+		CloseDatabase();
+		OpenDatabase();
+	}
+	if ( flag & Setting_WordslibPath )
+	{
+		CloseWordslib();
+		OpenWordslib();
 	}
 }
 

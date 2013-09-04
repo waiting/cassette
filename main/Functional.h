@@ -26,6 +26,12 @@ if ( dlg != NULL )\
 	dlg->SetFocus();\
 	return;\
 }
+#define VERIFY_RUNONLY_OTHER_HPROCESS( parent ) {\
+DWORD dwProcessId;\
+GetWindowThreadProcessId( *parent, &dwProcessId );\
+if ( GetCurrentProcessId() == dwProcessId && parent != AfxGetMainWnd() )\
+	return;\
+}
 
 // get `bool` value
 #define Bool(v) ((v) != FALSE)
