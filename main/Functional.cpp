@@ -6,7 +6,7 @@
 #include "CassetteApp.h"
 #include "Functional.h"
 
-static ansi_string const _base64_encode_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+static AnsiString const _base64_encode_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 static char const _base64_decode_chars[] = 
 {
@@ -20,9 +20,9 @@ static char const _base64_decode_chars[] =
     41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, -1, -1, -1, -1, -1
 };
 
-string Base64Encode( ansi_string const & data )
+String Base64Encode( AnsiString const & data )
 {
-	string outStr;
+	String outStr;
 	unsigned char c1, c2, c3;
 	int i = 0;
 	int size = data.size();
@@ -52,7 +52,7 @@ string Base64Encode( ansi_string const & data )
 
 		// read the third unsigned char
 		c3 = data[i++];
-		// convert into four bytes string
+		// convert into four bytes String
 		outStr += _base64_encode_chars[ c1>>2 ];
 		outStr += _base64_encode_chars[ ((c1&0x3)<<4) | ((c2&0xF0)>>4) ];
 		outStr += _base64_encode_chars[ ((c2&0xF)<<2) | ((c3&0xC0)>>6) ];
@@ -62,9 +62,9 @@ string Base64Encode( ansi_string const & data )
 	return outStr;
 }
 
-ansi_string Base64Decode( string const & base64Str )
+AnsiString Base64Decode( String const & base64Str )
 {
-	ansi_string outData;
+	AnsiString outData;
 	char c1, c2, c3, c4;
 	int i = 0;
 	int len = base64Str.length();
@@ -208,41 +208,41 @@ int raw_decrypt( unsigned char const * encrypt_data, int data_size, unsigned cha
 	
 }
 
-ansi_string EncryptContent( ansi_string const & content )
+AnsiString EncryptContent( AnsiString const & content )
 {
-	ansi_string res(content);
+	AnsiString res(content);
 	int outSize = 0;
 	if ( res.size() > 0 )
 		raw_encrypt( (unsigned char *)content.c_str(), content.size(), (unsigned char *)&res[0], res.size(), &outSize );
 	return res;
 }
 
-ansi_string DecryptContent( ansi_string const & encryptContent )
+AnsiString DecryptContent( AnsiString const & encryptContent )
 {
-	ansi_string res(encryptContent);
+	AnsiString res(encryptContent);
 	int outSize = 0;
 	if ( res.size() > 0 )
 		raw_decrypt( (unsigned char *)encryptContent.c_str(), encryptContent.size(), (unsigned char *)&res[0], res.size(), &outSize );
 	return res;
 }
 
-string ExplainCustomVars( string const & str )
+String ExplainCustomVars( String const & str )
 {
-	string vars[] = {
+	String vars[] = {
 		TEXT("$ROOT$"),
 			TEXT("$CURRENT$")
 	};
-	string vals[] = {
-		module_path(),
-			get_current_dir()
+	String vals[] = {
+		ModulePath(),
+		GetCurrentDir()
 	};
-	multi_match mm( vars, countof(vars), vals, countof(vals) );
+	MultiMatch mm( vars, countof(vars), vals, countof(vals) );
 	return mm.replace(str);
 }
 
 CString GetExecutablePath()
 {
-	return ( module_path() + dir_sep ).c_str();
+	return ( ModulePath() + dirSep ).c_str();
 }
 
 //Database//////////////////////////////////////////////////////////////////////////
@@ -251,7 +251,7 @@ bool RegisterUser( sqlite3 * db, User const & newUser )
 {
 	int rowsChanged = 0;
 
-	ansi_string sql = string_to_utf8("INSERT INTO am_users( name, pwd, protect, condone, cur_condone, unlock_time, hotkey, time ) VALUES( ?, ?, ?, ?, ?, ?, ?, ? );");
+	AnsiString sql = StringToUtf8("INSERT INTO am_users( name, pwd, protect, condone, cur_condone, unlock_time, hotkey, time ) VALUES( ?, ?, ?, ?, ?, ?, ?, ? );");
 	sqlite3_stmt * stmt = NULL;
 	int rc;
 	const char * localError;
@@ -277,13 +277,13 @@ bool RegisterUser( sqlite3 * db, User const & newUser )
 	rc = newUser._bindInt( stmt, 5, 3 );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 	// 解锁时刻
-	rc = newUser._bindInt( stmt, 6, (int)get_utc_time() );
+	rc = newUser._bindInt( stmt, 6, (int)GetUtcTime() );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 	// 热键
 	rc = newUser.bindHotkey( stmt, 7 );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 	// 注册时刻
-	rc = newUser._bindInt( stmt, 8, (int)get_utc_time() );
+	rc = newUser._bindInt( stmt, 8, (int)GetUtcTime() );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 
 	// 执行语句
@@ -312,7 +312,7 @@ OccurDbError: // 出错处理
 	localError = sqlite3_errmsg(db);
 	if ( stmt )
 		sqlite3_finalize(stmt);
-	AfxGetMainWnd()->FatalError( utf8_to_string(localError).c_str(), _T("数据库错误") );
+	AfxGetMainWnd()->FatalError( Utf8ToString(localError).c_str(), _T("数据库错误") );
 	return false;
 }
 
@@ -322,7 +322,7 @@ bool LoginUser( sqlite3 * db, CString const & username, CString const & password
 
 	bool ret = false;
 
-	ansi_string sql = string_to_utf8("SELECT * FROM am_users WHERE name = ?;");
+	AnsiString sql = StringToUtf8("SELECT * FROM am_users WHERE name = ?;");
 	sqlite3_stmt * stmt = NULL;
 	int rc;
 	const char * localError;
@@ -341,7 +341,7 @@ bool LoginUser( sqlite3 * db, CString const & username, CString const & password
 	{
 		// 判断用户是否处于锁定时间中
 		tmpUserInfo.loadUnlockTime( stmt, FieldIndex(am_users__unlock_time) );
-		int nowTime = (int)get_utc_time();
+		int nowTime = (int)GetUtcTime();
 
 		tmpUserInfo.loadCondone( stmt, FieldIndex(am_users__condone) );
 		tmpUserInfo.loadCurCondone( stmt, FieldIndex(am_users__cur_condone) );
@@ -351,7 +351,7 @@ bool LoginUser( sqlite3 * db, CString const & username, CString const & password
 			int hours = ( tmpUserInfo.m_unlockTime - nowTime ) / 3600;
 			int minutes = ( ( tmpUserInfo.m_unlockTime - nowTime ) - hours * 3600 ) / 60;
 			int seconds = ( tmpUserInfo.m_unlockTime - nowTime ) - hours * 3600 - minutes * 60;
-			AfxGetMainWnd()->WarningError( format( _T("用户锁定中，解锁还需要%d小时%d分%d秒"), hours, minutes, seconds ).c_str(), _T("错误") );
+			AfxGetMainWnd()->WarningError( Format( _T("用户锁定中，解锁还需要%d小时%d分%d秒"), hours, minutes, seconds ).c_str(), _T("错误") );
 			ret = false;
 			goto ExitProc;
 		}
@@ -372,12 +372,12 @@ bool LoginUser( sqlite3 * db, CString const & username, CString const & password
 			tmpUserInfo.m_curCondone--;
 			ModifyUserEx( db, username, am_users__cur_condone, tmpUserInfo );
 
-			AfxGetMainWnd()->WarningError( format( _T("密码不正确，你还剩%d次机会"), tmpUserInfo.m_curCondone ).c_str(), _T("错误") );
+			AfxGetMainWnd()->WarningError( Format( _T("密码不正确，你还剩%d次机会"), tmpUserInfo.m_curCondone ).c_str(), _T("错误") );
 
 			if ( tmpUserInfo.m_curCondone < 1 ) // 没有容错数,锁定用户
 			{
 				int lockTime = 3600 * 3;
-				tmpUserInfo.m_unlockTime = get_utc_time() + lockTime;
+				tmpUserInfo.m_unlockTime = GetUtcTime() + lockTime;
 				ModifyUserEx( db, username, am_users__unlock_time, tmpUserInfo );
 			}
 			ret = false;
@@ -424,7 +424,7 @@ OccurDbError: // 出错处理
 	localError = sqlite3_errmsg(db);
 	if ( stmt )
 		sqlite3_finalize(stmt);
-	AfxGetMainWnd()->FatalError( utf8_to_string(localError).c_str(), _T("数据库错误") );
+	AfxGetMainWnd()->FatalError( Utf8ToString(localError).c_str(), _T("数据库错误") );
 	return false;
 }
 
@@ -432,7 +432,7 @@ bool LoadUser( sqlite3 * db, CString const & username, User * userData )
 {
 	bool ret = false;
 
-	ansi_string sql = string_to_utf8("SELECT * FROM am_users WHERE name = ?;");
+	AnsiString sql = StringToUtf8("SELECT * FROM am_users WHERE name = ?;");
 	sqlite3_stmt * stmt = NULL;
 	int rc;
 	const char * localError;
@@ -485,7 +485,7 @@ OccurDbError: // 出错处理
 	localError = sqlite3_errmsg(db);
 	if ( stmt )
 		sqlite3_finalize(stmt);
-	AfxGetMainWnd()->FatalError( utf8_to_string(localError).c_str(), _T("数据库错误") );
+	AfxGetMainWnd()->FatalError( Utf8ToString(localError).c_str(), _T("数据库错误") );
 	return false;
 }
 
@@ -493,7 +493,7 @@ bool DeleteUser( sqlite3 * db, CString const & username )
 {
 	int rowsChanged = 0;
 
-	ansi_string sql = string_to_utf8("DELETE FROM am_users WHERE name = ?;");
+	AnsiString sql = StringToUtf8("DELETE FROM am_users WHERE name = ?;");
 	sqlite3_stmt * stmt = NULL;
 	int rc;
 	const char * localError;
@@ -532,16 +532,16 @@ OccurDbError: // 出错处理
 	localError = sqlite3_errmsg(db);
 	if ( stmt )
 		sqlite3_finalize(stmt);
-	AfxGetMainWnd()->FatalError( utf8_to_string(localError).c_str(), _T("数据库错误") );
+	AfxGetMainWnd()->FatalError( Utf8ToString(localError).c_str(), _T("数据库错误") );
 	return false;
 }
 
 bool VerifyUserPassword( sqlite3 * db, CString const & username, CString const & password )
 {
-	ansi_string encryptPassword;
+	AnsiString encryptPassword;
 	bool ret = false;
 
-	ansi_string sql = string_to_utf8("SELECT pwd = ? FROM am_users WHERE name = ?;");
+	AnsiString sql = StringToUtf8("SELECT pwd = ? FROM am_users WHERE name = ?;");
 	sqlite3_stmt * stmt = NULL;
 	int rc;
 	const char * localError;
@@ -554,7 +554,7 @@ bool VerifyUserPassword( sqlite3 * db, CString const & username, CString const &
 	rc = Fields::_bindString( stmt, 2, username );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 	// 密码
-	encryptPassword = EncryptContent( string_to_utf8( (LPCTSTR)password ) );
+	encryptPassword = EncryptContent( StringToUtf8( (LPCTSTR)password ) );
 	rc = Fields::_bindBlob( stmt, 1, encryptPassword.c_str(), encryptPassword.size() );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 
@@ -587,7 +587,7 @@ OccurDbError: // 出错处理
 	localError = sqlite3_errmsg(db);
 	if ( stmt )
 		sqlite3_finalize(stmt);
-	AfxGetMainWnd()->FatalError( utf8_to_string(localError).c_str(), _T("数据库错误") );
+	AfxGetMainWnd()->FatalError( Utf8ToString(localError).c_str(), _T("数据库错误") );
 	return false;
 }
 
@@ -596,7 +596,7 @@ bool ModifyUserEx( sqlite3 * db, CString const & username, UINT modifiedFieldBit
 	int rowsChanged = 0;
 	int paramIndex = 0;
 	// 生成SQL
-	ansi_string_array modifiedFields;
+	AnsiStringArray modifiedFields;
 	if ( modifiedFieldBits & am_users__id )
 		modifiedFields.push_back("id = ?");
 	if ( modifiedFieldBits & am_users__name )
@@ -616,8 +616,8 @@ bool ModifyUserEx( sqlite3 * db, CString const & username, UINT modifiedFieldBit
 	if ( modifiedFieldBits & am_users__time )
 		modifiedFields.push_back("time = ?");
 
-	ansi_string sql = string_to_utf8(
-		"UPDATE am_users SET " + str_join( ", ", modifiedFields ) + " WHERE name = ?;"
+	AnsiString sql = StringToUtf8(
+		"UPDATE am_users SET " + StrJoin( ", ", modifiedFields ) + " WHERE name = ?;"
 	);
 	sqlite3_stmt * stmt = NULL;
 	int rc;
@@ -723,7 +723,7 @@ OccurDbError: // 出错处理
 	localError = sqlite3_errmsg(db);
 	if ( stmt )
 		sqlite3_finalize(stmt);
-	AfxGetMainWnd()->FatalError( utf8_to_string(localError).c_str(), _T("数据库错误") );
+	AfxGetMainWnd()->FatalError( Utf8ToString(localError).c_str(), _T("数据库错误") );
 	return false;
 }
 
@@ -732,7 +732,7 @@ int LoadAccountTypes( sqlite3 * db, AccountTypeArray * types )
 	int count = 0;
 	IfPTR(types)->RemoveAll();
 
-	ansi_string sql = string_to_utf8("SELECT * FROM am_account_types ORDER BY rank;");
+	AnsiString sql = StringToUtf8("SELECT * FROM am_account_types ORDER BY rank;");
 	sqlite3_stmt * stmt = NULL;
 	int rc;
 	const char * localError;
@@ -772,7 +772,7 @@ OccurDbError: // 出错处理
 	localError = sqlite3_errmsg(db);
 	if ( stmt )
 		sqlite3_finalize(stmt);
-	AfxGetMainWnd()->FatalError( utf8_to_string(localError).c_str(), _T("数据库错误") );
+	AfxGetMainWnd()->FatalError( Utf8ToString(localError).c_str(), _T("数据库错误") );
 	return 0;
 }
 
@@ -780,7 +780,7 @@ bool GetAccountType( sqlite3 * db, CString const & typeName, AccountType * type 
 {
 	bool ret = false;
 
-	ansi_string sql = string_to_utf8("SELECT * FROM am_account_types WHERE name = ?;");
+	AnsiString sql = StringToUtf8("SELECT * FROM am_account_types WHERE name = ?;");
 	sqlite3_stmt * stmt = NULL;
 	int rc;
 	const char * localError;
@@ -824,7 +824,7 @@ OccurDbError: // 出错处理
 	localError = sqlite3_errmsg(db);
 	if ( stmt )
 		sqlite3_finalize(stmt);
-	AfxGetMainWnd()->FatalError( utf8_to_string(localError).c_str(), _T("数据库错误") );
+	AfxGetMainWnd()->FatalError( Utf8ToString(localError).c_str(), _T("数据库错误") );
 	return false;
 }
 
@@ -832,7 +832,7 @@ bool AddAccountType( sqlite3 * db, AccountType const & newType )
 {
 	int rowsChanged = 0;
 
-	ansi_string sql = string_to_utf8("INSERT INTO am_account_types( name, rank ) VALUES( ?, ? );");
+	AnsiString sql = StringToUtf8("INSERT INTO am_account_types( name, rank ) VALUES( ?, ? );");
 	sqlite3_stmt * stmt = NULL;
 	int rc;
 	const char * localError;
@@ -876,7 +876,7 @@ OccurDbError: // 出错处理
 	localError = sqlite3_errmsg(db);
 	if ( stmt )
 		sqlite3_finalize(stmt);
-	AfxGetMainWnd()->FatalError( utf8_to_string(localError).c_str(), _T("数据库错误") );
+	AfxGetMainWnd()->FatalError( Utf8ToString(localError).c_str(), _T("数据库错误") );
 	return false;
 }
 
@@ -884,7 +884,7 @@ bool ModifyAccountType( sqlite3 * db, CString const & typeName, AccountType cons
 {
 	int rowsChanged = 0;
 
-	ansi_string sql = string_to_utf8("UPDATE am_account_types SET name = ?, rank = ? WHERE name = ?;");
+	AnsiString sql = StringToUtf8("UPDATE am_account_types SET name = ?, rank = ? WHERE name = ?;");
 	sqlite3_stmt * stmt = NULL;
 	int rc;
 	const char * localError;
@@ -932,7 +932,7 @@ OccurDbError: // 出错处理
 	localError = sqlite3_errmsg(db);
 	if ( stmt )
 		sqlite3_finalize(stmt);
-	AfxGetMainWnd()->FatalError( utf8_to_string(localError).c_str(), _T("数据库错误") );
+	AfxGetMainWnd()->FatalError( Utf8ToString(localError).c_str(), _T("数据库错误") );
 	return false;
 }
 
@@ -940,14 +940,14 @@ bool DeleteAccountType( sqlite3 * db, CString const & typeName )
 {
 	int rowsChanged = 0;
 
-	ansi_string sql1, sql2;
+	AnsiString sql1, sql2;
 	sqlite3_stmt * stmt1 = NULL;
 	sqlite3_stmt * stmt2 = NULL;
 	int rc;
 	const char * localError;
 
 	// 准备语句
-	sql1 = string_to_utf8("SELECT COUNT(*) > 0 FROM am_account_cates WHERE type = ?;");
+	sql1 = StringToUtf8("SELECT COUNT(*) > 0 FROM am_account_cates WHERE type = ?;");
 	rc = sqlite3_prepare_v2( db, sql1.c_str(), sql1.size(), &stmt1, NULL );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 
@@ -969,7 +969,7 @@ bool DeleteAccountType( sqlite3 * db, CString const & typeName )
 
 	//////////////////////////////////////////////////////////////////////////
 	// 准备语句
-	sql2 = string_to_utf8("DELETE FROM am_account_types WHERE name = ?;");
+	sql2 = StringToUtf8("DELETE FROM am_account_types WHERE name = ?;");
 	rc = sqlite3_prepare_v2( db, sql2.c_str(), sql2.size(), &stmt2, NULL );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 
@@ -1006,7 +1006,7 @@ OccurDbError: // 出错处理
 		sqlite3_finalize(stmt1);
 	if ( stmt2 )
 		sqlite3_finalize(stmt2);
-	AfxGetMainWnd()->FatalError( utf8_to_string(localError).c_str(), _T("数据库错误") );
+	AfxGetMainWnd()->FatalError( Utf8ToString(localError).c_str(), _T("数据库错误") );
 	return false;
 }
 
@@ -1016,7 +1016,7 @@ int LoadAccountCates( sqlite3 * db, AccountCateArray * cates )
 
 	int count = 0;
 
-	ansi_string sql = string_to_utf8("SELECT * FROM am_account_cates ORDER BY id;");
+	AnsiString sql = StringToUtf8("SELECT * FROM am_account_cates ORDER BY id;");
 	sqlite3_stmt * stmt = NULL;
 	int rc;
 	const char * localError;
@@ -1030,13 +1030,13 @@ int LoadAccountCates( sqlite3 * db, AccountCateArray * cates )
 	{
 		AccountCate cate;
 		cate.loadId( stmt, 0 );//Add( sqlite3_column_int( stmt, 0 ) );
-		cate.loadCateName( stmt, 1 );//Add( utf8_to_string( (char const *)sqlite3_column_text( stmt, 1 ) ).c_str() );
-		cate.loadCateDesc( stmt, 2 );//Add( utf8_to_string( (char const *)sqlite3_column_text( stmt, 2 ) ).c_str() );
-		cate.loadTypeName( stmt, 3 );//Add( utf8_to_string( (char const *)sqlite3_column_text( stmt, 3 ) ).c_str() );
-		cate.loadUrl( stmt, 4 );//Add( utf8_to_string( (char const *)sqlite3_column_text( stmt, 4 ) ).c_str() );
-		cate.loadIcoPath( stmt, 5 );//Add( utf8_to_string( (char const *)sqlite3_column_text( stmt, 5 ) ).c_str() );
-		cate.loadStartup( stmt, 6 );//Add( utf8_to_string( (char const *)sqlite3_column_text( stmt, 6 ) ).c_str() );
-		cate.loadKeywords( stmt, 7 );//Add( utf8_to_string( (char const *)sqlite3_column_text( stmt, 7 ) ).c_str() );
+		cate.loadCateName( stmt, 1 );//Add( Utf8ToString( (char const *)sqlite3_column_text( stmt, 1 ) ).c_str() );
+		cate.loadCateDesc( stmt, 2 );//Add( Utf8ToString( (char const *)sqlite3_column_text( stmt, 2 ) ).c_str() );
+		cate.loadTypeName( stmt, 3 );//Add( Utf8ToString( (char const *)sqlite3_column_text( stmt, 3 ) ).c_str() );
+		cate.loadUrl( stmt, 4 );//Add( Utf8ToString( (char const *)sqlite3_column_text( stmt, 4 ) ).c_str() );
+		cate.loadIcoPath( stmt, 5 );//Add( Utf8ToString( (char const *)sqlite3_column_text( stmt, 5 ) ).c_str() );
+		cate.loadStartup( stmt, 6 );//Add( Utf8ToString( (char const *)sqlite3_column_text( stmt, 6 ) ).c_str() );
+		cate.loadKeywords( stmt, 7 );//Add( Utf8ToString( (char const *)sqlite3_column_text( stmt, 7 ) ).c_str() );
 		cate.loadTimeWriten( stmt, 8 );//Add( sqlite3_column_int( stmt, 8 ) );
 		IfPTR(cates)->Add(cate);
 
@@ -1064,7 +1064,7 @@ OccurDbError: // 出错处理
 	localError = sqlite3_errmsg(db);
 	if ( stmt )
 		sqlite3_finalize(stmt);
-	AfxGetMainWnd()->FatalError( utf8_to_string(localError).c_str(), _T("数据库错误") );
+	AfxGetMainWnd()->FatalError( Utf8ToString(localError).c_str(), _T("数据库错误") );
 	return 0;
 }
 
@@ -1072,7 +1072,7 @@ bool GetAccountCate( sqlite3 * db, int id, AccountCate * cate )
 {
 	bool ret = false;
 
-	ansi_string sql = string_to_utf8("SELECT * FROM am_account_cates WHERE id = ?;");
+	AnsiString sql = StringToUtf8("SELECT * FROM am_account_cates WHERE id = ?;");
 	sqlite3_stmt * stmt = NULL;
 	int rc;
 	const char * localError;
@@ -1123,7 +1123,7 @@ OccurDbError: // 出错处理
 	localError = sqlite3_errmsg(db);
 	if ( stmt )
 		sqlite3_finalize(stmt);
-	AfxGetMainWnd()->FatalError( utf8_to_string(localError).c_str(), _T("数据库错误") );
+	AfxGetMainWnd()->FatalError( Utf8ToString(localError).c_str(), _T("数据库错误") );
 	return false;
 }
 
@@ -1131,7 +1131,7 @@ int AddAccountCate( sqlite3 * db, AccountCate const & newCate )
 {
 	int rowsChanged = 0;
 
-	ansi_string sql = string_to_utf8("INSERT INTO am_account_cates( name, desc, type, url, icon, startup, keywords, time ) VALUES( ?, ?, ?, ?, ?, ?, ?, ? );");
+	AnsiString sql = StringToUtf8("INSERT INTO am_account_cates( name, desc, type, url, icon, startup, keywords, time ) VALUES( ?, ?, ?, ?, ?, ?, ?, ? );");
 	sqlite3_stmt * stmt = NULL;
 	int rc;
 	const char * localError;
@@ -1170,7 +1170,7 @@ int AddAccountCate( sqlite3 * db, AccountCate const & newCate )
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 
 	// 写入时间
-	rc = Fields::_bindInt( stmt, 8, (int)get_utc_time() );
+	rc = Fields::_bindInt( stmt, 8, (int)GetUtcTime() );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 	
 	// 执行语句
@@ -1202,7 +1202,7 @@ OccurDbError: // 出错处理
 	localError = sqlite3_errmsg(db);
 	if ( stmt )
 		sqlite3_finalize(stmt);
-	AfxGetMainWnd()->FatalError( utf8_to_string(localError).c_str(), _T("数据库错误") );
+	AfxGetMainWnd()->FatalError( Utf8ToString(localError).c_str(), _T("数据库错误") );
 	return 0;
 }
 
@@ -1210,7 +1210,7 @@ bool ModifyAccountCate( sqlite3 * db, int id, AccountCate const & newCate )
 {
 	int rowsChanged = 0;
 
-	ansi_string sql = string_to_utf8("UPDATE am_account_cates SET name = ?, desc = ?, type = ?, url = ?, icon = ?, startup = ?, keywords = ? WHERE id = ?;");
+	AnsiString sql = StringToUtf8("UPDATE am_account_cates SET name = ?, desc = ?, type = ?, url = ?, icon = ?, startup = ?, keywords = ? WHERE id = ?;");
 	sqlite3_stmt * stmt = NULL;
 	int rc;
 	const char * localError;
@@ -1275,7 +1275,7 @@ OccurDbError: // 出错处理
 	localError = sqlite3_errmsg(db);
 	if ( stmt )
 		sqlite3_finalize(stmt);
-	AfxGetMainWnd()->FatalError( utf8_to_string(localError).c_str(), _T("数据库错误") );
+	AfxGetMainWnd()->FatalError( Utf8ToString(localError).c_str(), _T("数据库错误") );
 	return false;
 }
 
@@ -1283,14 +1283,14 @@ bool DeleteAccountCate( sqlite3 * db, int id )
 {
 	int rowsChanged = 0;
 
-	ansi_string sql1, sql2;
+	AnsiString sql1, sql2;
 	sqlite3_stmt * stmt1 = NULL;
 	sqlite3_stmt * stmt2 = NULL;
 	int rc;
 	const char * localError;
 
 	// 准备语句
-	sql1 = string_to_utf8("SELECT COUNT(*) > 0 FROM am_accounts WHERE cate = ?;");
+	sql1 = StringToUtf8("SELECT COUNT(*) > 0 FROM am_accounts WHERE cate = ?;");
 	rc = sqlite3_prepare_v2( db, sql1.c_str(), sql1.size(), &stmt1, NULL );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 
@@ -1312,7 +1312,7 @@ bool DeleteAccountCate( sqlite3 * db, int id )
 
 	//////////////////////////////////////////////////////////////////////////
 	// 准备语句
-	sql2 = string_to_utf8("DELETE FROM am_account_cates WHERE id = ?;");
+	sql2 = StringToUtf8("DELETE FROM am_account_cates WHERE id = ?;");
 	rc = sqlite3_prepare_v2( db, sql2.c_str(), sql2.size(), &stmt2, NULL );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 	
@@ -1349,7 +1349,7 @@ OccurDbError: // 出错处理
 		sqlite3_finalize(stmt1);
 	if ( stmt2 )
 		sqlite3_finalize(stmt2);
-	AfxGetMainWnd()->FatalError( utf8_to_string(localError).c_str(), _T("数据库错误") );
+	AfxGetMainWnd()->FatalError( Utf8ToString(localError).c_str(), _T("数据库错误") );
 	return false;
 }
 
@@ -1360,7 +1360,7 @@ int LoadAccountCatesSafeRank( sqlite3 * db, CUIntArray * cateIds, CUIntArray * t
 
 	int count = 0;
 
-	ansi_string sql = string_to_utf8("SELECT c.id, t.rank from am_account_cates AS c Left JOIN am_account_types AS t ON t.name = c.type;");
+	AnsiString sql = StringToUtf8("SELECT c.id, t.rank from am_account_cates AS c Left JOIN am_account_types AS t ON t.name = c.type;");
 	sqlite3_stmt * stmt = NULL;
 	int rc;
 	const char * localError;
@@ -1399,7 +1399,7 @@ OccurDbError: // 出错处理
 	localError = sqlite3_errmsg(db);
 	if ( stmt )
 		sqlite3_finalize(stmt);
-	AfxGetMainWnd()->FatalError( utf8_to_string(localError).c_str(), _T("数据库错误") );
+	AfxGetMainWnd()->FatalError( Utf8ToString(localError).c_str(), _T("数据库错误") );
 	return 0;
 }
 
@@ -1407,7 +1407,7 @@ bool GetTypeByCateId( sqlite3 * db, int cateId, AccountType * type )
 {
 	bool ret = false;
 
-	ansi_string sql = string_to_utf8("SELECT c.id, t.name, t.rank FROM am_account_cates AS c Left JOIN am_account_types AS t ON t.name = c.type WHERE c.id = ?;");
+	AnsiString sql = StringToUtf8("SELECT c.id, t.name, t.rank FROM am_account_cates AS c Left JOIN am_account_types AS t ON t.name = c.type WHERE c.id = ?;");
 	sqlite3_stmt * stmt = NULL;
 	int rc;
 	const char * localError;
@@ -1452,7 +1452,7 @@ OccurDbError: // 出错处理
 	localError = sqlite3_errmsg(db);
 	if ( stmt )
 		sqlite3_finalize(stmt);
-	AfxGetMainWnd()->FatalError( utf8_to_string(localError).c_str(), _T("数据库错误") );
+	AfxGetMainWnd()->FatalError( Utf8ToString(localError).c_str(), _T("数据库错误") );
 	return false;
 }
 
@@ -1463,7 +1463,7 @@ int LoadAccounts( sqlite3 * db, int userId, AccountArray * accounts, int cateId 
 	int count = 0;
 	int paramIndex = 0;
 
-	ansi_string sql = string_to_utf8( string("SELECT * FROM am_accounts WHERE user = ?") + ( cateId != -1 ? " AND cate = ?" : "" ) + " ORDER BY cate;" );
+	AnsiString sql = StringToUtf8( String("SELECT * FROM am_accounts WHERE user = ?") + ( cateId != -1 ? " AND cate = ?" : "" ) + " ORDER BY cate;" );
 	sqlite3_stmt * stmt = NULL;
 	int rc;
 	const char * localError;
@@ -1519,7 +1519,7 @@ OccurDbError: // 出错处理
 	localError = sqlite3_errmsg(db);
 	if ( stmt )
 		sqlite3_finalize(stmt);
-	AfxGetMainWnd()->FatalError( utf8_to_string(localError).c_str(), _T("数据库错误") );
+	AfxGetMainWnd()->FatalError( Utf8ToString(localError).c_str(), _T("数据库错误") );
 	return 0;
 }
 
@@ -1527,7 +1527,7 @@ bool GetAccount( sqlite3 * db, int userId, CString const & myName, Account * acc
 {
 	bool ret = false;
 
-	ansi_string sql = string_to_utf8("SELECT * FROM am_accounts WHERE user = ? AND myname = ?;");
+	AnsiString sql = StringToUtf8("SELECT * FROM am_accounts WHERE user = ? AND myname = ?;");
 	sqlite3_stmt * stmt = NULL;
 	int rc;
 	const char * localError;
@@ -1581,7 +1581,7 @@ OccurDbError: // 出错处理
 	localError = sqlite3_errmsg(db);
 	if ( stmt )
 		sqlite3_finalize(stmt);
-	AfxGetMainWnd()->FatalError( utf8_to_string(localError).c_str(), _T("数据库错误") );
+	AfxGetMainWnd()->FatalError( Utf8ToString(localError).c_str(), _T("数据库错误") );
 	return false;
 }
 
@@ -1589,7 +1589,7 @@ bool AddAccount( sqlite3 * db, Account const & newAccount )
 {
 	int rowsChanged = 0;
 
-	ansi_string sql = string_to_utf8("INSERT INTO am_accounts( myname, account_name, account_pwd, cate, user, safe_rank, comment, time ) VALUES( ?, ?, ?, ?, ?, ?, ?, ? );");
+	AnsiString sql = StringToUtf8("INSERT INTO am_accounts( myname, account_name, account_pwd, cate, user, safe_rank, comment, time ) VALUES( ?, ?, ?, ?, ?, ?, ?, ? );");
 	sqlite3_stmt * stmt = NULL;
 	int rc;
 	const char * localError;
@@ -1628,7 +1628,7 @@ bool AddAccount( sqlite3 * db, Account const & newAccount )
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 
 	// 写入时间
-	rc = Fields::_bindInt( stmt, 8, (int)get_utc_time() );
+	rc = Fields::_bindInt( stmt, 8, (int)GetUtcTime() );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 
 	// 执行语句
@@ -1654,7 +1654,7 @@ OccurDbError: // 出错处理
 	localError = sqlite3_errmsg(db);
 	if ( stmt )
 		sqlite3_finalize(stmt);
-	AfxGetMainWnd()->FatalError( utf8_to_string(localError).c_str(), _T("数据库错误") );
+	AfxGetMainWnd()->FatalError( Utf8ToString(localError).c_str(), _T("数据库错误") );
 	return false;
 }
 
@@ -1662,7 +1662,7 @@ bool ModifyAccount( sqlite3 * db, int userId, CString const & myName, Account co
 {
 	int rowsChanged = 0;
 
-	ansi_string sql = string_to_utf8("UPDATE am_accounts SET myname = ?, account_name = ?, account_pwd = ?, cate = ?, safe_rank = ?, comment = ? WHERE user = ? AND myname = ?;");
+	AnsiString sql = StringToUtf8("UPDATE am_accounts SET myname = ?, account_name = ?, account_pwd = ?, cate = ?, safe_rank = ?, comment = ? WHERE user = ? AND myname = ?;");
 	sqlite3_stmt * stmt = NULL;
 	int rc;
 	const char * localError;
@@ -1727,7 +1727,7 @@ OccurDbError: // 出错处理
 	localError = sqlite3_errmsg(db);
 	if ( stmt )
 		sqlite3_finalize(stmt);
-	AfxGetMainWnd()->FatalError( utf8_to_string(localError).c_str(), _T("数据库错误") );
+	AfxGetMainWnd()->FatalError( Utf8ToString(localError).c_str(), _T("数据库错误") );
 	return false;
 }
 
@@ -1735,7 +1735,7 @@ bool DeleteAccount( sqlite3 * db, int userId, CString const & myName )
 {
 	int rowsChanged = 0;
 
-	ansi_string sql = string_to_utf8("DELETE FROM am_accounts WHERE user = ? AND myname = ?;");
+	AnsiString sql = StringToUtf8("DELETE FROM am_accounts WHERE user = ? AND myname = ?;");
 	sqlite3_stmt * stmt = NULL;
 	int rc;
 	const char * localError;
@@ -1776,7 +1776,7 @@ OccurDbError: // 出错处理
 	localError = sqlite3_errmsg(db);
 	if ( stmt )
 		sqlite3_finalize(stmt);
-	AfxGetMainWnd()->FatalError( utf8_to_string(localError).c_str(), _T("数据库错误") );
+	AfxGetMainWnd()->FatalError( Utf8ToString(localError).c_str(), _T("数据库错误") );
 	return false;
 }
 
@@ -1785,7 +1785,7 @@ CString GetCorrectAccountMyName( sqlite3 * db, int userId, CString const & myNam
 	CString result;
 	int number = 0;
 
-	ansi_string sql = string_to_utf8("SELECT myname FROM am_accounts WHERE user = ? AND myname = ?;");
+	AnsiString sql = StringToUtf8("SELECT myname FROM am_accounts WHERE user = ? AND myname = ?;");
 	sqlite3_stmt * stmt = NULL;
 	int rc;
 	const char * localError;
@@ -1842,16 +1842,16 @@ OccurDbError: // 出错处理
 	localError = sqlite3_errmsg(db);
 	if ( stmt )
 		sqlite3_finalize(stmt);
-	AfxGetMainWnd()->FatalError( utf8_to_string(localError).c_str(), _T("数据库错误") );
+	AfxGetMainWnd()->FatalError( Utf8ToString(localError).c_str(), _T("数据库错误") );
 	return _T("");
 }
 
-int LoadTableNames( sqlite3 * db, string_array * tableNames, string const & like )
+int LoadTableNames( sqlite3 * db, StringArray * tableNames, String const & like )
 {
 	int count = 0;
 	IfPTR(tableNames)->clear();
 
-	ansi_string sql = string_to_utf8("SELECT tbl_name FROM sqlite_master WHERE type = \'table\' AND tbl_name LIKE ? ESCAPE \'\\\';");
+	AnsiString sql = StringToUtf8("SELECT tbl_name FROM sqlite_master WHERE type = \'table\' AND tbl_name LIKE ? ESCAPE \'\\\';");
 	sqlite3_stmt * stmt = NULL;
 	int rc;
 	const char * localError;
@@ -1860,13 +1860,13 @@ int LoadTableNames( sqlite3 * db, string_array * tableNames, string const & like
 	rc = sqlite3_prepare_v2( db, sql.c_str(), sql.size(), &stmt, NULL );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 
-	rc = sqlite3_bind_text( stmt, 1, string_to_utf8(like).c_str(), -1, SQLITE_TRANSIENT );
+	rc = sqlite3_bind_text( stmt, 1, StringToUtf8(like).c_str(), -1, SQLITE_TRANSIENT );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 
 	// 执行语句
 	while ( ( rc = sqlite3_step(stmt) ) == SQLITE_ROW )
 	{
-		IfPTR(tableNames)->push_back( utf8_to_string( (char const *)sqlite3_column_text( stmt, 0 ) ) );
+		IfPTR(tableNames)->push_back( Utf8ToString( (char const *)sqlite3_column_text( stmt, 0 ) ) );
 		count++;
 	}
 	
@@ -1891,15 +1891,15 @@ OccurDbError: // 出错处理
 	localError = sqlite3_errmsg(db);
 	if ( stmt )
 		sqlite3_finalize(stmt);
-	AfxGetMainWnd()->FatalError( utf8_to_string(localError).c_str(), _T("数据库错误") );
+	AfxGetMainWnd()->FatalError( Utf8ToString(localError).c_str(), _T("数据库错误") );
 	return 0;
 }
 
-int DumpDDL( sqlite3 * db, string * ddl, string const & like )
+int DumpDDL( sqlite3 * db, String * ddl, String const & like )
 {
 	int count = 0;
 	
-	ansi_string sql = string_to_utf8("SELECT sql FROM sqlite_master WHERE tbl_name LIKE ? ESCAPE \'\\\' AND NOT sql IS Null ORDER BY tbl_name;");
+	AnsiString sql = StringToUtf8("SELECT sql FROM sqlite_master WHERE tbl_name LIKE ? ESCAPE \'\\\' AND NOT sql IS Null ORDER BY tbl_name;");
 	sqlite3_stmt * stmt = NULL;
 	int rc;
 	const char * localError;
@@ -1908,13 +1908,13 @@ int DumpDDL( sqlite3 * db, string * ddl, string const & like )
 	rc = sqlite3_prepare_v2( db, sql.c_str(), sql.size(), &stmt, NULL );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 
-	rc = sqlite3_bind_text( stmt, 1, string_to_utf8(like).c_str(), -1, SQLITE_TRANSIENT );
+	rc = sqlite3_bind_text( stmt, 1, StringToUtf8(like).c_str(), -1, SQLITE_TRANSIENT );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 	
 	// 执行语句
 	while ( ( rc = sqlite3_step(stmt) ) == SQLITE_ROW )
 	{
-		AssignPTR(ddl) += utf8_to_string( (char const *)sqlite3_column_text( stmt, 0 ) ) + _T(";") + line_sep;
+		AssignPTR(ddl) += Utf8ToString( (char const *)sqlite3_column_text( stmt, 0 ) ) + _T(";") + lineSep;
 		count++;
 	}
 	
@@ -1939,7 +1939,7 @@ OccurDbError: // 出错处理
 	localError = sqlite3_errmsg(db);
 	if ( stmt )
 		sqlite3_finalize(stmt);
-	AfxGetMainWnd()->FatalError( utf8_to_string(localError).c_str(), _T("数据库错误") );
+	AfxGetMainWnd()->FatalError( Utf8ToString(localError).c_str(), _T("数据库错误") );
 	return 0;
 }
 
@@ -1947,7 +1947,7 @@ bool IsBrowserExeName( sqlite3 * db, CString const & exeName, CString * browserT
 {
 	bool ret = false;
 	
-	ansi_string sql = string_to_utf8("SELECT title FROM am_browsers WHERE exe_name = ?;");
+	AnsiString sql = StringToUtf8("SELECT title FROM am_browsers WHERE exe_name = ?;");
 	sqlite3_stmt * stmt = NULL;
 	int rc;
 	const char * localError;
@@ -1956,14 +1956,14 @@ bool IsBrowserExeName( sqlite3 * db, CString const & exeName, CString * browserT
 	rc = sqlite3_prepare_v2( db, sql.c_str(), sql.size(), &stmt, NULL );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 	// 绑定参数
-	rc = sqlite3_bind_text( stmt, 1, string_to_utf8( (LPCTSTR)exeName ).c_str(), -1, SQLITE_TRANSIENT );
+	rc = sqlite3_bind_text( stmt, 1, StringToUtf8( (LPCTSTR)exeName ).c_str(), -1, SQLITE_TRANSIENT );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 
 	// 执行语句
 	rc = sqlite3_step(stmt);
 	if ( rc == SQLITE_ROW )
 	{
-		AssignPTR(browserTitle) = utf8_to_string( (char const *)sqlite3_column_text( stmt, 0 ) ).c_str();
+		AssignPTR(browserTitle) = Utf8ToString( (char const *)sqlite3_column_text( stmt, 0 ) ).c_str();
 		ret = true;
 		goto ExitProc;
 	}
@@ -1989,7 +1989,7 @@ OccurDbError: // 出错处理
 	localError = sqlite3_errmsg(db);
 	if ( stmt )
 		sqlite3_finalize(stmt);
-	AfxGetMainWnd()->FatalError( utf8_to_string(localError).c_str(), _T("数据库错误") );
+	AfxGetMainWnd()->FatalError( Utf8ToString(localError).c_str(), _T("数据库错误") );
 	return false;
 
 }

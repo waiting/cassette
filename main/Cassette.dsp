@@ -148,10 +148,6 @@ SOURCE=.\Dialog.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\MyCore\EienLog.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=.\ForgetPwdStep1Dlg.cpp
 # End Source File
 # Begin Source File
@@ -177,10 +173,6 @@ SOURCE=.\UserRegisterDlg.cpp
 # Begin Source File
 
 SOURCE=.\UserSettingsDlg.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\MyCore\utils.cpp
 # End Source File
 # End Group
 # Begin Group "Header Files"
@@ -313,138 +305,6 @@ SOURCE=..\res\Toolbar.bmp
 # Begin Source File
 
 SOURCE=..\res\toolbar1.bmp
-# End Source File
-# End Group
-# Begin Group "winplus"
-
-# PROP Default_Filter "c;cpp;h;hpp"
-# Begin Source File
-
-SOURCE=..\..\winplus\src\compoundfile.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\winplus\include\compoundfile.hpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\winplus\src\console.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\winplus\include\console.hpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\winplus\src\definitions.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\winplus\include\definitions.hpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\winplus\src\graphics.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\winplus\include\graphics.hpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\winplus\src\ini.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\winplus\include\ini.hpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\winplus\src\md5.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\winplus\include\md5.hpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\winplus\src\picture.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\winplus\include\picture.hpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\winplus\src\resource.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\winplus\include\resource.hpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\winplus\src\shell.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\winplus\include\shell.hpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\winplus\src\strings.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\winplus\include\strings.hpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\winplus\src\system.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\winplus\include\system.hpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\winplus\src\time.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\winplus\include\time.hpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\winplus\src\winctrl.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\winplus\include\winctrl.hpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\winplus\include\winplus.hpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\winplus\src\wordslib.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\winplus\include\wordslib.hpp
-# End Source File
-# End Group
-# Begin Group "registrylib"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\..\MyCore\RegOperate.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\MyCore\RegOperate.h
 # End Source File
 # End Group
 # Begin Source File

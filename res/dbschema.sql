@@ -60,3 +60,13 @@ INSERT INTO am_account_types( name, rank ) VALUES ( '½ðÈÚ', 70 );
 INSERT INTO am_account_types( name, rank ) VALUES ( 'ÒøÐÐ', 100 );
 INSERT INTO am_users ( id, name, pwd, protect, condone, cur_condone, unlock_time, hotkey, time )
 VALUES ( -1, 'root', '', 2, 0, 0, 0, 0, 0 );
+INSERT INTO am_browsers ( id, name, title, exe_name )
+VALUES ( 1, 'IE', 'Windows Internet Explorer', 'iexplore.exe' );
+INSERT INTO am_browsers ( id, name, title, exe_name )
+VALUES ( 2, 'IE*', 'Internet Explorer', 'iexplorer.exe' );
+INSERT INTO am_browsers ( id, name, title, exe_name )
+VALUES ( 3, 'Chrome', 'Google Chrome', 'chrome.exe' );
+INSERT INTO am_browsers ( id, name, title, exe_name )
+VALUES ( 4, 'Firefox', 'Mozilla Firefox', 'firefox.exe' );
+INSERT INTO am_browsers ( id, name, title, exe_name )
+VALUES ( 5, 'Opera', 'Opera', 'opera.exe' );

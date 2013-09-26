@@ -54,15 +54,15 @@ public:
 		bool isEnabledHotkey;    // 是否开启用户热键
 		bool isEnabledHttpSrv;   // 是否开启HTTP服务
 		bool isEnabledScheme;    // 是否注册scheme
-		string databasePath;     // 数据库路径
-		string backupPath;       // 备份路径
-		string wordslibPath;     // 词库路径
+		String databasePath;     // 数据库路径
+		String backupPath;       // 备份路径
+		String wordslibPath;     // 词库路径
 
 		bool isAutoLogin;        // 是否自动登录
 		bool isSavePassword;     // 是否保存密码
 
-		string username;         // 保存的用户名(ec&base64加密)
-		string password;         // 保存的密码(ec&base64加密)
+		String username;         // 保存的用户名(ec&base64加密)
+		String password;         // 保存的密码(ec&base64加密)
 	};
 
 	struct CassetteSharedData
@@ -70,9 +70,9 @@ public:
 		HWND hMainWnd; // 主窗口句柄
 	};
 protected:
-	shared_memory<CassetteSharedData> m_sharedMem;//共享内存
+	SharedMemory<CassetteSharedData> m_sharedMem;//共享内存
 	sqlite3 * m_db;
-	wordslib * m_wordslib;//词库
+	WordsLib * m_wordslib;//词库
 
 	// 开启/关闭开机自动启动
 	void EnableAutoRun( bool isEnabled, bool isForce = false );
@@ -92,7 +92,7 @@ public:
 	SettingsParameters m_settings; // 程序设置的参数
 
 	// 获取共享内存引用
-	shared_memory<CassetteSharedData> & GetSharedMemory() { return m_sharedMem; }
+	SharedMemory<CassetteSharedData> & GetSharedMemory() { return m_sharedMem; }
 	// 初始化数据表和数据
 	void InitDatabaseSchema();
 	// 打开数据库资源
@@ -106,7 +106,7 @@ public:
 	// 获取数据库
 	sqlite3 * GetDatabase() const { return m_db; }
 	// get wordslib
-	wordslib * GetWordslib() const { return m_wordslib; }
+	WordsLib * GetWordslib() const { return m_wordslib; }
 	// 备份数据
 	bool BackupData( CString const & filename );
 	// 恢复数据

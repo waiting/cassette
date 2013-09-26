@@ -4,5 +4,5 @@
 
 #include "Cassette.h"
 
-EIENLOG("CassetteApp", "Cassette")
+//EIENLOG("CassetteApp", "Cassette")
 

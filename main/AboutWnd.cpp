@@ -33,7 +33,7 @@ AboutWnd::AboutWnd( CWnd * parent /*= NULL*/ )
 	m_pAboutView = new AboutView();
 	this->Create(
 		NULL,
-		(_T("关于 - ") + load_string(AFX_IDS_APP_TITLE)).c_str(),
+		(_T("关于 - ") + LoadString(AFX_IDS_APP_TITLE)).c_str(),
 		WS_OVERLAPPEDWINDOW,
 		CRect( 0, 0, 480, 340 ),
 		parent
@@ -90,7 +90,7 @@ int AboutWnd::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		return -1;
 	}
 	// set icon
-	SetIcon( icon( IDR_MAINFRAME, 16, 16 ), TRUE );
+	SetIcon( Icon( IDR_MAINFRAME, 16, 16 ), TRUE );
 
 	// 居中窗口
 	this->CenterWindow();
