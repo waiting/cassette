@@ -73,7 +73,7 @@ void AccountCatesDlg::UpdateList( int flag /*= UPDATE_LOAD_DATA | UPDATE_LIST_IT
 			int i;
 			for ( i = 0; i < count; ++i )
 			{
-				lst.InsertItem( i, format( _T("%d"), m_cates[i].m_id ).c_str() );
+				lst.InsertItem( i, Format( _T("%d"), m_cates[i].m_id ).c_str() );
 				lst.SetItem( i, 1, LVIF_TEXT, m_cates[i].m_cateName, 0, 0, 0, 0 );
 				lst.SetItem( i, 2, LVIF_TEXT, m_cates[i].m_typeName, 0, 0, 0, 0 );
 				lst.SetItem( i, 3, LVIF_TEXT, m_cates[i].m_url, 0, 0, 0, 0 );
@@ -83,7 +83,7 @@ void AccountCatesDlg::UpdateList( int flag /*= UPDATE_LOAD_DATA | UPDATE_LIST_IT
 		}
 		else
 		{
-			lst.SetItem( itemIndex, 0, LVIF_TEXT, format( _T("%d"), m_cates[itemIndex].m_id ).c_str(), 0, 0, 0, 0 );
+			lst.SetItem( itemIndex, 0, LVIF_TEXT, Format( _T("%d"), m_cates[itemIndex].m_id ).c_str(), 0, 0, 0, 0 );
 			lst.SetItem( itemIndex, 1, LVIF_TEXT, m_cates[itemIndex].m_cateName, 0, 0, 0, 0 );
 			lst.SetItem( itemIndex, 2, LVIF_TEXT, m_cates[itemIndex].m_typeName, 0, 0, 0, 0 );
 			lst.SetItem( itemIndex, 3, LVIF_TEXT, m_cates[itemIndex].m_url, 0, 0, 0, 0 );
@@ -113,7 +113,7 @@ void AccountCatesDlg::DoAdd( CWnd * parent, AccountCate * cate )
 			// 向list加入一项
 			int itemIndex;
 			itemIndex = lst.GetItemCount();
-			lst.InsertItem( itemIndex, format( _T("%d"), id ).c_str() );
+			lst.InsertItem( itemIndex, Format( _T("%d"), id ).c_str() );
 
 			// 向数组添加一项
 			AccountCate tmp;
@@ -129,9 +129,9 @@ void AccountCatesDlg::DoAdd( CWnd * parent, AccountCate * cate )
 //支持|符号
 int FindEx( CString const & text, CString const & pattern, int * patternIndex = NULL )
 {
-	string_array subs = str_split( (LPCTSTR)pattern, _T("|") );
-	multi_match mm( subs, NULL );
-	multi_match::match_result r = mm.search( (LPCTSTR)text );
+	StringArray subs = StrSplit( (LPCTSTR)pattern, _T("|") );
+	MultiMatch mm( subs, NULL );
+	MultiMatch::MatchResult r = mm.search( (LPCTSTR)text );
 	AssignPTR(patternIndex) = r.item;
 	return r.pos;
 }
@@ -139,14 +139,14 @@ int FindEx( CString const & text, CString const & pattern, int * patternIndex = 
 int AccountCatesDlg::GetCateIndexMatchWndTitle( CString const & wndTitle, bool isBrowser ) const
 {
 	//载入关键字
-	std::vector<string_array> keywordsArr;
+	std::vector<StringArray> keywordsArr;
 	int i, j;
 	int catesCount = m_cates.GetSize(); // 种类数
 	int oneItemKeywordMaxCount = 0;//单个种类关键词最大数
 	for ( i = 0; i < catesCount; ++i )
 	{
-		string_array keywords;
-		int m = str_split( (LPCTSTR)m_cates[i].m_keywords, _T(","), &keywords );
+		StringArray keywords;
+		int m = StrSplit( (LPCTSTR)m_cates[i].m_keywords, _T(","), &keywords );
 		if ( m > oneItemKeywordMaxCount ) oneItemKeywordMaxCount = m;
 		keywordsArr.push_back(keywords);
 	}
@@ -174,7 +174,7 @@ int AccountCatesDlg::GetCateIndexMatchWndTitle( CString const & wndTitle, bool i
 	{
 		for ( j = 0; j < checkCateIndexs.size(); )
 		{
-			string_array & keywords = keywordsArr[checkCateIndexs[j]];
+			StringArray & keywords = keywordsArr[checkCateIndexs[j]];
 			if ( i < keywords.size() )
 			{
 				if ( FindEx( wndTitle, keywords[i].c_str() ) == -1 )
@@ -305,7 +305,7 @@ void AccountCatesDlg::OnDelete()
 		int index = lst.GetNextItem( -1, LVNI_ALL | LVNI_SELECTED );
 		CString strId;
 		strId = lst.GetItemText( index, 0 );
-		if ( DeleteAccountCate( g_theApp.GetDatabase(), mixed( (LPCTSTR)strId ) ) )
+		if ( DeleteAccountCate( g_theApp.GetDatabase(), Mixed( (LPCTSTR)strId ) ) )
 		{
 			lst.DeleteItem(index);
 

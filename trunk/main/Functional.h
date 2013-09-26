@@ -55,8 +55,8 @@ private:
 //////////////////////////////////////////////////////////////////////////
 // base64
 //////////////////////////////////////////////////////////////////////////
-string Base64Encode( ansi_string const & data );
-ansi_string Base64Decode( string const & base64Str );
+String Base64Encode( AnsiString const & data );
+AnsiString Base64Decode( String const & base64Str );
 //////////////////////////////////////////////////////////////////////////
 // encrypt content functional
 //////////////////////////////////////////////////////////////////////////
@@ -68,15 +68,15 @@ enum EncryptErrorCode
 	ERR_BUFFSIZE,
 };
 
-ansi_string EncryptContent( ansi_string const & content );
-ansi_string DecryptContent( ansi_string const & encryptContent );
+AnsiString EncryptContent( AnsiString const & content );
+AnsiString DecryptContent( AnsiString const & encryptContent );
 #define EncryptCArray(data) EncryptContent( BufferToAnsiString( data, sizeof(data) ) )
 #define EncryptBuffer( buf, size ) EncryptContent( BufferToAnsiString( buf, size ) )
 #define DecryptCArray(data) DecryptContent( BufferToAnsiString( data, sizeof(data) ) )
 #define DecryptBuffer( buf, size ) DecryptContent( BufferToAnsiString( buf, size ) )
 
 // 解释文本中的$xxx$程序自定变量
-string ExplainCustomVars( string const & str );
+String ExplainCustomVars( String const & str );
 
 // 获取可执行文件所在路径, 末尾含目录分割符
 CString GetExecutablePath();
@@ -96,7 +96,7 @@ struct Fields
 	static int _bindString( sqlite3_stmt * stmt, int sqlParamIndex, CString const & val )
 	{
 		// 转为utf8再绑定
-		return sqlite3_bind_text( stmt, sqlParamIndex, string_to_utf8( (LPCTSTR)val ).c_str(), -1, SQLITE_TRANSIENT );
+		return sqlite3_bind_text( stmt, sqlParamIndex, StringToUtf8( (LPCTSTR)val ).c_str(), -1, SQLITE_TRANSIENT );
 	}
 	// 绑定blob参数,索引起始为1
 	static int _bindBlob( sqlite3_stmt * stmt, int sqlParamIndex, LPCVOID data, int size )
@@ -113,10 +113,10 @@ struct Fields
 	static CString _getString( sqlite3_stmt * stmt, int sqlFieldIndex )
 	{
 		char const * sUTF8 = (char const *)sqlite3_column_text( stmt, sqlFieldIndex );
-		return utf8_to_string( sUTF8 ? sUTF8 : "" ).c_str();
+		return Utf8ToString( sUTF8 ? sUTF8 : "" ).c_str();
 	}
 	// 获取字段blob值,字段索引起始为0
-	static void _getBlob( sqlite3_stmt * stmt, int sqlFieldIndex, ansi_string * blob )
+	static void _getBlob( sqlite3_stmt * stmt, int sqlFieldIndex, AnsiString * blob )
 	{
 		int size;
 		size = sqlite3_column_bytes( stmt, sqlFieldIndex );
@@ -129,15 +129,15 @@ struct Fields
 
 enum FieldBits__am_users
 {
-	am_users__id          = bin0<0000000001>::val,
-	am_users__name        = bin0<0000000010>::val,
-	am_users__pwd         = bin0<0000000100>::val,
-	am_users__protect     = bin0<0000001000>::val,
-	am_users__condone     = bin0<0000010000>::val,
-	am_users__cur_condone = bin0<0000100000>::val,
-	am_users__unlock_time = bin0<0001000000>::val,
-	am_users__hotkey      = bin0<0010000000>::val,
-	am_users__time        = bin0<0100000000>::val,
+	am_users__id          = Bin0<0000000001>::val,
+	am_users__name        = Bin0<0000000010>::val,
+	am_users__pwd         = Bin0<0000000100>::val,
+	am_users__protect     = Bin0<0000001000>::val,
+	am_users__condone     = Bin0<0000010000>::val,
+	am_users__cur_condone = Bin0<0000100000>::val,
+	am_users__unlock_time = Bin0<0001000000>::val,
+	am_users__hotkey      = Bin0<0010000000>::val,
+	am_users__time        = Bin0<0100000000>::val,
 };
 
 // 当查询全部字段时才可用这个函数确定字段索引
@@ -187,8 +187,8 @@ struct User : public Fields
 	}
 	int bindPassword( sqlite3_stmt * stmt, int sqlParamIndex ) const
 	{
-		ansi_string encrypt;
-		encrypt = EncryptContent( string_to_utf8( (LPCTSTR)m_password ) );
+		AnsiString encrypt;
+		encrypt = EncryptContent( StringToUtf8( (LPCTSTR)m_password ) );
 		return _bindBlob( stmt, sqlParamIndex, encrypt.c_str(), encrypt.size() );
 	}
 	int bindProtectLevel( sqlite3_stmt * stmt, int sqlParamIndex ) const
@@ -228,9 +228,9 @@ struct User : public Fields
 	}
 	void loadPassword( sqlite3_stmt * stmt, int sqlFieldIndex )
 	{
-		ansi_string encrypt;
+		AnsiString encrypt;
 		_getBlob( stmt, sqlFieldIndex, &encrypt );
-		m_password = utf8_to_string( DecryptContent(encrypt) ).c_str();
+		m_password = Utf8ToString( DecryptContent(encrypt) ).c_str();
 	}
 	void loadProtectLevel( sqlite3_stmt * stmt, int sqlFieldIndex )
 	{
@@ -512,14 +512,14 @@ struct Account : public Fields
 	}
 	int bindAccountName( sqlite3_stmt * stmt, int sqlParamIndex ) const
 	{
-		ansi_string encrypt;
-		encrypt = EncryptContent( string_to_utf8( (LPCTSTR)m_accountName ) );
+		AnsiString encrypt;
+		encrypt = EncryptContent( StringToUtf8( (LPCTSTR)m_accountName ) );
 		return _bindBlob( stmt, sqlParamIndex, encrypt.c_str(), encrypt.size() );
 	}
 	int bindAccountPwd( sqlite3_stmt * stmt, int sqlParamIndex ) const
 	{
-		ansi_string encrypt;
-		encrypt = EncryptContent( string_to_utf8( (LPCTSTR)m_accountPwd ) );
+		AnsiString encrypt;
+		encrypt = EncryptContent( StringToUtf8( (LPCTSTR)m_accountPwd ) );
 		return _bindBlob( stmt, sqlParamIndex, encrypt.c_str(), encrypt.size() );
 	}
 	int bindCateId( sqlite3_stmt * stmt, int sqlParamIndex ) const
@@ -549,15 +549,15 @@ struct Account : public Fields
 	}
 	void loadAccountName( sqlite3_stmt * stmt, int sqlFieldIndex )
 	{
-		ansi_string encrypt;
+		AnsiString encrypt;
 		_getBlob( stmt, sqlFieldIndex, &encrypt );
-		m_accountName = utf8_to_string( DecryptContent(encrypt) ).c_str();
+		m_accountName = Utf8ToString( DecryptContent(encrypt) ).c_str();
 	}
 	void loadAccountPwd( sqlite3_stmt * stmt, int sqlFieldIndex )
 	{
-		ansi_string encrypt;
+		AnsiString encrypt;
 		_getBlob( stmt, sqlFieldIndex, &encrypt );
-		m_accountPwd = utf8_to_string( DecryptContent(encrypt) ).c_str();
+		m_accountPwd = Utf8ToString( DecryptContent(encrypt) ).c_str();
 	}
 	void loadCateId( sqlite3_stmt * stmt, int sqlFieldIndex )
 	{
@@ -619,10 +619,10 @@ bool DeleteAccount( sqlite3 * db, int userId, CString const & myName );
 CString GetCorrectAccountMyName( sqlite3 * db, int userId, CString const & myName );
 
 // 获取数据库全部表名
-int LoadTableNames( sqlite3 * db, string_array * tableNames, string const & like = _T("am\\_%") );
+int LoadTableNames( sqlite3 * db, StringArray * tableNames, String const & like = _T("am\\_%") );
 
 // 获取数据库的DDL,返回SQL语句条数
-int DumpDDL( sqlite3 * db, string * ddl, string const & like = _T("am\\_%") );
+int DumpDDL( sqlite3 * db, String * ddl, String const & like = _T("am\\_%") );
 
 // 判断ExeName是否为一个浏览器
 bool IsBrowserExeName( sqlite3 * db, CString const & exeName, CString * browserTitle );

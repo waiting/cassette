@@ -73,7 +73,7 @@ END_MESSAGE_MAP()
 void MainFrame::UpdateTitle()
 {
 	CString newTitle;
-	newTitle.Format( _T("%s [%s]"), load_string(AFX_IDS_APP_TITLE).c_str(), (LPCTSTR)g_theApp.m_loginedUser.m_username );
+	newTitle.Format( _T("%s [%s]"), LoadString(AFX_IDS_APP_TITLE).c_str(), (LPCTSTR)g_theApp.m_loginedUser.m_username );
 	this->SetWindowText(newTitle);
 }
 
@@ -210,7 +210,7 @@ int MainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	
 
 	// 设置图标
-	SetIcon( icon( IDR_MAINFRAME, 16, 16 ), TRUE );
+	SetIcon( Icon( IDR_MAINFRAME, 16, 16 ), TRUE );
 	// 把窗口句柄提交给共享内存,以便激活
 	g_theApp.GetSharedMemory()->hMainWnd = GetSafeHwnd();
 
@@ -450,17 +450,17 @@ void MainFrame::OnDelAccount()
 
 void MainFrame::OnUpdateAccountCates( CCmdUI * pCmdUI )
 {
-	pCmdUI->SetCheck( window_is_show( m_catesDlg.GetSafeHwnd() ) );
+	pCmdUI->SetCheck( Window_IsShow( m_catesDlg.GetSafeHwnd() ) );
 }
 
 void MainFrame::OnUpdateAccountTypes( CCmdUI * pCmdUI )
 {
-	pCmdUI->SetCheck( window_is_show( m_typesDlg.GetSafeHwnd() ) );
+	pCmdUI->SetCheck( Window_IsShow( m_typesDlg.GetSafeHwnd() ) );
 }
 
 void MainFrame::OnAccountCates()
 {
-	if ( window_is_show( m_catesDlg.GetSafeHwnd() ) )
+	if ( Window_IsShow( m_catesDlg.GetSafeHwnd() ) )
 	{
 		m_catesDlg.ShowWindow(SW_HIDE);
 	}
@@ -476,7 +476,7 @@ void MainFrame::OnAccountCates()
 
 void MainFrame::OnAccountTypes()
 {
-	if ( window_is_show( m_typesDlg.GetSafeHwnd() ) )
+	if ( Window_IsShow( m_typesDlg.GetSafeHwnd() ) )
 	{
 		m_typesDlg.ShowWindow(SW_HIDE);
 	}
@@ -493,12 +493,12 @@ void MainFrame::OnAccountTypes()
 void MainFrame::OnBackupData()
 {
 	static CString backupPath = ExplainCustomVars(g_theApp.m_settings.backupPath).c_str();
-	file_dialog dlg( GetSafeHwnd(), FALSE, _T("请输入备份后要存储文件的名称"), _T("bak") );
-	if ( dlg.do_modal( backupPath, _T("备份文件(*.bak)\0*.bak\0所有文件(*.*)\0*.*\0") ) )
+	FileDialog dlg( GetSafeHwnd(), FALSE, _T("请输入备份后要存储文件的名称"), _T("bak") );
+	if ( dlg.doModal( backupPath, _T("备份文件(*.bak)\0*.bak\0所有文件(*.*)\0*.*\0") ) )
 	{
-		backupPath = dlg.get_dirpath().c_str();
+		backupPath = dlg.getDirPath().c_str();
 
-		if ( g_theApp.BackupData( dlg.get_filepath().c_str() ) )
+		if ( g_theApp.BackupData( dlg.getFilePath().c_str() ) )
 		{
 			MessageBox( _T("备份成功"), _T("提示"), MB_ICONINFORMATION );
 		}
@@ -508,12 +508,12 @@ void MainFrame::OnBackupData()
 void MainFrame::OnResumeData()
 {
 	static CString backupPath = ExplainCustomVars(g_theApp.m_settings.backupPath).c_str();
-	file_dialog dlg( GetSafeHwnd(), TRUE, _T("请输入要恢复的文件名称") );
-	if ( dlg.do_modal( backupPath, _T("备份文件(*.bak)\0*.bak\0所有文件(*.*)\0*.*\0") ) )
+	FileDialog dlg( GetSafeHwnd(), TRUE, _T("请输入要恢复的文件名称") );
+	if ( dlg.doModal( backupPath, _T("备份文件(*.bak)\0*.bak\0所有文件(*.*)\0*.*\0") ) )
 	{
-		backupPath = dlg.get_dirpath().c_str();
+		backupPath = dlg.getDirPath().c_str();
 
-		if ( g_theApp.ResumeData( dlg.get_filepath().c_str() ) )
+		if ( g_theApp.ResumeData( dlg.getFilePath().c_str() ) )
 		{
 			MessageBox( _T("恢复成功"), _T("提示"), MB_ICONINFORMATION );
 		}
@@ -550,13 +550,13 @@ void MainFrame::DoIntelligentHotkey()
 
 	// 通过HWND获取进程句柄,进而获取程序路径
 	// 判断是浏览器还是软件
-	string exeName, exePath;
+	String exeName, exePath;
 	exePath = GetAppPathFromHWND(*pCurWnd);
-	file_path( exePath, &exeName );
+	FilePath( exePath, &exeName );
 	strlwr(&exeName[0]);
 	CString browserTitle;
 	bool isBrowser = IsBrowserExeName( g_theApp.GetDatabase(), exeName.c_str(), &browserTitle );
-	string curWndTitle = window_get_text( pCurWnd->GetSafeHwnd() ); // 当前窗口标题
+	String curWndTitle = Window_GetText( pCurWnd->GetSafeHwnd() ); // 当前窗口标题
 	
 	AccountCate cate;
 	if ( isBrowser ) // 若是浏览器，说明是网站
@@ -584,9 +584,10 @@ void MainFrame::DoIntelligentHotkey()
 	int cateIndex = m_catesDlg.GetCateIndexMatchWndTitle( curWndTitle.c_str(), isBrowser );
 	if ( cateIndex == -1 )
 	{
-		string_array autoKeywords;
-		g_theApp.GetWordslib()->split_words( curWndTitle, &autoKeywords );
-		cate.m_keywords = str_join( _T(","), autoKeywords ).c_str();
+		StringArray autoKeywords;
+		if ( g_theApp.GetWordslib() )
+			g_theApp.GetWordslib()->splitWords( curWndTitle, &autoKeywords );
+		cate.m_keywords = StrJoin( _T(","), autoKeywords ).c_str();
 		m_catesDlg.DoAdd( pCurWnd, &cate );
 	}
 	else // 有该种类
@@ -602,10 +603,10 @@ void MainFrame::DoIntelligentHotkey()
 		}
 		else // 有账户数据
 		{
-			CRect rcCurWnd = window_get_client(*pCurWnd);
+			CRect rcCurWnd = Window_GetClient(*pCurWnd);
 			// 计算综合窗口的位置
 			Gdiplus::Size siIntegratedWnd( 240, 300 );
-			CRect rcIntegratedWnd = rect_gdiplus_to_gdi<RECT>(
+			CRect rcIntegratedWnd = RectGdiplusToGdi<RECT>(
 					Gdiplus::Rect( Gdiplus::Point(
 					rcCurWnd.Width()-siIntegratedWnd.Width,
 					rcCurWnd.Height()-siIntegratedWnd.Height

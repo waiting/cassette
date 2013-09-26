@@ -27,14 +27,26 @@
 #include <afxtempl.h>
 
 #include <RegOperate.h>
+#ifdef _DEBUG
+#pragma comment( lib, "RegOperate-lib-MTd" )
+#else
+#pragma comment( lib, "RegOperate-lib-MT" )
+#endif
+
 #include <winplus.hpp>
+using namespace winplus;
+#ifdef _DEBUG
+#pragma comment( lib, "winplus-lib-MTd" )
+#else
+#pragma comment( lib, "winplus-lib-MT" )
+#endif
 using namespace Gdiplus;
+
 #include <sqlite3.h>
 
 // 调试日志支持
-#include "utils.h"
-#define DISABLED_LOG
-#include "EienLog.h"
+//#define DISABLED_LOG
+//#include "EienLog.h"
 
 //{{AFX_INSERT_LOCATION}}
 // Microsoft Visual C++ will insert additional declarations immediately before the previous line.

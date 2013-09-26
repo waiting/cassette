@@ -84,9 +84,9 @@ void AccountIntegratedWnd::Draw()
 	//}
 }
 
-void AccountIntegratedWnd::DrawShadowString( string const & s, Font const & font, RectF const & layoutRect, StringFormat const & fmt, RectF * boundingRect )
+void AccountIntegratedWnd::DrawShadowString( String const & s, Font const & font, RectF const & layoutRect, StringFormat const & fmt, RectF * boundingRect )
 {
-	unicode_string sU = string_to_unicode(s);
+	UnicodeString sU = StringToUnicode(s);
 	if ( boundingRect )
 	{
 		m_gCached->MeasureString(
@@ -227,7 +227,7 @@ BOOL AccountIntegratedWnd::OnEraseBkgnd(CDC* pDC)
 
 void AccountIntegratedWnd::OnTimer(UINT nIDEvent) 
 {
-	if ( nIDEvent == m_timer1.get_id() )
+	if ( nIDEvent == m_timer1.getId() )
 	{
 		static int incDelta = 3;
 		m_radiusMouseCircle += ++incDelta;

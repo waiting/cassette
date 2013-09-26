@@ -32,7 +32,7 @@ public:
 protected:
 	std::auto_ptr<Graphics> m_gDevice;
 	std::auto_ptr<Graphics> m_gCached;
-	mem_image m_imgCached;
+	MemImage m_imgCached;
 	std::auto_ptr<CachedBitmap> m_CBCached;
 	std::auto_ptr<Bitmap> m_loadedBgImg;
 	HDC m_hClientDC;
@@ -42,7 +42,7 @@ protected:
 	void Draw();
 
 
-	window_timer m_timer1;
+	WindowTimer m_timer1;
 	/* 绘图数据 */
 	CRect m_rcClient; // 客户区矩形
 	CPoint m_ptCurMouse; // 当前鼠标位置
@@ -52,7 +52,7 @@ protected:
 	/* 封装的特效方法 */
 	// 绘制一个白色阴影文字
 	void DrawShadowString(
-		string const & s,
+		String const & s,
 		Font const & font,
 		RectF const & layoutRect,
 		StringFormat const & fmt,

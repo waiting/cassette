@@ -73,13 +73,13 @@ void AccountTypesDlg::UpdateList( int flag, long itemIndex )
 			for ( i = 0; i < count; ++i )
 			{
 				lst.InsertItem( i, m_types[i].m_typeName );
-				lst.SetItem( i, 1, LVIF_TEXT, format( _T("%d"), m_types[i].m_safeRank ).c_str(), 0, 0, 0, 0 );
+				lst.SetItem( i, 1, LVIF_TEXT, Format( _T("%d"), m_types[i].m_safeRank ).c_str(), 0, 0, 0, 0 );
 			}
 		}
 		else
 		{
 			lst.SetItem( itemIndex, 0, LVIF_TEXT, m_types[itemIndex].m_typeName, 0, 0, 0, 0 );
-			lst.SetItem( itemIndex, 1, LVIF_TEXT, format( _T("%d"), m_types[itemIndex].m_safeRank ).c_str(), 0, 0, 0, 0 );
+			lst.SetItem( itemIndex, 1, LVIF_TEXT, Format( _T("%d"), m_types[itemIndex].m_safeRank ).c_str(), 0, 0, 0, 0 );
 		}
 	}
 

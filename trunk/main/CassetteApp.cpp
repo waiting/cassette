@@ -14,7 +14,7 @@ static char THIS_FILE[] = __FILE__;
 // The one and only CassetteApp object
 CassetteApp g_theApp;
 // GDI+ initialize
-gdiplus_init g_initGdiplus;
+GdiplusInit g_initGdiplus;
 /////////////////////////////////////////////////////////////////////////////
 // CassetteApp
 
@@ -57,13 +57,13 @@ BOOL CassetteApp::InitInstance()
 #endif
 	
 	// 命令行解释
-	command_line cmd;
+	CommandLine cmd;
 	if ( cmd.include("url") )
 	{
-		win32gui_show_console();
+		Win32GUI_ShowConsole();
 		
-		std::cout << cmd.get_param("url") << std::endl;
-		
+		std::cout << cmd.getParam("url") << std::endl;
+
 		system("pause");
 		return FALSE;
 	}
@@ -149,19 +149,19 @@ int CassetteApp::ExitInstance()
 
 void CassetteApp::InitDatabaseSchema()
 {
-	ansi_string sql;
-	string_array sqls;
+	AnsiString sql;
+	StringArray sqls;
 	int nSQLs, i;
 	Resource ResSQL( IDR_SQL_DBSCHEMA, _T("SQL") );
 	if ( !ResSQL ) goto OccurDbError;
 	sql.resize( ResSQL.getSize() );
 	ResSQL.copyTo( &sql[0], sql.size() );
-	nSQLs = str_split( sql, _T(";"), &sqls );
+	nSQLs = StrSplit( sql, _T(";"), &sqls );
 	for ( i = 0; i < nSQLs; ++i )
 	{
-		if ( str_trim(sqls[i]).empty() ) continue;
+		if ( StrTrim(sqls[i]).empty() ) continue;
 		int rc;
-		rc = sqlite3_exec( m_db, string_to_utf8(sqls[i]).c_str(), NULL, NULL, NULL );
+		rc = sqlite3_exec( m_db, StringToUtf8(sqls[i]).c_str(), NULL, NULL, NULL );
 		if ( rc != SQLITE_OK ) goto OccurDbError;
 	}
 
@@ -174,15 +174,15 @@ OccurDbError:
 void CassetteApp::OpenDatabase()
 {
 	int rc;
-	string databasePath = ExplainCustomVars(m_settings.databasePath);
-	ansi_string encryptKey;
+	String databasePath = ExplainCustomVars(m_settings.databasePath);
+	AnsiString encryptKey;
 	sqlite3 * db = NULL;
 	const char * localError = "Out of memory";
 	CFileStatus fstatus;
 	bool isNeedInit = !CFile::GetStatus( databasePath.c_str(), fstatus );
 	Resource objResDbKey;
 
-	rc = sqlite3_open_v2( string_to_utf8(databasePath).c_str(), &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, NULL );
+	rc = sqlite3_open_v2( StringToUtf8(databasePath).c_str(), &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, NULL );
 	if ( rc != SQLITE_OK ) goto OccurDbError;
 	// 开启外键约束
 	rc = sqlite3_exec( db, "PRAGMA foreign_keys = ON", NULL, NULL, NULL );
@@ -219,7 +219,7 @@ OccurDbError:
 		localError = sqlite3_errmsg(db);
 		sqlite3_close(db);
 	}
-	AfxMessageBox( utf8_to_string(localError).c_str() );
+	AfxMessageBox( Utf8ToString(localError).c_str() );
 }
 
 void CassetteApp::CloseDatabase()
@@ -234,12 +234,12 @@ void CassetteApp::CloseDatabase()
 
 void CassetteApp::OpenWordslib()
 {
-	string wordslibPath = ExplainCustomVars(m_settings.wordslibPath);
+	String wordslibPath = ExplainCustomVars(m_settings.wordslibPath);
 	try
 	{
-		m_wordslib = new wordslib(wordslibPath);
+		m_wordslib = new WordsLib(wordslibPath);
 	}
-	catch ( wordslib_exception const & e )
+	catch ( WordsLibException const & e )
 	{
 		AfxMessageBox( e.what() );
 	}
@@ -274,20 +274,20 @@ bool CassetteApp::ResumeData( CString const & filename )
 
 void CassetteApp::LoadSettings( UINT flag )
 {
-	ini settingsIni( module_path() + dir_sep + load_string(AFX_IDS_APP_TITLE) + TEXT(".ini") );
-	string sname = load_string(AFX_IDS_APP_TITLE);
-	ini::section & s = settingsIni( sname.c_str() );
+	Ini settingsIni( ModulePath() + dirSep + LoadString(AFX_IDS_APP_TITLE) + TEXT(".ini") );
+	String sname = LoadString(AFX_IDS_APP_TITLE);
+	Ini::Section & s = settingsIni( sname.c_str() );
 
-	if ( flag & Setting_EnabledAutoRun ) m_settings.isEnabledAutoRun = mixed( s.get( _T("EnabledAutoRun"), _T("false") ) );
-	if ( flag & Setting_EnabledHotkey ) m_settings.isEnabledHotkey = mixed( s.get( _T("EnabledHotkey"), _T("true") ) );
-	if ( flag & Setting_EnabledHttpSrv ) m_settings.isEnabledHttpSrv = mixed( s.get( _T("EnabledHttpSrv"), _T("false") ) );
-	if ( flag & Setting_EnabledScheme ) m_settings.isEnabledScheme = mixed( s.get( _T("EnabledScheme"), _T("false") ) );
-	if ( flag & Setting_DatabasePath ) m_settings.databasePath = s.get( _T("DatabasePath"), format( _T("$ROOT$\\%s.db"), load_string(AFX_IDS_APP_TITLE).c_str() ) );
+	if ( flag & Setting_EnabledAutoRun ) m_settings.isEnabledAutoRun = Mixed( s.get( _T("EnabledAutoRun"), _T("false") ) );
+	if ( flag & Setting_EnabledHotkey ) m_settings.isEnabledHotkey = Mixed( s.get( _T("EnabledHotkey"), _T("true") ) );
+	if ( flag & Setting_EnabledHttpSrv ) m_settings.isEnabledHttpSrv = Mixed( s.get( _T("EnabledHttpSrv"), _T("false") ) );
+	if ( flag & Setting_EnabledScheme ) m_settings.isEnabledScheme = Mixed( s.get( _T("EnabledScheme"), _T("false") ) );
+	if ( flag & Setting_DatabasePath ) m_settings.databasePath = s.get( _T("DatabasePath"), Format( _T("$ROOT$\\%s.db"), LoadString(AFX_IDS_APP_TITLE).c_str() ) );
 	if ( flag & Setting_BackupPath ) m_settings.backupPath = s.get( _T("BackupPath"), _T("$ROOT$") );
 	if ( flag & Setting_WordslibPath ) m_settings.wordslibPath = s.get( _T("WordslibPath"), _T("$ROOT$\\words.wl") );
 
-	if ( flag & Setting_AutoLogin ) m_settings.isAutoLogin = mixed( s.get( _T("AutoLogin"), _T("false") ) );
-	if ( flag & Setting_SavePassword ) m_settings.isSavePassword = mixed( s.get( _T("SavePassword"), _T("false") ) );
+	if ( flag & Setting_AutoLogin ) m_settings.isAutoLogin = Mixed( s.get( _T("AutoLogin"), _T("false") ) );
+	if ( flag & Setting_SavePassword ) m_settings.isSavePassword = Mixed( s.get( _T("SavePassword"), _T("false") ) );
 
 	if ( flag & Setting_Username ) m_settings.username = s.get( _T("Username"), _T("") );
 	if ( flag & Setting_Password ) m_settings.password = s.get( _T("Password"), _T("") );
@@ -296,20 +296,20 @@ void CassetteApp::LoadSettings( UINT flag )
 
 void CassetteApp::SaveSettings( UINT flag )
 {
-	ini settingsIni( module_path() + dir_sep + load_string(AFX_IDS_APP_TITLE) + TEXT(".ini") );
-	string sname = load_string(AFX_IDS_APP_TITLE);
-	ini::section & s = settingsIni( sname.c_str() );
+	Ini settingsIni( ModulePath() + dirSep + LoadString(AFX_IDS_APP_TITLE) + TEXT(".ini") );
+	String sname = LoadString(AFX_IDS_APP_TITLE);
+	Ini::Section & s = settingsIni( sname.c_str() );
 
-	if ( flag & Setting_EnabledAutoRun ) s.set( _T("EnabledAutoRun"), (string)mixed(m_settings.isEnabledAutoRun) );
-	if ( flag & Setting_EnabledHotkey ) s.set( _T("EnabledHotkey"), (string)mixed(m_settings.isEnabledHotkey) );
-	if ( flag & Setting_EnabledHttpSrv ) s.set( _T("EnabledHttpSrv"), (string)mixed(m_settings.isEnabledHttpSrv) );
-	if ( flag & Setting_EnabledScheme ) s.set( _T("EnabledScheme"), (string)mixed(m_settings.isEnabledScheme) );
+	if ( flag & Setting_EnabledAutoRun ) s.set( _T("EnabledAutoRun"), (String)Mixed(m_settings.isEnabledAutoRun) );
+	if ( flag & Setting_EnabledHotkey ) s.set( _T("EnabledHotkey"), (String)Mixed(m_settings.isEnabledHotkey) );
+	if ( flag & Setting_EnabledHttpSrv ) s.set( _T("EnabledHttpSrv"), (String)Mixed(m_settings.isEnabledHttpSrv) );
+	if ( flag & Setting_EnabledScheme ) s.set( _T("EnabledScheme"), (String)Mixed(m_settings.isEnabledScheme) );
 	if ( flag & Setting_DatabasePath ) s.set( _T("DatabasePath"), m_settings.databasePath );
 	if ( flag & Setting_BackupPath ) s.set( _T("BackupPath"), m_settings.backupPath );
 	if ( flag & Setting_WordslibPath ) s.set( _T("WordslibPath"), m_settings.wordslibPath );
 
-	if ( flag & Setting_AutoLogin ) s.set( _T("AutoLogin"), (string)mixed(m_settings.isAutoLogin) );
-	if ( flag & Setting_SavePassword ) s.set( _T("SavePassword"), (string)mixed(m_settings.isSavePassword) );
+	if ( flag & Setting_AutoLogin ) s.set( _T("AutoLogin"), (String)Mixed(m_settings.isAutoLogin) );
+	if ( flag & Setting_SavePassword ) s.set( _T("SavePassword"), (String)Mixed(m_settings.isSavePassword) );
 
 	if ( flag & Setting_Username ) s.set( _T("Username"), m_settings.username );
 	if ( flag & Setting_Password ) s.set( _T("Password"), m_settings.password );
@@ -347,14 +347,14 @@ void CassetteApp::DoSettings( UINT flag )
 void CassetteApp::EnableAutoRun( bool isEnabled, bool isForce /*= false */ )
 {
 	LPCSTR keyNameAutoRun = "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run";
-	ansi_string appName = string_to_local( load_string(AFX_IDS_APP_TITLE) );
+	AnsiString appName = StringToLocal( LoadString(AFX_IDS_APP_TITLE) );
 	if ( isEnabled )
 	{
 		if ( isForce || !reg_exists( keyNameAutoRun, appName.c_str() ) )
 		{
-			string appFullPath;
-			appFullPath = module_path( NULL, &appFullPath ) + dir_sep + appFullPath;
-			if ( appFullPath.find(' ') != string::npos )
+			String appFullPath;
+			appFullPath = ModulePath( NULL, &appFullPath ) + dirSep + appFullPath;
+			if ( appFullPath.find(' ') != String::npos )
 				appFullPath = TEXT("\"") + appFullPath + TEXT("\"");
 
 			reg_set_string( keyNameAutoRun, appName.c_str(), appFullPath.c_str() );
@@ -376,18 +376,18 @@ void CassetteApp::EnableHttpService( bool isEnabled )
 
 void CassetteApp::EnableScheme( bool isEnabled )
 {
-	ansi_string keyNameScheme = "HKEY_CLASSES_ROOT\\account";
+	AnsiString keyNameScheme = "HKEY_CLASSES_ROOT\\account";
 	if ( isEnabled )
 	{
 		if ( !reg_exists( keyNameScheme.c_str(), NULL ) )
 		{
 			reg_set_string( keyNameScheme.c_str(), NULL, "Account URL Protocol" );
 			reg_set_string( keyNameScheme.c_str(), "URL Protocol", "" );
-			string appFullPath;
-			appFullPath = module_path( NULL, &appFullPath ) + dir_sep + appFullPath;
+			String appFullPath;
+			appFullPath = ModulePath( NULL, &appFullPath ) + dirSep + appFullPath;
 			reg_set_string( ( keyNameScheme + "\\DefaultIcon" ).c_str(), NULL, ( appFullPath + ",0" ).c_str() );
 
-			if ( appFullPath.find(' ') != string::npos )
+			if ( appFullPath.find(' ') != String::npos )
 				appFullPath = TEXT("\"") + appFullPath + TEXT("\"");
 
 			reg_set_string( ( keyNameScheme + "\\shell\\open\\command" ).c_str(), NULL, ( appFullPath + " -url \"%1\"" ).c_str() );
@@ -404,16 +404,16 @@ void CassetteApp::EnableScheme( bool isEnabled )
 
 BOOL CassetteApp::DoSingletonRunning()
 {
-	string sharedMemName = load_string(IDS_SHAREDMEM_NAME);
+	String sharedMemName = LoadString(IDS_SHAREDMEM_NAME);
 	if ( m_sharedMem.open( sharedMemName.c_str() ) )
 	{
 		HWND hwndMain = m_sharedMem->hMainWnd;
 		
-		if ( window_is_show(hwndMain) )
+		if ( Window_IsShow(hwndMain) )
 			SetForegroundWindow(hwndMain);
 		else
 		{
-			window_show(hwndMain);
+			Window_Show(hwndMain);
 			SetForegroundWindow(hwndMain);
 		}
 		return FALSE;

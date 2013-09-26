@@ -186,12 +186,12 @@ BOOL Dialog::OnEraseBkgnd( CDC * pDC )
 {
 	using namespace Gdiplus;
 	Graphics g( pDC->GetSafeHdc() );
-	Rect clientRect = rect_gdi_to_gdiplus<Rect>( window_get_client(GetSafeHwnd()) );
+	Rect clientRect = RectGdiToGdiplus<Rect>( Window_GetClient( GetSafeHwnd() ) );
 
 	LinearGradientBrush brush(
 		clientRect,
 		Color( 0xe3,0xbf,0xcd),
-		/*Color( 255,255,255 )*/colorref_to_color( 0x7c3d56),
+		/*Color( 255,255,255 )*/COLORREF_to_Color(0x7c3d56),
 		LinearGradientModeForwardDiagonal
 	);
 	g.FillRectangle( &brush, clientRect );//*/
@@ -227,7 +227,7 @@ HBRUSH Dialog::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
 			}
 			else if ( clsName == "SYSLINK" )
 			{
-				LOG( window_get_text(*pWnd) );
+				//LOG( window_get_text(*pWnd) );
 				pDC->SetBkMode(TRANSPARENT);
 				hbr = (HBRUSH)GetStockObject(NULL_BRUSH);
 			}
