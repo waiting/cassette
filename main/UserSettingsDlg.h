@@ -14,37 +14,37 @@ class UserSettingsDlg : public Dialog
 {
 // Construction
 public:
-	UserSettingsDlg( CWnd * parent, User * user );
+    UserSettingsDlg( CWnd * parent, User * user );
 
-	// «∑Ò–ﬁ∏ƒ√‹¬Î
-	bool IsModifyPassword() const;
+    // «∑Ò–ﬁ∏ƒ√‹¬Î
+    bool IsModifyPassword() const;
 
 // Dialog Data
-	//{{AFX_DATA(UserSettingsDlg)
-	enum { IDD = IDD_USER_SETTINGS };
-	CString	m_oldPassword;
-	CString	m_newPassword;
-	CString	m_cfmPassword;
-	//}}AFX_DATA
+    //{{AFX_DATA(UserSettingsDlg)
+    enum { IDD = IDD_USER_SETTINGS };
+    CString m_oldPassword;
+    CString m_newPassword;
+    CString m_cfmPassword;
+    //}}AFX_DATA
 
 // Overrides
-	// ClassWizard generated virtual function overrides
-	//{{AFX_VIRTUAL(UserSettingsDlg)
-	protected:
-	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
-	virtual BOOL OnInitDialog();
-	virtual void OnOK();
-	//}}AFX_VIRTUAL
+    // ClassWizard generated virtual function overrides
+    //{{AFX_VIRTUAL(UserSettingsDlg)
+    protected:
+    virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
+    virtual BOOL OnInitDialog();
+    virtual void OnOK();
+    //}}AFX_VIRTUAL
 
 // Implementation
 protected:
-	User * m_user;
+    User * m_user;
 
-	// Generated message map functions
-	//{{AFX_MSG(UserSettingsDlg)
-		// NOTE: the ClassWizard will add member functions here
-	//}}AFX_MSG
-	DECLARE_MESSAGE_MAP()
+    // Generated message map functions
+    //{{AFX_MSG(UserSettingsDlg)
+        // NOTE: the ClassWizard will add member functions here
+    //}}AFX_MSG
+    DECLARE_MESSAGE_MAP()
 };
 
 //{{AFX_INSERT_LOCATION}}

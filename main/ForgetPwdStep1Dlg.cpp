@@ -15,23 +15,23 @@ static char THIS_FILE[] = __FILE__;
 ForgetPwdStep1Dlg::ForgetPwdStep1Dlg(CWnd* pParent /*=NULL*/)
 : Dialog(ForgetPwdStep1Dlg::IDD, pParent)
 {
-	//{{AFX_DATA_INIT(ForgetPwdStep1Dlg)
-		// NOTE: the ClassWizard will add member initialization here
-	//}}AFX_DATA_INIT
+    //{{AFX_DATA_INIT(ForgetPwdStep1Dlg)
+        // NOTE: the ClassWizard will add member initialization here
+    //}}AFX_DATA_INIT
 }
 
 
 void ForgetPwdStep1Dlg::DoDataExchange(CDataExchange* pDX)
 {
-	Dialog::DoDataExchange(pDX);
-	//{{AFX_DATA_MAP(ForgetPwdStep1Dlg)
-		// NOTE: the ClassWizard will add DDX and DDV calls here
-	//}}AFX_DATA_MAP
+    Dialog::DoDataExchange(pDX);
+    //{{AFX_DATA_MAP(ForgetPwdStep1Dlg)
+        // NOTE: the ClassWizard will add DDX and DDV calls here
+    //}}AFX_DATA_MAP
 }
 
 BEGIN_MESSAGE_MAP(ForgetPwdStep1Dlg, Dialog)
-	//{{AFX_MSG_MAP(ForgetPwdStep1Dlg)
-	//}}AFX_MSG_MAP
+    //{{AFX_MSG_MAP(ForgetPwdStep1Dlg)
+    //}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
@@ -39,9 +39,9 @@ END_MESSAGE_MAP()
 
 BOOL ForgetPwdStep1Dlg::OnInitDialog() 
 {
-	Dialog::OnInitDialog();
-	m_ToolTips.SetTipTextColor( RGB( 255, 96, 0 ) ); // 设置提示文本颜色
+    Dialog::OnInitDialog();
+    m_ToolTips.SetTipTextColor( RGB( 255, 96, 0 ) ); // 设置提示文本颜色
 
-	return TRUE;  // return TRUE unless you set the focus to a control
-	              // EXCEPTION: OCX Property Pages should return FALSE
+    return TRUE;  // return TRUE unless you set the focus to a control
+                  // EXCEPTION: OCX Property Pages should return FALSE
 }

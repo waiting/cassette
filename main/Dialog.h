@@ -21,47 +21,47 @@ class Dialog : public CDialog
 {
 // Construction
 public:
-	Dialog( UINT nIDTemplate, CWnd* pParentWnd = NULL );   // standard constructor
+    Dialog( UINT nIDTemplate, CWnd* pParentWnd = NULL );   // standard constructor
 
 // Dialog Data
-	//{{AFX_DATA(Dialog)
-		// NOTE: the ClassWizard will add data members here
-	//}}AFX_DATA
+    //{{AFX_DATA(Dialog)
+        // NOTE: the ClassWizard will add data members here
+    //}}AFX_DATA
 
-	BOOL Create( CWnd * pParentWnd )
-	{
-		return CDialog::Create( m_nIDTemplate, pParentWnd );
-	}
+    BOOL Create( CWnd * pParentWnd )
+    {
+        return CDialog::Create( m_nIDTemplate, pParentWnd );
+    }
 
 // Overrides
-	// ClassWizard generated virtual function overrides
+    // ClassWizard generated virtual function overrides
 //{{AFX_VIRTUAL(Dialog)
 public:
-	virtual BOOL PreTranslateMessage(MSG* pMsg);
+    virtual BOOL PreTranslateMessage(MSG* pMsg);
 protected:
-	virtual BOOL OnInitDialog();
+    virtual BOOL OnInitDialog();
 //}}AFX_VIRTUAL
 
 // Implementation
 protected:
-	UINT m_nIDTemplate;
-	CToolTipCtrl m_ToolTips; // 工具提示控件
-	Label m_allLabel; // 标签，用于子类化Static，自绘
+    UINT m_nIDTemplate;
+    CToolTipCtrl m_ToolTips; // 工具提示控件
+    Label m_allLabel; // 标签，用于子类化Static，自绘
 
-	// Generated message map functions
-	//{{AFX_MSG(Dialog)
-	afx_msg void OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct);
-	afx_msg HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
-	//}}AFX_MSG
-	afx_msg BOOL OnEraseBkgnd( CDC * pDC );
+    // Generated message map functions
+    //{{AFX_MSG(Dialog)
+    afx_msg void OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct);
+    afx_msg HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
+    //}}AFX_MSG
+    afx_msg BOOL OnEraseBkgnd( CDC * pDC );
 
-	// 当弹出菜单时调用,更新菜单项的状态
-	afx_msg void OnInitMenuPopup( CMenu * pMenu, UINT nIndex, BOOL bSysMenu );
+    // 当弹出菜单时调用,更新菜单项的状态
+    afx_msg void OnInitMenuPopup( CMenu * pMenu, UINT nIndex, BOOL bSysMenu );
 
-	// 当工具提示需要显示文本时调用
-	afx_msg BOOL OnToolTipText( UINT id, NMHDR * pNMHDR, LRESULT * pResult );
+    // 当工具提示需要显示文本时调用
+    afx_msg BOOL OnToolTipText( UINT id, NMHDR * pNMHDR, LRESULT * pResult );
 
-	DECLARE_MESSAGE_MAP()
+    DECLARE_MESSAGE_MAP()
 };
 
 //{{AFX_INSERT_LOCATION}}

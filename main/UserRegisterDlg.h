@@ -14,32 +14,32 @@ class UserRegisterDlg : public Dialog
 {
 // Construction
 public:
-	UserRegisterDlg( CWnd * parent, User * user );
+    UserRegisterDlg( CWnd * parent, User * user );
 
 // Dialog Data
-	//{{AFX_DATA(UserRegisterDlg)
-	enum { IDD = IDD_USER_REGISTER };
-	CString	m_cfmPassword;
-	//}}AFX_DATA
+    //{{AFX_DATA(UserRegisterDlg)
+    enum { IDD = IDD_USER_REGISTER };
+    CString m_cfmPassword;
+    //}}AFX_DATA
 
 
 // Overrides
-	// ClassWizard generated virtual function overrides
-	//{{AFX_VIRTUAL(UserRegisterDlg)
-	protected:
-	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
-	//}}AFX_VIRTUAL
+    // ClassWizard generated virtual function overrides
+    //{{AFX_VIRTUAL(UserRegisterDlg)
+    protected:
+    virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
+    //}}AFX_VIRTUAL
 
 // Implementation
 protected:
-	User * m_user;
+    User * m_user;
 
-	// Generated message map functions
-	//{{AFX_MSG(UserRegisterDlg)
-	virtual BOOL OnInitDialog();
-	virtual void OnOK();
-	//}}AFX_MSG
-	DECLARE_MESSAGE_MAP()
+    // Generated message map functions
+    //{{AFX_MSG(UserRegisterDlg)
+    virtual BOOL OnInitDialog();
+    virtual void OnOK();
+    //}}AFX_MSG
+    DECLARE_MESSAGE_MAP()
 };
 
 //{{AFX_INSERT_LOCATION}}

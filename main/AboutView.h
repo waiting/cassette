@@ -16,16 +16,16 @@
 
 class AboutView : public CHtmlView
 {
-	DECLARE_DYNCREATE(AboutView)
+    DECLARE_DYNCREATE(AboutView)
 
 // html Data
 public:
-	AboutView();           // protected constructor used by dynamic creation
-	virtual ~AboutView();
-	
-	//{{AFX_DATA(AboutView)
-		// NOTE: the ClassWizard will add data members here
-	//}}AFX_DATA
+    AboutView();           // protected constructor used by dynamic creation
+    virtual ~AboutView();
+    
+    //{{AFX_DATA(AboutView)
+        // NOTE: the ClassWizard will add data members here
+    //}}AFX_DATA
 
 // Attributes
 public:
@@ -34,28 +34,28 @@ public:
 public:
 
 // Overrides
-	// ClassWizard generated virtual function overrides
-	//{{AFX_VIRTUAL(AboutView)
-	public:
-	virtual void OnInitialUpdate();
-	virtual BOOL PreTranslateMessage(MSG* pMsg);
-	protected:
-	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
-	virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
-	//}}AFX_VIRTUAL
+    // ClassWizard generated virtual function overrides
+    //{{AFX_VIRTUAL(AboutView)
+    public:
+    virtual void OnInitialUpdate();
+    virtual BOOL PreTranslateMessage(MSG* pMsg);
+    protected:
+    virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
+    virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
+    //}}AFX_VIRTUAL
 
 // Implementation
 #ifdef _DEBUG
-	virtual void AssertValid() const;
-	virtual void Dump(CDumpContext& dc) const;
+    virtual void AssertValid() const;
+    virtual void Dump(CDumpContext& dc) const;
 #endif
 
 protected:
 
-	// Generated message map functions
-	//{{AFX_MSG(AboutView)
-	//}}AFX_MSG
-	DECLARE_MESSAGE_MAP()
+    // Generated message map functions
+    //{{AFX_MSG(AboutView)
+    //}}AFX_MSG
+    DECLARE_MESSAGE_MAP()
 };
 
 /////////////////////////////////////////////////////////////////////////////

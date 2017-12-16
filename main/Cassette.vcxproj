@@ -1,0 +1,174 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <SccProjectName />
+    <SccLocalPath />
+    <Keyword>MFCProj</Keyword>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseOfMfc>Dynamic</UseOfMfc>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseOfMfc>Dynamic</UseOfMfc>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <OutDir>$(SolutionDir)bin\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)objs\$(Configuration)\</IntDir>
+    <LinkIncremental>true</LinkIncremental>
+    <IncludePath>F:\Libraries\wxsqlite3-3.0.2\sqlite3\include;F:\Projects\RegOperate\include;F:\Projects\winplus\include;$(IncludePath)</IncludePath>
+    <LibraryPath>F:\Libraries\wxsqlite3-3.0.2\sqlite3\secure\aes256;F:\Projects\RegOperate\lib;F:\Projects\winplus\bin\MD-$(Configuration)\DynamicLib;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <OutDir>$(SolutionDir)bin\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)objs\$(Configuration)\</IntDir>
+    <LinkIncremental>false</LinkIncremental>
+    <IncludePath>F:\Libraries\wxsqlite3-3.0.2\sqlite3\include;F:\Projects\RegOperate\include;F:\Projects\winplus\include;$(IncludePath)</IncludePath>
+    <LibraryPath>F:\Libraries\wxsqlite3-3.0.2\sqlite3\secure\aes256;F:\Projects\RegOperate\lib;F:\Projects\winplus\bin\MD-$(Configuration)\DynamicLib;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <InlineFunctionExpansion>Default</InlineFunctionExpansion>
+      <FunctionLevelLinking>false</FunctionLevelLinking>
+      <Optimization>Disabled</Optimization>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NOT_EXIST_REGOPERATE_DLL;SQLITE_HAS_CODEC;PSAPI_VERSION=1;WINPLUS_DLL_USE;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <AdditionalDependencies>winplus.lib;gdiplus.lib;sqlite3.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <ResourceCompile>
+      <Culture>0x0804</Culture>
+    </ResourceCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <StringPooling>true</StringPooling>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <Optimization>MaxSpeed</Optimization>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NOT_EXIST_REGOPERATE_DLL;SQLITE_HAS_CODEC;PSAPI_VERSION=1;WINPLUS_DLL_USE;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ResourceCompile>
+      <Culture>0x0804</Culture>
+    </ResourceCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <AdditionalDependencies>winplus.lib;gdiplus.lib;sqlite3.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="AboutView.cpp" />
+    <ClCompile Include="AboutWnd.cpp" />
+    <ClCompile Include="AccountCateEditingDlg.cpp" />
+    <ClCompile Include="AccountCatesDlg.cpp" />
+    <ClCompile Include="AccountEditingDlg.cpp" />
+    <ClCompile Include="AccountIntegratedWnd.cpp" />
+    <ClCompile Include="AccountsView.cpp" />
+    <ClCompile Include="AccountTypeEditingDlg.cpp" />
+    <ClCompile Include="AccountTypesDlg.cpp" />
+    <ClCompile Include="AppSettingsDlg.cpp" />
+    <ClCompile Include="Cassette.cpp" />
+    <ClCompile Include="CassetteApp.cpp" />
+    <ClCompile Include="Dialog.cpp" />
+    <ClCompile Include="ForgetPwdStep1Dlg.cpp" />
+    <ClCompile Include="Functional.cpp" />
+    <ClCompile Include="Label.cpp" />
+    <ClCompile Include="MainFrame.cpp" />
+    <ClCompile Include="UserLoginDlg.cpp" />
+    <ClCompile Include="UserRegisterDlg.cpp" />
+    <ClCompile Include="UserSettingsDlg.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Cassette.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="AboutView.h" />
+    <ClInclude Include="AboutWnd.h" />
+    <ClInclude Include="AccountCateEditingDlg.h" />
+    <ClInclude Include="AccountCatesDlg.h" />
+    <ClInclude Include="AccountEditingDlg.h" />
+    <ClInclude Include="AccountIntegratedWnd.h" />
+    <ClInclude Include="AccountsView.h" />
+    <ClInclude Include="AccountTypeEditingDlg.h" />
+    <ClInclude Include="AccountTypesDlg.h" />
+    <ClInclude Include="AppSettingsDlg.h" />
+    <ClInclude Include="Cassette.h" />
+    <ClInclude Include="CassetteApp.h" />
+    <ClInclude Include="Dialog.h" />
+    <ClInclude Include="ForgetPwdStep1Dlg.h" />
+    <ClInclude Include="Functional.h" />
+    <ClInclude Include="Label.h" />
+    <ClInclude Include="MainFrame.h" />
+    <ClInclude Include="Resource.h" />
+    <ClInclude Include="UserLoginDlg.h" />
+    <ClInclude Include="UserRegisterDlg.h" />
+    <ClInclude Include="UserSettingsDlg.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\res\AccountMaster_01.ico" />
+    <CustomBuild Include="..\res\AccountMaster_02.ico" />
+    <CustomBuild Include="..\res\AccountMaster_03.ico" />
+    <CustomBuild Include="res\Cassette.ico" />
+    <CustomBuild Include="..\res\Cassette.ico" />
+    <CustomBuild Include="res\Cassette.rc2">
+      <FileType>RC</FileType>
+    </CustomBuild>
+    <CustomBuild Include="..\res\IntegratedBackground.bmp" />
+    <CustomBuild Include="res\Toolbar.bmp" />
+    <CustomBuild Include="..\res\Toolbar.bmp" />
+    <CustomBuild Include="..\res\toolbar1.bmp" />
+    <CustomBuild Include="..\res\about.html" />
+    <CustomBuild Include="..\res\AccountMaster_01.png">
+      <FileType>Document</FileType>
+    </CustomBuild>
+    <CustomBuild Include="..\res\db.key">
+      <FileType>Document</FileType>
+    </CustomBuild>
+    <CustomBuild Include="..\res\dbschema.sql">
+      <FileType>Document</FileType>
+    </CustomBuild>
+    <CustomBuild Include="..\res\Toolbar.png">
+      <FileType>Document</FileType>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Manifest Include="..\res\AccountMaster.manifest">
+      <SubType>Designer</SubType>
+    </Manifest>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

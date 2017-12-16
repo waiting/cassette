@@ -14,34 +14,34 @@ class AccountCateEditingDlg : public Dialog
 {
 // Construction
 public:
-	AccountCateEditingDlg( CWnd * parent, bool isAdd, AccountCate * cate );
+    AccountCateEditingDlg( CWnd * parent, bool isAdd, AccountCate * cate );
 
 // Dialog Data
-	//{{AFX_DATA(AccountCateEditingDlg)
-	enum { IDD = IDD_ACCOUNT_CATE_EDITING };
-	//}}AFX_DATA
+    //{{AFX_DATA(AccountCateEditingDlg)
+    enum { IDD = IDD_ACCOUNT_CATE_EDITING };
+    //}}AFX_DATA
 
 
 // Overrides
-	// ClassWizard generated virtual function overrides
-	//{{AFX_VIRTUAL(AccountCateEditingDlg)
-	protected:
-	virtual void DoDataExchange( CDataExchange * pDX );    // DDX/DDV support
-	//}}AFX_VIRTUAL
+    // ClassWizard generated virtual function overrides
+    //{{AFX_VIRTUAL(AccountCateEditingDlg)
+    protected:
+    virtual void DoDataExchange( CDataExchange * pDX );    // DDX/DDV support
+    //}}AFX_VIRTUAL
 
 // Implementation
 protected:
-	int		m_typeIndex;
-	int		m_startupIndex;
+    int     m_typeIndex;
+    int     m_startupIndex;
 
-	bool m_isAdd;
-	AccountCate * m_cate;
-	// Generated message map functions
-	//{{AFX_MSG(AccountCateEditingDlg)
-	virtual BOOL OnInitDialog();
-	virtual void OnOK();
-	//}}AFX_MSG
-	DECLARE_MESSAGE_MAP()
+    bool m_isAdd;
+    AccountCate * m_cate;
+    // Generated message map functions
+    //{{AFX_MSG(AccountCateEditingDlg)
+    virtual BOOL OnInitDialog();
+    virtual void OnOK();
+    //}}AFX_MSG
+    DECLARE_MESSAGE_MAP()
 };
 
 //{{AFX_INSERT_LOCATION}}

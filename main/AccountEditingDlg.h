@@ -14,38 +14,38 @@ class AccountEditingDlg : public Dialog
 {
 // Construction
 public:
-	AccountEditingDlg( CWnd * parent, bool isAdd, Account * account );
+    AccountEditingDlg( CWnd * parent, bool isAdd, Account * account );
 
 // Dialog Data
-	//{{AFX_DATA(AccountEditingDlg)
-	enum { IDD = IDD_ACCOUNT_EDITING };
-	//}}AFX_DATA
+    //{{AFX_DATA(AccountEditingDlg)
+    enum { IDD = IDD_ACCOUNT_EDITING };
+    //}}AFX_DATA
 
 
 // Overrides
-	// ClassWizard generated virtual function overrides
-	//{{AFX_VIRTUAL(AccountEditingDlg)
-	protected:
-	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
-	//}}AFX_VIRTUAL
+    // ClassWizard generated virtual function overrides
+    //{{AFX_VIRTUAL(AccountEditingDlg)
+    protected:
+    virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
+    //}}AFX_VIRTUAL
 
 // Implementation
 protected:
-	bool m_isAdd;
-	Account * m_account;
+    bool m_isAdd;
+    Account * m_account;
 
-	AccountCateArray m_cates; // 存储种类信息
-	CUIntArray m_cateIds2;
-	CUIntArray m_typeSafeRanks;
-	int m_cateIndex;
-	int GetSafeRankByCateId( int cateId ) const;
-	// Generated message map functions
-	//{{AFX_MSG(AccountEditingDlg)
-	virtual BOOL OnInitDialog();
-	virtual void OnOK();
-	afx_msg void OnSelChangeComboCates();
-	//}}AFX_MSG
-	DECLARE_MESSAGE_MAP()
+    AccountCateArray m_cates; // 存储种类信息
+    CUIntArray m_cateIds2;
+    CUIntArray m_typeSafeRanks;
+    int m_cateIndex;
+    int GetSafeRankByCateId( int cateId ) const;
+    // Generated message map functions
+    //{{AFX_MSG(AccountEditingDlg)
+    virtual BOOL OnInitDialog();
+    virtual void OnOK();
+    afx_msg void OnSelChangeComboCates();
+    //}}AFX_MSG
+    DECLARE_MESSAGE_MAP()
 };
 
 //{{AFX_INSERT_LOCATION}}

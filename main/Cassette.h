@@ -10,16 +10,16 @@
 #pragma once
 #endif // _MSC_VER > 1000
 
-#define VC_EXTRALEAN		// Exclude rarely-used stuff from Windows headers
+#define VC_EXTRALEAN        // Exclude rarely-used stuff from Windows headers
 
 #define _WIN32_WINNT 0x0501
 
 #include <afxwin.h>         // MFC core and standard components
 #include <afxext.h>         // MFC extensions
 #include <afxdisp.h>        // MFC Automation classes
-#include <afxdtctl.h>		// MFC support for Internet Explorer 4 Common Controls
+#include <afxdtctl.h>       // MFC support for Internet Explorer 4 Common Controls
 #ifndef _AFX_NO_AFXCMN_SUPPORT
-#include <afxcmn.h>			// MFC support for Windows Common Controls
+#include <afxcmn.h>         // MFC support for Windows Common Controls
 #endif // _AFX_NO_AFXCMN_SUPPORT
 
 #include <afxcview.h>
@@ -28,18 +28,13 @@
 
 #include <RegOperate.h>
 #ifdef _DEBUG
-#pragma comment( lib, "RegOperate-lib-MTd" )
+#pragma comment( lib, "RegOperate-lib-MDd" )
 #else
-#pragma comment( lib, "RegOperate-lib-MT" )
+#pragma comment( lib, "RegOperate-lib-MD" )
 #endif
 
 #include <winplus.hpp>
-using namespace winplus;
-#ifdef _DEBUG
-#pragma comment( lib, "winplus-lib-MTd" )
-#else
-#pragma comment( lib, "winplus-lib-MT" )
-#endif
+
 using namespace Gdiplus;
 
 #include <sqlite3.h>

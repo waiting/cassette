@@ -14,38 +14,38 @@ class AccountTypesDlg : public Dialog, public IUpdateListView
 {
 // Construction
 public:
-	AccountTypesDlg( CWnd * parent = NULL );   // standard constructor
+    AccountTypesDlg( CWnd * parent = NULL );   // standard constructor
 
 // Dialog Data
-	//{{AFX_DATA(AccountTypesDlg)
-	enum { IDD = IDD_ACCOUNT_TYPES };
-		// NOTE: the ClassWizard will add data members here
-	//}}AFX_DATA
+    //{{AFX_DATA(AccountTypesDlg)
+    enum { IDD = IDD_ACCOUNT_TYPES };
+        // NOTE: the ClassWizard will add data members here
+    //}}AFX_DATA
 
-	virtual void UpdateList( int flag = UPDATE_LOAD_DATA | UPDATE_LIST_ITEMS, long itemIndex = -1 );
+    virtual void UpdateList( int flag = UPDATE_LOAD_DATA | UPDATE_LIST_ITEMS, long itemIndex = -1 );
 
 // Overrides
-	// ClassWizard generated virtual function overrides
-	//{{AFX_VIRTUAL(AccountTypesDlg)
-	protected:
-	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
-	//}}AFX_VIRTUAL
+    // ClassWizard generated virtual function overrides
+    //{{AFX_VIRTUAL(AccountTypesDlg)
+    protected:
+    virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
+    //}}AFX_VIRTUAL
 
 // Implementation
 protected:
-	AccountTypeArray m_types;
+    AccountTypeArray m_types;
 
-	// Generated message map functions
-	//{{AFX_MSG(AccountTypesDlg)
-	virtual BOOL OnInitDialog();
-	afx_msg void OnListActivated(NMHDR* pNMHDR, LRESULT* pResult);
-	afx_msg void OnListRClick(NMHDR* pNMHDR, LRESULT* pResult);
-	afx_msg void OnAdd();
-	afx_msg void OnModify();
-	afx_msg void OnDelete();
-	//}}AFX_MSG
-	afx_msg void OnUpdateModifyDeleteMenu( CCmdUI * pCmdUI );
-	DECLARE_MESSAGE_MAP()
+    // Generated message map functions
+    //{{AFX_MSG(AccountTypesDlg)
+    virtual BOOL OnInitDialog();
+    afx_msg void OnListActivated(NMHDR* pNMHDR, LRESULT* pResult);
+    afx_msg void OnListRClick(NMHDR* pNMHDR, LRESULT* pResult);
+    afx_msg void OnAdd();
+    afx_msg void OnModify();
+    afx_msg void OnDelete();
+    //}}AFX_MSG
+    afx_msg void OnUpdateModifyDeleteMenu( CCmdUI * pCmdUI );
+    DECLARE_MESSAGE_MAP()
 };
 
 //{{AFX_INSERT_LOCATION}}

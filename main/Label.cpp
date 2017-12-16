@@ -14,14 +14,14 @@ static char THIS_FILE[] = __FILE__;
 
 Label::Label()
 {
-	m_bFontChanged = FALSE;
-	m_strFontName = _T("Î¢ÈíÑÅºÚ");
-	m_uFontSize = 12;
-	m_color = RGB( 0, 0, 0 );
+    m_bFontChanged = FALSE;
+    m_strFontName = _T("Î¢ÈíÑÅºÚ");
+    m_uFontSize = 12;
+    m_color = RGB( 0, 0, 0 );
 
 
-	m_bBrushChanged = FALSE;
-	m_bkColor = GetSysColor(COLOR_3DFACE);
+    m_bBrushChanged = FALSE;
+    m_bkColor = GetSysColor(COLOR_3DFACE);
 }
 
 Label::~Label()
@@ -30,10 +30,10 @@ Label::~Label()
 
 
 BEGIN_MESSAGE_MAP(Label, CStatic)
-	//{{AFX_MSG_MAP(Label)
-	ON_WM_CTLCOLOR_REFLECT()
-	ON_WM_PAINT()
-	//}}AFX_MSG_MAP
+    //{{AFX_MSG_MAP(Label)
+    ON_WM_CTLCOLOR_REFLECT()
+    ON_WM_PAINT()
+    //}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
@@ -41,38 +41,38 @@ END_MESSAGE_MAP()
 
 HBRUSH Label::CtlColor(CDC* pDC, UINT nCtlColor) 
 {
-	pDC->SetTextColor(m_color);
-	if ( m_font.GetSafeHandle() )
-	{
-		pDC->SelectObject(&m_font);
-	}
+    pDC->SetTextColor(m_color);
+    if ( m_font.GetSafeHandle() )
+    {
+        pDC->SelectObject(&m_font);
+    }
 
-	pDC->SetBkMode(TRANSPARENT);
-	// TODO: Return a non-NULL brush if the parent's handler should not be called
-	if ( m_brush.GetSafeHandle() )
-	{
-		return m_brush;
-	}
-	else
-	{
-		return (HBRUSH)GetStockObject(NULL_BRUSH);
-	}
+    pDC->SetBkMode(TRANSPARENT);
+    // TODO: Return a non-NULL brush if the parent's handler should not be called
+    if ( m_brush.GetSafeHandle() )
+    {
+        return m_brush;
+    }
+    else
+    {
+        return (HBRUSH)GetStockObject(NULL_BRUSH);
+    }
 }
 
 void Label::OnPaint() 
 {
-	//CPaintDC dc(this); // device context for painting
-	{
-		//CClientDC dc(this);
-		//CRect rc;
-		//GetClientRect(&rc);
-		//CBrush brush( RGB( 255, 238, 255 ) );
-		//gdi_object_selector<HBRUSH> sel( dc, brush );
-		//gdi_object_selector<HPEN> sel2( dc, GetStockObject(NULL_PEN) );
+    //CPaintDC dc(this); // device context for painting
+    {
+        //CClientDC dc(this);
+        //CRect rc;
+        //GetClientRect(&rc);
+        //CBrush brush( RGB( 255, 238, 255 ) );
+        //gdi_object_selector<HBRUSH> sel( dc, brush );
+        //gdi_object_selector<HPEN> sel2( dc, GetStockObject(NULL_PEN) );
 
-		//dc.RoundRect( &rc, CPoint( 10, 10 ) );
+        //dc.RoundRect( &rc, CPoint( 10, 10 ) );
 
-	}
+    }
 
-	CStatic::OnPaint();
+    CStatic::OnPaint();
 }

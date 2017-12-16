@@ -15,43 +15,43 @@ class UserLoginDlg : public Dialog
 {
 // Construction
 public:
-	UserLoginDlg(
-		CWnd * parent,
-		CString * username,
-		CString * password,
-		BOOL * autoLogin,
-		BOOL * savePwd
-	);
+    UserLoginDlg(
+        CWnd * parent,
+        CString * username,
+        CString * password,
+        BOOL * autoLogin,
+        BOOL * savePwd
+    );
 
 // Dialog Data
-	//{{AFX_DATA(UserLoginDlg)
-	enum { IDD = IDD_USER_LOGIN };
-	Label	m_lblLogin;
-	//}}AFX_DATA
+    //{{AFX_DATA(UserLoginDlg)
+    enum { IDD = IDD_USER_LOGIN };
+    Label   m_lblLogin;
+    //}}AFX_DATA
 
 
 // Overrides
-	// ClassWizard generated virtual function overrides
-	//{{AFX_VIRTUAL(UserLoginDlg)
-	protected:
-	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
-	virtual BOOL OnInitDialog();
-	virtual void OnOK();
-	//}}AFX_VIRTUAL
+    // ClassWizard generated virtual function overrides
+    //{{AFX_VIRTUAL(UserLoginDlg)
+    protected:
+    virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
+    virtual BOOL OnInitDialog();
+    virtual void OnOK();
+    //}}AFX_VIRTUAL
 
 // Implementation
 protected:
-	CString * m_username;
-	CString * m_password;
-	BOOL * m_autoLogin;
-	BOOL * m_savePwd;
+    CString * m_username;
+    CString * m_password;
+    BOOL * m_autoLogin;
+    BOOL * m_savePwd;
 
-	// Generated message map functions
-	//{{AFX_MSG(UserLoginDlg)
-	afx_msg void OnSysLinkRegister( NMHDR * pNmHdr, LRESULT * pResult );
-	afx_msg void OnSysLinkForgetPwd( NMHDR * pNmHdr, LRESULT * pResult );
-	//}}AFX_MSG
-	DECLARE_MESSAGE_MAP()
+    // Generated message map functions
+    //{{AFX_MSG(UserLoginDlg)
+    afx_msg void OnSysLinkRegister( NMHDR * pNmHdr, LRESULT * pResult );
+    afx_msg void OnSysLinkForgetPwd( NMHDR * pNmHdr, LRESULT * pResult );
+    //}}AFX_MSG
+    DECLARE_MESSAGE_MAP()
 };
 
 //{{AFX_INSERT_LOCATION}}

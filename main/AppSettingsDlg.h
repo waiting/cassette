@@ -14,37 +14,37 @@ class AppSettingsDlg : public Dialog
 {
 // Construction
 public:
-	AppSettingsDlg( CWnd * pParent, CassetteApp::SettingsParameters * pSettings );
+    AppSettingsDlg( CWnd * pParent, CassetteApp::SettingsParameters * pSettings );
 
 // Dialog Data
-	//{{AFX_DATA(AppSettingsDlg)
-	enum { IDD = IDD_APP_SETTINGS };
-	BOOL	m_IsEnabledAutoRun;
-	BOOL	m_IsEnabledHotkey;
-	BOOL	m_IsEnabledHttpSrv;
-	BOOL	m_IsEnabledScheme;
-	CString	m_BackupPath;
-	CString	m_DatabasePath;
-	CString m_WordslibPath;
-	//}}AFX_DATA
+    //{{AFX_DATA(AppSettingsDlg)
+    enum { IDD = IDD_APP_SETTINGS };
+    BOOL    m_IsEnabledAutoRun;
+    BOOL    m_IsEnabledHotkey;
+    BOOL    m_IsEnabledHttpSrv;
+    BOOL    m_IsEnabledScheme;
+    CString m_BackupPath;
+    CString m_DatabasePath;
+    CString m_WordslibPath;
+    //}}AFX_DATA
 
 
 // Overrides
-	// ClassWizard generated virtual function overrides
-	//{{AFX_VIRTUAL(AppSettingsDlg)
-	protected:
-	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
-	//}}AFX_VIRTUAL
+    // ClassWizard generated virtual function overrides
+    //{{AFX_VIRTUAL(AppSettingsDlg)
+    protected:
+    virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
+    //}}AFX_VIRTUAL
 
 // Implementation
 protected:
-	CassetteApp::SettingsParameters * m_pSettings;
-	// Generated message map functions
-	//{{AFX_MSG(AppSettingsDlg)
-	virtual BOOL OnInitDialog();
-	virtual void OnOK();
-	//}}AFX_MSG
-	DECLARE_MESSAGE_MAP()
+    CassetteApp::SettingsParameters * m_pSettings;
+    // Generated message map functions
+    //{{AFX_MSG(AppSettingsDlg)
+    virtual BOOL OnInitDialog();
+    virtual void OnOK();
+    //}}AFX_MSG
+    DECLARE_MESSAGE_MAP()
 };
 
 //{{AFX_INSERT_LOCATION}}

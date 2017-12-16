@@ -17,47 +17,47 @@ class AccountsView : public CListView, public IUpdateListView
 {
 // Construction
 public:
-	AccountsView();
-	virtual ~AccountsView();
+    AccountsView();
+    virtual ~AccountsView();
 
 // Attributes
 public:
 // Operations
-	virtual void UpdateList( int flag = UPDATE_LOAD_DATA | UPDATE_LIST_ITEMS, long itemIndex = -1 );
+    virtual void UpdateList( int flag = UPDATE_LOAD_DATA | UPDATE_LIST_ITEMS, long itemIndex = -1 );
 // Overrides
-	// ClassWizard generated virtual function overrides
-	//{{AFX_VIRTUAL(AccountsView)
-	protected:
-	virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
-	//}}AFX_VIRTUAL
+    // ClassWizard generated virtual function overrides
+    //{{AFX_VIRTUAL(AccountsView)
+    protected:
+    virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
+    //}}AFX_VIRTUAL
 
 // Implementation
 public:
 
 protected:
 
-	// 数组存储账户记录
-	AccountArray m_accounts;
-	/*CStringArray m_myNames;
-	CStringArray m_accountNames;
-	CStringArray m_accountPwds;
-	CUIntArray m_cateIds;
-	CUIntArray m_safeRanks;
-	CStringArray m_comments;
-	CUIntArray m_times;*/
+    // 数组存储账户记录
+    AccountArray m_accounts;
+    /*CStringArray m_myNames;
+    CStringArray m_accountNames;
+    CStringArray m_accountPwds;
+    CUIntArray m_cateIds;
+    CUIntArray m_safeRanks;
+    CStringArray m_comments;
+    CUIntArray m_times;*/
 // Generated message map functions
-	//{{AFX_MSG(AccountsView)
-	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
-	afx_msg void OnSize(UINT nType, int cx, int cy);
-	afx_msg void OnListViewRClick(NMHDR* pNMHDR, LRESULT* pResult);
-	afx_msg void OnListViewActivated(NMHDR* pNMHDR, LRESULT* pResult);
-	afx_msg void OnListStyleIcon();
-	afx_msg void OnListStyleReport();
-	//}}AFX_MSG
-	afx_msg void OnUpdateListStyle(CCmdUI* pCmdUI);
-	DECLARE_MESSAGE_MAP()
+    //{{AFX_MSG(AccountsView)
+    afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
+    afx_msg void OnSize(UINT nType, int cx, int cy);
+    afx_msg void OnListViewRClick(NMHDR* pNMHDR, LRESULT* pResult);
+    afx_msg void OnListViewActivated(NMHDR* pNMHDR, LRESULT* pResult);
+    afx_msg void OnListStyleIcon();
+    afx_msg void OnListStyleReport();
+    //}}AFX_MSG
+    afx_msg void OnUpdateListStyle(CCmdUI* pCmdUI);
+    DECLARE_MESSAGE_MAP()
 
-	friend class MainFrame;
+    friend class MainFrame;
 };
 
 /////////////////////////////////////////////////////////////////////////////

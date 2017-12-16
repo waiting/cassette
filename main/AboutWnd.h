@@ -16,37 +16,37 @@
 
 class AboutWnd : public CFrameWnd
 {
-	DECLARE_DYNCREATE(AboutWnd)
+    DECLARE_DYNCREATE(AboutWnd)
 private:
-	static AboutWnd * ms_pSingleAboutWnd;
+    static AboutWnd * ms_pSingleAboutWnd;
 protected:
-	AboutWnd( CWnd * parent = NULL );
-	virtual ~AboutWnd();
+    AboutWnd( CWnd * parent = NULL );
+    virtual ~AboutWnd();
 public:
-	// 获取关于对话框的实例
-	static AboutWnd * GetSingleton( CWnd * pParent = NULL );
+    // 获取关于对话框的实例
+    static AboutWnd * GetSingleton( CWnd * pParent = NULL );
 
 // Operations
 public:
 
 // Overrides
-	// ClassWizard generated virtual function overrides
-	//{{AFX_VIRTUAL(AboutWnd)
+    // ClassWizard generated virtual function overrides
+    //{{AFX_VIRTUAL(AboutWnd)
 protected:
-	virtual BOOL OnCmdMsg(UINT nID, int nCode, void* pExtra, AFX_CMDHANDLERINFO* pHandlerInfo);
-	virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
-	//}}AFX_VIRTUAL
+    virtual BOOL OnCmdMsg(UINT nID, int nCode, void* pExtra, AFX_CMDHANDLERINFO* pHandlerInfo);
+    virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
+    //}}AFX_VIRTUAL
 
 // Implementation
 protected:
-	AboutView * m_pAboutView;
+    AboutView * m_pAboutView;
 
-	// Generated message map functions
-	//{{AFX_MSG(AboutWnd)
-	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
-	afx_msg void OnSetFocus(CWnd* pOldWnd);
-	//}}AFX_MSG
-	DECLARE_MESSAGE_MAP()
+    // Generated message map functions
+    //{{AFX_MSG(AboutWnd)
+    afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
+    afx_msg void OnSetFocus(CWnd* pOldWnd);
+    //}}AFX_MSG
+    DECLARE_MESSAGE_MAP()
 };
 
 /////////////////////////////////////////////////////////////////////////////
