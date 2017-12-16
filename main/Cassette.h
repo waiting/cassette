@@ -26,12 +26,7 @@
 #include <afxhtml.h>
 #include <afxtempl.h>
 
-#include <RegOperate.h>
-#ifdef _DEBUG
-#pragma comment( lib, "RegOperate-lib-MDd" )
-#else
-#pragma comment( lib, "RegOperate-lib-MD" )
-#endif
+#include "RegOperate.h"
 
 #include <winplus.hpp>
 
