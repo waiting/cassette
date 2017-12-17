@@ -85,6 +85,7 @@ CString GetExecutablePath();
 // 数据库相关操作
 //////////////////////////////////////////////////////////////////////////
 
+/*
 struct Fields
 {
     // 绑定int参数,索引起始为1
@@ -122,7 +123,7 @@ struct Fields
         size = sqlite3_column_bytes( stmt, sqlFieldIndex );
         blob->assign( (char const *)sqlite3_column_blob( stmt, sqlFieldIndex ), size );
     }
-};
+};*/
 
 // Users -----------------------------------------------------------------
 // 代表一个用户的相关数据
@@ -146,7 +147,7 @@ inline int FieldIndex( UINT fieldBitFlag )
     return (int)( log((double)fieldBitFlag) / log(2.0) + 0.0000005 );
 }
 
-struct User : public Fields
+struct User/* : Fields*/
 {
     int m_id;
     CString m_username;
@@ -175,6 +176,7 @@ struct User : public Fields
         return *this;
     }
 
+/*
     // 绑定数据到指定的SQL语句的占位符的索引,基于1
 
     int bindId( sqlite3_stmt * stmt, int sqlParamIndex ) const
@@ -256,6 +258,7 @@ struct User : public Fields
     {
         m_regTime = _getInt( stmt, sqlFieldIndex );
     }
+*/
 
     User()
     {
@@ -271,23 +274,23 @@ struct User : public Fields
 
 // 注册用户, 注册成功返回true, 否则false
 // user忽略m_id,m_condone,m_curCondone,m_unlockTime,m_regTime
-bool RegisterUser( sqlite3 * db, User const & newUser );
+bool RegisterUser( eiendb::Database & db, User const & newUser );
 
 // 登录用户, 执行验证成功返回true,并获取User数据, 否则返回false.
-bool LoginUser( sqlite3 * db, CString const & username, CString const & password, User * userData );
+bool LoginUser( eiendb::Database & db, CString const & username, CString const & password, User * userData );
 // 载入用户信息
-bool LoadUser( sqlite3 * db, CString const & username, User * userData );
+bool LoadUser( eiendb::Database & db, CString const & username, User * userData );
 // 删除用户
-bool DeleteUser( sqlite3 * db, CString const & username );
+bool DeleteUser( eiendb::Database & db, CString const & username );
 // 验证用户密码
-bool VerifyUserPassword( sqlite3 * db, CString const & username, CString const & password );
+bool VerifyUserPassword( eiendb::Database & db, CString const & username, CString const & password );
 // 修改用户信息
-bool ModifyUserEx( sqlite3 * db, CString const & username, UINT modifiedFieldBits, User const & newUser );
+bool ModifyUserEx( eiendb::Database & db, CString const & username, UINT modifiedFieldBits, User const & newUser );
 
 // Types -----------------------------------------------------------------
 
 //一条账户类型相关数据
-struct AccountType : public Fields
+struct AccountType/* : public Fields*/
 {
     CString m_typeName;
     int m_safeRank;
@@ -302,6 +305,7 @@ struct AccountType : public Fields
         return *this;
     }
 
+/*
     int bindTypeName( sqlite3_stmt * stmt, int sqlParamIndex ) const
     {
         return _bindString( stmt, sqlParamIndex, m_typeName );
@@ -319,6 +323,7 @@ struct AccountType : public Fields
     {
         m_safeRank = _getInt( stmt, sqlFieldIndex );
     }
+*/
 
     AccountType()
     {
@@ -329,20 +334,20 @@ struct AccountType : public Fields
 typedef CArray<AccountType, AccountType const &> AccountTypeArray;
 
 // 加载账户类别信息,返回记录数
-int LoadAccountTypes( sqlite3 * db, AccountTypeArray * types );
+int LoadAccountTypes( eiendb::Database & db, AccountTypeArray * types );
 
 // 获取一个类型
-bool GetAccountType( sqlite3 * db, CString const & typeName, AccountType * type );
+bool GetAccountType( eiendb::Database & db, CString const & typeName, AccountType * type );
 
 // 添加账户类别信息, 成功返回true, 否则返回false.
-bool AddAccountType( sqlite3 * db, AccountType const & newType );
+bool AddAccountType( eiendb::Database & db, AccountType const & newType );
 // 修改账户类别信息, 成功返回true, 否则返回false.
-bool ModifyAccountType( sqlite3 * db, CString const & typeName, AccountType const & newType );
+bool ModifyAccountType( eiendb::Database & db, CString const & typeName, AccountType const & newType );
 // 删除账户类别信息, 成功返回true, 否则返回false.
-bool DeleteAccountType( sqlite3 * db, CString const & typeName );
+bool DeleteAccountType( eiendb::Database & db, CString const & typeName );
 
 // Cates -----------------------------------------------------------------
-struct AccountCate : public Fields
+struct AccountCate/* : public Fields*/
 {
     int m_id;
     CString m_cateName;
@@ -371,6 +376,7 @@ struct AccountCate : public Fields
         return *this;
     }
 
+/*
     int bindId( sqlite3_stmt * stmt, int sqlParamIndex ) const
     {
         return _bindInt( stmt, sqlParamIndex, m_id );
@@ -444,6 +450,7 @@ struct AccountCate : public Fields
     {
         m_timeWriten = _getInt( stmt, sqlFieldIndex );
     }
+*/
 
     AccountCate()
     {
@@ -456,30 +463,30 @@ struct AccountCate : public Fields
 typedef CArray<AccountCate, AccountCate const &> AccountCateArray;
 
 // 载入账户种类信息, 返回记录数
-int LoadAccountCates( sqlite3 * db, AccountCateArray * cates );
+int LoadAccountCates( eiendb::Database & db, AccountCateArray * cates );
 
 // 载入一条账户种类信息
-bool GetAccountCate( sqlite3 * db, int id, AccountCate * cate );
+bool GetAccountCate( eiendb::Database & db, int id, AccountCate * cate );
 
 // 添加账户种类信息，成功返回ID，失败返回0
 // newCate忽略m_id,m_timeWriten
-int AddAccountCate( sqlite3 * db, AccountCate const & newCate );
+int AddAccountCate( eiendb::Database & db, AccountCate const & newCate );
 
 // 修改账户种类信息
 // newCate忽略m_id,m_timeWriten
-bool ModifyAccountCate( sqlite3 * db, int id, AccountCate const & newCate );
+bool ModifyAccountCate( eiendb::Database & db, int id, AccountCate const & newCate );
 
 // 删除账户种类信息
-bool DeleteAccountCate( sqlite3 * db, int id );
+bool DeleteAccountCate( eiendb::Database & db, int id );
 
 // 载入所有账户种类的ID以及相应的安全值
-int LoadAccountCatesSafeRank( sqlite3 * db, CUIntArray * cateIds, CUIntArray * typeSafeRanks );
+int LoadAccountCatesSafeRank( eiendb::Database & db, CUIntArray * cateIds, CUIntArray * typeSafeRanks );
 
 // 获取指定cateId的类别
-bool GetTypeByCateId( sqlite3 * db, int cateId, AccountType * type );
+bool GetTypeByCateId( eiendb::Database & db, int cateId, AccountType * type );
 
 // Accounts --------------------------------------------------------------
-struct Account : public Fields
+struct Account/* : public Fields*/
 {
     CString m_myName;
     CString m_accountName;
@@ -505,7 +512,7 @@ struct Account : public Fields
         }
         return *this;
     }
-
+    /*
     int bindMyName( sqlite3_stmt * stmt, int sqlParamIndex ) const
     {
         return _bindString( stmt, sqlParamIndex, m_myName );
@@ -579,6 +586,7 @@ struct Account : public Fields
     {
         m_time = _getInt( stmt, sqlFieldIndex );
     }
+*/
 
     Account()
     {
@@ -593,39 +601,39 @@ struct Account : public Fields
 typedef CArray<Account, Account const &> AccountArray;
 
 // 载入指定用户所有的账户信息,可指定种类:-1为全部种类
-int LoadAccounts( sqlite3 * db, int userId, AccountArray * accounts, int cateId = -1 );
+int LoadAccounts( eiendb::Database & db, int userId, AccountArray * accounts, int cateId = -1 );
 
 // 获取指定用户的一个账户信息
 // 主键(user,myname)
-bool GetAccount( sqlite3 * db, int userId, CString const & myName, Account * account );
+bool GetAccount( eiendb::Database & db, int userId, CString const & myName, Account * account );
 
 // 添加一个指定用户的账户，成功true，失败false。
 // 主键(user,myname)
 // 意味着每个用户(user)拥有账户的myname必须不同，否则失败。修改时也一样。
 // newAccount忽略m_time
-bool AddAccount( sqlite3 * db, Account const & newAccount );
+bool AddAccount( eiendb::Database & db, Account const & newAccount );
 
 // 修改一个指定用户的账户
 // 主键(user,myname)
 // newAccount忽略m_time
-bool ModifyAccount( sqlite3 * db, int userId, CString const & myName, Account const & newAccount );
+bool ModifyAccount( eiendb::Database & db, int userId, CString const & myName, Account const & newAccount );
 
 // 删除一个指定用户的账户
-bool DeleteAccount( sqlite3 * db, int userId, CString const & myName );
+bool DeleteAccount( eiendb::Database & db, int userId, CString const & myName );
 
 // Others ----------------------------------------------------------------
 
 // 取得一个正确的Account MyName以便添加账户
-CString GetCorrectAccountMyName( sqlite3 * db, int userId, CString const & myName );
+CString GetCorrectAccountMyName( eiendb::Database & db, int userId, CString const & myName );
 
 // 获取数据库全部表名
-int LoadTableNames( sqlite3 * db, winplus::StringArray * tableNames, winplus::String const & like = _T("am\\_%") );
+int LoadTableNames( eiendb::Database & db, winplus::StringArray * tableNames, winplus::String const & like = _T("am\\_%") );
 
 // 获取数据库的DDL,返回SQL语句条数
-int DumpDDL( sqlite3 * db, winplus::String * ddl, winplus::String const & like = _T("am\\_%") );
+int DumpDDL( eiendb::Database & db, winplus::String * ddl, winplus::String const & like = _T("am\\_%") );
 
 // 判断ExeName是否为一个浏览器
-bool IsBrowserExeName( sqlite3 * db, CString const & exeName, CString * browserTitle );
+bool IsBrowserExeName( eiendb::Database & db, CString const & exeName, CString * browserTitle );
 
 
 //////////////////////////////////////////////////////////////////////////

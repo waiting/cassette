@@ -503,6 +503,7 @@ public:
 };
 
 // -------------------------------------------------------------------------------
+class GrowBuffer;
 /** \brief 缓冲区,表示内存中一块2进制数据(利用malloc/realloc进行内存分配) */
 class WINUX_DLL Buffer
 {
@@ -519,6 +520,10 @@ public:
     Buffer( Buffer && other );
     /** \brief 移动赋值操作 */
     Buffer & operator = ( Buffer && other );
+    /** \brief 移动构造函数1 */
+    Buffer( GrowBuffer && other );
+    /** \brief 移动赋值操作1 */
+    Buffer & operator = ( GrowBuffer && other );
 #endif
 
     /** \brief 设置缓冲区 */
@@ -549,6 +554,8 @@ protected:
     void * _buf;
     uint _actualSize;
     bool _isPeek;
+
+    friend class GrowBuffer;
 };
 
 /** \brief 高效的可增长缓冲区，1.33倍冗余量 */
@@ -557,12 +564,20 @@ class WINUX_DLL GrowBuffer : public Buffer
 public:
     /** \brief 构造函数，初始化缓冲区的大小 */
     explicit GrowBuffer( uint initSize = 0 );
+    GrowBuffer( GrowBuffer const & other );
+    GrowBuffer & operator = ( GrowBuffer const & other );
+    explicit GrowBuffer( Buffer const & other );
+    GrowBuffer & operator = ( Buffer const & other );
 
 #ifndef MOVE_SEMANTICS_DISABLED
     /** \brief 移动构造函数 */
     GrowBuffer( GrowBuffer && other );
     /** \brief 移动赋值操作 */
     GrowBuffer & operator = ( GrowBuffer && other );
+    /** \brief 移动构造函数1 */
+    GrowBuffer( Buffer && other );
+    /** \brief 移动赋值操作1 */
+    GrowBuffer & operator = ( Buffer && other );
 #endif
 
     virtual void free();
@@ -577,6 +592,8 @@ public:
     uint getActualSize() const { return _actualSize; }
 protected:
     uint _dataSize; // 数据的大小
+
+    friend class Buffer;
 };
 
 // 混合体相关 ------------------------------------------------------------------------------
@@ -674,6 +691,7 @@ public:
     Mixed( UnicodeString const & str ); ///< Unicode字符串
     Mixed( char const * str, int len = -1 ); ///< 多字节字符串
     Mixed( wchar const * str, int len = -1 ); ///< Unicode字符串
+
     Mixed( bool boolVal );
     Mixed( byte btVal );
     Mixed( short shVal );
@@ -687,6 +705,7 @@ public:
     Mixed( uint64 ui64Val );
     Mixed( double dblVal );
 
+    Mixed( Buffer const & buf );
     Mixed( void * binaryData, uint size, bool isPeek = false );
 
     // Array构造函数 -----------------------------------------------------------------------
@@ -757,6 +776,13 @@ public:
     Mixed( Mixed && other );
     /** \brief 移动赋值操作 */
     Mixed & operator = ( Mixed && other );
+
+    Mixed( Buffer && buf );
+    void assign( Buffer && buf );
+
+    Mixed( GrowBuffer && buf );
+    void assign( GrowBuffer && buf );
+
 #endif
 
     /** \brief 释放相关资源 */
@@ -773,6 +799,7 @@ public:
     // 类型转换 ----------------------------------------------------------------------------
     operator AnsiString() const;
     operator UnicodeString() const;
+    operator Buffer() const;
     operator bool() const;
     operator byte() const;
     operator short() const;
@@ -785,6 +812,22 @@ public:
     operator int64() const;
     operator uint64() const;
     operator double() const;
+
+    AnsiString toAnsi() const { return this->operator AnsiString(); }
+    UnicodeString toUnicode() const { return this->operator UnicodeString(); }
+    Buffer toBuffer() const { return this->operator Buffer(); }
+    bool toBool() const { return this->operator bool(); }
+    byte toByte() const { return this->operator winux::byte(); }
+    short toShort() const { return this->operator short(); }
+    ushort toUShort() const { return this->operator winux::ushort(); }
+    int toInt() const { return this->operator int(); }
+    uint toUInt() const { return this->operator winux::uint(); }
+    long toLong() const { return this->operator long(); }
+    ulong toULong() const { return this->operator winux::ulong(); }
+    float toFloat() const { return this->operator float(); }
+    int64 toInt64() const { return this->operator winux::int64(); }
+    uint64 toUInt64() const { return this->operator winux::uint64(); }
+    double toDouble() const { return this->operator double(); }
 
     // 比较操作符 --------------------------------------------------------------------------
     bool operator == ( Mixed const & other ) const;
@@ -815,6 +858,8 @@ public:
     Mixed & createArray( uint count = 0 );
     /** \brief 创建一个集合,自动把先前的数据清空,并设置type为MT_COLLECTION */
     Mixed & createCollection();
+    /** \brief 创建一个缓冲区,自动把先前的数据清空,并设置type为MT_BINARY */
+    Mixed & createBuffer( uint size );
 
     // Array/Collection有关的操作 ----------------------------------------------------------
 
@@ -949,6 +994,8 @@ public:
     void assign( int64 i64Val );
     void assign( uint64 ui64Val );
     void assign( double dblVal );
+
+    void assign( Buffer const & buf );
     /** \brief 二进制数据赋值 */
     void assign( void * binaryData, uint size, bool isPeek = false );
     /** \brief 数组赋值 */

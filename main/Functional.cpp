@@ -247,9 +247,23 @@ CString GetExecutablePath()
 
 //Database//////////////////////////////////////////////////////////////////////////
 
-bool RegisterUser( sqlite3 * db, User const & newUser )
+bool RegisterUser( eiendb::Database & db, User const & newUser )
 {
     int rowsChanged = 0;
+
+    auto mdf_am_users = db.mdf("am_users");
+
+    winux::Mixed fields;
+    fields.createCollection();
+
+    winux::AnsiString encPassword = EncryptContent( (LPCSTR)newUser.m_password );
+
+    fields.addPair()
+        ( "name", (LPCSTR)newUser.m_username )
+        ( "pwd", (LPCSTR)newUser.m_password )
+        ;
+
+    mdf_am_users->addNew(fields);
 
     winplus::AnsiString sql = winplus::StringToUtf8("INSERT INTO am_users( name, pwd, protect, condone, cur_condone, unlock_time, hotkey, time ) VALUES( ?, ?, ?, ?, ?, ?, ?, ? );");
     sqlite3_stmt * stmt = NULL;

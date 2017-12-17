@@ -40,15 +40,15 @@
     <OutDir>$(SolutionDir)bin\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)objs\$(Configuration)\</IntDir>
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>..\thirdparties\sqlite3\include;..\thirdparties\winplus\include;$(IncludePath)</IncludePath>
-    <LibraryPath>..\thirdparties\sqlite3\lib;..\thirdparties\winplus\lib\$(Configuration);$(LibraryPath)</LibraryPath>
+    <IncludePath>..\thirdparties\sqlite3\include;..\thirdparties\winplus\include;..\thirdparties\fastdo\include;$(IncludePath)</IncludePath>
+    <LibraryPath>..\thirdparties\sqlite3\lib;..\thirdparties\winplus\lib\$(Configuration);..\thirdparties\fastdo\lib\$(Configuration);$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>$(SolutionDir)bin\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)objs\$(Configuration)\</IntDir>
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>..\thirdparties\sqlite3\include;..\thirdparties\winplus\include;$(IncludePath)</IncludePath>
-    <LibraryPath>..\thirdparties\sqlite3\lib;..\thirdparties\winplus\lib\$(Configuration);$(LibraryPath)</LibraryPath>
+    <IncludePath>..\thirdparties\sqlite3\include;..\thirdparties\winplus\include;..\thirdparties\fastdo\include;$(IncludePath)</IncludePath>
+    <LibraryPath>..\thirdparties\sqlite3\lib;..\thirdparties\winplus\lib\$(Configuration);..\thirdparties\fastdo\lib\$(Configuration);$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -58,7 +58,7 @@
       <Optimization>Disabled</Optimization>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;NOT_EXIST_REGOPERATE_DLL;SQLITE_HAS_CODEC;PSAPI_VERSION=1;WINPLUS_DLL_USE;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NOT_EXIST_REGOPERATE_DLL;SQLITE_HAS_CODEC;PSAPI_VERSION=1;WINPLUS_DLL_USE;WINUX_DLL_USE;EIENDB_DLL_USE;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -78,7 +78,7 @@
       <Optimization>MaxSpeed</Optimization>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;NOT_EXIST_REGOPERATE_DLL;SQLITE_HAS_CODEC;PSAPI_VERSION=1;WINPLUS_DLL_USE;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NOT_EXIST_REGOPERATE_DLL;SQLITE_HAS_CODEC;PSAPI_VERSION=1;WINPLUS_DLL_USE;WINUX_DLL_USE;EIENDB_DLL_USE;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <ResourceCompile>
       <Culture>0x0804</Culture>

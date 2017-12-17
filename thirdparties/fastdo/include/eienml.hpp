@@ -24,8 +24,8 @@
 #define EIENML_FUNC_IMPL(ret) ret EIENML_API
 
 #include "winux.hpp"
-#include "elem-utils.hpp"
-#include "elem-package.hpp"
-#include "elem-parser.hpp"
+#include "elem_utils.hpp"
+#include "elem_package.hpp"
+#include "elem_parser.hpp"
 
 #endif // __EIENML_HPP__

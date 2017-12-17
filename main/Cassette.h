@@ -26,13 +26,17 @@
 #include <afxhtml.h>
 #include <afxtempl.h>
 
+
+#include "winux.hpp"
+#include "eiendb.hpp"
+
+//#include "sqlite3.h"
+
 #include "RegOperate.h"
 
-#include <winplus.hpp>
+#include "winplus.hpp"
 
 using namespace Gdiplus;
-
-#include <sqlite3.h>
 
 // 调试日志支持
 //#define DISABLED_LOG

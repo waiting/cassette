@@ -3,7 +3,7 @@
 #ifndef __EIENDB_COMMON_HPP__
 #define __EIENDB_COMMON_HPP__
 
-#include "eiendb-base.hpp"
+#include "eiendb_base.hpp"
 
 namespace eiendb
 {

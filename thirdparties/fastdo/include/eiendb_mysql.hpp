@@ -1,7 +1,7 @@
 ﻿#ifndef __EIENDB_MYSQL_HPP__
 #define __EIENDB_MYSQL_HPP__
 
-#include "eiendb-base.hpp"
+#include "eiendb_base.hpp"
 
 struct st_mysql;
 struct st_mysql_res;

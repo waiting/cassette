@@ -1,7 +1,7 @@
 ﻿#ifndef __EIENDB_SQLITE_HPP__
 #define __EIENDB_SQLITE_HPP__
 
-#include "eiendb-base.hpp"
+#include "eiendb_base.hpp"
 
 struct sqlite3;
 struct sqlite3_stmt;
