@@ -135,8 +135,8 @@ void AccountTypesDlg::OnListRClick( NMHDR * pNMHDR, LRESULT * pResult )
 void AccountTypesDlg::OnAdd() 
 {
     VERIFY_ONCE_DIALOG(onceEditingDlg);
-    AccountType newType;
-    newType.m_safeRank = 20;
+    winux::Mixed newType;
+    newType.addPair()( "rank", 20 );
 
     AccountTypeEditingDlg editingDlg( GetOwner(), true, &newType );
 
@@ -150,10 +150,14 @@ void AccountTypesDlg::OnAdd()
             // 向list加入一项
             int itemIndex;
             itemIndex = lst.GetItemCount();
-            lst.InsertItem( itemIndex, newType.m_typeName );
+
+            AccountType type;
+            type.assign(newType);
+
+            lst.InsertItem( itemIndex, type.m_typeName );
 
             // 向数组添加一项
-            m_types.Add(newType);
+            m_types.Add(type);
 
             UpdateList( UPDATE_LOAD_DATA | UPDATE_LIST_ITEMS, itemIndex );
             lst.SetItemState( itemIndex, LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED );
@@ -168,9 +172,8 @@ void AccountTypesDlg::OnModify()
     CListCtrl & lst = *(CListCtrl *)GetDlgItem(IDC_LIST_TYPES);
     int index = lst.GetNextItem( -1, LVNI_ALL | LVNI_SELECTED );
     CString typeName = m_types[index].m_typeName;
-    AccountType newType;
-    newType.m_typeName = m_types[index].m_typeName;
-    newType.m_safeRank = m_types[index].m_safeRank;
+    winux::Mixed newType;
+    m_types[index].assignTo(&newType);
 
     AccountTypeEditingDlg editingDlg( GetOwner(), false, &newType );
 
@@ -180,12 +183,12 @@ void AccountTypesDlg::OnModify()
     {
         if ( ModifyAccountType( g_theApp.GetDatabase(), typeName, newType ) )
         {
-            m_types[index] = newType;
+            m_types[index].assign(newType);
 
             UpdateList( UPDATE_LIST_ITEMS, index );
             LVFINDINFO fi;
             fi.flags = LVFI_PARTIAL | LVFI_STRING;
-            fi.psz = newType.m_typeName;
+            typeName = newType["name"].refAnsi().c_str();
             int itemIndex = lst.FindItem(&fi);
             lst.SetItemState( itemIndex, LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED );
             GetOwner()->PostMessage( WM_UPDATELIST_ALL, MainFrame::UpdateList_Main | MainFrame::UpdateList_CatesDlg );

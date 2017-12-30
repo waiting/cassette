@@ -12,14 +12,17 @@ static char THIS_FILE[] = __FILE__;
 /////////////////////////////////////////////////////////////////////////////
 // UserSettingsDlg dialog
 
-UserSettingsDlg::UserSettingsDlg( CWnd * parent, User * user )
-: Dialog( UserSettingsDlg::IDD, parent ), m_user(user)
+UserSettingsDlg::UserSettingsDlg( CWnd * parent, winux::Mixed * userFields ) :
+    Dialog( UserSettingsDlg::IDD, parent ),
+    m_userFields(*userFields)
 {
     //{{AFX_DATA_INIT(UserSettingsDlg)
     m_oldPassword = _T("");
     m_newPassword = _T("");
     m_cfmPassword = _T("");
     //}}AFX_DATA_INIT
+
+    m_userFields.createCollection();
 }
 
 void UserSettingsDlg::DoDataExchange( CDataExchange * pDX )
@@ -30,9 +33,21 @@ void UserSettingsDlg::DoDataExchange( CDataExchange * pDX )
     DDX_Text(pDX, IDC_EDIT_NEWPWD, m_newPassword);
     DDX_Text(pDX, IDC_EDIT_CFMPWD, m_cfmPassword);
     //}}AFX_DATA_MAP
-    DDX_Text( pDX, IDC_EDIT_USERNAME, m_user->m_username );
-    DDX_CBIndex( pDX, IDC_COMBO_PROTECTLEVEL, m_user->m_protectLevel );
-    DDX_Text( pDX, IDC_EDIT_CONDONE, m_user->m_condone );
+
+    CString username;
+    int protectLevel, condone;
+
+    username = m_userFields["name"].toAnsi().c_str();
+    protectLevel = m_userFields["protect"];
+    condone = m_userFields["condone"];
+
+    DDX_Text( pDX, IDC_EDIT_USERNAME, username );
+    DDX_CBIndex( pDX, IDC_COMBO_PROTECTLEVEL, protectLevel );
+    DDX_Text( pDX, IDC_EDIT_CONDONE, condone );
+
+    m_userFields["name"] = (LPCTSTR)username;
+    m_userFields["protect"] = protectLevel;
+    m_userFields["condone"] = condone;
 }
 
 BEGIN_MESSAGE_MAP(UserSettingsDlg, Dialog)
@@ -63,9 +78,9 @@ BOOL UserSettingsDlg::OnInitDialog()
     // 设置热键值
     CHotKeyCtrl * pHkCtrl = (CHotKeyCtrl *)this->GetDlgItem(IDC_HOTKEY_CUSTOM);
     WORD m, vk;
-    m = HIWORD(m_user->m_hotkey);
+    m = HIWORD(m_userFields["hotkey"]);
     m = winplus::MOD_to_HOTKEYF(m);
-    vk = LOWORD(m_user->m_hotkey);
+    vk = LOWORD(m_userFields["hotkey"]);
     pHkCtrl->SetHotKey( vk, m );
 
     return TRUE;
@@ -79,7 +94,7 @@ void UserSettingsDlg::OnOK()
     WORD m, vk;
     pHkCtrl->GetHotKey( vk, m );
     m = winplus::HOTKEYF_to_MOD(m);
-    m_user->m_hotkey = MAKELONG( vk, m );
+    m_userFields["hotkey"] = MAKELONG( vk, m );
     // 密码处理
     if ( this->IsModifyPassword() ) // 确实修改密码
     {
@@ -94,7 +109,7 @@ void UserSettingsDlg::OnOK()
             WarningError( _T("确认密码不一样!"), _T("错误") );
             return;
         }
-        m_user->m_password = m_newPassword;
+        m_userFields["pwd"] = EncryptContent( (LPCTSTR)m_newPassword );
     }
 
     this->EndDialog(IDOK);

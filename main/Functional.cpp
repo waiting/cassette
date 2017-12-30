@@ -1,6 +1,6 @@
-///////////////////////////////////////////////////////////////////////////
+ï»¿///////////////////////////////////////////////////////////////////////////
 // Name:         Functional.cpp
-// Purpos:       ³ÌĞòËùÓĞµÄ¹¦ÄÜ²Ù×÷
+// Purpos:       ç¨‹åºæ‰€æœ‰çš„åŠŸèƒ½æ“ä½œ
 ///////////////////////////////////////////////////////////////////////////
 #include "Cassette.h"
 #include "CassetteApp.h"
@@ -208,21 +208,21 @@ int raw_decrypt( unsigned char const * encrypt_data, int data_size, unsigned cha
     
 }
 
-winplus::AnsiString EncryptContent( winplus::AnsiString const & content )
+winux::Buffer EncryptContent( winplus::AnsiString const & content )
 {
-    winplus::AnsiString res(content);
+    winux::Buffer res( (void*)content.c_str(), content.size() );
     int outSize = 0;
-    if ( res.size() > 0 )
-        raw_encrypt( (unsigned char *)content.c_str(), content.size(), (unsigned char *)&res[0], res.size(), &outSize );
+    if ( res.getSize() > 0 )
+        raw_encrypt( (unsigned char *)content.c_str(), content.size(), (unsigned char *)res.getBuf(), res.getSize(), &outSize );
     return res;
 }
 
-winplus::AnsiString DecryptContent( winplus::AnsiString const & encryptContent )
+winplus::AnsiString DecryptContent( winux::Buffer const & encryptContent )
 {
-    winplus::AnsiString res(encryptContent);
+    winplus::AnsiString res( (char const*)encryptContent.getBuf(), encryptContent.getSize() );
     int outSize = 0;
     if ( res.size() > 0 )
-        raw_decrypt( (unsigned char *)encryptContent.c_str(), encryptContent.size(), (unsigned char *)&res[0], res.size(), &outSize );
+        raw_decrypt( (unsigned char *)encryptContent.getBuf(), encryptContent.getSize(), (unsigned char *)&res[0], res.size(), &outSize );
     return res;
 }
 
@@ -230,7 +230,7 @@ winplus::String ExplainCustomVars( winplus::String const & str )
 {
     winplus::String vars[] = {
         TEXT("$ROOT$"),
-            TEXT("$CURRENT$")
+        TEXT("$CURRENT$")
     };
     winplus::String vals[] = {
         winplus::ModulePath(),
@@ -249,1765 +249,905 @@ CString GetExecutablePath()
 
 bool RegisterUser( eiendb::Database & db, User const & newUser )
 {
-    int rowsChanged = 0;
-
-    auto mdf_am_users = db.mdf("am_users");
+    winux::Mixed encPassword = EncryptContent( (LPCTSTR)newUser.m_password );
 
     winux::Mixed fields;
-    fields.createCollection();
-
-    winux::AnsiString encPassword = EncryptContent( (LPCSTR)newUser.m_password );
-
     fields.addPair()
-        ( "name", (LPCSTR)newUser.m_username )
-        ( "pwd", (LPCSTR)newUser.m_password )
+        ( "name", (LPCTSTR)newUser.m_username )
+        ( "pwd", encPassword )
+        ( "protect", newUser.m_protectLevel )
+        ( "condone", 3 )
+        ( "cur_condone", 3 )
+        ( "unlock_time", winux::GetUtcTime() )
+        ( "hotkey", newUser.m_hotkey )
+        ( "time", winux::GetUtcTime() )
         ;
 
-    mdf_am_users->addNew(fields);
-
-    winplus::AnsiString sql = winplus::StringToUtf8("INSERT INTO am_users( name, pwd, protect, condone, cur_condone, unlock_time, hotkey, time ) VALUES( ?, ?, ?, ?, ?, ?, ?, ? );");
-    sqlite3_stmt * stmt = NULL;
-    int rc;
-    const char * localError;
-
-    // ×¼±¸Óï¾ä
-    rc = sqlite3_prepare_v2( db, sql.c_str(), sql.size(), &stmt, NULL );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // °ó¶¨²ÎÊı
-    // ÓÃ»§Ãû
-    rc = newUser.bindUsername( stmt, 1 );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-    // ÃÜÂë
-    rc = newUser.bindPassword( stmt, 2 );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-    // ±£»¤¼¶±ğ
-    rc = newUser.bindProtectLevel( stmt, 3 );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-    // Èİ´íÊı
-    rc = newUser._bindInt( stmt, 4, 3 );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-    // µ±Ç°Ê£ÓàÈİ´íÊı
-    rc = newUser._bindInt( stmt, 5, 3 );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-    // ½âËøÊ±¿Ì
-    rc = newUser._bindInt( stmt, 6, (int)winplus::GetUtcTime() );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-    // ÈÈ¼ü
-    rc = newUser.bindHotkey( stmt, 7 );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-    // ×¢²áÊ±¿Ì
-    rc = newUser._bindInt( stmt, 8, (int)winplus::GetUtcTime() );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // Ö´ĞĞÓï¾ä
-    rc = sqlite3_step(stmt);
-    if ( rc == SQLITE_DONE )
+    try
     {
-        rowsChanged = sqlite3_changes(db);
-        rc = sqlite3_reset(stmt);
-        if ( rc != SQLITE_OK )
-        {
-            goto OccurDbError;
-        }
+        auto mdf = db.mdf("am_users");
+        return mdf->addNew(fields);
     }
-    else
+    catch ( winux::Error const & e )
     {
-        rc = sqlite3_reset(stmt);
-        goto OccurDbError;
+        AfxGetMainWnd()->FatalError( e.what(), _T("æ•°æ®åº“é”™è¯¯") );
     }
-
-    // Õı³£ÎŞ´íÎó½áÊø
-    if ( stmt )
-        sqlite3_finalize(stmt);
-    return rowsChanged == 1;
-
-OccurDbError: // ³ö´í´¦Àí
-    localError = sqlite3_errmsg(db);
-    if ( stmt )
-        sqlite3_finalize(stmt);
-    AfxGetMainWnd()->FatalError( winplus::Utf8ToString(localError).c_str(), _T("Êı¾İ¿â´íÎó") );
     return false;
 }
 
-bool LoginUser( sqlite3 * db, CString const & username, CString const & password, User * userData )
+bool LoginUser( eiendb::Database & db, CString const & username, CString const & password, User * userData )
 {
-    User tmpUserInfo;
-
     bool ret = false;
 
-    winplus::AnsiString sql = winplus::StringToUtf8("SELECT * FROM am_users WHERE name = ?;");
-    sqlite3_stmt * stmt = NULL;
-    int rc;
-    const char * localError;
-
-    // ×¼±¸Óï¾ä
-    rc = sqlite3_prepare_v2( db, sql.c_str(), sql.size(), &stmt, NULL );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-    // °ó¶¨²ÎÊı
-    // ÓÃ»§Ãû
-    rc = Fields::_bindString( stmt, 1, username );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // Ö´ĞĞÓï¾ä
-    rc = sqlite3_step(stmt);
-    if ( rc == SQLITE_ROW )
+    try
     {
-        // ÅĞ¶ÏÓÃ»§ÊÇ·ñ´¦ÓÚËø¶¨Ê±¼äÖĞ
-        tmpUserInfo.loadUnlockTime( stmt, FieldIndex(am_users__unlock_time) );
-        int nowTime = (int)winplus::GetUtcTime();
+        User tmpUserInfo;
 
-        tmpUserInfo.loadCondone( stmt, FieldIndex(am_users__condone) );
-        tmpUserInfo.loadCurCondone( stmt, FieldIndex(am_users__cur_condone) );
-
-        if ( nowTime < tmpUserInfo.m_unlockTime ) // µ±Ç°Ê±¿ÌĞ¡ÓÚËø¶¨Ê±¿ÌËµÃ÷´¦ÓÚËø¶¨ÖĞ
+        auto resUser = db->query( db->buildStmt("SELECT * FROM am_users WHERE name = ?;", (LPCTSTR)username ) );
+        winux::StringMixedMap userFields;
+        if( resUser->fetchRow(&userFields) ) // æ‰¾åˆ°è¿™ä¸ªç”¨æˆ·
         {
-            int hours = ( tmpUserInfo.m_unlockTime - nowTime ) / 3600;
-            int minutes = ( ( tmpUserInfo.m_unlockTime - nowTime ) - hours * 3600 ) / 60;
-            int seconds = ( tmpUserInfo.m_unlockTime - nowTime ) - hours * 3600 - minutes * 60;
-            AfxGetMainWnd()->WarningError( winplus::Format( _T("ÓÃ»§Ëø¶¨ÖĞ£¬½âËø»¹ĞèÒª%dĞ¡Ê±%d·Ö%dÃë"), hours, minutes, seconds ).c_str(), _T("´íÎó") );
+            int nowTime = (int)winux::GetUtcTime();
+
+            tmpUserInfo.m_unlockTime = userFields["unlock_time"];
+            tmpUserInfo.m_condone = userFields["condone"];
+            tmpUserInfo.m_curCondone = userFields["cur_condone"];
+
+            if ( nowTime < tmpUserInfo.m_unlockTime ) // å½“å‰æ—¶åˆ»å°äºé”å®šæ—¶åˆ»è¯´æ˜å¤„äºé”å®šä¸­
+            {
+                int hours = ( tmpUserInfo.m_unlockTime - nowTime ) / 3600;
+                int minutes = ( ( tmpUserInfo.m_unlockTime - nowTime ) - hours * 3600 ) / 60;
+                int seconds = ( tmpUserInfo.m_unlockTime - nowTime ) - hours * 3600 - minutes * 60;
+                AfxGetMainWnd()->WarningError( winplus::Format( _T("ç”¨æˆ·é”å®šä¸­ï¼Œè§£é”è¿˜éœ€è¦%då°æ—¶%dåˆ†%dç§’"), hours, minutes, seconds ).c_str(), _T("é”™è¯¯") );
+                ret = false;
+                goto ExitProc;
+            }
+            else
+            {
+                if ( tmpUserInfo.m_curCondone < 1 ) // è¡¨ç¤ºè¿™æ˜¯åˆšä»é”å®šçŠ¶æ€æ¢å¤,é‡ç½®cur_condone=condone
+                {
+                    tmpUserInfo.m_curCondone = tmpUserInfo.m_condone;
+                    ModifyUserEx( db, username, winux::Mixed().addPair()( "cur_condone", tmpUserInfo.m_curCondone ) );
+                }
+            }
+
+            // éªŒè¯å¯†ç 
+            tmpUserInfo.m_password = DecryptContent( userFields["pwd"].toBuffer() ).c_str();
+            if ( tmpUserInfo.m_password != password )
+            {
+                // å‡å°‘å½“å‰å®¹é”™æ¬¡æ•°
+                tmpUserInfo.m_curCondone--;
+                ModifyUserEx( db, username, winux::Mixed().addPair()( "cur_condone", tmpUserInfo.m_curCondone ) );
+
+                AfxGetMainWnd()->WarningError( winplus::Format( _T("å¯†ç ä¸æ­£ç¡®ï¼Œä½ è¿˜å‰©%dæ¬¡æœºä¼š"), tmpUserInfo.m_curCondone ).c_str(), _T("é”™è¯¯") );
+
+                if ( tmpUserInfo.m_curCondone < 1 ) // æ²¡æœ‰å®¹é”™æ•°,é”å®šç”¨æˆ·
+                {
+                    int lockTime = 3600 * 3;
+                    tmpUserInfo.m_unlockTime = winux::GetUtcTime() + lockTime;
+                    ModifyUserEx( db, username, winux::Mixed().addPair()( "unlock_time", tmpUserInfo.m_unlockTime ) );
+                }
+                ret = false;
+                goto ExitProc;
+            }
+            // ç™»å½•éªŒè¯æˆåŠŸ,é‡ç½®cur_condone=condone
+            tmpUserInfo.m_curCondone = tmpUserInfo.m_condone;
+            ModifyUserEx( db, username, winux::Mixed().addPair()( "cur_condone", tmpUserInfo.m_curCondone ) );
+
+            if ( userData != NULL )
+            {
+                userData->m_id = userFields["id"];
+                userData->m_username = userFields["name"].toAnsi().c_str();
+                userData->m_protectLevel = userFields["protect"];
+                userData->m_condone = userFields["condone"];
+                userData->m_curCondone = userFields["cur_condone"];
+                userData->m_unlockTime = userFields["unlock_time"];
+                userData->m_hotkey = userFields["hotkey"];
+                userData->m_regTime = userFields["time"];
+            }
+            ret = true;
+            goto ExitProc;
+        }
+        else //æ²¡æœ‰æŒ‡å®šåç§°çš„ç”¨æˆ·
+        {
+            AfxGetMainWnd()->WarningError( _T("æ²¡æœ‰æ­¤ç”¨æˆ·"), _T("é”™è¯¯") );
             ret = false;
             goto ExitProc;
+        }
+    }
+    catch ( winux::Error const & e )
+    {
+        AfxGetMainWnd()->FatalError( e.what(), _T("æ•°æ®åº“é”™è¯¯") );
+    }
+
+ExitProc:
+    return ret;
+}
+
+bool LoadUser( eiendb::Database & db, CString const & username, User * userData )
+{
+    bool ret = false;
+    try
+    {
+        auto resUser = db->query( db->buildStmt("SELECT * FROM am_users WHERE name = ?;", (LPCTSTR)username ) );
+        winux::StringMixedMap userFields;
+        if( resUser->fetchRow(&userFields) ) // æ‰¾åˆ°è¿™ä¸ªç”¨æˆ·
+        {
+            if ( userData != NULL )
+            {
+                userData->m_id = userFields["id"];
+                userData->m_username = userFields["name"].toAnsi().c_str();
+                userData->m_protectLevel = userFields["protect"];
+                userData->m_condone = userFields["condone"];
+                userData->m_curCondone = userFields["cur_condone"];
+                userData->m_unlockTime = userFields["unlock_time"];
+                userData->m_hotkey = userFields["hotkey"];
+                userData->m_regTime = userFields["time"];
+            }
+            ret = true;
         }
         else
         {
-            if ( tmpUserInfo.m_curCondone < 1 ) // ±íÊ¾ÕâÊÇ¸Õ´ÓËø¶¨×´Ì¬»Ö¸´,ÖØÖÃcur_condone=condone
-            {
-                tmpUserInfo.m_curCondone = tmpUserInfo.m_condone;
-                ModifyUserEx( db, username, am_users__cur_condone, tmpUserInfo );
-            }
-        }
-
-        // ÑéÖ¤ÃÜÂë
-        tmpUserInfo.loadPassword( stmt, FieldIndex(am_users__pwd) );
-        if ( tmpUserInfo.m_password != password )
-        {
-            // ¼õÉÙµ±Ç°Èİ´í´ÎÊı
-            tmpUserInfo.m_curCondone--;
-            ModifyUserEx( db, username, am_users__cur_condone, tmpUserInfo );
-
-            AfxGetMainWnd()->WarningError( winplus::Format( _T("ÃÜÂë²»ÕıÈ·£¬Äã»¹Ê£%d´Î»ú»á"), tmpUserInfo.m_curCondone ).c_str(), _T("´íÎó") );
-
-            if ( tmpUserInfo.m_curCondone < 1 ) // Ã»ÓĞÈİ´íÊı,Ëø¶¨ÓÃ»§
-            {
-                int lockTime = 3600 * 3;
-                tmpUserInfo.m_unlockTime = winplus::GetUtcTime() + lockTime;
-                ModifyUserEx( db, username, am_users__unlock_time, tmpUserInfo );
-            }
+            //AfxGetMainWnd()->WarningError( _T("æ²¡æœ‰æ­¤ç”¨æˆ·"), _T("é”™è¯¯") );
             ret = false;
-            goto ExitProc;
         }
-        // µÇÂ¼ÑéÖ¤³É¹¦,ÖØÖÃcur_condone=condone
-        tmpUserInfo.m_curCondone = tmpUserInfo.m_condone;
-        ModifyUserEx( db, username, am_users__cur_condone, tmpUserInfo );
-
-        if ( userData != NULL )
-        {
-            userData->loadId( stmt, 0 );
-            userData->loadUsername( stmt, 1 );
-            userData->loadProtectLevel( stmt, 3 );
-            userData->loadCondone( stmt, 4 );
-            userData->loadCurCondone( stmt, 5 );
-            userData->loadUnlockTime( stmt, 6 );
-            userData->loadHotkey( stmt, 7 );
-            userData->loadRegTime( stmt, 8 );
-        }
-        ret = true;
-        goto ExitProc;
     }
-    else if ( rc == SQLITE_DONE ) // Ã»ÓĞÕÒµ½ÓÃ»§
+    catch ( winux::Error const & e )
     {
-        AfxGetMainWnd()->WarningError( _T("Ã»ÓĞ´ËÓÃ»§"), _T("´íÎó") );
-        ret = false;
-        goto ExitProc;
-    }
-    else
-    {
-        sqlite3_reset(stmt);
-        goto OccurDbError;
+        AfxGetMainWnd()->FatalError( e.what(), _T("æ•°æ®åº“é”™è¯¯") ); //*/
     }
 
-ExitProc:
-    // ÎŞÓ²ĞÔ´íÎóµÄ½áÊø
-    sqlite3_reset(stmt);
-    if ( stmt )
-        sqlite3_finalize(stmt);
     return ret;
+}
 
-OccurDbError: // ³ö´í´¦Àí
-    localError = sqlite3_errmsg(db);
-    if ( stmt )
-        sqlite3_finalize(stmt);
-    AfxGetMainWnd()->FatalError( winplus::Utf8ToString(localError).c_str(), _T("Êı¾İ¿â´íÎó") );
+bool DeleteUser( eiendb::Database & db, CString const & username )
+{
+    try
+    {
+        auto mdf = db.mdf("am_users");
+        return mdf->deleteEx( "name=" + db->escape( (LPCTSTR)username ) );
+    }
+    catch ( winux::Error const & e )
+    {
+        AfxGetMainWnd()->FatalError( e.what(), _T("æ•°æ®åº“é”™è¯¯") ); //*/
+    }
     return false;
 }
 
-bool LoadUser( sqlite3 * db, CString const & username, User * userData )
+bool VerifyUserPassword( eiendb::Database & db, CString const & username, CString const & password )
 {
-    bool ret = false;
-
-    winplus::AnsiString sql = winplus::StringToUtf8("SELECT * FROM am_users WHERE name = ?;");
-    sqlite3_stmt * stmt = NULL;
-    int rc;
-    const char * localError;
-    
-    // ×¼±¸Óï¾ä
-    rc = sqlite3_prepare_v2( db, sql.c_str(), sql.size(), &stmt, NULL );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-    // °ó¶¨²ÎÊı
-    // ÓÃ»§Ãû
-    rc = Fields::_bindString( stmt, 1, username );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // Ö´ĞĞÓï¾ä
-    rc = sqlite3_step(stmt);
-    if ( rc == SQLITE_ROW )
+    try
     {
-        if ( userData != NULL )
+        winux::Buffer encPassword = EncryptContent( (LPCTSTR)password );
+        auto res = db->query( db->buildStmt("SELECT pwd = ? FROM am_users WHERE name = ?;", winux::Mixed().add()(encPassword)((LPCTSTR)username) ) );
+        winux::MixedArray f;
+        if ( res->fetchRow(&f) )
         {
-            userData->loadId( stmt, 0 );
-            userData->loadUsername( stmt, 1 );
-            userData->loadProtectLevel( stmt, 3 );
-            userData->loadCondone( stmt, 4 );
-            userData->loadCurCondone( stmt, 5 );
-            userData->loadUnlockTime( stmt, 6 );
-            userData->loadHotkey( stmt, 7 );
-            userData->loadRegTime( stmt, 8 );
-        }
-        ret = true;
-        goto ExitProc;
-    }
-    else if ( rc == SQLITE_DONE ) // Ã»ÓĞÕÒµ½ÓÃ»§
-    {
-        ret = false;
-        goto ExitProc;
-    }
-    else
-    {
-        sqlite3_reset(stmt);
-        goto OccurDbError;
-    }
-    
-ExitProc:
-    // Õı³£ÎŞ´íÎó½áÊø
-    sqlite3_reset(stmt);
-    if ( stmt )
-        sqlite3_finalize(stmt);
-    return ret;
-
-OccurDbError: // ³ö´í´¦Àí
-    localError = sqlite3_errmsg(db);
-    if ( stmt )
-        sqlite3_finalize(stmt);
-    AfxGetMainWnd()->FatalError( winplus::Utf8ToString(localError).c_str(), _T("Êı¾İ¿â´íÎó") );
-    return false;
-}
-
-bool DeleteUser( sqlite3 * db, CString const & username )
-{
-    int rowsChanged = 0;
-
-    winplus::AnsiString sql = winplus::StringToUtf8("DELETE FROM am_users WHERE name = ?;");
-    sqlite3_stmt * stmt = NULL;
-    int rc;
-    const char * localError;
-
-    // ×¼±¸Óï¾ä
-    rc = sqlite3_prepare_v2( db, sql.c_str(), sql.size(), &stmt, NULL );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-    // °ó¶¨²ÎÊı
-    // ÓÃ»§Ãû
-    rc = Fields::_bindString( stmt, 1, username );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // Ö´ĞĞÓï¾ä
-    rc = sqlite3_step(stmt);
-    if ( rc == SQLITE_DONE )
-    {
-        rowsChanged = sqlite3_changes(db);
-        rc = sqlite3_reset(stmt);
-        if ( rc != SQLITE_OK )
-        {
-            goto OccurDbError;
+            return f[0].toBool();
         }
     }
-    else
+    catch ( winux::Error const & e )
     {
-        sqlite3_reset(stmt);
-        goto OccurDbError;
+        AfxGetMainWnd()->FatalError( e.what(), _T("æ•°æ®åº“é”™è¯¯") ); //*/
     }
-    
-    // Õı³£ÎŞ´íÎó½áÊø
-    if ( stmt )
-        sqlite3_finalize(stmt);
-    return rowsChanged == 1;
-    
-OccurDbError: // ³ö´í´¦Àí
-    localError = sqlite3_errmsg(db);
-    if ( stmt )
-        sqlite3_finalize(stmt);
-    AfxGetMainWnd()->FatalError( winplus::Utf8ToString(localError).c_str(), _T("Êı¾İ¿â´íÎó") );
     return false;
 }
 
-bool VerifyUserPassword( sqlite3 * db, CString const & username, CString const & password )
+bool ModifyUserEx( eiendb::Database & db, CString const & username, winux::Mixed const & userFields )
 {
-    winplus::AnsiString encryptPassword;
-    bool ret = false;
-
-    winplus::AnsiString sql = winplus::StringToUtf8("SELECT pwd = ? FROM am_users WHERE name = ?;");
-    sqlite3_stmt * stmt = NULL;
-    int rc;
-    const char * localError;
-
-    // ×¼±¸Óï¾ä
-    rc = sqlite3_prepare_v2( db, sql.c_str(), sql.size(), &stmt, NULL );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-    // °ó¶¨²ÎÊı
-    // ÓÃ»§Ãû
-    rc = Fields::_bindString( stmt, 2, username );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-    // ÃÜÂë
-    encryptPassword = EncryptContent( winplus::StringToUtf8( (LPCTSTR)password ) );
-    rc = Fields::_bindBlob( stmt, 1, encryptPassword.c_str(), encryptPassword.size() );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // Ö´ĞĞÓï¾ä
-    rc = sqlite3_step(stmt);
-    if ( rc == SQLITE_ROW )
+    try
     {
-        ret = Fields::_getInt( stmt, 0 ) != 0;
-        goto ExitProc;
+        auto mdf = db.mdf("am_users");
+        return mdf->modifyEx( userFields, "name=" + db->escape( (LPCTSTR)username ) );
     }
-    else if ( rc == SQLITE_DONE ) // Ã»ÓĞÕÒµ½ºÏÊÊµÄÓÃ»§
+    catch ( winux::Error const & e )
     {
-        ret = false;
-        goto ExitProc;
+        AfxGetMainWnd()->FatalError( e.what(), _T("æ•°æ®åº“é”™è¯¯") );
     }
-    else
-    {
-        sqlite3_reset(stmt);
-        goto OccurDbError;
-    }
-    
-ExitProc:
-    // Õı³£ÎŞ´íÎó½áÊø
-    sqlite3_reset(stmt);
-    if ( stmt )
-        sqlite3_finalize(stmt);
-    return ret;
-    
-OccurDbError: // ³ö´í´¦Àí
-    localError = sqlite3_errmsg(db);
-    if ( stmt )
-        sqlite3_finalize(stmt);
-    AfxGetMainWnd()->FatalError( winplus::Utf8ToString(localError).c_str(), _T("Êı¾İ¿â´íÎó") );
     return false;
 }
 
-bool ModifyUserEx( sqlite3 * db, CString const & username, UINT modifiedFieldBits, User const & newUser )
+// struct AccountType ---------------------------------------------------------------------
+void AccountType::assignTo( winux::Mixed * accountTypeMixed, CString const & fieldNames )
 {
-    int rowsChanged = 0;
-    int paramIndex = 0;
-    // Éú³ÉSQL
-    winplus::AnsiStringArray modifiedFields;
-    if ( modifiedFieldBits & am_users__id )
-        modifiedFields.push_back("id = ?");
-    if ( modifiedFieldBits & am_users__name )
-        modifiedFields.push_back("name = ?");
-    if ( modifiedFieldBits & am_users__pwd )
-        modifiedFields.push_back("pwd = ?");
-    if ( modifiedFieldBits & am_users__protect )
-        modifiedFields.push_back("protect = ?");
-    if ( modifiedFieldBits & am_users__condone )
-        modifiedFields.push_back("condone = ?");
-    if ( modifiedFieldBits & am_users__cur_condone )
-        modifiedFields.push_back("cur_condone = ?");
-    if ( modifiedFieldBits & am_users__unlock_time )
-        modifiedFields.push_back("unlock_time = ?");
-    if ( modifiedFieldBits & am_users__hotkey )
-        modifiedFields.push_back("hotkey = ?");
-    if ( modifiedFieldBits & am_users__time )
-        modifiedFields.push_back("time = ?");
-
-    winplus::AnsiString sql = winplus::StringToUtf8(
-        "UPDATE am_users SET " + winplus::StrJoin( ", ", modifiedFields ) + " WHERE name = ?;"
-    );
-    sqlite3_stmt * stmt = NULL;
-    int rc;
-    const char * localError;
-
-    // ×¼±¸Óï¾ä
-    rc = sqlite3_prepare_v2( db, sql.c_str(), sql.size(), &stmt, NULL );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // °ó¶¨²ÎÊı
-
-    // ĞÂID
-    if ( modifiedFieldBits & am_users__id )
+    winux::StringArray fnames;
+    winux::StrSplit( (LPCTSTR)fieldNames, ",", &fnames );
+    if ( !accountTypeMixed->isCollection() )
+        accountTypeMixed->createCollection();
+    for ( auto it = fnames.begin(); it != fnames.end(); ++it )
     {
-        rc = newUser.bindId( stmt, ++paramIndex );
-        if ( rc != SQLITE_OK ) goto OccurDbError;
-    }
-
-    // ĞÂÓÃ»§Ãû
-    if ( modifiedFieldBits & am_users__name )
-    {
-        rc = newUser.bindUsername( stmt, ++paramIndex );
-        if ( rc != SQLITE_OK ) goto OccurDbError;
-    }
-    
-    // ĞÂÃÜÂë
-    if ( modifiedFieldBits & am_users__pwd )
-    {
-        rc = newUser.bindPassword( stmt, ++paramIndex );
-        if ( rc != SQLITE_OK ) goto OccurDbError;
-    }
-
-    // ĞÂ±£»¤¼¶±ğ
-    if ( modifiedFieldBits & am_users__protect )
-    {
-        rc = newUser.bindProtectLevel( stmt, ++paramIndex );
-        if ( rc != SQLITE_OK ) goto OccurDbError;
-    }
-    
-    // ĞÂÈİ´íÊı
-    if ( modifiedFieldBits & am_users__condone )
-    {
-        rc = newUser.bindCondone( stmt, ++paramIndex );
-        if ( rc != SQLITE_OK ) goto OccurDbError;
-    }
-    
-    // ĞÂµ±Ç°Èİ´íÊı
-    if ( modifiedFieldBits & am_users__cur_condone )
-    {
-        rc = newUser.bindCurCondone( stmt, ++paramIndex );
-        if ( rc != SQLITE_OK ) goto OccurDbError;
-    }
-
-    // ĞÂ½âËøÊ±¿Ì
-    if ( modifiedFieldBits & am_users__unlock_time )
-    {
-        rc = newUser.bindUnlockTime( stmt, ++paramIndex );
-        if ( rc != SQLITE_OK ) goto OccurDbError;
-    }
-
-    // ĞÂÈÈ¼ü
-    if ( modifiedFieldBits & am_users__hotkey )
-    {
-        rc = newUser.bindHotkey( stmt, ++paramIndex );
-        if ( rc != SQLITE_OK ) goto OccurDbError;
-    }
-
-    // ĞÂÂ¼ÈëÊ±¿Ì
-    if ( modifiedFieldBits & am_users__time )
-    {
-        rc = newUser.bindRegTime( stmt, ++paramIndex );
-        if ( rc != SQLITE_OK ) goto OccurDbError;
-    }
-
-    // where×Ó¾ä
-    // ÓÃ»§Ãû
-    rc = Fields::_bindString( stmt, ++paramIndex, username );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // Ö´ĞĞÓï¾ä
-    rc = sqlite3_step(stmt);
-    if ( rc == SQLITE_DONE )
-    {
-        rowsChanged = sqlite3_changes(db);
-        rc = sqlite3_reset(stmt);
-        if ( rc != SQLITE_OK )
+        if ( *it == "name" )
         {
-            goto OccurDbError;
+            (*accountTypeMixed)[*it] = (LPCTSTR)m_typeName;
+        }
+        else if ( *it == "rank" )
+        {
+            (*accountTypeMixed)[*it] = m_safeRank;
         }
     }
-    else
-    {
-        sqlite3_reset(stmt);
-        goto OccurDbError;
-    }
-
-    // ÎŞÓ²ĞÔ´íÎóµÄ½áÊø
-    if ( stmt )
-        sqlite3_finalize(stmt);
-    return rowsChanged == 1;
-    
-OccurDbError: // ³ö´í´¦Àí
-    localError = sqlite3_errmsg(db);
-    if ( stmt )
-        sqlite3_finalize(stmt);
-    AfxGetMainWnd()->FatalError( winplus::Utf8ToString(localError).c_str(), _T("Êı¾İ¿â´íÎó") );
-    return false;
 }
 
-int LoadAccountTypes( sqlite3 * db, AccountTypeArray * types )
+void AccountType::assign( winux::Mixed const & accountTypeMixed )
+{
+    int n = accountTypeMixed.getCount();
+    for ( int i = 0; i < n; ++i )
+    {
+        auto & pr = accountTypeMixed.getPair(i);
+        winux::String const & keyname = pr.first.refAnsi();
+        if ( keyname == "name" )
+        {
+            m_typeName = pr.second.refAnsi().c_str();
+        }
+        else if ( keyname == "rank" )
+        {
+            m_safeRank = pr.second;
+        }
+    }
+}
+
+int LoadAccountTypes( eiendb::Database & db, AccountTypeArray * types )
 {
     int count = 0;
     IfPTR(types)->RemoveAll();
-
-    winplus::AnsiString sql = winplus::StringToUtf8("SELECT * FROM am_account_types ORDER BY rank;");
-    sqlite3_stmt * stmt = NULL;
-    int rc;
-    const char * localError;
-    
-    // ×¼±¸Óï¾ä
-    rc = sqlite3_prepare_v2( db, sql.c_str(), sql.size(), &stmt, NULL );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // Ö´ĞĞÓï¾ä
-    while ( ( rc = sqlite3_step(stmt) ) == SQLITE_ROW )
+    try
     {
-        AccountType t;
-        t.loadTypeName( stmt, 0 );
-        t.loadSafeRank( stmt, 1 );
-        IfPTR(types)->Add(t);
-        count++;
+        auto resAccountTypes = db->query("SELECT * FROM am_account_types ORDER BY rank;");
+        winux::MixedArray f;
+        while ( resAccountTypes->fetchRow(&f) )
+        {
+            AccountType t;
+            t.m_typeName = f[0].toAnsi().c_str();
+            t.m_safeRank = f[1];
+            IfPTR(types)->Add(t);
+            count++;
+        }
     }
-    
-    if ( rc == SQLITE_DONE ) // Êı¾İÒÑÍê»òÃ»ÓĞÊı¾İ
+    catch ( winux::Error const & e )
     {
-        goto ExitProc;
+        AfxGetMainWnd()->FatalError( e.what(), _T("æ•°æ®åº“é”™è¯¯") );
     }
-    else
-    {
-        sqlite3_reset(stmt);
-        goto OccurDbError;
-    }
-    
-ExitProc:
-    // Õı³£ÎŞ´íÎó½áÊø
-    sqlite3_reset(stmt);
-    if ( stmt )
-        sqlite3_finalize(stmt);
     return count;
-
-OccurDbError: // ³ö´í´¦Àí
-    localError = sqlite3_errmsg(db);
-    if ( stmt )
-        sqlite3_finalize(stmt);
-    AfxGetMainWnd()->FatalError( winplus::Utf8ToString(localError).c_str(), _T("Êı¾İ¿â´íÎó") );
-    return 0;
 }
 
-bool GetAccountType( sqlite3 * db, CString const & typeName, AccountType * type )
+bool GetAccountType( eiendb::Database & db, CString const & typeName, AccountType * type )
 {
     bool ret = false;
-
-    winplus::AnsiString sql = winplus::StringToUtf8("SELECT * FROM am_account_types WHERE name = ?;");
-    sqlite3_stmt * stmt = NULL;
-    int rc;
-    const char * localError;
-    
-    // ×¼±¸Óï¾ä
-    rc = sqlite3_prepare_v2( db, sql.c_str(), sql.size(), &stmt, NULL );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-    // °ó¶¨²ÎÊı
-    // ÀàĞÍÃû
-    rc = Fields::_bindString( stmt, 1, typeName );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // Ö´ĞĞÓï¾ä
-    rc = sqlite3_step(stmt);
-    if ( rc == SQLITE_ROW )
+    try
     {
-        IfPTR(type)->loadTypeName( stmt, 0 );
-        IfPTR(type)->loadSafeRank( stmt, 1 );
-        ret = true;
-        goto ExitProc;
+        auto resAccountType = db->query( db->buildStmt( "SELECT * FROM am_account_types WHERE name = ?;", (LPCTSTR)typeName ) );
+        winux::MixedArray f;
+        if ( resAccountType->fetchRow(&f) )
+        {
+            IfPTR(type)->m_typeName = f[0].toAnsi().c_str();
+            IfPTR(type)->m_safeRank = f[1];
+            ret = true;
+        }
     }
-    else if ( rc == SQLITE_DONE )
+    catch ( winux::Error const & e )
     {
-        ret = false;
-        goto ExitProc;
+        AfxGetMainWnd()->FatalError( e.what(), _T("æ•°æ®åº“é”™è¯¯") );
     }
-    else
-    {
-        sqlite3_reset(stmt);
-        goto OccurDbError;
-    }
-    
-ExitProc:
-    // Õı³£ÎŞ´íÎó½áÊø
-    sqlite3_reset(stmt);
-    if ( stmt )
-        sqlite3_finalize(stmt);
     return ret;
-    
-OccurDbError: // ³ö´í´¦Àí
-    localError = sqlite3_errmsg(db);
-    if ( stmt )
-        sqlite3_finalize(stmt);
-    AfxGetMainWnd()->FatalError( winplus::Utf8ToString(localError).c_str(), _T("Êı¾İ¿â´íÎó") );
+}
+
+bool AddAccountType( eiendb::Database & db, winux::Mixed const & newType )
+{
+    winux::Mixed newAccountType = newType;
+/*
+    newAccountType.addPair()
+        ( "name", (LPCTSTR)newType.m_typeName )
+        ( "rank", newType.m_safeRank )
+        ;
+*/
+
+    try
+    {
+        auto mdf = db.mdf("am_account_types");
+        return mdf->addNew(newAccountType);
+    }
+    catch ( winux::Error const & e )
+    {
+        AfxGetMainWnd()->FatalError( e.what(), _T("æ•°æ®åº“é”™è¯¯") );
+    }
     return false;
 }
 
-bool AddAccountType( sqlite3 * db, AccountType const & newType )
+bool ModifyAccountType( eiendb::Database & db, CString const & typeName, winux::Mixed const & newTypeFields )
 {
-    int rowsChanged = 0;
-
-    winplus::AnsiString sql = winplus::StringToUtf8("INSERT INTO am_account_types( name, rank ) VALUES( ?, ? );");
-    sqlite3_stmt * stmt = NULL;
-    int rc;
-    const char * localError;
-    
-    // ×¼±¸Óï¾ä
-    rc = sqlite3_prepare_v2( db, sql.c_str(), sql.size(), &stmt, NULL );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // °ó¶¨²ÎÊı
-    // ÀàĞÍÃû
-    rc = newType.bindTypeName( stmt, 1 );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-    
-    // °²È«Öµ
-    rc = newType.bindSafeRank( stmt, 2 );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-    
-    // Ö´ĞĞÓï¾ä
-    rc = sqlite3_step(stmt);
-    if ( rc == SQLITE_DONE )
+    try
     {
-        rowsChanged = sqlite3_changes(db);
-        rc = sqlite3_reset(stmt);
-        if ( rc != SQLITE_OK )
+        auto mdf = db.mdf("am_account_types");
+        return mdf->modifyEx( newTypeFields, "name=" + db->escape( (LPCTSTR)typeName ) );
+    }
+    catch ( winux::Error const & e )
+    {
+        AfxGetMainWnd()->FatalError( e.what(), _T("æ•°æ®åº“é”™è¯¯") );
+    }
+    return false;
+}
+
+bool DeleteAccountType( eiendb::Database & db, CString const & typeName )
+{
+    try
+    {
+        auto resCountAccountCates = db->query( db->buildStmt( "SELECT COUNT(*) > 0 FROM am_account_cates WHERE type = ?;", (LPCTSTR)typeName ) );
+        winux::MixedArray f;
+        if ( resCountAccountCates->fetchRow(&f) && f[0].toInt() > 0 )
         {
-            goto OccurDbError;
+            // ä¸èƒ½åˆ é™¤æ­¤ç±»å‹
+            AfxGetMainWnd()->WarningError( _T("è¯¥ç±»å‹ä¸‹å…³è”æœ‰è´¦æˆ·ç§ç±»ï¼Œå› æ­¤ä¸èƒ½åˆ é™¤"), _T("é”™è¯¯") );
+            return false;
+        }
+
+        auto mdf = db.mdf("am_account_types");
+        return mdf->deleteEx( "name=" + db->escape( (LPCTSTR)typeName ) );
+    }
+    catch ( winux::Error const & e )
+    {
+        AfxGetMainWnd()->FatalError( e.what(), _T("æ•°æ®åº“é”™è¯¯") ); //*/
+    }
+    return false;
+}
+
+// struct AccountCate ---------------------------------------------------------------------
+void AccountCate::assignTo( winux::Mixed * accountCateMixed, CString const & fieldNames )
+{
+    winux::StringArray fnames;
+    winux::StrSplit( (LPCTSTR)fieldNames, ",", &fnames );
+    if ( !accountCateMixed->isCollection() )
+        accountCateMixed->createCollection();
+    for ( auto it = fnames.begin(); it != fnames.end(); ++it )
+    {
+        if ( *it == "id" )
+        {
+            (*accountCateMixed)[*it] = m_id;
+        }
+        else if ( *it == "name" )
+        {
+            (*accountCateMixed)[*it] = (LPCTSTR)m_cateName;
+        }
+        else if ( *it == "desc" )
+        {
+            (*accountCateMixed)[*it] = (LPCTSTR)m_cateDesc;
+        }
+        else if ( *it == "type" )
+        {
+            (*accountCateMixed)[*it] = (LPCTSTR)m_typeName;
+        }
+        else if ( *it == "url" )
+        {
+            (*accountCateMixed)[*it] = (LPCTSTR)m_url;
+        }
+        else if ( *it == "icon" )
+        {
+            (*accountCateMixed)[*it] = (LPCTSTR)m_icoPath;
+        }
+        else if ( *it == "startup" )
+        {
+            (*accountCateMixed)[*it] = (LPCTSTR)m_startup;
+        }
+        else if ( *it == "keywords" )
+        {
+            (*accountCateMixed)[*it] = (LPCTSTR)m_keywords;
+        }
+        else if ( *it == "time" )
+        {
+            (*accountCateMixed)[*it] = m_timeWriten;
         }
     }
-    else
-    {
-        sqlite3_reset(stmt);
-        goto OccurDbError;
-    }
-    
-    // Õı³£ÎŞ´íÎó½áÊø
-    if ( stmt )
-        sqlite3_finalize(stmt);
-    return rowsChanged == 1;
-    
-OccurDbError: // ³ö´í´¦Àí
-    localError = sqlite3_errmsg(db);
-    if ( stmt )
-        sqlite3_finalize(stmt);
-    AfxGetMainWnd()->FatalError( winplus::Utf8ToString(localError).c_str(), _T("Êı¾İ¿â´íÎó") );
-    return false;
 }
 
-bool ModifyAccountType( sqlite3 * db, CString const & typeName, AccountType const & newType )
+void AccountCate::assign( winux::Mixed const & accountCateMixed )
 {
-    int rowsChanged = 0;
-
-    winplus::AnsiString sql = winplus::StringToUtf8("UPDATE am_account_types SET name = ?, rank = ? WHERE name = ?;");
-    sqlite3_stmt * stmt = NULL;
-    int rc;
-    const char * localError;
-    
-    // ×¼±¸Óï¾ä
-    rc = sqlite3_prepare_v2( db, sql.c_str(), sql.size(), &stmt, NULL );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-    
-    // °ó¶¨²ÎÊı
-    // ĞÂÀàĞÍÃû
-    rc = newType.bindTypeName( stmt, 1 );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // ĞÂ°²È«Öµ
-    rc = newType.bindSafeRank( stmt, 2 );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-    
-    // ÀàĞÍÃû
-    rc = Fields::_bindString( stmt, 3, typeName );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // Ö´ĞĞÓï¾ä
-    rc = sqlite3_step(stmt);
-    if ( rc == SQLITE_DONE )
+    int n = accountCateMixed.getCount();
+    for ( int i = 0; i < n; ++i )
     {
-        rowsChanged = sqlite3_changes(db);
-        rc = sqlite3_reset(stmt);
-        if ( rc != SQLITE_OK )
+        auto & pr = accountCateMixed.getPair(i);
+        winux::String const & keyname = pr.first.refAnsi();
+        if ( keyname == "id" )
         {
-            goto OccurDbError;
+            m_id = pr.second;
+        }
+        else if ( keyname == "name" )
+        {
+            m_cateName = pr.second.refAnsi().c_str();
+        }
+        else if ( keyname == "desc" )
+        {
+            m_cateDesc = pr.second.refAnsi().c_str();
+        }
+        else if ( keyname == "type" )
+        {
+            m_typeName = pr.second.refAnsi().c_str();
+        }
+        else if ( keyname == "url" )
+        {
+            m_url = pr.second.refAnsi().c_str();
+        }
+        else if ( keyname == "icon" )
+        {
+            m_icoPath = pr.second.refAnsi().c_str();
+        }
+        else if ( keyname == "startup" )
+        {
+            m_startup = pr.second.refAnsi().c_str();
+        }
+        else if ( keyname == "keywords" )
+        {
+            m_keywords = pr.second.refAnsi().c_str();
+        }
+        else if ( keyname == "time" )
+        {
+            m_timeWriten = pr.second;
         }
     }
-    else
-    {
-        rc = sqlite3_reset(stmt);
-        goto OccurDbError;
-    }
-    
-    // Õı³£ÎŞ´íÎó½áÊø
-    if ( stmt )
-        sqlite3_finalize(stmt);
-    return rowsChanged == 1;
-    
-OccurDbError: // ³ö´í´¦Àí
-    localError = sqlite3_errmsg(db);
-    if ( stmt )
-        sqlite3_finalize(stmt);
-    AfxGetMainWnd()->FatalError( winplus::Utf8ToString(localError).c_str(), _T("Êı¾İ¿â´íÎó") );
-    return false;
 }
 
-bool DeleteAccountType( sqlite3 * db, CString const & typeName )
+int LoadAccountCates( eiendb::Database & db, AccountCateArray * cates )
 {
-    int rowsChanged = 0;
-
-    winplus::AnsiString sql1, sql2;
-    sqlite3_stmt * stmt1 = NULL;
-    sqlite3_stmt * stmt2 = NULL;
-    int rc;
-    const char * localError;
-
-    // ×¼±¸Óï¾ä
-    sql1 = winplus::StringToUtf8("SELECT COUNT(*) > 0 FROM am_account_cates WHERE type = ?;");
-    rc = sqlite3_prepare_v2( db, sql1.c_str(), sql1.size(), &stmt1, NULL );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // °ó¶¨²ÎÊı
-    // ÀàĞÍÃû
-    rc = Fields::_bindString( stmt1, 1, typeName );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // Ö´ĞĞÓï¾ä,ÅĞ¶ÏÊÇ·ñÖ´ĞĞÉ¾³ıÀàĞÍ²Ù×÷
-    rc = sqlite3_step(stmt1);
-    if ( rc != SQLITE_ROW ) goto OccurDbError;
-
-    if ( Fields::_getInt( stmt1, 0 ) )
-    {
-        // ²»ÄÜÉ¾³ı´ËÀàĞÍ
-        AfxGetMainWnd()->WarningError( _T("¸ÃÀàĞÍÏÂ¹ØÁªÓĞÕË»§ÖÖÀà£¬Òò´Ë²»ÄÜÉ¾³ı"), _T("´íÎó") );
-        goto ExitProc;
-    }
-
-    //////////////////////////////////////////////////////////////////////////
-    // ×¼±¸Óï¾ä
-    sql2 = winplus::StringToUtf8("DELETE FROM am_account_types WHERE name = ?;");
-    rc = sqlite3_prepare_v2( db, sql2.c_str(), sql2.size(), &stmt2, NULL );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // °ó¶¨²ÎÊı
-    // ÀàĞÍÃû
-    rc = Fields::_bindString( stmt2, 1, typeName );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // Ö´ĞĞÓï¾ä
-    rc = sqlite3_step(stmt2);
-    if ( rc == SQLITE_DONE )
-    {
-        rowsChanged = sqlite3_changes(db);
-        rc = sqlite3_reset(stmt2);
-        if ( rc != SQLITE_OK ) goto OccurDbError;
-    }
-    else
-    {
-        sqlite3_reset(stmt2);
-        goto OccurDbError;
-    }
-
-ExitProc:
-    // ÎŞÓ²ĞÔ´íÎóµÄ½áÊø
-    if ( stmt1 )
-        sqlite3_finalize(stmt1);
-    if ( stmt2 )
-        sqlite3_finalize(stmt2);
-    return rowsChanged == 1;
-
-OccurDbError: // ³ö´í´¦Àí
-    localError = sqlite3_errmsg(db);
-    if ( stmt1 )
-        sqlite3_finalize(stmt1);
-    if ( stmt2 )
-        sqlite3_finalize(stmt2);
-    AfxGetMainWnd()->FatalError( winplus::Utf8ToString(localError).c_str(), _T("Êı¾İ¿â´íÎó") );
-    return false;
-}
-
-int LoadAccountCates( sqlite3 * db, AccountCateArray * cates )
-{
-    IfPTR(cates)->RemoveAll();
-
     int count = 0;
+    IfPTR(cates)->RemoveAll();
+    try
+    {
+        auto resAccountCates = db->query("SELECT * FROM am_account_cates ORDER BY id;");
+        winux::StringMixedMap fields;
+        while ( resAccountCates->fetchRow(&fields) )
+        {
+            AccountCate cate;
+            cate.m_id = fields["id"];
+            cate.m_cateName = fields["name"].toAnsi().c_str();
+            cate.m_cateDesc = fields["desc"].toAnsi().c_str();
+            cate.m_typeName = fields["type"].toAnsi().c_str();
+            cate.m_url = fields["url"].toAnsi().c_str();
+            cate.m_icoPath = fields["icon"].toAnsi().c_str();
+            cate.m_startup = fields["startup"].toAnsi().c_str();
+            cate.m_keywords = fields["keywords"].toAnsi().c_str();
+            cate.m_timeWriten = fields["time"];
+            IfPTR(cates)->Add(cate);
 
-    winplus::AnsiString sql = winplus::StringToUtf8("SELECT * FROM am_account_cates ORDER BY id;");
-    sqlite3_stmt * stmt = NULL;
-    int rc;
-    const char * localError;
-    
-    // ×¼±¸Óï¾ä
-    rc = sqlite3_prepare_v2( db, sql.c_str(), sql.size(), &stmt, NULL );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-    
-    // Ö´ĞĞÓï¾ä
-    while ( ( rc = sqlite3_step(stmt) ) == SQLITE_ROW )
-    {
-        AccountCate cate;
-        cate.loadId( stmt, 0 );//Add( sqlite3_column_int( stmt, 0 ) );
-        cate.loadCateName( stmt, 1 );//Add( winplus::Utf8ToString( (char const *)sqlite3_column_text( stmt, 1 ) ).c_str() );
-        cate.loadCateDesc( stmt, 2 );//Add( winplus::Utf8ToString( (char const *)sqlite3_column_text( stmt, 2 ) ).c_str() );
-        cate.loadTypeName( stmt, 3 );//Add( winplus::Utf8ToString( (char const *)sqlite3_column_text( stmt, 3 ) ).c_str() );
-        cate.loadUrl( stmt, 4 );//Add( winplus::Utf8ToString( (char const *)sqlite3_column_text( stmt, 4 ) ).c_str() );
-        cate.loadIcoPath( stmt, 5 );//Add( winplus::Utf8ToString( (char const *)sqlite3_column_text( stmt, 5 ) ).c_str() );
-        cate.loadStartup( stmt, 6 );//Add( winplus::Utf8ToString( (char const *)sqlite3_column_text( stmt, 6 ) ).c_str() );
-        cate.loadKeywords( stmt, 7 );//Add( winplus::Utf8ToString( (char const *)sqlite3_column_text( stmt, 7 ) ).c_str() );
-        cate.loadTimeWriten( stmt, 8 );//Add( sqlite3_column_int( stmt, 8 ) );
-        IfPTR(cates)->Add(cate);
-
-        count++;
+            count++;
+        }
     }
-    
-    if ( rc == SQLITE_DONE ) // Êı¾İÒÑÍê»òÃ»ÓĞÊı¾İ
+    catch ( winux::Error const & e )
     {
-        goto ExitProc;
+        AfxGetMainWnd()->FatalError( e.what(), _T("æ•°æ®åº“é”™è¯¯") ); //*/
     }
-    else
-    {
-        sqlite3_reset(stmt);
-        goto OccurDbError;
-    }
-    
-ExitProc:
-    // Õı³£ÎŞ´íÎó½áÊø
-    sqlite3_reset(stmt);
-    if ( stmt )
-        sqlite3_finalize(stmt);
     return count;
-    
-OccurDbError: // ³ö´í´¦Àí
-    localError = sqlite3_errmsg(db);
-    if ( stmt )
-        sqlite3_finalize(stmt);
-    AfxGetMainWnd()->FatalError( winplus::Utf8ToString(localError).c_str(), _T("Êı¾İ¿â´íÎó") );
-    return 0;
 }
 
-bool GetAccountCate( sqlite3 * db, int id, AccountCate * cate )
+bool GetAccountCate( eiendb::Database & db, int id, AccountCate * cate )
 {
     bool ret = false;
-
-    winplus::AnsiString sql = winplus::StringToUtf8("SELECT * FROM am_account_cates WHERE id = ?;");
-    sqlite3_stmt * stmt = NULL;
-    int rc;
-    const char * localError;
-    
-    // ×¼±¸Óï¾ä
-    rc = sqlite3_prepare_v2( db, sql.c_str(), sql.size(), &stmt, NULL );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-    // °ó¶¨²ÎÊı
-    // cateId
-    rc = Fields::_bindInt( stmt, 1, id );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-    
-    // Ö´ĞĞÓï¾ä
-    rc = sqlite3_step(stmt);
-    if ( rc == SQLITE_ROW )
+    try
     {
-        IfPTR(cate)->loadId( stmt, 0 );
-        IfPTR(cate)->loadCateName( stmt, 1 );
-        IfPTR(cate)->loadCateDesc( stmt, 2 );
-        IfPTR(cate)->loadTypeName( stmt, 3 );
-        IfPTR(cate)->loadUrl( stmt, 4 );
-        IfPTR(cate)->loadIcoPath( stmt, 5 );
-        IfPTR(cate)->loadStartup( stmt, 6 );
-        IfPTR(cate)->loadKeywords( stmt, 7 );
-        IfPTR(cate)->loadTimeWriten( stmt, 8 );
-        ret = true;
-        goto ExitProc;
+        auto resAccountCate = db->query( db->buildStmt( "SELECT * FROM am_account_cates WHERE id = ?;", id ) );
+        winux::StringMixedMap f;
+        if ( resAccountCate->fetchRow(&f) )
+        {
+            IfPTR(cate)->m_id = f["id"];
+            IfPTR(cate)->m_cateName = f["name"].toAnsi().c_str();
+            IfPTR(cate)->m_cateDesc = f["desc"].toAnsi().c_str();
+            IfPTR(cate)->m_typeName = f["type"].toAnsi().c_str();
+            IfPTR(cate)->m_url = f["url"].toAnsi().c_str();
+            IfPTR(cate)->m_icoPath = f["icon"].toAnsi().c_str();
+            IfPTR(cate)->m_startup = f["startup"].toAnsi().c_str();
+            IfPTR(cate)->m_keywords = f["keywords"].toAnsi().c_str();
+            IfPTR(cate)->m_timeWriten = f["time"];
+            ret = true;
+        }
     }
-    else if ( rc == SQLITE_DONE )
+    catch ( winux::Error const & e )
     {
-        ret = false;
-        goto ExitProc;
+        AfxGetMainWnd()->FatalError( e.what(), _T("æ•°æ®åº“é”™è¯¯") );
     }
-    else
-    {
-        sqlite3_reset(stmt);
-        goto OccurDbError;
-    }
-    
-ExitProc:
-    // Õı³£ÎŞ´íÎó½áÊø
-    sqlite3_reset(stmt);
-    if ( stmt )
-        sqlite3_finalize(stmt);
     return ret;
-    
-OccurDbError: // ³ö´í´¦Àí
-    localError = sqlite3_errmsg(db);
-    if ( stmt )
-        sqlite3_finalize(stmt);
-    AfxGetMainWnd()->FatalError( winplus::Utf8ToString(localError).c_str(), _T("Êı¾İ¿â´íÎó") );
-    return false;
 }
 
-int AddAccountCate( sqlite3 * db, AccountCate const & newCate )
+int AddAccountCate( eiendb::Database & db, winux::Mixed const & newCate )
 {
-    int rowsChanged = 0;
+    winux::Mixed newAccountCate = newCate;
+    newAccountCate.addPair()
+/*
+        ( "name", (LPCTSTR)newCate.m_cateName )
+        ( "desc", (LPCTSTR)newCate.m_cateDesc )
+        ( "type", (LPCTSTR)newCate.m_typeName )
+        ( "url", (LPCTSTR)newCate.m_url )
+        ( "icon", (LPCTSTR)newCate.m_icoPath )
+        ( "startup", (LPCTSTR)newCate.m_startup )
+        ( "keywords", (LPCTSTR)newCate.m_keywords )
+*/
+        ( "time", (int)winplus::GetUtcTime() )
+        ;
 
-    winplus::AnsiString sql = winplus::StringToUtf8(
-        "INSERT INTO am_account_cates( "
-        "name, desc, type, url, icon, startup, keywords, time"
-        " ) VALUES( ?, ?, ?, ?, ?, ?, ?, ? );"
-    );
-    sqlite3_stmt * stmt = NULL;
-    int rc;
-    const char * localError;
-    
-    // ×¼±¸Óï¾ä
-    rc = sqlite3_prepare_v2( db, sql.c_str(), sql.size(), &stmt, NULL );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // °ó¶¨²ÎÊı
-    // ÖÖÀàÃû
-    rc = newCate.bindCateName( stmt, 1 );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // ÖÖÀàÃèÊö
-    rc = newCate.bindCateDesc( stmt, 2 );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // ÀàĞÍÃû
-    rc = newCate.bindTypeName( stmt, 3 );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // URL
-    rc = newCate.bindUrl( stmt, 4 );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // Í¼±êÂ·¾¶
-    rc = newCate.bindIcoPath( stmt, 5 );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // Æô¶¯·½Ê½
-    rc = newCate.bindStartup( stmt, 6 );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // ¹Ø¼ü×Ö
-    rc = newCate.bindKeywords( stmt, 7 );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // Ğ´ÈëÊ±¼ä
-    rc = Fields::_bindInt( stmt, 8, (int)winplus::GetUtcTime() );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-    
-    // Ö´ĞĞÓï¾ä
-    rc = sqlite3_step(stmt);
-    if ( rc == SQLITE_DONE )
+    try
     {
-        rowsChanged = sqlite3_changes(db);
-        rc = sqlite3_reset(stmt);
-        if ( rc != SQLITE_OK ) goto OccurDbError;
+        auto mdf = db.mdf("am_account_cates");
+        if ( mdf->addNew(newAccountCate) )
+        {
+            return (int)db->insertId();
+        }
     }
-    else
+    catch ( winux::Error const & e )
     {
-        sqlite3_reset(stmt);
-        goto OccurDbError;
+        AfxGetMainWnd()->FatalError( e.what(), _T("æ•°æ®åº“é”™è¯¯") );
     }
-    
-    // Õı³£ÎŞ´íÎó½áÊø
-    if ( stmt )
-        sqlite3_finalize(stmt);
-    if ( rowsChanged == 1 )
-    {
-        return (int)sqlite3_last_insert_rowid(db);
-    }
-    else
-    {
-        return 0;
-    }
-OccurDbError: // ³ö´í´¦Àí
-    localError = sqlite3_errmsg(db);
-    if ( stmt )
-        sqlite3_finalize(stmt);
-    AfxGetMainWnd()->FatalError( winplus::Utf8ToString(localError).c_str(), _T("Êı¾İ¿â´íÎó") );
     return 0;
 }
 
-bool ModifyAccountCate( sqlite3 * db, int id, AccountCate const & newCate )
+bool ModifyAccountCate( eiendb::Database & db, int id, winux::Mixed const & newCateFields )
 {
-    int rowsChanged = 0;
-
-    winplus::AnsiString sql = winplus::StringToUtf8("UPDATE am_account_cates SET name = ?, desc = ?, type = ?, url = ?, icon = ?, startup = ?, keywords = ? WHERE id = ?;");
-    sqlite3_stmt * stmt = NULL;
-    int rc;
-    const char * localError;
-
-    // ×¼±¸Óï¾ä
-    rc = sqlite3_prepare_v2( db, sql.c_str(), sql.size(), &stmt, NULL );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // °ó¶¨²ÎÊı
-    // ĞÂÖÖÀàÃû
-    rc = newCate.bindCateName( stmt, 1 );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // ĞÂÖÖÀàÃèÊö
-    rc = newCate.bindCateDesc( stmt, 2 );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // ĞÂÀàĞÍÃû
-    rc = newCate.bindTypeName( stmt, 3 );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // ĞÂURL
-    rc = newCate.bindUrl( stmt, 4 );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // ĞÂÍ¼±êÂ·¾¶
-    rc = newCate.bindIcoPath( stmt, 5 );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // ĞÂÆô¶¯·½Ê½
-    rc = newCate.bindStartup( stmt, 6 );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // ĞÂ¹Ø¼ü×Ö
-    rc = newCate.bindKeywords( stmt, 7 );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // CateId
-    rc = Fields::_bindInt( stmt, 8, id );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // Ö´ĞĞÓï¾ä
-    rc = sqlite3_step(stmt);
-    if ( rc == SQLITE_DONE )
+    try
     {
-        rowsChanged = sqlite3_changes(db);
-        rc = sqlite3_reset(stmt);
-        if ( rc != SQLITE_OK ) goto OccurDbError;
+        auto mdf = db.mdf("am_account_cates");
+        return mdf->modify( newCateFields, id );
     }
-    else
+    catch ( winux::Error const & e )
     {
-        sqlite3_reset(stmt);
-        goto OccurDbError;
+        AfxGetMainWnd()->FatalError( e.what(), _T("æ•°æ®åº“é”™è¯¯") );
     }
-
-    // Õı³£ÎŞ´íÎó½áÊø
-    if ( stmt )
-        sqlite3_finalize(stmt);
-    return rowsChanged == 1;
-    
-OccurDbError: // ³ö´í´¦Àí
-    localError = sqlite3_errmsg(db);
-    if ( stmt )
-        sqlite3_finalize(stmt);
-    AfxGetMainWnd()->FatalError( winplus::Utf8ToString(localError).c_str(), _T("Êı¾İ¿â´íÎó") );
     return false;
 }
 
-bool DeleteAccountCate( sqlite3 * db, int id )
+bool DeleteAccountCate( eiendb::Database & db, int id )
 {
-    int rowsChanged = 0;
-
-    winplus::AnsiString sql1, sql2;
-    sqlite3_stmt * stmt1 = NULL;
-    sqlite3_stmt * stmt2 = NULL;
-    int rc;
-    const char * localError;
-
-    // ×¼±¸Óï¾ä
-    sql1 = winplus::StringToUtf8("SELECT COUNT(*) > 0 FROM am_accounts WHERE cate = ?;");
-    rc = sqlite3_prepare_v2( db, sql1.c_str(), sql1.size(), &stmt1, NULL );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // °ó¶¨²ÎÊı
-    // Cate ID
-    rc = Fields::_bindInt( stmt1, 1, id );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // Ö´ĞĞÓï¾ä,ÅĞ¶ÏÊÇ·ñÖ´ĞĞÉ¾³ıÀàĞÍ²Ù×÷
-    rc = sqlite3_step(stmt1);
-    if ( rc != SQLITE_ROW ) goto OccurDbError;
-
-    if ( Fields::_getInt( stmt1, 0 ) )
+    try
     {
-        // ²»ÄÜÉ¾³ı´ËÀàĞÍ
-        AfxGetMainWnd()->WarningError( _T("¸ÃÖÖÀàÏÂ¹ØÁªÓĞÕË»§£¬Òò´Ë²»ÄÜÉ¾³ı"), _T("´íÎó") );
-        goto ExitProc;
+        auto resCountAccounts = db->query( db->buildStmt( "SELECT COUNT(*) > 0 FROM am_accounts WHERE cate = ?;", id ) );
+        winux::MixedArray f;
+        if ( resCountAccounts->fetchRow(&f) && f[0].toInt() > 0 )
+        {
+            // ä¸èƒ½åˆ é™¤æ­¤ç±»å‹
+            AfxGetMainWnd()->WarningError( _T("è¯¥ç§ç±»ä¸‹å…³è”æœ‰è´¦æˆ·ï¼Œå› æ­¤ä¸èƒ½åˆ é™¤"), _T("é”™è¯¯") );
+            return false;
+        }
+        auto mdf = db.mdf("am_account_cates");
+        return mdf->deleteOne(id);
     }
-
-    //////////////////////////////////////////////////////////////////////////
-    // ×¼±¸Óï¾ä
-    sql2 = winplus::StringToUtf8("DELETE FROM am_account_cates WHERE id = ?;");
-    rc = sqlite3_prepare_v2( db, sql2.c_str(), sql2.size(), &stmt2, NULL );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-    
-    // °ó¶¨²ÎÊı
-    // CateId
-    rc = Fields::_bindInt( stmt2, 1, id );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // Ö´ĞĞÓï¾ä
-    rc = sqlite3_step(stmt2);
-    if ( rc == SQLITE_DONE )
+    catch ( winux::Error const & e )
     {
-        rowsChanged = sqlite3_changes(db);
-        rc = sqlite3_reset(stmt2);
-        if ( rc != SQLITE_OK ) goto OccurDbError;
+        AfxGetMainWnd()->FatalError( e.what(), _T("æ•°æ®åº“é”™è¯¯") );
     }
-    else
-    {
-        sqlite3_reset(stmt2);
-        goto OccurDbError;
-    }
-
-ExitProc:
-    // ÎŞÓ²ĞÔ´íÎóµÄ½áÊø
-    if ( stmt1 )
-        sqlite3_finalize(stmt1);
-    if ( stmt2 )
-        sqlite3_finalize(stmt2);
-    return rowsChanged == 1;
-    
-OccurDbError: // ³ö´í´¦Àí
-    localError = sqlite3_errmsg(db);
-    if ( stmt1 )
-        sqlite3_finalize(stmt1);
-    if ( stmt2 )
-        sqlite3_finalize(stmt2);
-    AfxGetMainWnd()->FatalError( winplus::Utf8ToString(localError).c_str(), _T("Êı¾İ¿â´íÎó") );
     return false;
 }
 
-int LoadAccountCatesSafeRank( sqlite3 * db, CUIntArray * cateIds, CUIntArray * typeSafeRanks )
+int LoadAccountCatesSafeRank( eiendb::Database & db, CUIntArray * cateIds, CUIntArray * typeSafeRanks )
 {
+    int count = 0;
     IfPTR(cateIds)->RemoveAll();
     IfPTR(typeSafeRanks)->RemoveAll();
-
-    int count = 0;
-
-    winplus::AnsiString sql = winplus::StringToUtf8("SELECT c.id, t.rank from am_account_cates AS c Left JOIN am_account_types AS t ON t.name = c.type;");
-    sqlite3_stmt * stmt = NULL;
-    int rc;
-    const char * localError;
-    
-    // ×¼±¸Óï¾ä
-    rc = sqlite3_prepare_v2( db, sql.c_str(), sql.size(), &stmt, NULL );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-    
-    // Ö´ĞĞÓï¾ä
-    while ( ( rc = sqlite3_step(stmt) ) == SQLITE_ROW )
+    try
     {
-        IfPTR(cateIds)->Add( sqlite3_column_int( stmt, 0 ) );
-        IfPTR(typeSafeRanks)->Add( sqlite3_column_int( stmt, 1 ) );
+        auto resAccountCatesSafeRank = db->query("SELECT c.id, t.rank from am_account_cates AS c Left JOIN am_account_types AS t ON t.name = c.type;");
+        winux::MixedArray f;
+        while ( resAccountCatesSafeRank->fetchRow(&f) )
+        {
+            IfPTR(cateIds)->Add( f[0] );
+            IfPTR(typeSafeRanks)->Add( f[1] );
 
-        count++;
+            count++;
+        }
     }
-    
-    if ( rc == SQLITE_DONE ) // Êı¾İÒÑÍê»òÃ»ÓĞÊı¾İ
+    catch ( winux::Error const & e )
     {
-        goto ExitProc;
+        AfxGetMainWnd()->FatalError( e.what(), _T("æ•°æ®åº“é”™è¯¯") );
     }
-    else
-    {
-        sqlite3_reset(stmt);
-        goto OccurDbError;
-    }
-    
-ExitProc:
-    // Õı³£ÎŞ´íÎó½áÊø
-    sqlite3_reset(stmt);
-    if ( stmt )
-        sqlite3_finalize(stmt);
+
     return count;
 
-OccurDbError: // ³ö´í´¦Àí
-    localError = sqlite3_errmsg(db);
-    if ( stmt )
-        sqlite3_finalize(stmt);
-    AfxGetMainWnd()->FatalError( winplus::Utf8ToString(localError).c_str(), _T("Êı¾İ¿â´íÎó") );
-    return 0;
 }
 
-bool GetTypeByCateId( sqlite3 * db, int cateId, AccountType * type )
+bool GetTypeByCateId( eiendb::Database & db, int cateId, AccountType * type )
 {
     bool ret = false;
-
-    winplus::AnsiString sql = winplus::StringToUtf8("SELECT c.id, t.name, t.rank FROM am_account_cates AS c Left JOIN am_account_types AS t ON t.name = c.type WHERE c.id = ?;");
-    sqlite3_stmt * stmt = NULL;
-    int rc;
-    const char * localError;
-    
-    // ×¼±¸Óï¾ä
-    rc = sqlite3_prepare_v2( db, sql.c_str(), sql.size(), &stmt, NULL );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-    // °ó¶¨²ÎÊı
-    // cateId
-    rc = Fields::_bindInt( stmt, 1, cateId );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // Ö´ĞĞÓï¾ä
-    rc = sqlite3_step(stmt);
-    if ( rc == SQLITE_ROW )
+    try
     {
-        ASSERT( cateId == Fields::_getInt( stmt, 0 ) );
-        IfPTR(type)->loadTypeName( stmt, 1 );
-        IfPTR(type)->loadSafeRank( stmt, 2 );
-        ret = true;
-        goto ExitProc;
+        auto resAccountType = db->query( db->buildStmt( "SELECT c.id, t.name, t.rank FROM am_account_cates AS c Left JOIN am_account_types AS t ON t.name = c.type WHERE c.id = ?;", cateId ) );
+        winux::MixedArray f;
+        if ( resAccountType->fetchRow(&f) )
+        {
+            ASSERT( cateId == f[0].toInt() );
+            IfPTR(type)->m_typeName = f[1].toAnsi().c_str();
+            IfPTR(type)->m_safeRank = f[2];
+            ret = true;
+        }
     }
-    else if ( rc == SQLITE_DONE )
+    catch ( winux::Error const & e )
     {
-        ret = false;
-        goto ExitProc;
+        AfxGetMainWnd()->FatalError( e.what(), _T("æ•°æ®åº“é”™è¯¯") );
     }
-    else
-    {
-        sqlite3_reset(stmt);
-        goto OccurDbError;
-    }
-    
-ExitProc:
-    // Õı³£ÎŞ´íÎó½áÊø
-    sqlite3_reset(stmt);
-    if ( stmt )
-        sqlite3_finalize(stmt);
     return ret;
-    
-OccurDbError: // ³ö´í´¦Àí
-    localError = sqlite3_errmsg(db);
-    if ( stmt )
-        sqlite3_finalize(stmt);
-    AfxGetMainWnd()->FatalError( winplus::Utf8ToString(localError).c_str(), _T("Êı¾İ¿â´íÎó") );
-    return false;
 }
 
-int LoadAccounts( sqlite3 * db, int userId, AccountArray * accounts, int cateId )
+// struct Account -------------------------------------------------------------------------
+void Account::assignTo( winux::Mixed * accountMixed, CString const & fieldNames )
 {
+    winux::StringArray fnames;
+    winux::StrSplit( (LPCTSTR)fieldNames, ",", &fnames );
+
+    if ( !accountMixed->isCollection() )
+        accountMixed->createCollection();
+    for ( auto it = fnames.begin(); it != fnames.end(); ++it )
+    {
+        if ( *it == "myname" )
+        {
+            (*accountMixed)[*it] = (LPCTSTR)m_myName;
+        }
+        else if ( *it == "account_name" )
+        {
+            (*accountMixed)[*it] = EncryptContent( winux::LocalToUtf8( (LPCTSTR)m_accountName ) );
+        }
+        else if ( *it == "account_pwd" )
+        {
+            (*accountMixed)[*it] = EncryptContent( winux::LocalToUtf8( (LPCTSTR)m_accountPwd ) );
+        }
+        else if ( *it == "cate" )
+        {
+            (*accountMixed)[*it] = m_cateId;
+        }
+        else if ( *it == "user" )
+        {
+            (*accountMixed)[*it] = m_userId;
+        }
+        else if ( *it == "safe_rank" )
+        {
+            (*accountMixed)[*it] = m_safeRank;
+        }
+        else if ( *it == "comment" )
+        {
+            (*accountMixed)[*it] = (LPCTSTR)m_comment;
+        }
+        else if ( *it == "time" )
+        {
+            (*accountMixed)[*it] = m_time;
+        }
+    }
+}
+
+void Account::assign( winux::Mixed const & accountMixed )
+{
+    int n = accountMixed.getCount();
+    for ( int i = 0; i < n; ++i )
+    {
+        auto & pr = accountMixed.getPair(i);
+        winux::String const & keyname = pr.first.refAnsi();
+        if ( keyname == "myname" )
+        {
+            m_myName = pr.second.refAnsi().c_str();
+        }
+        else if ( keyname == "account_name" )
+        {
+            m_accountName = winux::LocalFromUtf8( DecryptContent( pr.second.toBuffer() ) ).c_str();
+        }
+        else if ( keyname == "account_pwd" )
+        {
+            m_accountPwd = winux::LocalFromUtf8( DecryptContent( pr.second.toBuffer() ) ).c_str();
+        }
+        else if ( keyname == "cate" )
+        {
+            m_cateId = pr.second;
+        }
+        else if ( keyname == "user" )
+        {
+            m_userId = pr.second;
+        }
+        else if ( keyname == "safe_rank" )
+        {
+            m_safeRank = pr.second;
+        }
+        else if ( keyname == "comment" )
+        {
+            m_comment = pr.second.refAnsi().c_str();
+        }
+        else if ( keyname == "time" )
+        {
+            m_time = pr.second;
+        }
+    }
+
+}
+
+int LoadAccounts( eiendb::Database & db, int userId, AccountArray * accounts, int cateId )
+{
+    int count = 0;
     IfPTR(accounts)->RemoveAll();
-
-    int count = 0;
-    int paramIndex = 0;
-
-    winplus::AnsiString sql = winplus::StringToUtf8( winplus::String("SELECT * FROM am_accounts WHERE user = ?") + ( cateId != -1 ? " AND cate = ?" : "" ) + " ORDER BY cate;" );
-    sqlite3_stmt * stmt = NULL;
-    int rc;
-    const char * localError;
-
-    // ×¼±¸Óï¾ä
-    rc = sqlite3_prepare_v2( db, sql.c_str(), sql.size(), &stmt, NULL );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-    // ²ÎÊı°ó¶¨
-    // ËùÊôÓÃ»§
-    rc = Fields::_bindInt( stmt, ++paramIndex, userId );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-    // ËùÊôÖÖÀà
-    if ( cateId != -1 )
+    try
     {
-        rc = Fields::_bindInt( stmt, ++paramIndex, cateId );
-        if ( rc != SQLITE_OK ) goto OccurDbError;
-    }
+        winux::Mixed params;
+        params.add()(userId);
+        if ( cateId != -1 )
+            params.add(cateId);
 
-    // Ö´ĞĞÓï¾ä
-    while ( ( rc = sqlite3_step(stmt) ) == SQLITE_ROW )
-    {
-        Account account;
-        account.loadMyName( stmt, 0 );
-        account.loadAccountName( stmt, 1 );
-        account.loadAccountPwd( stmt, 2 );
-        account.loadCateId( stmt, 3 );
-        account.loadUserId( stmt, 4 );
-        account.loadSafeRank( stmt, 5 );
-        account.loadComment( stmt, 6 );
-        account.loadTime( stmt, 7 );//*/
-        IfPTR(accounts)->Add(account);
-        count++;
+        winux::String sql = "SELECT * FROM am_accounts WHERE user = ?";
+        sql += ( cateId != -1 ? " AND cate = ?" : "" );
+        sql += " ORDER BY cate;";
+
+        auto resAccounts = db->query( db->buildStmt( sql, params ) );
+        winux::StringMixedMap f;
+        while ( resAccounts->fetchRow(&f) )
+        {
+            Account account;
+            account.m_myName = f["myname"].toAnsi().c_str();
+            account.m_accountName = winux::LocalFromUtf8( DecryptContent( f["account_name"].toBuffer() ) ).c_str();
+            account.m_accountPwd = winux::LocalFromUtf8( DecryptContent( f["account_pwd"].toBuffer() ) ).c_str();
+            account.m_cateId = f["cate"];
+            account.m_userId = f["user"];
+            account.m_safeRank = f["safe_rank"];
+            account.m_comment = f["comment"].toAnsi().c_str();
+            account.m_time = f["time"];
+            IfPTR(accounts)->Add(account);
+            count++;
+        }
     }
-    
-    if ( rc == SQLITE_DONE ) // Êı¾İÒÑÍê»òÃ»ÓĞÊı¾İ
+    catch ( winux::Error const & e )
     {
-        goto ExitProc;
+        AfxGetMainWnd()->FatalError( e.what(), _T("æ•°æ®åº“é”™è¯¯") );
     }
-    else
-    {
-        sqlite3_reset(stmt);
-        goto OccurDbError;
-    }
-    
-ExitProc:
-    // Õı³£ÎŞ´íÎó½áÊø
-    sqlite3_reset(stmt);
-    if ( stmt )
-        sqlite3_finalize(stmt);
     return count;
-    
-OccurDbError: // ³ö´í´¦Àí
-    localError = sqlite3_errmsg(db);
-    if ( stmt )
-        sqlite3_finalize(stmt);
-    AfxGetMainWnd()->FatalError( winplus::Utf8ToString(localError).c_str(), _T("Êı¾İ¿â´íÎó") );
-    return 0;
 }
 
-bool GetAccount( sqlite3 * db, int userId, CString const & myName, Account * account )
+bool GetAccount( eiendb::Database & db, int userId, CString const & myName, Account * account )
 {
     bool ret = false;
-
-    winplus::AnsiString sql = winplus::StringToUtf8("SELECT * FROM am_accounts WHERE user = ? AND myname = ?;");
-    sqlite3_stmt * stmt = NULL;
-    int rc;
-    const char * localError;
-
-    // ×¼±¸Óï¾ä
-    rc = sqlite3_prepare_v2( db, sql.c_str(), sql.size(), &stmt, NULL );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-    // °ó¶¨²ÎÊı
-    // ËùÊôÓÃ»§
-    rc = Fields::_bindInt( stmt, 1, userId );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // ×Ô¶¨ÖÖÀàÃû
-    rc = Fields::_bindString( stmt, 2, myName );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // Ö´ĞĞÓï¾ä
-    rc = sqlite3_step(stmt);
-    if ( rc == SQLITE_ROW )
+    try
     {
-        IfPTR(account)->loadMyName( stmt, 0 );
-        IfPTR(account)->loadAccountName( stmt, 1 );
-        IfPTR(account)->loadAccountPwd( stmt, 2 );
-        IfPTR(account)->loadCateId( stmt, 3 );
-        IfPTR(account)->loadUserId( stmt, 4 );
-        IfPTR(account)->loadSafeRank( stmt, 5 );
-        IfPTR(account)->loadComment( stmt, 6 );
-        IfPTR(account)->loadTime( stmt, 7 );
-        ret = true;
-        goto ExitProc;
+        auto resAccount = db->query( db->buildStmt( "SELECT * FROM am_accounts WHERE user = ? AND myname = ?;", winux::Mixed().add()(userId)((LPCTSTR)myName) ) );
+        winux::StringMixedMap f;
+        if ( resAccount->fetchRow(&f) )
+        {
+            IfPTR(account)->m_myName = f["myname"].toAnsi().c_str();
+            IfPTR(account)->m_accountName = winux::LocalFromUtf8( DecryptContent( f["account_name"].toBuffer() ) ).c_str();
+            IfPTR(account)->m_accountPwd = winux::LocalFromUtf8( DecryptContent( f["account_pwd"].toBuffer() ) ).c_str();
+            IfPTR(account)->m_cateId = f["cate"];
+            IfPTR(account)->m_userId = f["user"];
+            IfPTR(account)->m_safeRank = f["safe_rank"];
+            IfPTR(account)->m_comment = f["comment"].toAnsi().c_str();
+            IfPTR(account)->m_time = f["time"];
+            ret = true;
+        }
     }
-    else if ( rc == SQLITE_DONE )
+    catch ( winux::Error const & e )
     {
-        ret = false;
-        goto ExitProc;
+        AfxGetMainWnd()->FatalError( e.what(), _T("æ•°æ®åº“é”™è¯¯") );
     }
-    else
-    {
-        sqlite3_reset(stmt);
-        goto OccurDbError;
-    }
-    
-ExitProc:
-    // Õı³£ÎŞ´íÎó½áÊø
-    sqlite3_reset(stmt);
-    if ( stmt )
-        sqlite3_finalize(stmt);
     return ret;
-    
-OccurDbError: // ³ö´í´¦Àí
-    localError = sqlite3_errmsg(db);
-    if ( stmt )
-        sqlite3_finalize(stmt);
-    AfxGetMainWnd()->FatalError( winplus::Utf8ToString(localError).c_str(), _T("Êı¾İ¿â´íÎó") );
-    return false;
 }
 
-bool AddAccount( sqlite3 * db, Account const & newAccount )
+bool AddAccount( eiendb::Database & db, winux::Mixed const & newAccount )
 {
-    int rowsChanged = 0;
-
-    winplus::AnsiString sql = winplus::StringToUtf8("INSERT INTO am_accounts( myname, account_name, account_pwd, cate, user, safe_rank, comment, time ) VALUES( ?, ?, ?, ?, ?, ?, ?, ? );");
-    sqlite3_stmt * stmt = NULL;
-    int rc;
-    const char * localError;
-
-    // ×¼±¸Óï¾ä
-    rc = sqlite3_prepare_v2( db, sql.c_str(), sql.size(), &stmt, NULL );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-    
-    // °ó¶¨²ÎÊı
-    // ÕË»§×Ô¶¨ÖÖÀàÃû
-    rc = newAccount.bindMyName( stmt, 1 );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-    
-    // ÕË»§Ãû
-    rc = newAccount.bindAccountName( stmt, 2 );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // ÕË»§ÃÜÂë
-    rc = newAccount.bindAccountPwd( stmt, 3 );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // CateId
-    rc = newAccount.bindCateId( stmt, 4 );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // ËùÊôÓÃ»§
-    rc = newAccount.bindUserId( stmt, 5 );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // °²È«È¨Öµ
-    rc = newAccount.bindSafeRank( stmt, 6 );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // ±¸×¢
-    rc = newAccount.bindComment( stmt, 7 );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // Ğ´ÈëÊ±¼ä
-    rc = Fields::_bindInt( stmt, 8, (int)winplus::GetUtcTime() );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // Ö´ĞĞÓï¾ä
-    rc = sqlite3_step(stmt);
-    if ( rc == SQLITE_DONE )
+    winux::Mixed newAccountMixed = newAccount;
+    newAccountMixed.addPair()
+        //( "myname", (LPCTSTR)newAccount.m_myName )
+        //( "account_name", EncryptContent( winux::LocalToUtf8((LPCTSTR)newAccount.m_accountName) ) )
+        //( "account_pwd", EncryptContent( winux::LocalToUtf8((LPCTSTR)newAccount.m_accountPwd) ) )
+        //( "cate", newAccount.m_cateId )
+        //( "user", newAccount.m_userId )
+        //( "safe_rank", newAccount.m_safeRank )
+        //( "comment", (LPCTSTR)newAccount.m_comment )
+        ( "time", (int)winux::GetUtcTime() )
+        ;
+    try
     {
-        rowsChanged = sqlite3_changes(db);
-        rc = sqlite3_reset(stmt);
-        if ( rc != SQLITE_OK ) goto OccurDbError;
+        auto mdf = db.mdf("am_accounts");
+        return mdf->addNew(newAccountMixed);
     }
-    else
+    catch ( winux::Error const & e )
     {
-        sqlite3_reset(stmt);
-        goto OccurDbError;
+        AfxGetMainWnd()->FatalError( e.what(), _T("æ•°æ®åº“é”™è¯¯") );
     }
-
-    // Õı³£ÎŞ´íÎó½áÊø
-    if ( stmt )
-        sqlite3_finalize(stmt);
-    return rowsChanged == 1;
-
-OccurDbError: // ³ö´í´¦Àí
-    localError = sqlite3_errmsg(db);
-    if ( stmt )
-        sqlite3_finalize(stmt);
-    AfxGetMainWnd()->FatalError( winplus::Utf8ToString(localError).c_str(), _T("Êı¾İ¿â´íÎó") );
     return false;
 }
 
-bool ModifyAccount( sqlite3 * db, int userId, CString const & myName, Account const & newAccount )
+bool ModifyAccount( eiendb::Database & db, int userId, CString const & myName, winux::Mixed const & newAccountFields )
 {
-    int rowsChanged = 0;
-
-    winplus::AnsiString sql = winplus::StringToUtf8("UPDATE am_accounts SET myname = ?, account_name = ?, account_pwd = ?, cate = ?, safe_rank = ?, comment = ? WHERE user = ? AND myname = ?;");
-    sqlite3_stmt * stmt = NULL;
-    int rc;
-    const char * localError;
-
-    // ×¼±¸Óï¾ä
-    rc = sqlite3_prepare_v2( db, sql.c_str(), sql.size(), &stmt, NULL );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // °ó¶¨²ÎÊı
-    // ĞÂÕË»§×Ô¶¨ÖÖÀàÃû
-    rc = newAccount.bindMyName( stmt, 1 );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // ĞÂÕË»§Ãû
-    rc = newAccount.bindAccountName( stmt, 2 );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // ĞÂÕË»§ÃÜÂë
-    rc = newAccount.bindAccountPwd( stmt, 3 );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // ĞÂCateId
-    rc = newAccount.bindCateId( stmt, 4 );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // ĞÂ°²È«È¨Öµ
-    rc = newAccount.bindSafeRank( stmt, 5 );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // ĞÂ±¸×¢
-    rc = newAccount.bindComment( stmt, 6 );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // ËùÊôÓÃ»§
-    rc = Fields::_bindInt( stmt, 7, userId );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // ÕË»§×Ô¶¨Ãû
-    rc = Fields::_bindString( stmt, 8, myName );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // Ö´ĞĞÓï¾ä
-    rc = sqlite3_step(stmt);
-    if ( rc == SQLITE_DONE )
+    try
     {
-        rowsChanged = sqlite3_changes(db);
-        rc = sqlite3_reset(stmt);
-        if ( rc != SQLITE_OK ) goto OccurDbError;
+        auto mdf = db.mdf("am_accounts");
+        return mdf->modifyEx( newAccountFields, "user=" + winux::Mixed(userId).toAnsi() + " AND myname=" + db->escape( (LPCTSTR)myName ) );
     }
-    else
+    catch ( winux::Error const & e )
     {
-        sqlite3_reset(stmt);
-        goto OccurDbError;
+        AfxGetMainWnd()->FatalError( e.what(), _T("æ•°æ®åº“é”™è¯¯") );
     }
-    
-    // Õı³£ÎŞ´íÎó½áÊø
-    if ( stmt )
-        sqlite3_finalize(stmt);
-    return rowsChanged == 1;
-    
-OccurDbError: // ³ö´í´¦Àí
-    localError = sqlite3_errmsg(db);
-    if ( stmt )
-        sqlite3_finalize(stmt);
-    AfxGetMainWnd()->FatalError( winplus::Utf8ToString(localError).c_str(), _T("Êı¾İ¿â´íÎó") );
     return false;
 }
 
-bool DeleteAccount( sqlite3 * db, int userId, CString const & myName )
+bool DeleteAccount( eiendb::Database & db, int userId, CString const & myName )
 {
-    int rowsChanged = 0;
-
-    winplus::AnsiString sql = winplus::StringToUtf8("DELETE FROM am_accounts WHERE user = ? AND myname = ?;");
-    sqlite3_stmt * stmt = NULL;
-    int rc;
-    const char * localError;
-
-    // ×¼±¸Óï¾ä
-    rc = sqlite3_prepare_v2( db, sql.c_str(), sql.size(), &stmt, NULL );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // °ó¶¨²ÎÊı
-    // ËùÊôÓÃ»§
-    rc = Fields::_bindInt( stmt, 1, userId );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // ×Ô¶¨Ãû
-    rc = Fields::_bindString( stmt, 2, myName );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // Ö´ĞĞÓï¾ä
-    rc = sqlite3_step(stmt);
-    if ( rc == SQLITE_DONE )
+    try
     {
-        rowsChanged = sqlite3_changes(db);
-        rc = sqlite3_reset(stmt);
-        if ( rc != SQLITE_OK ) goto OccurDbError;
+        auto mdf = db.mdf("am_accounts");
+        return mdf->deleteEx( "user=" + winux::Mixed(userId).toAnsi() + " AND myname=" + db->escape( (LPCTSTR)myName ) );
     }
-    else
+    catch ( winux::Error const & e )
     {
-        sqlite3_reset(stmt);
-        goto OccurDbError;
+        AfxGetMainWnd()->FatalError( e.what(), _T("æ•°æ®åº“é”™è¯¯") );
     }
-
-    // Õı³£ÎŞ´íÎó½áÊø
-    if ( stmt )
-        sqlite3_finalize(stmt);
-    return rowsChanged == 1;
-    
-OccurDbError: // ³ö´í´¦Àí
-    localError = sqlite3_errmsg(db);
-    if ( stmt )
-        sqlite3_finalize(stmt);
-    AfxGetMainWnd()->FatalError( winplus::Utf8ToString(localError).c_str(), _T("Êı¾İ¿â´íÎó") );
     return false;
 }
 
-CString GetCorrectAccountMyName( sqlite3 * db, int userId, CString const & myName )
+CString GetCorrectAccountMyName( eiendb::Database & db, int userId, CString const & myName )
 {
     CString result;
     int number = 0;
 
-    winplus::AnsiString sql = winplus::StringToUtf8("SELECT myname FROM am_accounts WHERE user = ? AND myname = ?;");
-    sqlite3_stmt * stmt = NULL;
-    int rc;
-    const char * localError;
-
-    // ×¼±¸Óï¾ä
-    rc = sqlite3_prepare_v2( db, sql.c_str(), sql.size(), &stmt, NULL );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
     result = myName;
-    // ²ÎÊı°ó¶¨
-    // ËùÊôÓÃ»§
-    rc = Fields::_bindInt( stmt, 1, userId );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // ×Ô¶¨ÖÖÀàÃû
-    rc = Fields::_bindString( stmt, 2, result );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // Ö´ĞĞÓï¾ä
-    while ( ( rc = sqlite3_step(stmt) ) == SQLITE_ROW )
+    try
     {
-        rc = sqlite3_reset(stmt);
-        if ( rc != SQLITE_OK ) goto OccurDbError;
-        ++number;
-        result.Format( _T("%s%d"), (LPCTSTR)myName, number );
-        // ²ÎÊı°ó¶¨
-        // ËùÊôÓÃ»§
-        rc = Fields::_bindInt( stmt, 1, userId );
-        if ( rc != SQLITE_OK ) goto OccurDbError;
-        
-        // ×Ô¶¨ÖÖÀàÃû
-        rc = Fields::_bindString( stmt, 2, result );
-        if ( rc != SQLITE_OK ) goto OccurDbError;
-    }
+        auto stmt = db->buildStmt( "SELECT myname FROM am_accounts WHERE user = ? AND myname = ?;", winux::Mixed().add()(userId)((LPCTSTR)result) );
+        auto resAccount = db->query(stmt);
+        while ( resAccount->rowsCount() > 0 )
+        {
+            number++;
+            result.Format( "%s%d", (LPCTSTR)myName, number );
 
-    if ( rc == SQLITE_DONE ) // Êı¾İÒÑÍê»òÃ»ÓĞÊı¾İ
-    {
-        goto ExitProc;
+            stmt = db->buildStmt( "SELECT myname FROM am_accounts WHERE user = ? AND myname = ?;", winux::Mixed().add()(userId)((LPCTSTR)result) );
+            resAccount = db->query(stmt);
+        }
     }
-    else
+    catch ( winux::Error const & e )
     {
-        sqlite3_reset(stmt);
-        goto OccurDbError;
+        AfxGetMainWnd()->FatalError( e.what(), _T("æ•°æ®åº“é”™è¯¯") );
     }
-
-ExitProc:
-    // Õı³£ÎŞ´íÎó½áÊø
-    sqlite3_reset(stmt);
-    if ( stmt )
-        sqlite3_finalize(stmt);
     return result;
-
-OccurDbError: // ³ö´í´¦Àí
-    localError = sqlite3_errmsg(db);
-    if ( stmt )
-        sqlite3_finalize(stmt);
-    AfxGetMainWnd()->FatalError( winplus::Utf8ToString(localError).c_str(), _T("Êı¾İ¿â´íÎó") );
-    return _T("");
 }
 
-int LoadTableNames( sqlite3 * db, winplus::StringArray * tableNames, winplus::String const & like )
+int LoadTableNames( eiendb::Database & db, winplus::StringArray * tableNames, winplus::String const & like )
 {
     int count = 0;
     IfPTR(tableNames)->clear();
-
-    winplus::AnsiString sql = winplus::StringToUtf8("SELECT tbl_name FROM sqlite_master WHERE type = \'table\' AND tbl_name LIKE ? ESCAPE \'\\\';");
-    sqlite3_stmt * stmt = NULL;
-    int rc;
-    const char * localError;
-
-    // ×¼±¸Óï¾ä
-    rc = sqlite3_prepare_v2( db, sql.c_str(), sql.size(), &stmt, NULL );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    rc = sqlite3_bind_text( stmt, 1, winplus::StringToUtf8(like).c_str(), -1, SQLITE_TRANSIENT );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // Ö´ĞĞÓï¾ä
-    while ( ( rc = sqlite3_step(stmt) ) == SQLITE_ROW )
+    try
     {
-        IfPTR(tableNames)->push_back( winplus::Utf8ToString( (char const *)sqlite3_column_text( stmt, 0 ) ) );
-        count++;
+        auto resTableNames = db->query( db->buildStmt( "SELECT tbl_name FROM sqlite_master WHERE type = \'table\' AND tbl_name LIKE ? ESCAPE \'\\\';", like ) );
+        winux::MixedArray f;
+        while ( resTableNames->fetchRow(&f) )
+        {
+            IfPTR(tableNames)->push_back(f[0]);
+            count++;
+        }
     }
-    
-    if ( rc == SQLITE_DONE ) // Êı¾İÒÑÍê»òÃ»ÓĞÊı¾İ
+    catch ( winux::Error const & e )
     {
-        goto ExitProc;
+        AfxGetMainWnd()->FatalError( e.what(), _T("æ•°æ®åº“é”™è¯¯") );
     }
-    else
-    {
-        sqlite3_reset(stmt);
-        goto OccurDbError;
-    }
-    
-ExitProc:
-    // Õı³£ÎŞ´íÎó½áÊø
-    sqlite3_reset(stmt);
-    if ( stmt )
-        sqlite3_finalize(stmt);
     return count;
-    
-OccurDbError: // ³ö´í´¦Àí
-    localError = sqlite3_errmsg(db);
-    if ( stmt )
-        sqlite3_finalize(stmt);
-    AfxGetMainWnd()->FatalError( winplus::Utf8ToString(localError).c_str(), _T("Êı¾İ¿â´íÎó") );
-    return 0;
 }
 
-int DumpDDL( sqlite3 * db, winplus::String * ddl, winplus::String const & like )
+int DumpDDL( eiendb::Database & db, winplus::String * ddl, winplus::String const & like )
 {
     int count = 0;
-
-    winplus::AnsiString sql = winplus::StringToUtf8("SELECT sql FROM sqlite_master WHERE tbl_name LIKE ? ESCAPE \'\\\' AND NOT sql IS Null ORDER BY tbl_name;");
-    sqlite3_stmt * stmt = NULL;
-    int rc;
-    const char * localError;
-
-    // ×¼±¸Óï¾ä
-    rc = sqlite3_prepare_v2( db, sql.c_str(), sql.size(), &stmt, NULL );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    rc = sqlite3_bind_text( stmt, 1, winplus::StringToUtf8(like).c_str(), -1, SQLITE_TRANSIENT );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // Ö´ĞĞÓï¾ä
-    while ( ( rc = sqlite3_step(stmt) ) == SQLITE_ROW )
+    try
     {
-        AssignPTR(ddl) += winplus::Utf8ToString( (char const *)sqlite3_column_text( stmt, 0 ) ) + _T(";") + winplus::lineSep;
-        count++;
+        auto resDdlSqls = db->query( db->buildStmt( "SELECT sql FROM sqlite_master WHERE tbl_name LIKE ? ESCAPE \'\\\' AND NOT sql IS Null ORDER BY tbl_name;", like ) );
+        winux::MixedArray f;
+        while ( resDdlSqls->fetchRow(&f) )
+        {
+            AssignPTR(ddl) += f[0].toAnsi() + _T(";") + winux::LineSep;
+            count++;
+        }
     }
-
-    if ( rc == SQLITE_DONE ) // Êı¾İÒÑÍê»òÃ»ÓĞÊı¾İ
+    catch ( winux::Error const & e )
     {
-        goto ExitProc;
+        AfxGetMainWnd()->FatalError( e.what(), _T("æ•°æ®åº“é”™è¯¯") );
     }
-    else
-    {
-        sqlite3_reset(stmt);
-        goto OccurDbError;
-    }
-
-ExitProc:
-    // Õı³£ÎŞ´íÎó½áÊø
-    sqlite3_reset(stmt);
-    if ( stmt )
-        sqlite3_finalize(stmt);
     return count;
-
-OccurDbError: // ³ö´í´¦Àí
-    localError = sqlite3_errmsg(db);
-    if ( stmt )
-        sqlite3_finalize(stmt);
-    AfxGetMainWnd()->FatalError( winplus::Utf8ToString(localError).c_str(), _T("Êı¾İ¿â´íÎó") );
-    return 0;
 }
 
-bool IsBrowserExeName( sqlite3 * db, CString const & exeName, CString * browserTitle )
+bool IsBrowserExeName( eiendb::Database & db, CString const & exeName, CString * browserTitle )
 {
     bool ret = false;
-
-    winplus::AnsiString sql = winplus::StringToUtf8("SELECT title FROM am_browsers WHERE exe_name = ?;");
-    sqlite3_stmt * stmt = NULL;
-    int rc;
-    const char * localError;
-
-    // ×¼±¸Óï¾ä
-    rc = sqlite3_prepare_v2( db, sql.c_str(), sql.size(), &stmt, NULL );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-    // °ó¶¨²ÎÊı
-    rc = sqlite3_bind_text( stmt, 1, winplus::StringToUtf8( (LPCTSTR)exeName ).c_str(), -1, SQLITE_TRANSIENT );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // Ö´ĞĞÓï¾ä
-    rc = sqlite3_step(stmt);
-    if ( rc == SQLITE_ROW )
+    try
     {
-        AssignPTR(browserTitle) = winplus::Utf8ToString( (char const *)sqlite3_column_text( stmt, 0 ) ).c_str();
-        ret = true;
-        goto ExitProc;
+        auto resIsBrowser = db->query( db->buildStmt( "SELECT title FROM am_browsers WHERE exe_name = ?;", (LPCTSTR)exeName ) );
+        winux::MixedArray f;
+        if ( resIsBrowser->fetchRow(&f) )
+        {
+            AssignPTR(browserTitle) = f[0].toAnsi().c_str();
+            ret = true;
+        }
     }
-    else if ( rc == SQLITE_DONE )
+    catch ( winux::Error const & e )
     {
-        ret = false;
-        goto ExitProc;
+        AfxGetMainWnd()->FatalError( e.what(), _T("æ•°æ®åº“é”™è¯¯") );
     }
-    else
-    {
-        sqlite3_reset(stmt);
-        goto OccurDbError;
-    }
-
-ExitProc:
-    // Õı³£ÎŞ´íÎó½áÊø
-    sqlite3_reset(stmt);
-    if ( stmt )
-        sqlite3_finalize(stmt);
     return ret;
-
-OccurDbError: // ³ö´í´¦Àí
-    localError = sqlite3_errmsg(db);
-    if ( stmt )
-        sqlite3_finalize(stmt);
-    AfxGetMainWnd()->FatalError( winplus::Utf8ToString(localError).c_str(), _T("Êı¾İ¿â´íÎó") );
-    return false;
-
 }

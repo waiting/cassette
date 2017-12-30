@@ -88,8 +88,8 @@ BOOL CassetteApp::InitInstance()
 
     if ( isSavePassword ) // 载入保存的用户和密码
     {
-        username = DecryptContent( Base64Decode(m_settings.username) ).c_str();
-        password = DecryptContent( Base64Decode(m_settings.password) ).c_str();
+        username = DecryptContent( winux::Mixed( Base64Decode(m_settings.username) ).toBuffer() ).c_str();
+        password = DecryptContent( winux::Mixed( Base64Decode(m_settings.password) ).toBuffer() ).c_str();
     }
 
     if ( isAutoLogin && !username.IsEmpty() && LoginUser( g_theApp.GetDatabase(), username, password, &m_loginedUser ) ) // 自动登录
@@ -111,8 +111,8 @@ BOOL CassetteApp::InitInstance()
                 m_settings.isSavePassword = isSavePassword != FALSE;
                 if ( isSavePassword ) // 保存用户和密码
                 {
-                    m_settings.username = Base64Encode( EncryptContent( (LPCSTR)username ) );
-                    m_settings.password = Base64Encode( EncryptContent( (LPCSTR)password ) );
+                    m_settings.username = Base64Encode( winux::Mixed( EncryptContent( (LPCSTR)username ) ).toAnsi() );
+                    m_settings.password = Base64Encode( winux::Mixed( EncryptContent( (LPCSTR)password ) ).toAnsi() );
                 }
                 else
                 {
@@ -161,12 +161,17 @@ void CassetteApp::InitDatabaseSchema()
     sql.resize( ResSQL.getSize() );
     ResSQL.copyTo( &sql[0], sql.size() );
     nSQLs = winplus::StrSplit( sql, _T(";"), &sqls );
-    for ( i = 0; i < nSQLs; ++i )
+    try
     {
-        if ( winplus::_StrTrim(sqls[i]).empty() ) continue;
-        int rc;
-        rc = sqlite3_exec( m_db, winplus::StringToUtf8(sqls[i]).c_str(), NULL, NULL, NULL );
-        if ( rc != SQLITE_OK ) goto OccurDbError;
+        for ( i = 0; i < nSQLs; ++i )
+        {
+            if ( winplus::_StrTrim(sqls[i]).empty() ) continue;
+            m_db->cnn()->exec( sqls[i].c_str() );
+        }
+    }
+    catch ( winux::Error const & e )
+    {
+        AfxMessageBox( e.what(), MB_ICONERROR );
     }
 
     return;
@@ -177,6 +182,45 @@ OccurDbError:
 
 void CassetteApp::OpenDatabase()
 {
+    winplus::String databasePath = ExplainCustomVars(m_settings.databasePath);
+    winplus::AnsiString encryptKey;
+    winplus::Resource objResDbKey;
+    // 从资源加载KEY
+    if ( objResDbKey.load( IDR_KEY_DB, _T("KEY") ) )
+    {
+        encryptKey.resize( objResDbKey.getSize() );
+        CopyMemory( &encryptKey[0], objResDbKey.getData(), encryptKey.size() );
+    }
+    //判断数据库文件是否存在,不存在则需要初始化
+    CFileStatus fstatus;
+    bool isNeedInit = !CFile::GetStatus( databasePath.c_str(), fstatus );
+
+    winux::Mixed dbConfig;
+    dbConfig.addPair()
+        ( "driver", "sqlite" )
+        ( "path", databasePath )
+        ( "dbkey", encryptKey )
+        ( "charset", "" )
+        ;
+
+    //AfxMessageBox( dbConfig.myJson().c_str() );
+
+    try
+    {
+        m_db = new eiendb::Database(dbConfig);
+    }
+    catch ( winux::Error const & e )
+    {
+        AfxMessageBox( e.what(), MB_ICONERROR );
+    }
+
+    if ( isNeedInit )
+    {
+        InitDatabaseSchema();
+    }
+
+/*
+
     int rc;
     winplus::String databasePath = ExplainCustomVars(m_settings.databasePath);
     winplus::AnsiString encryptKey;
@@ -212,7 +256,7 @@ void CassetteApp::OpenDatabase()
 
     if ( isNeedInit )
     {
-        InitDatabaseSchema();
+    InitDatabaseSchema();
     }
 
     return;
@@ -223,14 +267,14 @@ OccurDbError:
         localError = sqlite3_errmsg(db);
         sqlite3_close(db);
     }
-    AfxMessageBox( winplus::Utf8ToString(localError).c_str() );
+    AfxMessageBox( winplus::Utf8ToString(localError).c_str() );*/
 }
 
 void CassetteApp::CloseDatabase()
 {
     if ( m_db != NULL )
     {
-        sqlite3_close(m_db);
+        delete m_db;
         m_db = NULL;
     }
 }

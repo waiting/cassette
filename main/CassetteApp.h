@@ -71,7 +71,7 @@ public:
     };
 protected:
     winplus::SharedMemory<CassetteSharedData> m_sharedMem;//共享内存
-    sqlite3 * m_db;
+    eiendb::Database * m_db;
     winplus::WordsLib * m_wordslib;//词库
 
     // 开启/关闭开机自动启动
@@ -104,7 +104,7 @@ public:
     void CloseWordslib();
     // close wordslib
     // 获取数据库
-    sqlite3 * GetDatabase() const { return m_db; }
+    eiendb::Database & GetDatabase() const { return *m_db; }
     // get wordslib
     winplus::WordsLib * GetWordslib() const { return m_wordslib; }
     // 备份数据

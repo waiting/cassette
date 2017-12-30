@@ -14,7 +14,7 @@ class AccountEditingDlg : public Dialog
 {
 // Construction
 public:
-    AccountEditingDlg( CWnd * parent, bool isAdd, Account * account );
+    AccountEditingDlg( CWnd * parent, bool isAdd, winux::Mixed * accountFields );
 
 // Dialog Data
     //{{AFX_DATA(AccountEditingDlg)
@@ -32,7 +32,7 @@ public:
 // Implementation
 protected:
     bool m_isAdd;
-    Account * m_account;
+    winux::Mixed & m_accountFields;
 
     AccountCateArray m_cates; // 存储种类信息
     CUIntArray m_cateIds2;

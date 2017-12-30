@@ -11,8 +11,8 @@ static char THIS_FILE[] = __FILE__;
 
 /////////////////////////////////////////////////////////////////////////////
 // AccountEditingDlg dialog
-AccountEditingDlg::AccountEditingDlg( CWnd * parent, bool isAdd, Account * account )
-: Dialog( AccountEditingDlg::IDD, parent ), m_isAdd(isAdd), m_account(account)
+AccountEditingDlg::AccountEditingDlg( CWnd * parent, bool isAdd, winux::Mixed * accountFields )
+: Dialog( AccountEditingDlg::IDD, parent ), m_isAdd(isAdd), m_accountFields(*accountFields)
 {
     //{{AFX_DATA_INIT(AccountEditingDlg)
     //}}AFX_DATA_INIT
@@ -24,12 +24,19 @@ void AccountEditingDlg::DoDataExchange( CDataExchange * pDX )
     //{{AFX_DATA_MAP(AccountEditingDlg)
 
     //}}AFX_DATA_MAP
+
     DDX_CBIndex(pDX, IDC_COMBO_CATES, m_cateIndex);
-    DDX_Text(pDX, IDC_EDIT_MYNAME, m_account->m_myName);
-    DDX_Text(pDX, IDC_EDIT_ACCOUNTNAME, m_account->m_accountName);
-    DDX_Text(pDX, IDC_EDIT_ACCOUNTPWD, m_account->m_accountPwd);
-    DDX_Text(pDX, IDC_EDIT_SAFERANK, m_account->m_safeRank);
-    DDX_Text(pDX, IDC_EDIT_COMMENT, m_account->m_comment);
+
+    Account account;
+    account.assign(m_accountFields);
+
+    DDX_Text(pDX, IDC_EDIT_MYNAME, account.m_myName);
+    DDX_Text(pDX, IDC_EDIT_ACCOUNTNAME, account.m_accountName);
+    DDX_Text(pDX, IDC_EDIT_ACCOUNTPWD, account.m_accountPwd);
+    DDX_Text(pDX, IDC_EDIT_SAFERANK, account.m_safeRank);
+    DDX_Text(pDX, IDC_EDIT_COMMENT, account.m_comment);
+
+    account.assignTo(&m_accountFields,"myname,account_name,account_pwd,safe_rank,comment");
 }
 
 BEGIN_MESSAGE_MAP(AccountEditingDlg, Dialog)
@@ -74,7 +81,7 @@ BOOL AccountEditingDlg::OnInitDialog()
     // ID to Index
     for ( i = 0; i < catesCount; ++i )
     {
-        if ( m_cates[i].m_id == m_account->m_cateId )
+        if ( m_cates[i].m_id == (int)m_accountFields["cate"] )
         {
             m_cateIndex = i;
             break;
@@ -100,7 +107,7 @@ void AccountEditingDlg::OnOK()
 {
     UpdateData(TRUE);
 
-    if ( m_account->m_myName.IsEmpty() )
+    if ( m_accountFields["myname"].refAnsi().empty() )
     {
         WarningError( _T("名称不能为空"), _T("错误") );
         return;
@@ -112,7 +119,7 @@ void AccountEditingDlg::OnOK()
         return;
     }
     // Index to Id
-    m_account->m_cateId = m_cates[m_cateIndex].m_id;
+    m_accountFields["cate"] = m_cates[m_cateIndex].m_id;
 
     EndDialog(IDOK);
 }
@@ -122,11 +129,11 @@ void AccountEditingDlg::OnSelChangeComboCates()
     if ( !m_isAdd ) return; // 只有添加账户时需要此功能
     UpdateData(TRUE);
     CComboBox * pCboCates = (CComboBox *)GetDlgItem(IDC_COMBO_CATES);
-    m_account->m_safeRank = GetSafeRankByCateId(m_cates[m_cateIndex].m_id);
-    m_account->m_comment = m_cates[m_cateIndex].m_cateDesc;
+    m_accountFields["safe_rank"] = GetSafeRankByCateId(m_cates[m_cateIndex].m_id);
+    m_accountFields["comment"] = (LPCTSTR)m_cates[m_cateIndex].m_cateDesc;
     CString tmpMyName;
     pCboCates->GetLBText( m_cateIndex, tmpMyName );
     tmpMyName = _T("我的") + tmpMyName + _T("账户");
-    m_account->m_myName = GetCorrectAccountMyName( g_theApp.GetDatabase(), g_theApp.m_loginedUser.m_id, tmpMyName );
+    m_accountFields["myname"] = (LPCTSTR)GetCorrectAccountMyName( g_theApp.GetDatabase(), g_theApp.m_loginedUser.m_id, tmpMyName );
     UpdateData(FALSE);
 }

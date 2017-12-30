@@ -94,7 +94,7 @@ void AccountCatesDlg::UpdateList( int flag /*= UPDATE_LOAD_DATA | UPDATE_LIST_IT
 
 }
 
-void AccountCatesDlg::DoAdd( CWnd * parent, AccountCate * cate )
+void AccountCatesDlg::DoAdd( CWnd * parent, winux::Mixed * cate )
 {
     VERIFY_RUNONLY_OTHER_HPROCESS(parent);
     VERIFY_ONCE_DIALOG(onceEditingDlg);
@@ -102,7 +102,7 @@ void AccountCatesDlg::DoAdd( CWnd * parent, AccountCate * cate )
     AccountCateEditingDlg editingDlg( parent, true, cate );
 
     SetNullScopeOut setNullScopeOut( onceEditingDlg = &editingDlg );
-    
+
     if ( IDOK == editingDlg.DoModal() )
     {
         int id;
@@ -262,7 +262,8 @@ void AccountCatesDlg::OnListRClick( NMHDR* pNMHDR, LRESULT* pResult )
 
 void AccountCatesDlg::OnAdd()
 {
-    AccountCate cate;
+    winux::Mixed cate;
+    cate.createCollection();
     DoAdd( GetOwner(), &cate );
 }
 
@@ -272,9 +273,9 @@ void AccountCatesDlg::OnModify()
 
     CListCtrl & lst = *(CListCtrl *)GetDlgItem(IDC_LIST_CATES);
     int index = lst.GetNextItem( -1, LVNI_ALL | LVNI_SELECTED );
-    AccountCate newCate;
+    winux::Mixed newCate;
     int id = m_cates[index].m_id;
-    newCate = m_cates[index];
+    m_cates[index].assignTo(&newCate);
 
     AccountCateEditingDlg editingDlg( GetOwner(), false, &newCate );
     SetNullScopeOut setNullScopeOut( onceEditingDlg = &editingDlg );
@@ -282,7 +283,7 @@ void AccountCatesDlg::OnModify()
     {
         if ( ModifyAccountCate( g_theApp.GetDatabase(), id, newCate ) )
         {
-            m_cates[index] = newCate;
+            m_cates[index].assign(newCate);
 
             UpdateList( UPDATE_LIST_ITEMS, index );
             CString strId;

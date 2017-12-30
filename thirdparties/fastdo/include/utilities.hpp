@@ -845,8 +845,8 @@ public:
     bool isBinary() const { return this->_type == MT_BINARY; }
     bool isNumeric() const { return this->_type > MT_NULL && this->_type < MT_ANSI; }
     bool isInteger() const { return this->isNumeric() && this->_type != MT_FLOAT && this->_type != MT_DOUBLE; }
-    bool isAnsiString() const { return this->_type == MT_ANSI; }
-    bool isUnicodeString() const { return this->_type == MT_UNICODE; }
+    bool isAnsi() const { return this->_type == MT_ANSI; }
+    bool isUnicode() const { return this->_type == MT_UNICODE; }
     bool isString() const { return this->_type == MT_ANSI || this->_type == MT_UNICODE; }
 
     // 创建相关类型 -------------------------------------------------------------------------
@@ -932,8 +932,13 @@ public:
         CollectionAssigner & operator()( Mixed const & k, Mixed const & v );
         operator Mixed & () { return *_mx; }
     };
-    /** \brief 往Collection添加数据 */
-    CollectionAssigner addPair() { return CollectionAssigner(this); }
+
+    /** \brief 往Collection添加数据.
+     *
+     *  如果不是Collection,则自动释放之前数据,创建Collection. */
+    CollectionAssigner addPair();
+
+    /** \brief 往Collection添加一个pair. 非Collection类型调用此函数会抛异常. */
     Mixed & addPair( Mixed const & k, Mixed const & v );
 
     class WINUX_DLL ArrayAssigner
@@ -944,8 +949,11 @@ public:
         ArrayAssigner & operator()( Mixed const & v );
         operator Mixed & () { return *_mx; }
     };
-    /** \brief 往Array添加数据 */
-    ArrayAssigner add() { return ArrayAssigner(this); }
+
+    /** \brief 往Array添加数据.
+     *
+     *  如果不是Array,则自动释放之前数据,创建Array. */
+    ArrayAssigner add();
 
     /** \brief 往数组里加一个元素,返回索引值,非Array类型调用此函数会抛异常 */
     int add( Mixed const & v );

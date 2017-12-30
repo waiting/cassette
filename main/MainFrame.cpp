@@ -99,27 +99,30 @@ void MainFrame::UpdateList( int flag, long itemIndex )
     IfPTR(m_pAccountsView)->UpdateList( flag, itemIndex );
 }
 
-void MainFrame::DoAddAccount( CWnd * parent, Account * newAccount )
+void MainFrame::DoAddAccount( CWnd * parent, winux::Mixed & newAccount )
 {
     VERIFY_RUNONLY_OTHER_HPROCESS(parent);
     VERIFY_ONCE_DIALOG(onceEditingDlg);
 
-    AccountEditingDlg editingDlg( parent, true, newAccount );
+    AccountEditingDlg editingDlg( parent, true, &newAccount );
 
     SetNullScopeOut setNullScopeOut( onceEditingDlg = &editingDlg );
 
     if ( IDOK == editingDlg.DoModal() )
     {
-        if ( AddAccount( g_theApp.GetDatabase(), *newAccount ) )
+        if ( AddAccount( g_theApp.GetDatabase(), newAccount ) )
         {
+            Account account;
+            account.assign(newAccount);
+
             CListCtrl & lst = m_pAccountsView->GetListCtrl();
             // 向list加入一项
             int itemIndex;
             itemIndex = lst.GetItemCount();
-            lst.InsertItem( itemIndex, newAccount->m_myName );
-            
+            lst.InsertItem( itemIndex, account.m_myName );
+
             // 向数组添加一项
-            m_pAccountsView->m_accounts.Add(*newAccount);
+            m_pAccountsView->m_accounts.Add(account);
 
             UpdateList( UPDATE_LOAD_DATA | UPDATE_LIST_ITEMS, itemIndex );
             lst.SetItemState( itemIndex, LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED );
@@ -327,10 +330,15 @@ void MainFrame::OnUserSettings()
 {
     VERIFY_ONCE_DIALOG(onceSettingsDlg);
 
-    User user;
-    user = g_theApp.m_loginedUser;
+    winux::Mixed userFields;
+    userFields.addPair()
+        ( "name", (LPCTSTR)g_theApp.m_loginedUser.m_username )
+        ( "protect", g_theApp.m_loginedUser.m_protectLevel )
+        ( "condone", g_theApp.m_loginedUser.m_condone )
+        ( "hotkey", g_theApp.m_loginedUser.m_hotkey )
+        ;
 
-    UserSettingsDlg settingsDlg( this, &user );
+    UserSettingsDlg settingsDlg( this, &userFields );
 
     SetNullScopeOut setNullScopeOut( onceSettingsDlg = &settingsDlg );
 
@@ -339,18 +347,16 @@ void MainFrame::OnUserSettings()
         if ( ModifyUserEx(
             g_theApp.GetDatabase(),
             g_theApp.m_loginedUser.m_username,
-            am_users__name |
-            ( settingsDlg.IsModifyPassword() ? am_users__pwd : 0 ) |
-            am_users__protect |
-            am_users__condone |
-            am_users__cur_condone |
-            am_users__hotkey,
-            user
+            userFields
         ) )
         {
-            g_theApp.m_loginedUser = user;
+            g_theApp.m_loginedUser.m_username = userFields["name"].toAnsi().c_str();
+            g_theApp.m_loginedUser.m_protectLevel = userFields["protect"];
+            g_theApp.m_loginedUser.m_condone = userFields["condone"];
+            g_theApp.m_loginedUser.m_hotkey = userFields["hotkey"];
+
             this->UpdateTitle();
-            this->RefreshHotkey(user.m_hotkey);
+            this->RefreshHotkey(userFields["hotkey"]);
         }
     }
 
@@ -396,7 +402,14 @@ void MainFrame::OnAddAccount()
     newAccount.m_cateId = 0;
     newAccount.m_safeRank = 20;
 
-    DoAddAccount( this, &newAccount );
+    winux::Mixed accountFields;
+    accountFields.addPair()
+        ( "user", g_theApp.m_loginedUser.m_id )
+        ( "cate", 0 )
+        ( "safe_rank", 20 )
+        ;
+
+    DoAddAccount( this, accountFields );
 }
 
 void MainFrame::OnModifyAccount()
@@ -406,22 +419,25 @@ void MainFrame::OnModifyAccount()
     CListCtrl & lst = this->m_pAccountsView->GetListCtrl();
     int index = lst.GetNextItem( -1, LVNI_ALL | LVNI_SELECTED );
     CString myName = m_pAccountsView->m_accounts[index].m_myName;
-    Account newAccount = m_pAccountsView->m_accounts[index];
 
-    AccountEditingDlg editingDlg( this, false, &newAccount );
+    winux::Mixed accountFields;
+    m_pAccountsView->m_accounts[index].assignTo( &accountFields, "myname,account_name,account_pwd,cate,user,safe_rank,comment,time" );
+
+    AccountEditingDlg editingDlg( this, false, &accountFields );
 
     SetNullScopeOut setNullScopeOut( onceEditingDlg = &editingDlg );
 
     if ( IDOK == editingDlg.DoModal() )
     {
-        if ( ModifyAccount( g_theApp.GetDatabase(), g_theApp.m_loginedUser.m_id, myName, newAccount ) )
+        if ( ModifyAccount( g_theApp.GetDatabase(), g_theApp.m_loginedUser.m_id, myName, accountFields ) )
         {
-            m_pAccountsView->m_accounts[index] = newAccount;
+            m_pAccountsView->m_accounts[index].assign(accountFields);
 
             UpdateList( UPDATE_LIST_ITEMS, index );
             LVFINDINFO fi;
             fi.flags = LVFI_PARTIAL | LVFI_STRING;
-            fi.psz = newAccount.m_myName;
+            myName = accountFields["myname"].refAnsi().c_str();
+            fi.psz = myName;
             int itemIndex = lst.FindItem(&fi);
             lst.SetItemState( itemIndex, LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED );
         }
@@ -588,7 +604,11 @@ void MainFrame::DoIntelligentHotkey()
         if ( g_theApp.GetWordslib() )
             g_theApp.GetWordslib()->splitWords( curWndTitle, &autoKeywords );
         cate.m_keywords = winplus::StrJoin( _T(","), autoKeywords ).c_str();
-        m_catesDlg.DoAdd( pCurWnd, &cate );
+
+        winux::Mixed cateFields;
+        cate.assignTo(&cateFields);
+
+        m_catesDlg.DoAdd( pCurWnd, &cateFields );
     }
     else // 有该种类
     {
@@ -599,7 +619,14 @@ void MainFrame::DoIntelligentHotkey()
             Account newAccount;
             newAccount.m_cateId = m_catesDlg.m_cates[cateIndex].m_id;
             newAccount.m_userId = g_theApp.m_loginedUser.m_id;
-            DoAddAccount( pCurWnd, &newAccount );
+
+            winux::Mixed accountFields;
+            accountFields.addPair()
+                ( "cate", m_catesDlg.m_cates[cateIndex].m_id )
+                ( "user", g_theApp.m_loginedUser.m_id )
+                ;
+
+            DoAddAccount( pCurWnd, accountFields );
         }
         else // 有账户数据
         {

@@ -12,8 +12,8 @@ static char THIS_FILE[] = __FILE__;
 /////////////////////////////////////////////////////////////////////////////
 // AccountCateEditingDlg dialog
 
-AccountCateEditingDlg::AccountCateEditingDlg( CWnd * parent, bool isAdd, AccountCate * cate )
-: Dialog(AccountCateEditingDlg::IDD, parent), m_isAdd(isAdd), m_cate(cate)
+AccountCateEditingDlg::AccountCateEditingDlg( CWnd * parent, bool isAdd, winux::Mixed * cateFields )
+: Dialog(AccountCateEditingDlg::IDD, parent), m_isAdd(isAdd), m_cate(cateFields)
 {
     //{{AFX_DATA_INIT(AccountCateEditingDlg)
     //}}AFX_DATA_INIT
@@ -26,15 +26,20 @@ void AccountCateEditingDlg::DoDataExchange(CDataExchange* pDX)
     Dialog::DoDataExchange(pDX);
     //{{AFX_DATA_MAP(AccountCateEditingDlg)
     //}}AFX_DATA_MAP
-    DDX_Text(pDX, IDC_EDIT_CATENAME, m_cate->m_cateName);
-    DDX_Text(pDX, IDC_EDIT_CATEDESC, m_cate->m_cateDesc);
+    AccountCate cate;
+    cate.assign(*m_cate);
+
+    DDX_Text(pDX, IDC_EDIT_CATENAME, cate.m_cateName);
+    DDX_Text(pDX, IDC_EDIT_CATEDESC, cate.m_cateDesc);
     DDX_CBIndex(pDX, IDC_COMBO_TYPES, m_typeIndex);
-    DDX_Text(pDX, IDC_COMBO_TYPES, m_cate->m_typeName);
-    DDX_Text(pDX, IDC_EDIT_URL, m_cate->m_url);
-    DDX_Text(pDX, IDC_EDIT_ICOPATH, m_cate->m_icoPath);
+    DDX_Text(pDX, IDC_COMBO_TYPES, cate.m_typeName);
+    DDX_Text(pDX, IDC_EDIT_URL, cate.m_url);
+    DDX_Text(pDX, IDC_EDIT_ICOPATH, cate.m_icoPath);
     DDX_CBIndex(pDX, IDC_COMBO_STARTUP, m_startupIndex);
-    DDX_Text(pDX, IDC_COMBO_STARTUP, m_cate->m_startup);
-    DDX_Text(pDX, IDC_EDIT_KEYWORDS, m_cate->m_keywords);
+    DDX_Text(pDX, IDC_COMBO_STARTUP, cate.m_startup);
+    DDX_Text(pDX, IDC_EDIT_KEYWORDS, cate.m_keywords);
+
+    cate.assignTo( m_cate,"name,desc,type,url,icon,startup,keywords" );
 }
 
 BEGIN_MESSAGE_MAP(AccountCateEditingDlg, Dialog)
@@ -70,7 +75,7 @@ BOOL AccountCateEditingDlg::OnInitDialog()
 
     for ( i = 0; i < n; ++i )
     {
-        if ( m_cate->m_typeName == types[i].m_typeName )
+        if ( m_cate->get<winux::String>("type") == (LPCTSTR)types[i].m_typeName )
         {
             m_typeIndex = i;
             break;
@@ -79,7 +84,7 @@ BOOL AccountCateEditingDlg::OnInitDialog()
 
     for ( i = 0; i < countof(startups); ++i )
     {
-        if ( m_cate->m_startup == startups[i] )
+        if ( m_cate->get<winux::String>("startup") == (LPCTSTR)startups[i] )
         {
             m_startupIndex = i;
             break;
@@ -95,12 +100,12 @@ BOOL AccountCateEditingDlg::OnInitDialog()
 void AccountCateEditingDlg::OnOK() 
 {
     UpdateData(TRUE);
-    if ( m_cate->m_cateName.IsEmpty() )
+    if ( (*m_cate)["name"].refAnsi().empty() )
     {
         WarningError( _T("名称不能为空"), _T("错误") );
         return;
     }
-    if ( m_cate->m_keywords.IsEmpty() )
+    if ( (*m_cate)["keywords"].refAnsi().empty() )
     {
         WarningError( _T("关键字不能为空"), _T("错误") );
         return;

@@ -1,4 +1,4 @@
-
+ï»¿
 #if !defined(__FUNCTIONAL_H__)
 #define __FUNCTIONAL_H__
 
@@ -7,7 +7,7 @@
 #endif // _MSC_VER > 1000
 
 //////////////////////////////////////////////////////////////////////////
-// ºêÖ§³Ö
+// å®æ”¯æŒ
 //////////////////////////////////////////////////////////////////////////
 // calc array's count
 #ifndef countof
@@ -37,7 +37,7 @@ if ( GetCurrentProcessId() == dwProcessId && parent != AfxGetMainWnd() )\
 #define Bool(v) ((v) != FALSE)
 
 //////////////////////////////////////////////////////////////////////////
-// Ä£°åÖ§³Ö
+// æ¨¡æ¿æ”¯æŒ
 //////////////////////////////////////////////////////////////////////////
 // Set pointer as null when the scope out.
 class SetNullScopeOut
@@ -60,7 +60,7 @@ winplus::AnsiString Base64Decode( winplus::String const & base64Str );
 //////////////////////////////////////////////////////////////////////////
 // encrypt content functional
 //////////////////////////////////////////////////////////////////////////
-// ÄÚÈİ¼ÓÃÜ´íÎó´úÂë
+// å†…å®¹åŠ å¯†é”™è¯¯ä»£ç 
 enum EncryptErrorCode
 {
     ERR_SUCCEED,
@@ -68,55 +68,56 @@ enum EncryptErrorCode
     ERR_BUFFSIZE,
 };
 
-winplus::AnsiString EncryptContent( winplus::AnsiString const & content );
-winplus::AnsiString DecryptContent( winplus::AnsiString const & encryptContent );
-#define EncryptCArray(data) EncryptContent( BufferToAnsiString( data, sizeof(data) ) )
-#define EncryptBuffer( buf, size ) EncryptContent( BufferToAnsiString( buf, size ) )
-#define DecryptCArray(data) DecryptContent( BufferToAnsiString( data, sizeof(data) ) )
-#define DecryptBuffer( buf, size ) DecryptContent( BufferToAnsiString( buf, size ) )
+winux::Buffer EncryptContent( winplus::AnsiString const & content );
+winplus::AnsiString DecryptContent( winux::Buffer const & encryptContent );
 
-// ½âÊÍÎÄ±¾ÖĞµÄ$xxx$³ÌĞò×Ô¶¨±äÁ¿
+//#define EncryptCArray(data) EncryptContent( BufferToAnsiString( data, sizeof(data) ) )
+//#define EncryptBuffer( buf, size ) EncryptContent( BufferToAnsiString( buf, size ) )
+//#define DecryptCArray(data) DecryptContent( BufferToAnsiString( data, sizeof(data) ) )
+//#define DecryptBuffer( buf, size ) DecryptContent( BufferToAnsiString( buf, size ) )
+
+// è§£é‡Šæ–‡æœ¬ä¸­çš„$xxx$ç¨‹åºè‡ªå®šå˜é‡
 winplus::String ExplainCustomVars( winplus::String const & str );
 
-// »ñÈ¡¿ÉÖ´ĞĞÎÄ¼şËùÔÚÂ·¾¶, Ä©Î²º¬Ä¿Â¼·Ö¸î·û
+// è·å–å¯æ‰§è¡Œæ–‡ä»¶æ‰€åœ¨è·¯å¾„, æœ«å°¾å«ç›®å½•åˆ†å‰²ç¬¦
 CString GetExecutablePath();
 
 //////////////////////////////////////////////////////////////////////////
-// Êı¾İ¿âÏà¹Ø²Ù×÷
+// æ•°æ®åº“ç›¸å…³æ“ä½œ
 //////////////////////////////////////////////////////////////////////////
 
 /*
 struct Fields
 {
-    // °ó¶¨int²ÎÊı,Ë÷ÒıÆğÊ¼Îª1
+    // ç»‘å®šintå‚æ•°,ç´¢å¼•èµ·å§‹ä¸º1
     static int _bindInt( sqlite3_stmt * stmt, int sqlParamIndex, int val )
     {
         return sqlite3_bind_int( stmt, sqlParamIndex, val );
     }
-    // °ó¶¨string²ÎÊı,Ë÷ÒıÆğÊ¼Îª1
+    // ç»‘å®šstringå‚æ•°,ç´¢å¼•èµ·å§‹ä¸º1
     static int _bindString( sqlite3_stmt * stmt, int sqlParamIndex, CString const & val )
     {
-        // ×ªÎªutf8ÔÙ°ó¶¨
+        // è½¬ä¸ºutf8å†ç»‘å®š
         return sqlite3_bind_text( stmt, sqlParamIndex, winplus::StringToUtf8( (LPCTSTR)val ).c_str(), -1, SQLITE_TRANSIENT );
     }
-    // °ó¶¨blob²ÎÊı,Ë÷ÒıÆğÊ¼Îª1
+    // ç»‘å®šblobå‚æ•°,ç´¢å¼•èµ·å§‹ä¸º1
     static int _bindBlob( sqlite3_stmt * stmt, int sqlParamIndex, LPCVOID data, int size )
     {
         return sqlite3_bind_blob( stmt, sqlParamIndex, data, size, SQLITE_TRANSIENT );
     }
 
-    // »ñÈ¡×Ö¶ÎintÖµ,×Ö¶ÎË÷ÒıÆğÊ¼Îª0
+    // è·å–å­—æ®µintå€¼,å­—æ®µç´¢å¼•èµ·å§‹ä¸º0
     static int _getInt( sqlite3_stmt * stmt, int sqlFieldIndex )
     {
         return sqlite3_column_int( stmt, sqlFieldIndex );
     }
-    // »ñÈ¡×Ö¶ÎstringÖµ,×Ö¶ÎË÷ÒıÆğÊ¼Îª0
+    // è·å–å­—æ®µstringå€¼,å­—æ®µç´¢å¼•èµ·å§‹ä¸º0
     static CString _getString( sqlite3_stmt * stmt, int sqlFieldIndex )
     {
         char const * sUTF8 = (char const *)sqlite3_column_text( stmt, sqlFieldIndex );
         return winplus::Utf8ToString( sUTF8 ? sUTF8 : "" ).c_str();
     }
-    // »ñÈ¡×Ö¶ÎblobÖµ,×Ö¶ÎË÷ÒıÆğÊ¼Îª0
+    // è·å–å­—æ®µblobå€¼,å­—æ®µç´¢å¼•èµ·å§‹ä¸º0
     static void _getBlob( sqlite3_stmt * stmt, int sqlFieldIndex, winplus::AnsiString * blob )
     {
         int size;
@@ -126,9 +127,9 @@ struct Fields
 };*/
 
 // Users -----------------------------------------------------------------
-// ´ú±íÒ»¸öÓÃ»§µÄÏà¹ØÊı¾İ
+// ä»£è¡¨ä¸€ä¸ªç”¨æˆ·çš„ç›¸å…³æ•°æ®
 
-enum FieldBits__am_users
+/*enum FieldBits__am_users
 {
     am_users__id          = winplus::Bin0<0000000001>::val,
     am_users__name        = winplus::Bin0<0000000010>::val,
@@ -139,9 +140,9 @@ enum FieldBits__am_users
     am_users__unlock_time = winplus::Bin0<0001000000>::val,
     am_users__hotkey      = winplus::Bin0<0010000000>::val,
     am_users__time        = winplus::Bin0<0100000000>::val,
-};
+};*/
 
-// µ±²éÑ¯È«²¿×Ö¶ÎÊ±²Å¿ÉÓÃÕâ¸öº¯ÊıÈ·¶¨×Ö¶ÎË÷Òı
+// å½“æŸ¥è¯¢å…¨éƒ¨å­—æ®µæ—¶æ‰å¯ç”¨è¿™ä¸ªå‡½æ•°ç¡®å®šå­—æ®µç´¢å¼•
 inline int FieldIndex( UINT fieldBitFlag )
 {
     return (int)( log((double)fieldBitFlag) / log(2.0) + 0.0000005 );
@@ -177,7 +178,7 @@ struct User/* : Fields*/
     }
 
 /*
-    // °ó¶¨Êı¾İµ½Ö¸¶¨µÄSQLÓï¾äµÄÕ¼Î»·ûµÄË÷Òı,»ùÓÚ1
+    // ç»‘å®šæ•°æ®åˆ°æŒ‡å®šçš„SQLè¯­å¥çš„å ä½ç¬¦çš„ç´¢å¼•,åŸºäº1
 
     int bindId( sqlite3_stmt * stmt, int sqlParamIndex ) const
     {
@@ -218,7 +219,7 @@ struct User/* : Fields*/
         return _bindInt( stmt, sqlParamIndex, m_regTime );
     }
 
-    // ´ÓSTMT¶ÁÈ¡Êı¾İµ½±äÁ¿,×Ö¶ÎË÷ÒıÖµ»ùÓÚ0
+    // ä»STMTè¯»å–æ•°æ®åˆ°å˜é‡,å­—æ®µç´¢å¼•å€¼åŸºäº0
 
     void loadId( sqlite3_stmt * stmt, int sqlFieldIndex )
     {
@@ -272,24 +273,24 @@ struct User/* : Fields*/
     }
 };
 
-// ×¢²áÓÃ»§, ×¢²á³É¹¦·µ»Øtrue, ·ñÔòfalse
-// userºöÂÔm_id,m_condone,m_curCondone,m_unlockTime,m_regTime
+// æ³¨å†Œç”¨æˆ·, æ³¨å†ŒæˆåŠŸè¿”å›true, å¦åˆ™false
+// userå¿½ç•¥m_id,m_condone,m_curCondone,m_unlockTime,m_regTime
 bool RegisterUser( eiendb::Database & db, User const & newUser );
 
-// µÇÂ¼ÓÃ»§, Ö´ĞĞÑéÖ¤³É¹¦·µ»Øtrue,²¢»ñÈ¡UserÊı¾İ, ·ñÔò·µ»Øfalse.
+// ç™»å½•ç”¨æˆ·, æ‰§è¡ŒéªŒè¯æˆåŠŸè¿”å›true,å¹¶è·å–Useræ•°æ®, å¦åˆ™è¿”å›false.
 bool LoginUser( eiendb::Database & db, CString const & username, CString const & password, User * userData );
-// ÔØÈëÓÃ»§ĞÅÏ¢
+// è½½å…¥ç”¨æˆ·ä¿¡æ¯
 bool LoadUser( eiendb::Database & db, CString const & username, User * userData );
-// É¾³ıÓÃ»§
+// åˆ é™¤ç”¨æˆ·
 bool DeleteUser( eiendb::Database & db, CString const & username );
-// ÑéÖ¤ÓÃ»§ÃÜÂë
+// éªŒè¯ç”¨æˆ·å¯†ç 
 bool VerifyUserPassword( eiendb::Database & db, CString const & username, CString const & password );
-// ĞŞ¸ÄÓÃ»§ĞÅÏ¢
-bool ModifyUserEx( eiendb::Database & db, CString const & username, UINT modifiedFieldBits, User const & newUser );
+// ä¿®æ”¹ç”¨æˆ·ä¿¡æ¯
+bool ModifyUserEx( eiendb::Database & db, CString const & username, winux::Mixed const & userFields );
 
 // Types -----------------------------------------------------------------
 
-//Ò»ÌõÕË»§ÀàĞÍÏà¹ØÊı¾İ
+//ä¸€æ¡è´¦æˆ·ç±»å‹ç›¸å…³æ•°æ®
 struct AccountType/* : public Fields*/
 {
     CString m_typeName;
@@ -305,49 +306,35 @@ struct AccountType/* : public Fields*/
         return *this;
     }
 
-/*
-    int bindTypeName( sqlite3_stmt * stmt, int sqlParamIndex ) const
-    {
-        return _bindString( stmt, sqlParamIndex, m_typeName );
-    }
-    int bindSafeRank( sqlite3_stmt * stmt, int sqlParamIndex ) const
-    {
-        return _bindInt( stmt, sqlParamIndex, m_safeRank );
-    }
-    
-    void loadTypeName( sqlite3_stmt * stmt, int sqlFieldIndex )
-    {
-        m_typeName = _getString( stmt, sqlFieldIndex );
-    }
-    void loadSafeRank( sqlite3_stmt * stmt, int sqlFieldIndex )
-    {
-        m_safeRank = _getInt( stmt, sqlFieldIndex );
-    }
-*/
-
     AccountType()
     {
         m_safeRank = 0;
     }
+
+    void assignTo( winux::Mixed * accountTypeMixed, CString const & fieldNames = "name,rank" );
+    void assign( winux::Mixed const & accountTypeMixed );
 };
 
 typedef CArray<AccountType, AccountType const &> AccountTypeArray;
 
-// ¼ÓÔØÕË»§Àà±ğĞÅÏ¢,·µ»Ø¼ÇÂ¼Êı
+// åŠ è½½è´¦æˆ·ç±»åˆ«ä¿¡æ¯,è¿”å›è®°å½•æ•°
 int LoadAccountTypes( eiendb::Database & db, AccountTypeArray * types );
 
-// »ñÈ¡Ò»¸öÀàĞÍ
+// è·å–ä¸€ä¸ªç±»å‹
 bool GetAccountType( eiendb::Database & db, CString const & typeName, AccountType * type );
 
-// Ìí¼ÓÕË»§Àà±ğĞÅÏ¢, ³É¹¦·µ»Øtrue, ·ñÔò·µ»Øfalse.
-bool AddAccountType( eiendb::Database & db, AccountType const & newType );
-// ĞŞ¸ÄÕË»§Àà±ğĞÅÏ¢, ³É¹¦·µ»Øtrue, ·ñÔò·µ»Øfalse.
-bool ModifyAccountType( eiendb::Database & db, CString const & typeName, AccountType const & newType );
-// É¾³ıÕË»§Àà±ğĞÅÏ¢, ³É¹¦·µ»Øtrue, ·ñÔò·µ»Øfalse.
+// æ·»åŠ è´¦æˆ·ç±»åˆ«ä¿¡æ¯, æˆåŠŸè¿”å›true, å¦åˆ™è¿”å›false.
+bool AddAccountType( eiendb::Database & db, winux::Mixed const & newType );
+
+// ä¿®æ”¹è´¦æˆ·ç±»åˆ«ä¿¡æ¯, æˆåŠŸè¿”å›true, å¦åˆ™è¿”å›false.
+// name,rank
+bool ModifyAccountType( eiendb::Database & db, CString const & typeName, winux::Mixed const & newTypeFields );
+
+// åˆ é™¤è´¦æˆ·ç±»åˆ«ä¿¡æ¯, æˆåŠŸè¿”å›true, å¦åˆ™è¿”å›false.
 bool DeleteAccountType( eiendb::Database & db, CString const & typeName );
 
 // Cates -----------------------------------------------------------------
-struct AccountCate/* : public Fields*/
+struct AccountCate
 {
     int m_id;
     CString m_cateName;
@@ -376,113 +363,39 @@ struct AccountCate/* : public Fields*/
         return *this;
     }
 
-/*
-    int bindId( sqlite3_stmt * stmt, int sqlParamIndex ) const
-    {
-        return _bindInt( stmt, sqlParamIndex, m_id );
-    }
-    int bindCateName( sqlite3_stmt * stmt, int sqlParamIndex ) const
-    {
-        return _bindString( stmt, sqlParamIndex, m_cateName );
-    }
-    int bindCateDesc( sqlite3_stmt * stmt, int sqlParamIndex ) const
-    {
-        return _bindString( stmt, sqlParamIndex, m_cateDesc );
-    }
-    int bindTypeName( sqlite3_stmt * stmt, int sqlParamIndex ) const
-    {
-        return _bindString( stmt, sqlParamIndex, m_typeName );
-    }
-    int bindUrl( sqlite3_stmt * stmt, int sqlParamIndex ) const
-    {
-        return _bindString( stmt, sqlParamIndex, m_url );
-    }
-    int bindIcoPath( sqlite3_stmt * stmt, int sqlParamIndex ) const
-    {
-        return _bindString( stmt, sqlParamIndex, m_icoPath );
-    }
-    int bindStartup( sqlite3_stmt * stmt, int sqlParamIndex ) const
-    {
-        return _bindString( stmt, sqlParamIndex, m_startup );
-    }
-    int bindKeywords( sqlite3_stmt * stmt, int sqlParamIndex ) const
-    {
-        return _bindString( stmt, sqlParamIndex, m_keywords );
-    }
-    int bindTimeWriten( sqlite3_stmt * stmt, int sqlParamIndex ) const
-    {
-        return _bindInt( stmt, sqlParamIndex, m_timeWriten );
-    }
-    
-    void loadId( sqlite3_stmt * stmt, int sqlFieldIndex )
-    {
-        m_id = _getInt( stmt, sqlFieldIndex );
-    }
-    void loadCateName( sqlite3_stmt * stmt, int sqlFieldIndex )
-    {
-        m_cateName = _getString( stmt, sqlFieldIndex );
-    }
-    void loadCateDesc( sqlite3_stmt * stmt, int sqlFieldIndex )
-    {
-        m_cateDesc = _getString( stmt, sqlFieldIndex );
-    }
-    void loadTypeName( sqlite3_stmt * stmt, int sqlFieldIndex )
-    {
-        m_typeName = _getString( stmt, sqlFieldIndex );
-    }
-    void loadUrl( sqlite3_stmt * stmt, int sqlFieldIndex )
-    {
-        m_url = _getString( stmt, sqlFieldIndex );
-    }
-    void loadIcoPath( sqlite3_stmt * stmt, int sqlFieldIndex )
-    {
-        m_icoPath = _getString( stmt, sqlFieldIndex );
-    }
-    void loadStartup( sqlite3_stmt * stmt, int sqlFieldIndex )
-    {
-        m_startup = _getString( stmt, sqlFieldIndex );
-    }
-    void loadKeywords( sqlite3_stmt * stmt, int sqlFieldIndex )
-    {
-        m_keywords = _getString( stmt, sqlFieldIndex );
-    }
-    void loadTimeWriten( sqlite3_stmt * stmt, int sqlFieldIndex )
-    {
-        m_timeWriten = _getInt( stmt, sqlFieldIndex );
-    }
-*/
-
     AccountCate()
     {
         m_id = 0;
         m_timeWriten = 0;
     }
 
+    void assignTo( winux::Mixed * accountCateMixed, CString const & fieldNames = "id,name,desc,type,url,icon,startup,keywords,time" );
+    void assign( winux::Mixed const & accountCateMixed );
 };
 
 typedef CArray<AccountCate, AccountCate const &> AccountCateArray;
 
-// ÔØÈëÕË»§ÖÖÀàĞÅÏ¢, ·µ»Ø¼ÇÂ¼Êı
+// è½½å…¥è´¦æˆ·ç§ç±»ä¿¡æ¯, è¿”å›è®°å½•æ•°
 int LoadAccountCates( eiendb::Database & db, AccountCateArray * cates );
 
-// ÔØÈëÒ»ÌõÕË»§ÖÖÀàĞÅÏ¢
+// è½½å…¥ä¸€æ¡è´¦æˆ·ç§ç±»ä¿¡æ¯
 bool GetAccountCate( eiendb::Database & db, int id, AccountCate * cate );
 
-// Ìí¼ÓÕË»§ÖÖÀàĞÅÏ¢£¬³É¹¦·µ»ØID£¬Ê§°Ü·µ»Ø0
-// newCateºöÂÔm_id,m_timeWriten
-int AddAccountCate( eiendb::Database & db, AccountCate const & newCate );
+// æ·»åŠ è´¦æˆ·ç§ç±»ä¿¡æ¯ï¼ŒæˆåŠŸè¿”å›IDï¼Œå¤±è´¥è¿”å›0
+// newCateå¿½ç•¥m_id,m_timeWriten
+int AddAccountCate( eiendb::Database & db, winux::Mixed const & newCate );
 
-// ĞŞ¸ÄÕË»§ÖÖÀàĞÅÏ¢
-// newCateºöÂÔm_id,m_timeWriten
-bool ModifyAccountCate( eiendb::Database & db, int id, AccountCate const & newCate );
+// ä¿®æ”¹è´¦æˆ·ç§ç±»ä¿¡æ¯
+// id,name,desc,type,url,icon,startup,keywords,time
+bool ModifyAccountCate( eiendb::Database & db, int id, winux::Mixed const & newCateFields );
 
-// É¾³ıÕË»§ÖÖÀàĞÅÏ¢
+// åˆ é™¤è´¦æˆ·ç§ç±»ä¿¡æ¯
 bool DeleteAccountCate( eiendb::Database & db, int id );
 
-// ÔØÈëËùÓĞÕË»§ÖÖÀàµÄIDÒÔ¼°ÏàÓ¦µÄ°²È«Öµ
+// è½½å…¥æ‰€æœ‰è´¦æˆ·ç§ç±»çš„IDä»¥åŠç›¸åº”çš„å®‰å…¨å€¼
 int LoadAccountCatesSafeRank( eiendb::Database & db, CUIntArray * cateIds, CUIntArray * typeSafeRanks );
 
-// »ñÈ¡Ö¸¶¨cateIdµÄÀà±ğ
+// è·å–æŒ‡å®šcateIdçš„ç±»åˆ«
 bool GetTypeByCateId( eiendb::Database & db, int cateId, AccountType * type );
 
 // Accounts --------------------------------------------------------------
@@ -512,81 +425,6 @@ struct Account/* : public Fields*/
         }
         return *this;
     }
-    /*
-    int bindMyName( sqlite3_stmt * stmt, int sqlParamIndex ) const
-    {
-        return _bindString( stmt, sqlParamIndex, m_myName );
-    }
-    int bindAccountName( sqlite3_stmt * stmt, int sqlParamIndex ) const
-    {
-        winplus::AnsiString encrypt;
-        encrypt = EncryptContent( winplus::StringToUtf8( (LPCTSTR)m_accountName ) );
-        return _bindBlob( stmt, sqlParamIndex, encrypt.c_str(), encrypt.size() );
-    }
-    int bindAccountPwd( sqlite3_stmt * stmt, int sqlParamIndex ) const
-    {
-        winplus::AnsiString encrypt;
-        encrypt = EncryptContent( winplus::StringToUtf8( (LPCTSTR)m_accountPwd ) );
-        return _bindBlob( stmt, sqlParamIndex, encrypt.c_str(), encrypt.size() );
-    }
-    int bindCateId( sqlite3_stmt * stmt, int sqlParamIndex ) const
-    {
-        return _bindInt( stmt, sqlParamIndex, m_cateId );
-    }
-    int bindUserId( sqlite3_stmt * stmt, int sqlParamIndex ) const
-    {
-        return _bindInt( stmt, sqlParamIndex, m_userId );
-    }
-    int bindSafeRank( sqlite3_stmt * stmt, int sqlParamIndex ) const
-    {
-        return _bindInt( stmt, sqlParamIndex, m_safeRank );
-    }
-    int bindComment( sqlite3_stmt * stmt, int sqlParamIndex ) const
-    {
-        return _bindString( stmt, sqlParamIndex, m_comment );
-    }
-    int bindTime( sqlite3_stmt * stmt, int sqlParamIndex ) const
-    {
-        return _bindInt( stmt, sqlParamIndex, m_time );
-    }
-
-    void loadMyName( sqlite3_stmt * stmt, int sqlFieldIndex )
-    {
-        m_myName = _getString( stmt, sqlFieldIndex );
-    }
-    void loadAccountName( sqlite3_stmt * stmt, int sqlFieldIndex )
-    {
-        winplus::AnsiString encrypt;
-        _getBlob( stmt, sqlFieldIndex, &encrypt );
-        m_accountName = winplus::Utf8ToString( DecryptContent(encrypt) ).c_str();
-    }
-    void loadAccountPwd( sqlite3_stmt * stmt, int sqlFieldIndex )
-    {
-        winplus::AnsiString encrypt;
-        _getBlob( stmt, sqlFieldIndex, &encrypt );
-        m_accountPwd = winplus::Utf8ToString( DecryptContent(encrypt) ).c_str();
-    }
-    void loadCateId( sqlite3_stmt * stmt, int sqlFieldIndex )
-    {
-        m_cateId = _getInt( stmt, sqlFieldIndex );
-    }
-    void loadUserId( sqlite3_stmt * stmt, int sqlFieldIndex )
-    {
-        m_userId = _getInt( stmt, sqlFieldIndex );
-    }
-    void loadSafeRank( sqlite3_stmt * stmt, int sqlFieldIndex )
-    {
-        m_safeRank = _getInt( stmt, sqlFieldIndex );
-    }
-    void loadComment( sqlite3_stmt * stmt, int sqlFieldIndex )
-    {
-        m_comment = _getString( stmt, sqlFieldIndex );
-    }
-    void loadTime( sqlite3_stmt * stmt, int sqlFieldIndex )
-    {
-        m_time = _getInt( stmt, sqlFieldIndex );
-    }
-*/
 
     Account()
     {
@@ -596,51 +434,53 @@ struct Account/* : public Fields*/
         m_time = 0;
     }
 
+    void assignTo( winux::Mixed * accountMixed, CString const & fieldNames = "myname,account_name,account_pwd,cate,user,safe_rank,comment,time" );
+    void assign( winux::Mixed const & accountMixed );
 };
 
 typedef CArray<Account, Account const &> AccountArray;
 
-// ÔØÈëÖ¸¶¨ÓÃ»§ËùÓĞµÄÕË»§ĞÅÏ¢,¿ÉÖ¸¶¨ÖÖÀà:-1ÎªÈ«²¿ÖÖÀà
+// è½½å…¥æŒ‡å®šç”¨æˆ·æ‰€æœ‰çš„è´¦æˆ·ä¿¡æ¯,å¯æŒ‡å®šç§ç±»:-1ä¸ºå…¨éƒ¨ç§ç±»
 int LoadAccounts( eiendb::Database & db, int userId, AccountArray * accounts, int cateId = -1 );
 
-// »ñÈ¡Ö¸¶¨ÓÃ»§µÄÒ»¸öÕË»§ĞÅÏ¢
-// Ö÷¼ü(user,myname)
+// è·å–æŒ‡å®šç”¨æˆ·çš„ä¸€ä¸ªè´¦æˆ·ä¿¡æ¯
+// ä¸»é”®(user,myname)
 bool GetAccount( eiendb::Database & db, int userId, CString const & myName, Account * account );
 
-// Ìí¼ÓÒ»¸öÖ¸¶¨ÓÃ»§µÄÕË»§£¬³É¹¦true£¬Ê§°Üfalse¡£
-// Ö÷¼ü(user,myname)
-// ÒâÎ¶×ÅÃ¿¸öÓÃ»§(user)ÓµÓĞÕË»§µÄmyname±ØĞë²»Í¬£¬·ñÔòÊ§°Ü¡£ĞŞ¸ÄÊ±Ò²Ò»Ñù¡£
-// newAccountºöÂÔm_time
-bool AddAccount( eiendb::Database & db, Account const & newAccount );
+// æ·»åŠ ä¸€ä¸ªæŒ‡å®šç”¨æˆ·çš„è´¦æˆ·ï¼ŒæˆåŠŸtrueï¼Œå¤±è´¥falseã€‚
+// ä¸»é”®(user,myname)
+// æ„å‘³ç€æ¯ä¸ªç”¨æˆ·(user)æ‹¥æœ‰è´¦æˆ·çš„mynameå¿…é¡»ä¸åŒï¼Œå¦åˆ™å¤±è´¥ã€‚ä¿®æ”¹æ—¶ä¹Ÿä¸€æ ·ã€‚
+// newAccountå¿½ç•¥m_time
+bool AddAccount( eiendb::Database & db, winux::Mixed const & newAccount );
 
-// ĞŞ¸ÄÒ»¸öÖ¸¶¨ÓÃ»§µÄÕË»§
-// Ö÷¼ü(user,myname)
-// newAccountºöÂÔm_time
-bool ModifyAccount( eiendb::Database & db, int userId, CString const & myName, Account const & newAccount );
+// ä¿®æ”¹ä¸€ä¸ªæŒ‡å®šç”¨æˆ·çš„è´¦æˆ·
+// ä¸»é”®(user,myname)
+// myname,account_name,account_pwd,cate,user,safe_rank,comment,time
+bool ModifyAccount( eiendb::Database & db, int userId, CString const & myName, winux::Mixed const & newAccountFields );
 
-// É¾³ıÒ»¸öÖ¸¶¨ÓÃ»§µÄÕË»§
+// åˆ é™¤ä¸€ä¸ªæŒ‡å®šç”¨æˆ·çš„è´¦æˆ·
 bool DeleteAccount( eiendb::Database & db, int userId, CString const & myName );
 
 // Others ----------------------------------------------------------------
 
-// È¡µÃÒ»¸öÕıÈ·µÄAccount MyNameÒÔ±ãÌí¼ÓÕË»§
+// å–å¾—ä¸€ä¸ªæ­£ç¡®çš„Account MyNameä»¥ä¾¿æ·»åŠ è´¦æˆ·
 CString GetCorrectAccountMyName( eiendb::Database & db, int userId, CString const & myName );
 
-// »ñÈ¡Êı¾İ¿âÈ«²¿±íÃû
+// è·å–æ•°æ®åº“å…¨éƒ¨è¡¨å
 int LoadTableNames( eiendb::Database & db, winplus::StringArray * tableNames, winplus::String const & like = _T("am\\_%") );
 
-// »ñÈ¡Êı¾İ¿âµÄDDL,·µ»ØSQLÓï¾äÌõÊı
+// è·å–æ•°æ®åº“çš„DDL,è¿”å›SQLè¯­å¥æ¡æ•°
 int DumpDDL( eiendb::Database & db, winplus::String * ddl, winplus::String const & like = _T("am\\_%") );
 
-// ÅĞ¶ÏExeNameÊÇ·ñÎªÒ»¸öä¯ÀÀÆ÷
+// åˆ¤æ–­ExeNameæ˜¯å¦ä¸ºä¸€ä¸ªæµè§ˆå™¨
 bool IsBrowserExeName( eiendb::Database & db, CString const & exeName, CString * browserTitle );
 
 
 //////////////////////////////////////////////////////////////////////////
-// ½Ó¿Ú
+// æ¥å£
 //////////////////////////////////////////////////////////////////////////
 
-// ¸üĞÂListViewÊı¾İºÍÁĞ±íÏî
+// æ›´æ–°ListViewæ•°æ®å’Œåˆ—è¡¨é¡¹
 interface IUpdateListView
 {
     enum
@@ -648,31 +488,31 @@ interface IUpdateListView
         UPDATE_LOAD_DATA = 1,
         UPDATE_LIST_ITEMS = 2,
     };
-    // ¸üĞÂÊı¾İºÍÁĞ±íÏî
-    // itemIndexÎª-1Ê±,¼ÓÔØÊı¾İ¿âÄÚÈ«²¿µÄÊı¾İ²¢¸üĞÂÕû¸öÁĞ±í,µÚÒ»´Îµ÷ÓÃÇëÓÃËü
-    // itemIndexÎªÁĞ±íÏîË÷ÒıÊ±,¶ÁÈ¡Ë÷ÒıÖ¸Ê¾µÄÊı×é¼ÇÂ¼,Í¨¹ıÖ÷¼ü²éÑ¯Êı¸ÃÌõÊı¾İÄÚÈİ
-    // ÒÀ¾İflagµÄÖ¸Ê¾½øĞĞ²Ù×÷:
-    // UPDATE_LOAD_DATA ´ÓÊı¾İ¿â¼ÓÔØÊı¾İµ½Êı×éÖĞ´¢´æ
-    // UPDATE_LIST_ITEMS °ÑÊı×éÖĞµÄÊı¾İ¸üĞÂµ½ÁĞ±íÏî
+    // æ›´æ–°æ•°æ®å’Œåˆ—è¡¨é¡¹
+    // itemIndexä¸º-1æ—¶,åŠ è½½æ•°æ®åº“å†…å…¨éƒ¨çš„æ•°æ®å¹¶æ›´æ–°æ•´ä¸ªåˆ—è¡¨,ç¬¬ä¸€æ¬¡è°ƒç”¨è¯·ç”¨å®ƒ
+    // itemIndexä¸ºåˆ—è¡¨é¡¹ç´¢å¼•æ—¶,è¯»å–ç´¢å¼•æŒ‡ç¤ºçš„æ•°ç»„è®°å½•,é€šè¿‡ä¸»é”®æŸ¥è¯¢æ•°è¯¥æ¡æ•°æ®å†…å®¹
+    // ä¾æ®flagçš„æŒ‡ç¤ºè¿›è¡Œæ“ä½œ:
+    // UPDATE_LOAD_DATA ä»æ•°æ®åº“åŠ è½½æ•°æ®åˆ°æ•°ç»„ä¸­å‚¨å­˜
+    // UPDATE_LIST_ITEMS æŠŠæ•°ç»„ä¸­çš„æ•°æ®æ›´æ–°åˆ°åˆ—è¡¨é¡¹
     virtual void UpdateList( int flag = UPDATE_LOAD_DATA | UPDATE_LIST_ITEMS, long itemIndex = -1 ) PURE;
 
 };
 
 //////////////////////////////////////////////////////////////////////////
 
-// ´íÎóÌáÊ¾¿ò
+// é”™è¯¯æç¤ºæ¡†
 
-// ¾¯¸æĞÍ´íÎó
+// è­¦å‘Šå‹é”™è¯¯
 #define WarningError( str, title )\
     MessageBox( str, title, MB_OK | MB_ICONEXCLAMATION );
-// ÖÂÃüĞÍ´íÎó
+// è‡´å‘½å‹é”™è¯¯
 #define FatalError( str, title )\
     MessageBox( str, title, MB_OK | MB_ICONERROR );
 
 
 //////////////////////////////////////////////////////////////////////////
 
-/* °ÑÒ»¸öÊı×éÔØÈë×éºÏ¿ò¿Ø¼ş */
+/* æŠŠä¸€ä¸ªæ•°ç»„è½½å…¥ç»„åˆæ¡†æ§ä»¶ */
 inline int ComboBoxLoadDataFromArray( CComboBox * pCbo, CStringArray const & arr )
 {
     int i;

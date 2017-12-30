@@ -24,7 +24,7 @@ public:
 
     virtual void UpdateList( int flag = UPDATE_LOAD_DATA | UPDATE_LIST_ITEMS, long itemIndex = -1 );
     // 弹出添加对话框
-    void DoAdd( CWnd * parent, AccountCate * cate );
+    void DoAdd( CWnd * parent, winux::Mixed * cate );
     // 根据窗口标题和关键字匹配以及是否为浏览器判断是哪个种类
     // 返回种类在数组中的索引
     int GetCateIndexMatchWndTitle( CString const & wndTitle, bool isBrowser ) const;
