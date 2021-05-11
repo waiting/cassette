@@ -1,5 +1,5 @@
-/bin/
-/objs/
+bin/
+objs/
 ipch/
 *.opt
 *.ncb

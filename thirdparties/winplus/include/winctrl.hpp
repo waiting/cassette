@@ -88,7 +88,6 @@ WINPLUS_FUNC_DECL(UINT) MOD_to_HOTKEYF( UINT mod );
 
 
 // 通用对话框相关 --------------------------------------------------------
-
 /* 文件夹选择对话框
    基于SHBrowseForFolder() */
 class WINPLUS_DLL FolderDialog
@@ -130,6 +129,32 @@ public:
     int getFilePaths( StringArray * pArr ) const; // 当多选时通过此获得选择的文件
 
 };
+
+/* 系统托盘图标通知类 */
+class WINPLUS_DLL Notification
+{
+private:
+    NOTIFYICONDATA _nid;
+    bool _isAdd;
+protected:
+    void _construct();
+
+public:
+    Notification();
+    ~Notification();
+    bool add( HWND hwnd, UINT notificationId, Icon const & ico, String const & strTip );
+
+    bool modify();
+
+    void setMessage( UINT msg );
+
+    void setBalloonInfo( String const & infoTitle, String const & infoText, DWORD infoFlags = NIIF_USER | NIIF_RESPECT_QUIET_TIME );
+
+    void setIconInfo( Icon const & ico, String const & strTip );
+
+    bool del();
+};
+
 
 } // namespace winplus
 

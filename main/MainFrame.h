@@ -14,6 +14,7 @@
 
 // 更新所有列表,wParam指示要更新的列表
 #define WM_UPDATELIST_ALL ( WM_USER + 1 )
+#define WM_TRAY_NOTIFICATION  ( WM_USER + 2 )
 
 class MainFrame : public CFrameWnd, public IUpdateListView
 {
@@ -49,6 +50,7 @@ protected:
     class AccountsView * m_pAccountsView;
     AccountCatesDlg m_catesDlg;
     AccountTypesDlg m_typesDlg;
+    winplus::Notification m_noti;
 
     BOOL m_TestFlag;
     // 设置标题显示当前用户名
@@ -65,30 +67,7 @@ protected:
 
     // 执行智能热键操作
     void DoIntelligentHotkey();
-protected:
-    //{{AFX_MSG(MainFrame)
-    afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
-    afx_msg void OnSetFocus(CWnd *pOldWnd);
-    afx_msg void OnAppAbout();
-    afx_msg void OnUpdateViaAutoLogin(CCmdUI* pCmdUI);
-    afx_msg void OnViaAutoLogin();
-    afx_msg void OnUpdateOpenUrl(CCmdUI* pCmdUI);
-    afx_msg void OnOpenUrl();
-    afx_msg void OnUserSettings();
-    afx_msg void OnAppSettings();
-    afx_msg void OnDestroy();
-    afx_msg void OnAddAccount();
-    afx_msg void OnModifyAccount();
-    afx_msg void OnDelAccount();
-    afx_msg void OnUpdateAccountCates(CCmdUI* pCmdUI);
-    afx_msg void OnUpdateAccountTypes(CCmdUI* pCmdUI);
-    afx_msg void OnAccountCates();
-    afx_msg void OnAccountTypes();
-    afx_msg void OnBackupData();
-    afx_msg void OnResumeData();
-    //}}AFX_MSG
-    afx_msg LRESULT OnHotkey( WPARAM wHotkeyId, LPARAM lParam );
-    afx_msg void OnUpdateOperateAccount( CCmdUI * pCmdUI );
+
 public:
     // wParam = 1:主界面List更新
     // wParam = 2:TypesDlg界面List更新
@@ -100,10 +79,41 @@ public:
         UpdateList_CatesDlg = 4,
     };
 protected:
+    DECLARE_MESSAGE_MAP()
+protected:
+    //{{AFX_MSG(MainFrame)
+    afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
+    afx_msg void OnSetFocus(CWnd *pOldWnd);
+    afx_msg void OnAppExit();
+    afx_msg void OnAppAbout();
+    afx_msg void OnUpdateViaAutoLogin(CCmdUI* pCmdUI);
+    afx_msg void OnViaAutoLogin();
+    afx_msg void OnUpdateOpenUrl(CCmdUI* pCmdUI);
+    afx_msg void OnOpenUrl();
+    afx_msg void OnUserSettings();
+    afx_msg void OnAppSettings();
+    afx_msg void OnClose();
+    afx_msg void OnDestroy();
+    afx_msg void OnAddAccount();
+    afx_msg void OnModifyAccount();
+    afx_msg void OnDelAccount();
+    afx_msg void OnUpdateAccountCates(CCmdUI* pCmdUI);
+    afx_msg void OnUpdateAccountTypes(CCmdUI* pCmdUI);
+    afx_msg void OnAccountCates();
+    afx_msg void OnAccountTypes();
+    afx_msg void OnBackupData();
+    afx_msg void OnResumeData();
+    afx_msg void OnMainWndShowHide();
+    afx_msg void OnUpdateMainWndShowHide(CCmdUI *pCmdUI);
+    //}}AFX_MSG
+    afx_msg LRESULT OnHotkey( WPARAM wHotkeyId, LPARAM lParam );
+    afx_msg void OnUpdateOperateAccount( CCmdUI * pCmdUI );
+
     // 调用所有UpdateList();
     afx_msg LRESULT OnUpdateListAll( WPARAM wParam, LPARAM lParam );
 
-    DECLARE_MESSAGE_MAP()
+    afx_msg LRESULT OnTrayNotification(WPARAM wParam, LPARAM lParam);
+    afx_msg void OnShowWindow(BOOL bShow, UINT nStatus);
 };
 /////////////////////////////////////////////////////////////////////////////
 

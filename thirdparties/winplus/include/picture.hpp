@@ -56,6 +56,10 @@ WINPLUS_FUNC_DECL(void) DP_to_HIMETRIC( HDC dc, LONG * x, LONG * y );
 class Icon
 {
 public:
+    Icon()
+    {
+        _construct();
+    }
     Icon( String const & icoPath, uint cx = 0, uint cy = 0 )
     {
         _construct( icoPath.c_str(), LR_LOADFROMFILE | LR_SHARED, cx, cy );
@@ -97,10 +101,14 @@ protected:
             _ico = NULL;
         }
     }
+    void _construct()
+    {
+        _ico = NULL;
+    }
     void _construct( HMODULE module, LPCTSTR name, ulong flag, uint cx = 0, uint cy = 0 )
     {
          _ico = NULL;
-         attach( (HICON)LoadImage( module, name, IMAGE_ICON, cx, cy, flag ) );
+         this->attach( (HICON)LoadImage( module, name, IMAGE_ICON, cx, cy, flag ) );
     }
     void _construct( LPCTSTR name, ulong flag, uint cx = 0, uint cy = 0 )
     {

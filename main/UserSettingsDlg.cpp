@@ -22,7 +22,6 @@ UserSettingsDlg::UserSettingsDlg( CWnd * parent, winux::Mixed * userFields ) :
     m_cfmPassword = _T("");
     //}}AFX_DATA_INIT
 
-    m_userFields.createCollection();
 }
 
 void UserSettingsDlg::DoDataExchange( CDataExchange * pDX )
@@ -37,7 +36,7 @@ void UserSettingsDlg::DoDataExchange( CDataExchange * pDX )
     CString username;
     int protectLevel, condone;
 
-    username = m_userFields["name"].toAnsi().c_str();
+    username = m_userFields["name"].refAnsi().c_str();
     protectLevel = m_userFields["protect"];
     condone = m_userFields["condone"];
 

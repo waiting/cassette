@@ -1,4 +1,4 @@
-//Microsoft Developer Studio generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #include "resource.h"
 
@@ -13,13 +13,11 @@
 #undef APSTUDIO_READONLY_SYMBOLS
 
 /////////////////////////////////////////////////////////////////////////////
-// Chinese (P.R.C.) resources
+// 中文(简体，中国) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_CHS)
-#ifdef _WIN32
 LANGUAGE LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED
 #pragma code_page(936)
-#endif //_WIN32
 
 #ifdef APSTUDIO_INVOKED
 /////////////////////////////////////////////////////////////////////////////
@@ -27,18 +25,18 @@ LANGUAGE LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED
 // TEXTINCLUDE
 //
 
-1 TEXTINCLUDE DISCARDABLE 
+1 TEXTINCLUDE 
 BEGIN
     "resource.h\0"
 END
 
-2 TEXTINCLUDE DISCARDABLE 
+2 TEXTINCLUDE 
 BEGIN
     "#include ""afxres.h""\r\n"
     "\0"
 END
 
-3 TEXTINCLUDE DISCARDABLE 
+3 TEXTINCLUDE 
 BEGIN
     "#define _AFX_NO_SPLITTER_RESOURCES\r\n"
     "#define _AFX_NO_OLE_RESOURCES\r\n"
@@ -66,24 +64,24 @@ END
 
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
-IDR_MAINFRAME           ICON    DISCARDABLE     "..\\res\\AccountMaster_01.ico"
-IDI_ICON2               ICON    DISCARDABLE     "..\\res\\AccountMaster_02.ico"
-IDI_ICON3               ICON    DISCARDABLE     "..\\res\\AccountMaster_03.ico"
+IDR_MAINFRAME           ICON                    "..\\res\\AccountMaster_01.ico"
+IDI_ICON2               ICON                    "..\\res\\AccountMaster_02.ico"
+IDI_ICON3               ICON                    "..\\res\\AccountMaster_03.ico"
 
 /////////////////////////////////////////////////////////////////////////////
 //
 // Bitmap
 //
 
-IDR_MAINFRAME           BITMAP  MOVEABLE PURE   "..\\res\\Toolbar.bmp"
-IDR_INTEGRATEDBKIMG     BITMAP  DISCARDABLE  "..\\res\\IntegratedBackground.bmp"
+IDR_MAINFRAME           BITMAP                  "..\\res\\Toolbar.bmp"
+IDR_INTEGRATEDBKIMG     BITMAP                  "..\\res\\IntegratedBackground.bmp"
 
 /////////////////////////////////////////////////////////////////////////////
 //
 // Toolbar
 //
 
-IDR_MAINFRAME TOOLBAR DISCARDABLE  48, 48
+IDR_MAINFRAME TOOLBAR 48, 48
 BEGIN
     BUTTON      ID_ADD_ACCOUNT
     BUTTON      ID_MODIFY_ACCOUNT
@@ -106,80 +104,93 @@ END
 // Menu
 //
 
-IDR_MAINFRAME MENU PRELOAD DISCARDABLE 
+IDR_MAINFRAME MENU
 BEGIN
     POPUP "操作(&O)"
     BEGIN
-        MENUITEM "添加一个账户(&N)\tCtrl+N",    ID_ADD_ACCOUNT
-        MENUITEM "修改一个账户(&E)\tCtrl+E",    ID_MODIFY_ACCOUNT
-        MENUITEM "删除一个账户(&D)\tCtrl+Del",  ID_DEL_ACCOUNT
+        MENUITEM "添加一个账户(&N)\tCtrl+N",          ID_ADD_ACCOUNT
+        MENUITEM "修改一个账户(&E)\tCtrl+E",          ID_MODIFY_ACCOUNT
+        MENUITEM "删除一个账户(&D)\tCtrl+Del",        ID_DEL_ACCOUNT
         MENUITEM SEPARATOR
-        MENUITEM "打开URL(&Go)\tCtrl+G",        ID_OPEN_URL
+        MENUITEM "打开URL(&Go)\tCtrl+G",          ID_OPEN_URL
         MENUITEM SEPARATOR
-        MENUITEM "退出程序(&X)\tAlt+X",         ID_APP_EXIT
+        MENUITEM "退出程序(&X)\tAlt+X",             ID_APP_EXIT
     END
     POPUP "设置(&S)"
     BEGIN
-        MENUITEM "用户设置(&U)",                ID_USER_SETTINGS
+        MENUITEM "用户设置(&U)",                    ID_USER_SETTINGS
         MENUITEM SEPARATOR
-        MENUITEM "程序设置(&P)",                ID_APP_SETTINGS
+        MENUITEM "程序设置(&P)",                    ID_APP_SETTINGS
         MENUITEM SEPARATOR
-        MENUITEM "自动登录",                    ID_VIA_AUTOLOGIN
+        MENUITEM "自动登录",                        ID_VIA_AUTOLOGIN
     END
     POPUP "数据库(&L)"
     BEGIN
-        MENUITEM "账户类别配置(&Types)",        ID_ACCOUNT_TYPES
-        MENUITEM "账户种类配置(&Categories)",   ID_ACCOUNT_CATES
+        MENUITEM "账户类别配置(&Types)",              ID_ACCOUNT_TYPES
+        MENUITEM "账户种类配置(&Categories)",         ID_ACCOUNT_CATES
         MENUITEM SEPARATOR
-        MENUITEM "备份数据(&Backup)",           ID_BACKUP_DATA
-        MENUITEM "恢复数据(&Resume)",           ID_RESUME_DATA
+        MENUITEM "备份数据(&Backup)",               ID_BACKUP_DATA
+        MENUITEM "恢复数据(&Resume)",               ID_RESUME_DATA
     END
     POPUP "查看(&V)"
     BEGIN
-        MENUITEM "工具栏(&T)",                  ID_VIEW_TOOLBAR
-        MENUITEM "状态栏(&S)",                  ID_VIEW_STATUS_BAR
+        MENUITEM "工具栏(&T)",                     ID_VIEW_TOOLBAR
+        MENUITEM "状态栏(&S)",                     ID_VIEW_STATUS_BAR
         POPUP "视图样式"
         BEGIN
-            MENUITEM "报告",                        ID_LIST_STYLE_REPORT
-            MENUITEM "图标",                        ID_LIST_STYLE_ICON
+            MENUITEM "报告",                          ID_LIST_STYLE_REPORT
+            MENUITEM "图标",                          ID_LIST_STYLE_ICON
         END
     END
     POPUP "帮助(&H)"
     BEGIN
-        MENUITEM "帮助文档(&F)\tF1",            ID_HELP
-        MENUITEM "关于 Cassette(&A)...",        ID_APP_ABOUT
+        MENUITEM "帮助文档(&F)\tF1",                ID_HELP
+        MENUITEM "关于 Cassette(&A)...",          ID_APP_ABOUT
     END
 END
 
-IDM_OPERATE_CATES MENU DISCARDABLE 
+IDM_OPERATE_CATES MENU
 BEGIN
     POPUP "种类操作菜单"
     BEGIN
-        MENUITEM "添加种类...",                 ID_CATE_ADD
-        MENUITEM "修改种类...",                 ID_CATE_MODIFY
-        MENUITEM "删除种类",                    ID_CATE_DELETE
+        MENUITEM "添加种类...",                     ID_CATE_ADD
+        MENUITEM "修改种类...",                     ID_CATE_MODIFY
+        MENUITEM "删除种类",                        ID_CATE_DELETE
     END
 END
 
-IDM_OPERATE_ACCOUNTS MENU DISCARDABLE 
+IDM_OPERATE_ACCOUNTS MENU
 BEGIN
     POPUP "账户操作菜单"
     BEGIN
-        MENUITEM "添加一个账户(&N)\tCtrl+N",    ID_ADD_ACCOUNT
-        MENUITEM "修改一个账户(&E)\tCtrl+E",    ID_MODIFY_ACCOUNT
-        MENUITEM "删除一个账户(&D)\tCtrl+Del",  ID_DEL_ACCOUNT
+        MENUITEM "添加一个账户(&N)\tCtrl+N",          ID_ADD_ACCOUNT
+        MENUITEM "修改一个账户(&E)\tCtrl+E",          ID_MODIFY_ACCOUNT
+        MENUITEM "删除一个账户(&D)\tCtrl+Del",        ID_DEL_ACCOUNT
         MENUITEM SEPARATOR
-        MENUITEM "打开URL(&Go)\tCtrl+G",        ID_OPEN_URL
+        MENUITEM "打开URL(&Go)\tCtrl+G",          ID_OPEN_URL
     END
 END
 
-IDM_OPERATE_TYPES MENU DISCARDABLE 
+IDM_OPERATE_TYPES MENU
 BEGIN
     POPUP "类别操作菜单"
     BEGIN
-        MENUITEM "添加类别...",                 ID_TYPE_ADD
-        MENUITEM "修改类别...",                 ID_TYPE_MODIFY
-        MENUITEM "删除类别",                    ID_TYPE_DELETE
+        MENUITEM "添加类别...",                     ID_TYPE_ADD
+        MENUITEM "修改类别...",                     ID_TYPE_MODIFY
+        MENUITEM "删除类别",                        ID_TYPE_DELETE
+    END
+END
+
+IDM_TRAYNOTI_MENU MENU
+BEGIN
+    POPUP "托盘通知菜单"
+    BEGIN
+        MENUITEM "显示/隐藏",                       ID_MAINWND_SHOWHIDE
+        MENUITEM SEPARATOR
+        MENUITEM "用户设置",                        ID_USER_SETTINGS
+        MENUITEM "程序设置",                        ID_APP_SETTINGS
+        MENUITEM SEPARATOR
+        MENUITEM "退出程序",                        ID_APP_EXIT
     END
 END
 
@@ -189,7 +200,7 @@ END
 // Accelerator
 //
 
-IDR_MAINFRAME ACCELERATORS PRELOAD MOVEABLE PURE 
+IDR_MAINFRAME ACCELERATORS
 BEGIN
     "E",            ID_MODIFY_ACCOUNT,      VIRTKEY, CONTROL, NOINVERT
     "G",            ID_OPEN_URL,            VIRTKEY, CONTROL, NOINVERT
@@ -205,8 +216,8 @@ END
 // Dialog
 //
 
-IDD_FORGETPWD1 DIALOG DISCARDABLE  0, 0, 137, 125
-STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+IDD_FORGETPWD1 DIALOG 0, 0, 137, 125
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "找回密码 - 步骤1"
 FONT 9, "宋体"
 BEGIN
@@ -214,16 +225,14 @@ BEGIN
     LTEXT           "账户名称",IDC_STATIC,11,66,33,8
     EDITTEXT        IDC_EDIT_ACCOUNTNAME,46,64,80,14,ES_AUTOHSCROLL
     LTEXT           "账户种类",IDC_STATIC,11,46,33,8
-    COMBOBOX        IDC_COMBO_CATES,46,44,80,30,CBS_DROPDOWNLIST | 
-                    WS_VSCROLL | WS_TABSTOP
-    EDITTEXT        IDC_EDIT_ACCOUNTPWD,46,84,80,14,ES_PASSWORD | 
-                    ES_AUTOHSCROLL
+    COMBOBOX        IDC_COMBO_CATES,46,44,80,30,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    EDITTEXT        IDC_EDIT_ACCOUNTPWD,46,84,80,14,ES_PASSWORD | ES_AUTOHSCROLL
     LTEXT           "账户密码",IDC_STATIC,11,86,33,8
     PUSHBUTTON      "退出",IDCANCEL,73,104,40,14,WS_GROUP
 END
 
 IDD_USER_LOGIN DIALOGEX 0, 0, 152, 115
-STYLE DS_MODALFRAME | WS_MINIMIZEBOX | WS_POPUP | WS_CAPTION | WS_SYSMENU
+STYLE DS_SETFONT | DS_MODALFRAME | WS_MINIMIZEBOX | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "用户登录"
 FONT 9, "宋体", 0, 0, 0x1
 BEGIN
@@ -232,22 +241,17 @@ BEGIN
     LTEXT           "用户名",IDC_STATIC,9,37,25,8,0,WS_EX_TRANSPARENT
     EDITTEXT        IDC_EDIT_USERNAME,38,35,65,14,ES_AUTOHSCROLL
     LTEXT           "密码",IDC_STATIC,17,57,17,8
-    EDITTEXT        IDC_EDIT_PASSWORD,38,55,65,14,ES_PASSWORD | 
-                    ES_AUTOHSCROLL
-    CONTROL         "<a>用户注册</a>",IDC_SYSLINK_REGISTER,"SysLink",
-                    WS_TABSTOP,108,37,35,10
-    CONTROL         "<a>忘记密码</a>",IDC_SYSLINK_FORGETPWD,"SysLink",
-                    WS_TABSTOP,108,57,35,10
-    CONTROL         "记住密码",IDC_CHECK_SAVEPWD,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,24,75,48,10
-    CONTROL         "自动登录",IDC_CHECK_AUTOLOGIN,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,79,75,48,10
+    EDITTEXT        IDC_EDIT_PASSWORD,38,55,65,14,ES_PASSWORD | ES_AUTOHSCROLL
+    CONTROL         "<a>用户注册</a>",IDC_SYSLINK_REGISTER,"SysLink",WS_TABSTOP,108,37,35,10
+    CONTROL         "<a>忘记密码</a>",IDC_SYSLINK_FORGETPWD,"SysLink",WS_TABSTOP,108,57,35,10
+    CONTROL         "记住密码",IDC_CHECK_SAVEPWD,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,24,75,48,10
+    CONTROL         "自动登录",IDC_CHECK_AUTOLOGIN,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,79,75,48,10
     DEFPUSHBUTTON   "登录",IDOK,27,94,43,14
     PUSHBUTTON      "取消",IDCANCEL,81,94,43,14
 END
 
-IDD_USER_REGISTER DIALOG DISCARDABLE  0, 0, 152, 129
-STYLE DS_MODALFRAME | WS_MINIMIZEBOX | WS_POPUP | WS_CAPTION | WS_SYSMENU
+IDD_USER_REGISTER DIALOG 0, 0, 152, 129
+STYLE DS_SETFONT | DS_MODALFRAME | WS_MINIMIZEBOX | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "用户注册"
 FONT 9, "宋体"
 BEGIN
@@ -257,28 +261,24 @@ BEGIN
     LTEXT           "保护级别",IDC_STATIC,10,69,33,8
     LTEXT           "用户热键",IDC_STATIC,10,89,33,8
     EDITTEXT        IDC_EDIT_USERNAME,50,7,90,14,ES_AUTOHSCROLL
-    EDITTEXT        IDC_EDIT_PASSWORD,50,27,90,14,ES_PASSWORD | 
-                    ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT_PASSWORD,50,27,90,14,ES_PASSWORD | ES_AUTOHSCROLL
     EDITTEXT        IDC_EDIT_CFMPWD,50,47,90,14,ES_PASSWORD | ES_AUTOHSCROLL
-    COMBOBOX        IDC_COMBO_PROTECTLEVEL,50,67,48,60,CBS_DROPDOWNLIST | 
-                    WS_VSCROLL | WS_TABSTOP
-    CONTROL         "HotKey1",IDC_HOTKEY_CUSTOM,"msctls_hotkey32",WS_BORDER | 
-                    WS_TABSTOP,50,87,90,14
+    COMBOBOX        IDC_COMBO_PROTECTLEVEL,50,67,48,60,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    CONTROL         "HotKey1",IDC_HOTKEY_CUSTOM,"msctls_hotkey32",WS_BORDER | WS_TABSTOP,50,87,90,14
     DEFPUSHBUTTON   "注册",IDOK,25,107,43,14
     PUSHBUTTON      "取消",IDCANCEL,79,107,43,14
 END
 
-IDD_ACCOUNT_TYPES DIALOG DISCARDABLE  0, 0, 160, 135
-STYLE DS_MODALFRAME | WS_MINIMIZEBOX | WS_POPUP | WS_CAPTION | WS_SYSMENU
+IDD_ACCOUNT_TYPES DIALOG 0, 0, 160, 135
+STYLE DS_SETFONT | DS_MODALFRAME | WS_MINIMIZEBOX | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "账户类别设置..."
 FONT 9, "宋体"
 BEGIN
-    CONTROL         "List1",IDC_LIST_TYPES,"SysListView32",LVS_REPORT | 
-                    LVS_SINGLESEL | WS_BORDER | WS_TABSTOP,0,0,160,135
+    CONTROL         "List1",IDC_LIST_TYPES,"SysListView32",LVS_REPORT | LVS_SINGLESEL | WS_BORDER | WS_TABSTOP,0,0,160,135
 END
 
-IDD_ACCOUNT_TYPE_EDITING DIALOG DISCARDABLE  0, 0, 127, 75
-STYLE DS_MODALFRAME | WS_MINIMIZEBOX | WS_POPUP | WS_CAPTION | WS_SYSMENU
+IDD_ACCOUNT_TYPE_EDITING DIALOG 0, 0, 127, 75
+STYLE DS_SETFONT | DS_MODALFRAME | WS_MINIMIZEBOX | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "添加/修改账户类别..."
 FONT 9, "宋体"
 BEGIN
@@ -290,17 +290,16 @@ BEGIN
     PUSHBUTTON      "取消",IDCANCEL,69,53,43,14
 END
 
-IDD_ACCOUNT_CATES DIALOG DISCARDABLE  0, 0, 345, 135
-STYLE DS_MODALFRAME | WS_MINIMIZEBOX | WS_POPUP | WS_CAPTION | WS_SYSMENU
+IDD_ACCOUNT_CATES DIALOG 0, 0, 345, 135
+STYLE DS_SETFONT | DS_MODALFRAME | WS_MINIMIZEBOX | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "账户种类配置..."
 FONT 9, "宋体"
 BEGIN
-    CONTROL         "List1",IDC_LIST_CATES,"SysListView32",LVS_REPORT | 
-                    WS_BORDER | WS_TABSTOP,0,0,345,135
+    CONTROL         "List1",IDC_LIST_CATES,"SysListView32",LVS_REPORT | WS_BORDER | WS_TABSTOP,0,0,345,135
 END
 
-IDD_ACCOUNT_CATE_EDITING DIALOG DISCARDABLE  0, 0, 202, 189
-STYLE DS_MODALFRAME | WS_MINIMIZEBOX | WS_POPUP | WS_CAPTION | WS_SYSMENU
+IDD_ACCOUNT_CATE_EDITING DIALOG 0, 0, 202, 189
+STYLE DS_SETFONT | DS_MODALFRAME | WS_MINIMIZEBOX | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "添加/修改账户种类..."
 FONT 9, "宋体"
 BEGIN
@@ -311,13 +310,10 @@ BEGIN
     LTEXT           "启动类型",IDC_STATIC,9,125,33,8
     LTEXT           "关键字",IDC_STATIC,17,145,25,8
     EDITTEXT        IDC_EDIT_CATENAME,45,9,145,14,ES_AUTOHSCROLL
-    EDITTEXT        IDC_EDIT_CATEDESC,45,30,145,24,ES_MULTILINE | 
-                    ES_AUTOVSCROLL | ES_AUTOHSCROLL | ES_WANTRETURN
-    COMBOBOX        IDC_COMBO_TYPES,45,61,55,50,CBS_DROPDOWNLIST | 
-                    WS_VSCROLL | WS_TABSTOP
+    EDITTEXT        IDC_EDIT_CATEDESC,45,30,145,24,ES_MULTILINE | ES_AUTOVSCROLL | ES_AUTOHSCROLL | ES_WANTRETURN
+    COMBOBOX        IDC_COMBO_TYPES,45,61,55,50,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     EDITTEXT        IDC_EDIT_URL,45,81,145,14,ES_AUTOHSCROLL
-    COMBOBOX        IDC_COMBO_STARTUP,45,123,55,50,CBS_DROPDOWNLIST | 
-                    WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_COMBO_STARTUP,45,123,55,50,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     EDITTEXT        IDC_EDIT_KEYWORDS,45,143,145,14,ES_AUTOHSCROLL
     DEFPUSHBUTTON   "确定",IDOK,52,164,43,14
     PUSHBUTTON      "取消",IDCANCEL,106,164,43,14
@@ -325,20 +321,16 @@ BEGIN
     EDITTEXT        IDC_EDIT_ICOPATH,45,102,145,14,ES_AUTOHSCROLL
 END
 
-IDD_APP_SETTINGS DIALOG DISCARDABLE  0, 0, 192, 169
-STYLE DS_MODALFRAME | WS_MINIMIZEBOX | WS_POPUP | WS_CAPTION | WS_SYSMENU
+IDD_APP_SETTINGS DIALOG 0, 0, 192, 169
+STYLE DS_SETFONT | DS_MODALFRAME | WS_MINIMIZEBOX | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "程序设置"
 FONT 9, "宋体"
 BEGIN
     GROUPBOX        "功能开关",IDC_STATIC,7,8,178,50
-    CONTROL         "开机自动启动",IDC_CHECK_ENABLEAUTORUN,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,20,21,64,10
-    CONTROL         "开启用户热键",IDC_CHECK_ENABLEHOTKEY,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,104,21,64,10
-    CONTROL         "开启内置HTTP服务",IDC_CHECK_ENABLEHTTPSRV,"Button",
-                    BS_AUTOCHECKBOX | WS_DISABLED | WS_TABSTOP,20,37,80,10
-    CONTROL         "开启Scheme功能",IDC_CHECK_ENABLESCHEME,"Button",
-                    BS_AUTOCHECKBOX | WS_DISABLED | WS_TABSTOP,104,37,72,10
+    CONTROL         "开机自动启动",IDC_CHECK_ENABLEAUTORUN,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,20,21,64,10
+    CONTROL         "开启用户热键",IDC_CHECK_ENABLEHOTKEY,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,104,21,64,10
+    CONTROL         "开启内置HTTP服务",IDC_CHECK_ENABLEHTTPSRV,"Button",BS_AUTOCHECKBOX | WS_DISABLED | WS_TABSTOP,20,37,80,10
+    CONTROL         "开启Scheme功能",IDC_CHECK_ENABLESCHEME,"Button",BS_AUTOCHECKBOX | WS_DISABLED | WS_TABSTOP,104,37,72,10
     GROUPBOX        "相关路径($ROOT$表示程序根目录)",IDC_STATIC,7,65,178,74
     LTEXT           "数据库路径",IDC_STATIC,28,82,41,8
     LTEXT           "备份存放路径",IDC_STATIC,20,101,49,8
@@ -350,8 +342,8 @@ BEGIN
     EDITTEXT        IDC_EDIT_WORDSLIBPATH,73,118,101,14,ES_AUTOHSCROLL
 END
 
-IDD_USER_SETTINGS DIALOG DISCARDABLE  0, 0, 159, 191
-STYLE DS_MODALFRAME | WS_MINIMIZEBOX | WS_POPUP | WS_CAPTION | WS_SYSMENU
+IDD_USER_SETTINGS DIALOG 0, 0, 159, 191
+STYLE DS_SETFONT | DS_MODALFRAME | WS_MINIMIZEBOX | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "用户设置"
 FONT 9, "宋体"
 BEGIN
@@ -366,18 +358,16 @@ BEGIN
     EDITTEXT        IDC_EDIT_OLDPWD,50,42,96,14,ES_PASSWORD | ES_AUTOHSCROLL
     EDITTEXT        IDC_EDIT_NEWPWD,50,61,96,14,ES_PASSWORD | ES_AUTOHSCROLL
     EDITTEXT        IDC_EDIT_CFMPWD,50,80,96,14,ES_PASSWORD | ES_AUTOHSCROLL
-    COMBOBOX        IDC_COMBO_PROTECTLEVEL,50,109,48,46,CBS_DROPDOWNLIST | 
-                    WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_COMBO_PROTECTLEVEL,50,109,48,46,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     EDITTEXT        IDC_EDIT_CONDONE,50,128,96,14,ES_AUTOHSCROLL
     GROUPBOX        "修改密码(不修改请留空)",IDC_STATIC,7,26,145,78
-    CONTROL         "HotKey1",IDC_HOTKEY_CUSTOM,"msctls_hotkey32",WS_BORDER | 
-                    WS_TABSTOP,50,147,96,14
+    CONTROL         "HotKey1",IDC_HOTKEY_CUSTOM,"msctls_hotkey32",WS_BORDER | WS_TABSTOP,50,147,96,14
     DEFPUSHBUTTON   "确定",IDOK,28,170,43,14
     PUSHBUTTON      "取消",IDCANCEL,82,170,43,14
 END
 
-IDD_ACCOUNT_EDITING DIALOG DISCARDABLE  0, 0, 187, 163
-STYLE DS_MODALFRAME | WS_MINIMIZEBOX | WS_POPUP | WS_CAPTION | WS_SYSMENU
+IDD_ACCOUNT_EDITING DIALOG 0, 0, 187, 163
+STYLE DS_SETFONT | DS_MODALFRAME | WS_MINIMIZEBOX | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "添加/修改账户..."
 FONT 9, "宋体"
 BEGIN
@@ -390,17 +380,14 @@ BEGIN
     EDITTEXT        IDC_EDIT_MYNAME,42,10,130,14,ES_AUTOHSCROLL
     EDITTEXT        IDC_EDIT_ACCOUNTNAME,42,29,130,14,ES_AUTOHSCROLL
     EDITTEXT        IDC_EDIT_ACCOUNTPWD,42,48,130,14,ES_AUTOHSCROLL
-    COMBOBOX        IDC_COMBO_CATES,42,67,94,70,CBS_DROPDOWNLIST | 
-                    WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_COMBO_CATES,42,67,94,70,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     EDITTEXT        IDC_EDIT_SAFERANK,42,86,130,14,ES_AUTOHSCROLL
-    EDITTEXT        IDC_EDIT_COMMENT,42,105,130,28,ES_MULTILINE | 
-                    ES_AUTOVSCROLL | ES_AUTOHSCROLL | ES_WANTRETURN
+    EDITTEXT        IDC_EDIT_COMMENT,42,105,130,28,ES_MULTILINE | ES_AUTOVSCROLL | ES_AUTOHSCROLL | ES_WANTRETURN
     DEFPUSHBUTTON   "确定",IDOK,45,143,43,14
     PUSHBUTTON      "取消",IDCANCEL,99,143,43,14
 END
 
 
-#ifndef _MAC
 /////////////////////////////////////////////////////////////////////////////
 //
 // Version
@@ -423,18 +410,14 @@ BEGIN
     BEGIN
         BLOCK "080404b0"
         BEGIN
-            VALUE "Comments", "\0"
-            VALUE "CompanyName", "X86PRO.COM\0"
-            VALUE "FileDescription", "Cassette 账户管理系统 Ver 0.1.0\0"
-            VALUE "FileVersion", "0, 1, 0, 0\0"
-            VALUE "InternalName", "Cassette\0"
-            VALUE "LegalCopyright", "(C) X86PRO.COM 版权所有 2013.\0"
-            VALUE "LegalTrademarks", "\0"
-            VALUE "OriginalFilename", "Cassette.exe\0"
-            VALUE "PrivateBuild", "\0"
-            VALUE "ProductName", "Cassette 账户管理系统\0"
-            VALUE "ProductVersion", "0, 1, 0, 0\0"
-            VALUE "SpecialBuild", "\0"
+            VALUE "CompanyName", "X86PRO.COM"
+            VALUE "FileDescription", "Cassette 账户管理系统 Ver 0.1.0"
+            VALUE "FileVersion", "0, 1, 0, 0"
+            VALUE "InternalName", "Cassette"
+            VALUE "LegalCopyright", "(C) X86PRO.COM 版权所有 2013."
+            VALUE "OriginalFilename", "Cassette.exe"
+            VALUE "ProductName", "Cassette 账户管理系统"
+            VALUE "ProductVersion", "0, 1, 0, 0"
         END
     END
     BLOCK "VarFileInfo"
@@ -443,8 +426,6 @@ BEGIN
     END
 END
 
-#endif    // !_MAC
-
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -452,7 +433,7 @@ END
 //
 
 #ifdef APSTUDIO_INVOKED
-GUIDELINES DESIGNINFO DISCARDABLE 
+GUIDELINES DESIGNINFO
 BEGIN
     IDD_FORGETPWD1, DIALOG
     BEGIN
@@ -541,57 +522,46 @@ END
 // HTML
 //
 
-IDR_HTML_ABOUT          HTML    DISCARDABLE     "..\\res\\about.html"
+IDR_HTML_ABOUT          HTML                    "..\\res\\about.html"
 
 /////////////////////////////////////////////////////////////////////////////
 //
 // PNG
 //
 
-IDR_PNG_ABOUT_IMAGE     PNG     DISCARDABLE     "..\\res\\AccountMaster_01.png"
+IDR_PNG_ABOUT_IMAGE     PNG                     "..\\res\\AccountMaster_01.png"
 
 /////////////////////////////////////////////////////////////////////////////
 //
 // SQL
 //
 
-IDR_SQL_DBSCHEMA        SQL     DISCARDABLE     "..\\res\\dbschema.sql"
+IDR_SQL_DBSCHEMA        SQL                     "..\\res\\dbschema.sql"
 
 /////////////////////////////////////////////////////////////////////////////
 //
-// KEY
+// RT_MANIFEST
 //
 
-IDR_KEY_DB KEY DISCARDABLE 
-BEGIN
-
-END
-
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// 24
-//
-
-1                       24      DISCARDABLE     "..\\res\\AccountMaster.manifest"
+1                       RT_MANIFEST             "..\\res\\AccountMaster.manifest"
 
 /////////////////////////////////////////////////////////////////////////////
 //
 // String Table
 //
 
-STRINGTABLE PRELOAD DISCARDABLE 
+STRINGTABLE
 BEGIN
     IDR_MAINFRAME           "Cassette"
 END
 
-STRINGTABLE PRELOAD DISCARDABLE 
+STRINGTABLE
 BEGIN
     AFX_IDS_APP_TITLE       "Cassette"
     AFX_IDS_IDLEMESSAGE     "就绪"
 END
 
-STRINGTABLE DISCARDABLE 
+STRINGTABLE
 BEGIN
     ID_INDICATOR_EXT        "扩展名"
     ID_INDICATOR_CAPS       "大写"
@@ -601,25 +571,25 @@ BEGIN
     ID_INDICATOR_REC        "记录"
 END
 
-STRINGTABLE DISCARDABLE 
+STRINGTABLE
 BEGIN
     ID_APP_ABOUT            "显示程序版本号和版权信息\n关于"
     ID_APP_EXIT             "退出应用程序\n退出"
     ID_HELP                 "显示本程序的帮助文档\n帮助文档"
 END
 
-STRINGTABLE DISCARDABLE 
+STRINGTABLE
 BEGIN
     ID_NEXT_PANE            "切换到下一个窗格\n下一窗格"
     ID_PREV_PANE            "切换回前一个窗格\n前一窗格"
 END
 
-STRINGTABLE DISCARDABLE 
+STRINGTABLE
 BEGIN
     ID_WINDOW_SPLIT         "将活动的窗口分隔成窗格\n分隔"
 END
 
-STRINGTABLE DISCARDABLE 
+STRINGTABLE
 BEGIN
     ID_EDIT_CLEAR           "删除被选对象\n删除"
     ID_EDIT_CLEAR_ALL       "全部删除\n全部删除"
@@ -634,13 +604,13 @@ BEGIN
     ID_EDIT_REDO            "重新执行先前已撤消的操作\n重新执行"
 END
 
-STRINGTABLE DISCARDABLE 
+STRINGTABLE
 BEGIN
     ID_VIEW_TOOLBAR         "显示或隐藏工具栏\n显隐工具栏"
     ID_VIEW_STATUS_BAR      "显示或隐藏状态栏\n显隐状态栏"
 END
 
-STRINGTABLE DISCARDABLE 
+STRINGTABLE
 BEGIN
     AFX_IDS_SCSIZE          "改变窗口大小"
     AFX_IDS_SCMOVE          "改变窗口位置"
@@ -651,14 +621,14 @@ BEGIN
     AFX_IDS_SCCLOSE         "关闭活动的窗口并提示保存所有文档"
 END
 
-STRINGTABLE DISCARDABLE 
+STRINGTABLE
 BEGIN
     AFX_IDS_SCRESTORE       "把窗口恢复到正常大小"
     AFX_IDS_SCTASKLIST      "激活任务表"
     IDS_SHAREDMEM_NAME      "Cassette 0.1.0.0 - Shared Memory"
 END
 
-STRINGTABLE DISCARDABLE 
+STRINGTABLE
 BEGIN
     ID_ADD_ACCOUNT          "往数据库中添加一个账户和密码\n添加账户"
     ID_MODIFY_ACCOUNT       "修改选定的账户和密码\n修改账户"
@@ -673,7 +643,7 @@ BEGIN
     ID_VIA_AUTOLOGIN        "您通过自动登录方式登录时此项可操作，本选项可供您关闭自动登录\n关闭自动登录"
 END
 
-STRINGTABLE DISCARDABLE 
+STRINGTABLE
 BEGIN
     IDC_EDIT_USERNAME       "您的用户名"
     IDC_EDIT_PASSWORD       "您的密码"
@@ -681,7 +651,7 @@ BEGIN
     IDC_SYSLINK_FORGETPWD   "忘记密码？帮您找回"
 END
 
-STRINGTABLE DISCARDABLE 
+STRINGTABLE
 BEGIN
     IDC_CHECK_SAVEPWD       "记住您的用户名和密码"
     IDC_CHECK_ENABLEAUTORUN "使程序在开机时自动启动"
@@ -691,7 +661,12 @@ BEGIN
     IDC_CHECK_ENABLESCHEME  "这个功能将注册一个URL Scheme(account://)使得外部通过URL与本程序交互。"
 END
 
-#endif    // Chinese (P.R.C.) resources
+STRINGTABLE
+BEGIN
+    ID_MAINWND_SHOWHIDE     "显示或隐藏主窗口\n显示/隐藏"
+END
+
+#endif    // 中文(简体，中国) resources
 /////////////////////////////////////////////////////////////////////////////
 
 

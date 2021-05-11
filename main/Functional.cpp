@@ -747,15 +747,6 @@ int AddAccountCate( eiendb::Database & db, winux::Mixed const & newCate )
 {
     winux::Mixed newAccountCate = newCate;
     newAccountCate.addPair()
-/*
-        ( "name", (LPCTSTR)newCate.m_cateName )
-        ( "desc", (LPCTSTR)newCate.m_cateDesc )
-        ( "type", (LPCTSTR)newCate.m_typeName )
-        ( "url", (LPCTSTR)newCate.m_url )
-        ( "icon", (LPCTSTR)newCate.m_icoPath )
-        ( "startup", (LPCTSTR)newCate.m_startup )
-        ( "keywords", (LPCTSTR)newCate.m_keywords )
-*/
         ( "time", (int)winplus::GetUtcTime() )
         ;
 
@@ -765,6 +756,11 @@ int AddAccountCate( eiendb::Database & db, winux::Mixed const & newCate )
         if ( mdf->addNew(newAccountCate) )
         {
             return (int)db->insertId();
+        }
+        else
+        {
+            AfxGetMainWnd()->FatalError( newAccountCate.myJson().c_str(), db->error().c_str() );
+            return 0;
         }
     }
     catch ( winux::Error const & e )
@@ -966,6 +962,8 @@ int LoadAccounts( eiendb::Database & db, int userId, AccountArray * accounts, in
         while ( resAccounts->fetchRow(&f) )
         {
             Account account;
+            account.assign(f);
+/*
             account.m_myName = f["myname"].toAnsi().c_str();
             account.m_accountName = winux::LocalFromUtf8( DecryptContent( f["account_name"].toBuffer() ) ).c_str();
             account.m_accountPwd = winux::LocalFromUtf8( DecryptContent( f["account_pwd"].toBuffer() ) ).c_str();
@@ -974,6 +972,7 @@ int LoadAccounts( eiendb::Database & db, int userId, AccountArray * accounts, in
             account.m_safeRank = f["safe_rank"];
             account.m_comment = f["comment"].toAnsi().c_str();
             account.m_time = f["time"];
+*/
             IfPTR(accounts)->Add(account);
             count++;
         }

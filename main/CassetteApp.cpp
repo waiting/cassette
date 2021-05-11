@@ -136,6 +136,7 @@ BOOL CassetteApp::InitInstance()
         // The one and only window has been initialized, so show and update it.
         pFrame->UpdateWindow();
         pFrame->ShowWindow(this->m_nCmdShow);
+
         return TRUE;
     }
     return FALSE;

@@ -39,7 +39,7 @@ BOOL MainFrame::PreCreateWindow( CREATESTRUCT & cs )
 
     cs.style &= ~WS_BORDER;
     cs.dwExStyle &= ~WS_EX_CLIENTEDGE;
-    cs.lpszClass = AfxRegisterWndClass( 0, 0, (HBRUSH)GetStockObject(WHITE_BRUSH) );
+    cs.lpszClass = AfxRegisterWndClass( 0, 0, (HBRUSH)/*GetStockObject*/(WHITE_BRUSH+1) );
     return TRUE;
 }
 
@@ -47,6 +47,7 @@ BEGIN_MESSAGE_MAP(MainFrame, CFrameWnd)
     //{{AFX_MSG_MAP(MainFrame)
     ON_WM_CREATE()
     ON_WM_SETFOCUS()
+    ON_COMMAND(ID_APP_EXIT, OnAppExit)
     ON_COMMAND(ID_APP_ABOUT, OnAppAbout)
     ON_UPDATE_COMMAND_UI(ID_VIA_AUTOLOGIN, OnUpdateViaAutoLogin)
     ON_COMMAND(ID_VIA_AUTOLOGIN, OnViaAutoLogin)
@@ -54,6 +55,7 @@ BEGIN_MESSAGE_MAP(MainFrame, CFrameWnd)
     ON_COMMAND(ID_OPEN_URL, OnOpenUrl)
     ON_COMMAND(ID_USER_SETTINGS, OnUserSettings)
     ON_COMMAND(ID_APP_SETTINGS, OnAppSettings)
+    ON_WM_CLOSE()
     ON_WM_DESTROY()
     ON_COMMAND(ID_ADD_ACCOUNT, OnAddAccount)
     ON_COMMAND(ID_MODIFY_ACCOUNT, OnModifyAccount)
@@ -62,12 +64,16 @@ BEGIN_MESSAGE_MAP(MainFrame, CFrameWnd)
     ON_COMMAND(ID_ACCOUNT_TYPES, OnAccountTypes)
     ON_COMMAND(ID_BACKUP_DATA, OnBackupData)
     ON_COMMAND(ID_RESUME_DATA, OnResumeData)
+    ON_COMMAND(ID_MAINWND_SHOWHIDE, OnMainWndShowHide )
+    ON_UPDATE_COMMAND_UI(ID_MAINWND_SHOWHIDE, OnUpdateMainWndShowHide)
     ON_UPDATE_COMMAND_UI(ID_ACCOUNT_CATES, OnUpdateAccountCates)
     ON_UPDATE_COMMAND_UI(ID_ACCOUNT_TYPES, OnUpdateAccountTypes)
     //}}AFX_MSG_MAP
     ON_MESSAGE( WM_UPDATELIST_ALL, OnUpdateListAll )
     ON_MESSAGE( WM_HOTKEY, OnHotkey )
     ON_UPDATE_COMMAND_UI_RANGE(ID_MODIFY_ACCOUNT, ID_DEL_ACCOUNT, OnUpdateOperateAccount)
+    ON_MESSAGE(WM_TRAY_NOTIFICATION, OnTrayNotification)
+    ON_WM_SHOWWINDOW()
 END_MESSAGE_MAP()
 
 void MainFrame::UpdateTitle()
@@ -226,6 +232,16 @@ int MainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
     m_catesDlg.UpdateWindow();
     m_typesDlg.Create(this);
     m_typesDlg.UpdateWindow();
+
+    // 创建托盘通知
+    //static HICON hTrayIcon;
+    //LoadIconMetric( AfxGetApp()->m_hInstance, MAKEINTRESOURCEW(IDR_MAINFRAME), LIM_SMALL, &hTrayIcon );
+    static winplus::Icon trayIcon(IDR_MAINFRAME);
+
+    m_noti.add( GetSafeHwnd(), 1, trayIcon, winplus::LoadString(IDR_MAINFRAME) );
+    m_noti.setMessage(WM_TRAY_NOTIFICATION);
+    //m_noti.setBalloonInfo( winplus::LoadString(IDR_MAINFRAME), "已经启动" );
+    m_noti.modify();
 
     return 0;
 }
@@ -536,6 +552,12 @@ void MainFrame::OnResumeData()
     }
 }
 
+void MainFrame::OnMainWndShowHide()
+{
+    //this->ShowWindow();
+    winplus::Window_Show( GetSafeHwnd(), !winplus::Window_IsShow( GetSafeHwnd() ) );
+}
+
 LRESULT MainFrame::OnHotkey( WPARAM wHotkeyId, LPARAM lParam )
 {
     switch ( wHotkeyId )
@@ -584,7 +606,6 @@ void MainFrame::DoIntelligentHotkey()
         }
         cate.m_cateName = curWndTitle.c_str();
         cate.m_startup = _T("网站");
-        
     }
     else // 否则为软件
     {
@@ -606,7 +627,7 @@ void MainFrame::DoIntelligentHotkey()
         cate.m_keywords = winplus::StrJoin( _T(","), autoKeywords ).c_str();
 
         winux::Mixed cateFields;
-        cate.assignTo(&cateFields);
+        cate.assignTo(&cateFields,"name,desc,type,url,icon,startup,keywords");
 
         m_catesDlg.DoAdd( pCurWnd, &cateFields );
     }
@@ -651,6 +672,7 @@ void MainFrame::DoIntelligentHotkey()
             }
             else
             {
+/*
                 pIntegratedWnd = new AccountIntegratedWnd(
                     pCurWnd,
                     m_catesDlg.m_cates[cateIndex].m_cateName,
@@ -662,9 +684,69 @@ void MainFrame::DoIntelligentHotkey()
                 //pIntegratedWnd->UpdateWindow();
                 pIntegratedWnd->ShowWindow(SW_NORMAL);
 
-                pCurWnd->SetWindowPos( &wndTop, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE );
+                pCurWnd->SetWindowPos( &wndTop, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE );*/
 
             }
         }
+    }
+}
+
+LRESULT MainFrame::OnTrayNotification(WPARAM wParam, LPARAM lParam)
+{
+    USHORT x = GET_X_LPARAM(wParam), y = GET_Y_LPARAM(wParam);
+
+    switch ( LOWORD(lParam) )
+    {
+    case NIN_BALLOONUSERCLICK:
+        //AfxMessageBox("NIN_BALLOONUSERCLICK");
+        //m_noti.setBalloonInfo( "点击了气泡", winux::Format("%u,%u",x,y) );
+        //m_noti.modify();
+        break;
+    case NIN_SELECT:
+        this->OnMainWndShowHide();
+        break;
+    case WM_CONTEXTMENU:
+        {
+
+            SetForegroundWindow();
+            CMenu menu;
+            menu.LoadMenu(IDM_TRAYNOTI_MENU);
+            menu.GetSubMenu(0)->TrackPopupMenu( TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_HORPOSANIMATION, x, y, this );
+            /* menu.CreatePopupMenu();
+            menu.AppendMenu( MF_STRING, ID_MAINWND_SHOWHIDE, "显示/隐藏" );
+            menu.AppendMenu( MF_SEPARATOR );
+            menu.AppendMenu( MF_STRING, ID_APP_EXIT, "退出程序" );
+            menu.TrackPopupMenu( TPM_RIGHTBUTTON | TPM_HORPOSANIMATION, x, y, this );*/
+        }
+        break;
+
+    }
+    return 0;
+}
+
+void MainFrame::OnUpdateMainWndShowHide(CCmdUI *pCmdUI)
+{
+    pCmdUI->SetCheck( winplus::Window_IsShow( GetSafeHwnd() ) );
+}
+
+void MainFrame::OnClose()
+{
+    ShowWindow(SW_HIDE);
+    //ShowWindow(SW_HIDE);
+}
+
+void MainFrame::OnAppExit()
+{
+    __super::OnClose();
+}
+
+void MainFrame::OnShowWindow(BOOL bShow, UINT nStatus)
+{
+    __super::OnShowWindow(bShow, nStatus);
+    if ( bShow )
+    {
+        //BringWindowToTop();
+        SetWindowPos( &CWnd::wndTopMost, 0,0,0,0,SWP_NOMOVE|SWP_NOSIZE);
+        //SetForegroundWindow();
     }
 }
