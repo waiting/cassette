@@ -11,7 +11,7 @@ static char THIS_FILE[] = __FILE__;
 
 /////////////////////////////////////////////////////////////////////////////
 // AccountTypeEditingDlg dialog
-AccountTypeEditingDlg::AccountTypeEditingDlg( CWnd * parent, bool isAdd, winux::Mixed * type )
+AccountTypeEditingDlg::AccountTypeEditingDlg( CWnd * parent, bool isAdd, winplus::Mixed * type )
 : Dialog(AccountTypeEditingDlg::IDD, parent), m_isAdd(isAdd), m_type(type)
 {
     //{{AFX_DATA_INIT(AccountTypeEditingDlg)

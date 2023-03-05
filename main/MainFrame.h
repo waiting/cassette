@@ -63,7 +63,7 @@ protected:
          清空先前注册的热键, hotkey忽略 */
     void RefreshHotkey( int hotkey );
     // 弹出添加账户的对话框
-    void DoAddAccount( CWnd * parent, winux::Mixed & newAccount );
+    void DoAddAccount( CWnd * parent, winplus::Mixed & newAccount );
 
     // 执行智能热键操作
     void DoIntelligentHotkey();

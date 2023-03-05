@@ -174,9 +174,6 @@
     <CustomBuild Include="..\res\Toolbar.bmp">
       <Filter>Resource Files</Filter>
     </CustomBuild>
-    <CustomBuild Include="..\res\toolbar1.bmp">
-      <Filter>Resource Files</Filter>
-    </CustomBuild>
     <CustomBuild Include="..\res\about.html" />
     <CustomBuild Include="..\res\AccountMaster_01.png" />
     <CustomBuild Include="..\res\db.key" />

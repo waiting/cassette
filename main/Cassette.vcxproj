@@ -22,13 +22,14 @@
     <ConfigurationType>Application</ConfigurationType>
     <UseOfMfc>Static</UseOfMfc>
     <CharacterSet>MultiByte</CharacterSet>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v141_xp</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseOfMfc>Static</UseOfMfc>
     <CharacterSet>MultiByte</CharacterSet>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v141_xp</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -152,7 +153,6 @@
     </CustomBuild>
     <CustomBuild Include="..\res\IntegratedBackground.bmp" />
     <CustomBuild Include="..\res\Toolbar.bmp" />
-    <CustomBuild Include="..\res\toolbar1.bmp" />
     <CustomBuild Include="..\res\about.html" />
     <CustomBuild Include="..\res\AccountMaster_01.png">
       <FileType>Document</FileType>

@@ -70,3 +70,5 @@ INSERT INTO am_browsers ( id, name, title, exe_name )
 VALUES ( 4, 'Firefox', 'Mozilla Firefox', 'firefox.exe' );
 INSERT INTO am_browsers ( id, name, title, exe_name )
 VALUES ( 5, 'Opera', 'Opera', 'opera.exe' );
+INSERT INTO am_browsers ( id, name, title, exe_name )
+VALUES ( 6, 'Edge', 'Microsoft Edge', 'msedge.exe' );

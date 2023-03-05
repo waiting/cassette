@@ -14,7 +14,7 @@ class AccountCateEditingDlg : public Dialog
 {
 // Construction
 public:
-    AccountCateEditingDlg( CWnd * parent, bool isAdd, winux::Mixed * cateFields );
+    AccountCateEditingDlg( CWnd * parent, bool isAdd, winplus::Mixed * cateFields );
 
 // Dialog Data
     //{{AFX_DATA(AccountCateEditingDlg)
@@ -35,7 +35,7 @@ protected:
     int     m_startupIndex;
 
     bool m_isAdd;
-    winux::Mixed * m_cate;
+    winplus::Mixed * m_cate;
     // Generated message map functions
     //{{AFX_MSG(AccountCateEditingDlg)
     virtual BOOL OnInitDialog();

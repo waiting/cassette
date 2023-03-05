@@ -135,7 +135,7 @@ void AccountTypesDlg::OnListRClick( NMHDR * pNMHDR, LRESULT * pResult )
 void AccountTypesDlg::OnAdd() 
 {
     VERIFY_ONCE_DIALOG(onceEditingDlg);
-    winux::Mixed newType;
+    winplus::Mixed newType;
     newType.addPair()( "rank", 20 );
 
     AccountTypeEditingDlg editingDlg( GetOwner(), true, &newType );
@@ -172,7 +172,7 @@ void AccountTypesDlg::OnModify()
     CListCtrl & lst = *(CListCtrl *)GetDlgItem(IDC_LIST_TYPES);
     int index = lst.GetNextItem( -1, LVNI_ALL | LVNI_SELECTED );
     CString typeName = m_types[index].m_typeName;
-    winux::Mixed newType;
+    winplus::Mixed newType;
     m_types[index].assignTo(&newType);
 
     AccountTypeEditingDlg editingDlg( GetOwner(), false, &newType );

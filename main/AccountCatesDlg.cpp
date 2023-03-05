@@ -94,7 +94,7 @@ void AccountCatesDlg::UpdateList( int flag /*= UPDATE_LOAD_DATA | UPDATE_LIST_IT
 
 }
 
-void AccountCatesDlg::DoAdd( CWnd * parent, winux::Mixed * cate )
+void AccountCatesDlg::DoAdd( CWnd * parent, winplus::Mixed * cate )
 {
     VERIFY_RUNONLY_OTHER_HPROCESS(parent);
     VERIFY_ONCE_DIALOG(onceEditingDlg);
@@ -263,7 +263,7 @@ void AccountCatesDlg::OnListRClick( NMHDR* pNMHDR, LRESULT* pResult )
 
 void AccountCatesDlg::OnAdd()
 {
-    winux::Mixed cate;
+    winplus::Mixed cate;
     cate.createCollection();
     DoAdd( GetOwner(), &cate );
 }
@@ -274,7 +274,7 @@ void AccountCatesDlg::OnModify()
 
     CListCtrl & lst = *(CListCtrl *)GetDlgItem(IDC_LIST_CATES);
     int index = lst.GetNextItem( -1, LVNI_ALL | LVNI_SELECTED );
-    winux::Mixed newCate;
+    winplus::Mixed newCate;
     int id = m_cates[index].m_id;
     m_cates[index].assignTo(&newCate);
 

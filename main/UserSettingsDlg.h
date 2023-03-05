@@ -14,7 +14,7 @@ class UserSettingsDlg : public Dialog
 {
 // Construction
 public:
-    UserSettingsDlg( CWnd * parent, winux::Mixed * userFields );
+    UserSettingsDlg( CWnd * parent, winplus::Mixed * userFields );
 
     // «∑Ò–ﬁ∏ƒ√‹¬Î
     bool IsModifyPassword() const;
@@ -38,7 +38,7 @@ public:
 
 // Implementation
 protected:
-    winux::Mixed & m_userFields;
+    winplus::Mixed & m_userFields;
 
     // Generated message map functions
     //{{AFX_MSG(UserSettingsDlg)

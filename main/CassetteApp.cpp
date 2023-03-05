@@ -172,7 +172,7 @@ void CassetteApp::InitDatabaseSchema()
             m_db->cnn()->exec( sqls[i].c_str() );
         }
     }
-    catch ( winux::Error const & e )
+    catch ( winplus::Error const & e )
     {
         AfxMessageBox( e.what(), MB_ICONERROR );
     }
@@ -198,7 +198,7 @@ void CassetteApp::OpenDatabase()
     CFileStatus fstatus;
     bool isNeedInit = !CFile::GetStatus( databasePath.c_str(), fstatus );
 
-    winux::Mixed dbConfig;
+    winplus::Mixed dbConfig;
     dbConfig.addPair()
         ( "driver", "sqlite" )
         ( "path", databasePath )
@@ -212,7 +212,7 @@ void CassetteApp::OpenDatabase()
     {
         m_db = new eiendb::Database(dbConfig);
     }
-    catch ( winux::Error const & e )
+    catch ( winplus::Error const & e )
     {
         AfxMessageBox( e.what(), MB_ICONERROR );
     }
@@ -221,56 +221,6 @@ void CassetteApp::OpenDatabase()
     {
         InitDatabaseSchema();
     }
-
-/*
-
-    int rc;
-    winplus::String databasePath = ExplainCustomVars(m_settings.databasePath);
-    winplus::AnsiString encryptKey;
-    sqlite3 * db = NULL;
-    const char * localError = "Out of memory";
-    CFileStatus fstatus;
-    bool isNeedInit = !CFile::GetStatus( databasePath.c_str(), fstatus );
-    winplus::Resource objResDbKey;
-
-    rc = sqlite3_open_v2( winplus::StringToUtf8(databasePath).c_str(), &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, NULL );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-    // 开启外键约束
-    rc = sqlite3_exec( db, "PRAGMA foreign_keys = ON", NULL, NULL, NULL );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-    rc = sqlite3_extended_result_codes( db, 1 );
-    if ( rc != SQLITE_OK ) goto OccurDbError;
-
-    // 从资源加载KEY
-    if ( objResDbKey.load( IDR_KEY_DB, _T("KEY") ) )
-    {
-        encryptKey.resize( objResDbKey.getSize() );
-        CopyMemory( &encryptKey[0], objResDbKey.getData(), encryptKey.size() );
-    }
-
-    // 如果有密码
-    if ( encryptKey.size() > 0 )
-    {
-        rc = sqlite3_key( db, encryptKey.c_str(), (int)encryptKey.size() );
-        if ( rc != SQLITE_OK ) goto OccurDbError;
-    }
-
-    m_db = db;
-
-    if ( isNeedInit )
-    {
-    InitDatabaseSchema();
-    }
-
-    return;
-
-OccurDbError:
-    if ( db )
-    {
-        localError = sqlite3_errmsg(db);
-        sqlite3_close(db);
-    }
-    AfxMessageBox( winplus::Utf8ToString(localError).c_str() );*/
 }
 
 void CassetteApp::CloseDatabase()

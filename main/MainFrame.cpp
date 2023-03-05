@@ -108,7 +108,7 @@ void MainFrame::UpdateList( int flag, long itemIndex )
     IF_PTR(m_pAccountsView)->UpdateList( flag, itemIndex );
 }
 
-void MainFrame::DoAddAccount( CWnd * parent, winux::Mixed & newAccount )
+void MainFrame::DoAddAccount( CWnd * parent, winplus::Mixed & newAccount )
 {
     VERIFY_RUNONLY_OTHER_HPROCESS(parent);
     VERIFY_ONCE_DIALOG(onceEditingDlg);
@@ -350,7 +350,7 @@ void MainFrame::OnUserSettings()
 {
     VERIFY_ONCE_DIALOG(onceSettingsDlg);
 
-    winux::Mixed userFields;
+    winplus::Mixed userFields;
     userFields.addPair()
         ( "name", (LPCTSTR)g_theApp.m_loginedUser.m_username )
         ( "protect", g_theApp.m_loginedUser.m_protectLevel )
@@ -422,7 +422,7 @@ void MainFrame::OnAddAccount()
     newAccount.m_cateId = 0;
     newAccount.m_safeRank = 20;
 
-    winux::Mixed accountFields;
+    winplus::Mixed accountFields;
     accountFields.addPair()
         ( "user", g_theApp.m_loginedUser.m_id )
         ( "cate", 0 )
@@ -440,7 +440,7 @@ void MainFrame::OnModifyAccount()
     int index = lst.GetNextItem( -1, LVNI_ALL | LVNI_SELECTED );
     CString myName = m_pAccountsView->m_accounts[index].m_myName;
 
-    winux::Mixed accountFields;
+    winplus::Mixed accountFields;
     m_pAccountsView->m_accounts[index].assignTo( &accountFields, "myname,account_name,account_pwd,cate,user,safe_rank,comment,time" );
 
     AccountEditingDlg editingDlg( this, false, &accountFields );
@@ -630,7 +630,7 @@ void MainFrame::DoIntelligentHotkey()
             g_theApp.GetWordslib()->splitWords( curWndTitle, &autoKeywords );
         cate.m_keywords = winplus::StrJoin( _T(","), autoKeywords ).c_str();
 
-        winux::Mixed cateFields;
+        winplus::Mixed cateFields;
         cate.assignTo(&cateFields,"name,desc,type,url,icon,startup,keywords");
 
         m_catesDlg.DoAdd( pCurWnd, &cateFields );
@@ -645,7 +645,7 @@ void MainFrame::DoIntelligentHotkey()
             newAccount.m_cateId = m_catesDlg.m_cates[cateIndex].m_id;
             newAccount.m_userId = g_theApp.m_loginedUser.m_id;
 
-            winux::Mixed accountFields;
+            winplus::Mixed accountFields;
             accountFields.addPair()
                 ( "cate", m_catesDlg.m_cates[cateIndex].m_id )
                 ( "user", g_theApp.m_loginedUser.m_id )
@@ -695,23 +695,25 @@ void MainFrame::DoIntelligentHotkey()
     }
 }
 
-LRESULT MainFrame::OnTrayNotification(WPARAM wParam, LPARAM lParam)
+LRESULT MainFrame::OnTrayNotification( WPARAM wParam, LPARAM lParam )
 {
     USHORT x = GET_X_LPARAM(wParam), y = GET_Y_LPARAM(wParam);
+    //winplus::String tips = winplus::FormatA("lw:%x, hw:%x, ll:%x, hl:%x\n", LOWORD(wParam), HIWORD(wParam), LOWORD(lParam), HIWORD(lParam) );
+    //WriteFile( GetStdHandle(STD_OUTPUT_HANDLE), tips.c_str(), tips.length(), 0, 0 );
 
     switch ( LOWORD(lParam) )
     {
     case NIN_BALLOONUSERCLICK:
         //AfxMessageBox("NIN_BALLOONUSERCLICK");
-        //m_noti.setBalloonInfo( "点击了气泡", winux::Format("%u,%u",x,y) );
+        //m_noti.setBalloonInfo( "点击了气泡", winplus::Format("%u,%u",x,y) );
         //m_noti.modify();
         break;
     case NIN_SELECT:
+    case NIN_KEYSELECT:
         this->OnMainWndShowHide();
         break;
     case WM_CONTEXTMENU:
         {
-
             SetForegroundWindow();
             CMenu menu;
             menu.LoadMenu(IDM_TRAYNOTI_MENU);

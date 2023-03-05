@@ -12,7 +12,7 @@ static char THIS_FILE[] = __FILE__;
 /////////////////////////////////////////////////////////////////////////////
 // UserSettingsDlg dialog
 
-UserSettingsDlg::UserSettingsDlg( CWnd * parent, winux::Mixed * userFields ) :
+UserSettingsDlg::UserSettingsDlg( CWnd * parent, winplus::Mixed * userFields ) :
     Dialog( UserSettingsDlg::IDD, parent ),
     m_userFields(*userFields)
 {
@@ -108,7 +108,7 @@ void UserSettingsDlg::OnOK()
             WarningError( _T("确认密码不一样!"), _T("错误") );
             return;
         }
-        m_userFields["pwd"] = winplus::EncryptContent( (LPCTSTR)m_newPassword );
+        m_userFields["pwd"] = winplus::EncryptContent( winplus::Buffer( (LPCTSTR)m_newPassword, m_newPassword.GetLength(), true ) );
     }
 
     this->EndDialog(IDOK);

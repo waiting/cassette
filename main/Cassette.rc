@@ -401,8 +401,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 0,1,0,0
- PRODUCTVERSION 0,1,0,0
+ FILEVERSION 0,1,1,0
+ PRODUCTVERSION 0,1,1,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -418,13 +418,13 @@ BEGIN
         BLOCK "080404b0"
         BEGIN
             VALUE "CompanyName", "X86PRO.COM"
-            VALUE "FileDescription", "Cassette 账户管理系统 Ver 0.1.0"
-            VALUE "FileVersion", "0, 1, 0, 0"
+            VALUE "FileDescription", "Cassette 账户管理系统 Ver 0.1.1"
+            VALUE "FileVersion", "0.1.1.0"
             VALUE "InternalName", "Cassette"
-            VALUE "LegalCopyright", "(C) X86PRO.COM 版权所有 2013."
+            VALUE "LegalCopyright", "(C) X86PRO.COM 版权所有 2013-2023."
             VALUE "OriginalFilename", "Cassette.exe"
             VALUE "ProductName", "Cassette 账户管理系统"
-            VALUE "ProductVersion", "0, 1, 0, 0"
+            VALUE "ProductVersion", "0.1.1.0"
         END
     END
     BLOCK "VarFileInfo"

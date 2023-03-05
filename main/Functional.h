@@ -153,90 +153,6 @@ struct User/* : Fields*/
         return *this;
     }
 
-/*
-    // 绑定数据到指定的SQL语句的占位符的索引,基于1
-
-    int bindId( sqlite3_stmt * stmt, int sqlParamIndex ) const
-    {
-        return _bindInt( stmt, sqlParamIndex, m_id );
-    }
-    int bindUsername( sqlite3_stmt * stmt, int sqlParamIndex ) const
-    {
-        return _bindString( stmt, sqlParamIndex, m_username );
-    }
-    int bindPassword( sqlite3_stmt * stmt, int sqlParamIndex ) const
-    {
-        winplus::AnsiString encrypt;
-        encrypt = EncryptContent( winplus::StringToUtf8( (LPCTSTR)m_password ) );
-        return _bindBlob( stmt, sqlParamIndex, encrypt.c_str(), encrypt.size() );
-    }
-    int bindProtectLevel( sqlite3_stmt * stmt, int sqlParamIndex ) const
-    {
-        return _bindInt( stmt, sqlParamIndex, m_protectLevel );
-    }
-    int bindCondone( sqlite3_stmt * stmt, int sqlParamIndex ) const
-    {
-        return _bindInt( stmt, sqlParamIndex, m_condone );
-    }
-    int bindCurCondone( sqlite3_stmt * stmt, int sqlParamIndex ) const
-    {
-        return _bindInt( stmt, sqlParamIndex, m_curCondone );
-    }
-    int bindUnlockTime( sqlite3_stmt * stmt, int sqlParamIndex ) const
-    {
-        return _bindInt( stmt, sqlParamIndex, m_unlockTime );
-    }
-    int bindHotkey( sqlite3_stmt * stmt, int sqlParamIndex ) const
-    {
-        return _bindInt( stmt, sqlParamIndex, m_hotkey );
-    }
-    int bindRegTime( sqlite3_stmt * stmt, int sqlParamIndex ) const
-    {
-        return _bindInt( stmt, sqlParamIndex, m_regTime );
-    }
-
-    // 从STMT读取数据到变量,字段索引值基于0
-
-    void loadId( sqlite3_stmt * stmt, int sqlFieldIndex )
-    {
-        m_id = _getInt( stmt, sqlFieldIndex );
-    }
-    void loadUsername( sqlite3_stmt * stmt, int sqlFieldIndex )
-    {
-        m_username = _getString( stmt, sqlFieldIndex );
-    }
-    void loadPassword( sqlite3_stmt * stmt, int sqlFieldIndex )
-    {
-        winplus::AnsiString encrypt;
-        _getBlob( stmt, sqlFieldIndex, &encrypt );
-        m_password = winplus::Utf8ToString( DecryptContent(encrypt) ).c_str();
-    }
-    void loadProtectLevel( sqlite3_stmt * stmt, int sqlFieldIndex )
-    {
-        m_protectLevel = _getInt( stmt, sqlFieldIndex );
-    }
-    void loadCondone( sqlite3_stmt * stmt, int sqlFieldIndex )
-    {
-        m_condone = _getInt( stmt, sqlFieldIndex );
-    }
-    void loadCurCondone( sqlite3_stmt * stmt, int sqlFieldIndex )
-    {
-        m_curCondone = _getInt( stmt, sqlFieldIndex );
-    }
-    void loadUnlockTime( sqlite3_stmt * stmt, int sqlFieldIndex )
-    {
-        m_unlockTime = _getInt( stmt, sqlFieldIndex );
-    }
-    void loadHotkey( sqlite3_stmt * stmt, int sqlFieldIndex )
-    {
-        m_hotkey = _getInt( stmt, sqlFieldIndex );
-    }
-    void loadRegTime( sqlite3_stmt * stmt, int sqlFieldIndex )
-    {
-        m_regTime = _getInt( stmt, sqlFieldIndex );
-    }
-*/
-
     User()
     {
         m_id = 0;
@@ -262,7 +178,7 @@ bool DeleteUser( eiendb::Database & db, CString const & username );
 // 验证用户密码
 bool VerifyUserPassword( eiendb::Database & db, CString const & username, CString const & password );
 // 修改用户信息
-bool ModifyUserEx( eiendb::Database & db, CString const & username, winux::Mixed const & userFields );
+bool ModifyUserEx( eiendb::Database & db, CString const & username, winplus::Mixed const & userFields );
 
 // Types -----------------------------------------------------------------
 
@@ -287,8 +203,8 @@ struct AccountType/* : public Fields*/
         m_safeRank = 0;
     }
 
-    void assignTo( winux::Mixed * accountTypeMixed, CString const & fieldNames = "name,rank" );
-    void assign( winux::Mixed const & accountTypeMixed );
+    void assignTo( winplus::Mixed * accountTypeMixed, CString const & fieldNames = "name,rank" );
+    void assign( winplus::Mixed const & accountTypeMixed );
 };
 
 typedef CArray<AccountType, AccountType const &> AccountTypeArray;
@@ -300,11 +216,11 @@ int LoadAccountTypes( eiendb::Database & db, AccountTypeArray * types );
 bool GetAccountType( eiendb::Database & db, CString const & typeName, AccountType * type );
 
 // 添加账户类别信息, 成功返回true, 否则返回false.
-bool AddAccountType( eiendb::Database & db, winux::Mixed const & newType );
+bool AddAccountType( eiendb::Database & db, winplus::Mixed const & newType );
 
 // 修改账户类别信息, 成功返回true, 否则返回false.
 // name,rank
-bool ModifyAccountType( eiendb::Database & db, CString const & typeName, winux::Mixed const & newTypeFields );
+bool ModifyAccountType( eiendb::Database & db, CString const & typeName, winplus::Mixed const & newTypeFields );
 
 // 删除账户类别信息, 成功返回true, 否则返回false.
 bool DeleteAccountType( eiendb::Database & db, CString const & typeName );
@@ -345,8 +261,8 @@ struct AccountCate
         m_timeWriten = 0;
     }
 
-    void assignTo( winux::Mixed * accountCateMixed, CString const & fieldNames = "id,name,desc,type,url,icon,startup,keywords,time" );
-    void assign( winux::Mixed const & accountCateMixed );
+    void assignTo( winplus::Mixed * accountCateMixed, CString const & fieldNames = "id,name,desc,type,url,icon,startup,keywords,time" );
+    void assign( winplus::Mixed const & accountCateMixed );
 };
 
 typedef CArray<AccountCate, AccountCate const &> AccountCateArray;
@@ -359,11 +275,11 @@ bool GetAccountCate( eiendb::Database & db, int id, AccountCate * cate );
 
 // 添加账户种类信息，成功返回ID，失败返回0
 // newCate忽略m_id,m_timeWriten
-int AddAccountCate( eiendb::Database & db, winux::Mixed const & newCate );
+int AddAccountCate( eiendb::Database & db, winplus::Mixed const & newCate );
 
 // 修改账户种类信息
 // id,name,desc,type,url,icon,startup,keywords,time
-bool ModifyAccountCate( eiendb::Database & db, int id, winux::Mixed const & newCateFields );
+bool ModifyAccountCate( eiendb::Database & db, int id, winplus::Mixed const & newCateFields );
 
 // 删除账户种类信息
 bool DeleteAccountCate( eiendb::Database & db, int id );
@@ -410,8 +326,8 @@ struct Account/* : public Fields*/
         m_time = 0;
     }
 
-    void assignTo( winux::Mixed * accountMixed, CString const & fieldNames = "myname,account_name,account_pwd,cate,user,safe_rank,comment,time" );
-    void assign( winux::Mixed const & accountMixed );
+    void assignTo( winplus::Mixed * accountMixed, CString const & fieldNames = "myname,account_name,account_pwd,cate,user,safe_rank,comment,time" );
+    void assign( winplus::Mixed const & accountMixed );
 };
 
 typedef CArray<Account, Account const &> AccountArray;
@@ -427,12 +343,12 @@ bool GetAccount( eiendb::Database & db, int userId, CString const & myName, Acco
 // 主键(user,myname)
 // 意味着每个用户(user)拥有账户的myname必须不同，否则失败。修改时也一样。
 // newAccount忽略m_time
-bool AddAccount( eiendb::Database & db, winux::Mixed const & newAccount );
+bool AddAccount( eiendb::Database & db, winplus::Mixed const & newAccount );
 
 // 修改一个指定用户的账户
 // 主键(user,myname)
 // myname,account_name,account_pwd,cate,user,safe_rank,comment,time
-bool ModifyAccount( eiendb::Database & db, int userId, CString const & myName, winux::Mixed const & newAccountFields );
+bool ModifyAccount( eiendb::Database & db, int userId, CString const & myName, winplus::Mixed const & newAccountFields );
 
 // 删除一个指定用户的账户
 bool DeleteAccount( eiendb::Database & db, int userId, CString const & myName );

@@ -14,7 +14,7 @@ class AccountTypeEditingDlg : public Dialog
 {
 // Construction
 public:
-    AccountTypeEditingDlg( CWnd * parent, bool isAdd, winux::Mixed * type );
+    AccountTypeEditingDlg( CWnd * parent, bool isAdd, winplus::Mixed * type );
 
 // Dialog Data
     //{{AFX_DATA(AccountTypeEditingDlg)
@@ -33,7 +33,7 @@ public:
 // Implementation
 protected:
     bool m_isAdd;
-    winux::Mixed * m_type;
+    winplus::Mixed * m_type;
 
     // Generated message map functions
     //{{AFX_MSG(AccountTypeEditingDlg)

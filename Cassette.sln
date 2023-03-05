@@ -4,6 +4,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 15.0.33403.129
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Cassette", "main\Cassette.vcxproj", "{EF924FA5-4E9E-FE63-A1E2-BD183ADC53A3}"
+	ProjectSection(ProjectDependencies) = postProject
+		{FFC125CD-6DA3-4CB0-AB66-0C0AA466AB1B} = {FFC125CD-6DA3-4CB0-AB66-0C0AA466AB1B}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "thirdparties_lib", "thirdparties\thirdparties_lib.vcxproj", "{FFC125CD-6DA3-4CB0-AB66-0C0AA466AB1B}"
 EndProject

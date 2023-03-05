@@ -29,18 +29,18 @@ CString GetExecutablePath()
 
 bool RegisterUser( eiendb::Database & db, User const & newUser )
 {
-    winux::Mixed encPassword = winplus::EncryptContent( (LPCTSTR)newUser.m_password );
+    winplus::Buffer encPassword = winplus::EncryptContent( winplus::Buffer( (LPCTSTR)newUser.m_password, newUser.m_password.GetLength(), true ) );
 
-    winux::Mixed fields;
+    winplus::Mixed fields;
     fields.addPair()
         ( "name", (LPCTSTR)newUser.m_username )
         ( "pwd", encPassword )
         ( "protect", newUser.m_protectLevel )
         ( "condone", 3 )
         ( "cur_condone", 3 )
-        ( "unlock_time", winux::GetUtcTime() )
+        ( "unlock_time", winplus::GetUtcTime() )
         ( "hotkey", newUser.m_hotkey )
-        ( "time", winux::GetUtcTime() )
+        ( "time", winplus::GetUtcTime() )
         ;
 
     try
@@ -48,7 +48,7 @@ bool RegisterUser( eiendb::Database & db, User const & newUser )
         auto mdf = db.mdf("am_users");
         return mdf->addNew(fields);
     }
-    catch ( winux::Error const & e )
+    catch ( winplus::Error const & e )
     {
         AfxGetMainWnd()->FatalError( e.what(), _T("数据库错误") );
     }
@@ -64,10 +64,10 @@ bool LoginUser( eiendb::Database & db, CString const & username, CString const &
         User tmpUserInfo;
 
         auto resUser = db->query( db->buildStmt("SELECT * FROM am_users WHERE name = ?;", (LPCTSTR)username ) );
-        winux::StringMixedMap userFields;
+        winplus::StringMixedMap userFields;
         if( resUser->fetchRow(&userFields) ) // 找到这个用户
         {
-            int nowTime = (int)winux::GetUtcTime();
+            int nowTime = (int)winplus::GetUtcTime();
 
             tmpUserInfo.m_unlockTime = userFields["unlock_time"];
             tmpUserInfo.m_condone = userFields["condone"];
@@ -87,7 +87,7 @@ bool LoginUser( eiendb::Database & db, CString const & username, CString const &
                 if ( tmpUserInfo.m_curCondone < 1 ) // 表示这是刚从锁定状态恢复,重置cur_condone=condone
                 {
                     tmpUserInfo.m_curCondone = tmpUserInfo.m_condone;
-                    ModifyUserEx( db, username, winux::Mixed().addPair()( "cur_condone", tmpUserInfo.m_curCondone ) );
+                    ModifyUserEx( db, username, winplus::Mixed().addPair()( "cur_condone", tmpUserInfo.m_curCondone ) );
                 }
             }
 
@@ -97,22 +97,22 @@ bool LoginUser( eiendb::Database & db, CString const & username, CString const &
             {
                 // 减少当前容错次数
                 tmpUserInfo.m_curCondone--;
-                ModifyUserEx( db, username, winux::Mixed().addPair()( "cur_condone", tmpUserInfo.m_curCondone ) );
+                ModifyUserEx( db, username, winplus::Mixed().addPair()( "cur_condone", tmpUserInfo.m_curCondone ) );
 
                 AfxGetMainWnd()->WarningError( winplus::Format( _T("密码不正确，你还剩%d次机会"), tmpUserInfo.m_curCondone ).c_str(), _T("错误") );
 
                 if ( tmpUserInfo.m_curCondone < 1 ) // 没有容错数,锁定用户
                 {
                     int lockTime = 3600 * 3;
-                    tmpUserInfo.m_unlockTime = winux::GetUtcTime() + lockTime;
-                    ModifyUserEx( db, username, winux::Mixed().addPair()( "unlock_time", tmpUserInfo.m_unlockTime ) );
+                    tmpUserInfo.m_unlockTime = winplus::GetUtcTime() + lockTime;
+                    ModifyUserEx( db, username, winplus::Mixed().addPair()( "unlock_time", tmpUserInfo.m_unlockTime ) );
                 }
                 ret = false;
                 goto ExitProc;
             }
             // 登录验证成功,重置cur_condone=condone
             tmpUserInfo.m_curCondone = tmpUserInfo.m_condone;
-            ModifyUserEx( db, username, winux::Mixed().addPair()( "cur_condone", tmpUserInfo.m_curCondone ) );
+            ModifyUserEx( db, username, winplus::Mixed().addPair()( "cur_condone", tmpUserInfo.m_curCondone ) );
 
             if ( userData != NULL )
             {
@@ -135,7 +135,7 @@ bool LoginUser( eiendb::Database & db, CString const & username, CString const &
             goto ExitProc;
         }
     }
-    catch ( winux::Error const & e )
+    catch ( winplus::Error const & e )
     {
         AfxGetMainWnd()->FatalError( e.what(), _T("数据库错误") );
     }
@@ -150,7 +150,7 @@ bool LoadUser( eiendb::Database & db, CString const & username, User * userData 
     try
     {
         auto resUser = db->query( db->buildStmt("SELECT * FROM am_users WHERE name = ?;", (LPCTSTR)username ) );
-        winux::StringMixedMap userFields;
+        winplus::StringMixedMap userFields;
         if( resUser->fetchRow(&userFields) ) // 找到这个用户
         {
             if ( userData != NULL )
@@ -172,7 +172,7 @@ bool LoadUser( eiendb::Database & db, CString const & username, User * userData 
             ret = false;
         }
     }
-    catch ( winux::Error const & e )
+    catch ( winplus::Error const & e )
     {
         AfxGetMainWnd()->FatalError( e.what(), _T("数据库错误") ); //*/
     }
@@ -187,7 +187,7 @@ bool DeleteUser( eiendb::Database & db, CString const & username )
         auto mdf = db.mdf("am_users");
         return mdf->deleteEx( "name=" + db->escape( (LPCTSTR)username ) );
     }
-    catch ( winux::Error const & e )
+    catch ( winplus::Error const & e )
     {
         AfxGetMainWnd()->FatalError( e.what(), _T("数据库错误") ); //*/
     }
@@ -198,29 +198,29 @@ bool VerifyUserPassword( eiendb::Database & db, CString const & username, CStrin
 {
     try
     {
-        winux::Buffer encPassword = winplus::EncryptContent( (LPCTSTR)password );
-        auto res = db->query( db->buildStmt("SELECT pwd = ? FROM am_users WHERE name = ?;", winux::Mixed().add()(encPassword)((LPCTSTR)username) ) );
-        winux::MixedArray f;
+        winplus::Buffer encPassword = winplus::EncryptContent( winplus::Buffer( (LPCTSTR)password, password.GetLength(), true ) );
+        auto res = db->query( db->buildStmt("SELECT pwd = ? FROM am_users WHERE name = ?;", winplus::Mixed().add()(encPassword)((LPCTSTR)username) ) );
+        winplus::MixedArray f;
         if ( res->fetchRow(&f) )
         {
             return f[0].toBool();
         }
     }
-    catch ( winux::Error const & e )
+    catch ( winplus::Error const & e )
     {
         AfxGetMainWnd()->FatalError( e.what(), _T("数据库错误") ); //*/
     }
     return false;
 }
 
-bool ModifyUserEx( eiendb::Database & db, CString const & username, winux::Mixed const & userFields )
+bool ModifyUserEx( eiendb::Database & db, CString const & username, winplus::Mixed const & userFields )
 {
     try
     {
         auto mdf = db.mdf("am_users");
         return mdf->modifyEx( userFields, "name=" + db->escape( (LPCTSTR)username ) );
     }
-    catch ( winux::Error const & e )
+    catch ( winplus::Error const & e )
     {
         AfxGetMainWnd()->FatalError( e.what(), _T("数据库错误") );
     }
@@ -228,10 +228,10 @@ bool ModifyUserEx( eiendb::Database & db, CString const & username, winux::Mixed
 }
 
 // struct AccountType ---------------------------------------------------------------------
-void AccountType::assignTo( winux::Mixed * accountTypeMixed, CString const & fieldNames )
+void AccountType::assignTo( winplus::Mixed * accountTypeMixed, CString const & fieldNames )
 {
-    winux::StringArray fnames;
-    winux::StrSplit( (LPCTSTR)fieldNames, ",", &fnames );
+    winplus::StringArray fnames;
+    winplus::StrSplit( (LPCTSTR)fieldNames, ",", &fnames );
     if ( !accountTypeMixed->isCollection() )
         accountTypeMixed->createCollection();
     for ( auto it = fnames.begin(); it != fnames.end(); ++it )
@@ -247,13 +247,13 @@ void AccountType::assignTo( winux::Mixed * accountTypeMixed, CString const & fie
     }
 }
 
-void AccountType::assign( winux::Mixed const & accountTypeMixed )
+void AccountType::assign( winplus::Mixed const & accountTypeMixed )
 {
     int n = accountTypeMixed.getCount();
     for ( int i = 0; i < n; ++i )
     {
         auto & pr = accountTypeMixed.getPair(i);
-        winux::String const & keyname = pr.first.refAnsi();
+        winplus::String const & keyname = pr.first.refAnsi();
         if ( keyname == "name" )
         {
             m_typeName = pr.second.refAnsi().c_str();
@@ -272,7 +272,7 @@ int LoadAccountTypes( eiendb::Database & db, AccountTypeArray * types )
     try
     {
         auto resAccountTypes = db->query("SELECT * FROM am_account_types ORDER BY rank;");
-        winux::MixedArray f;
+        winplus::MixedArray f;
         while ( resAccountTypes->fetchRow(&f) )
         {
             AccountType t;
@@ -282,7 +282,7 @@ int LoadAccountTypes( eiendb::Database & db, AccountTypeArray * types )
             count++;
         }
     }
-    catch ( winux::Error const & e )
+    catch ( winplus::Error const & e )
     {
         AfxGetMainWnd()->FatalError( e.what(), _T("数据库错误") );
     }
@@ -295,7 +295,7 @@ bool GetAccountType( eiendb::Database & db, CString const & typeName, AccountTyp
     try
     {
         auto resAccountType = db->query( db->buildStmt( "SELECT * FROM am_account_types WHERE name = ?;", (LPCTSTR)typeName ) );
-        winux::MixedArray f;
+        winplus::MixedArray f;
         if ( resAccountType->fetchRow(&f) )
         {
             IF_PTR(type)->m_typeName = f[0].toAnsi().c_str();
@@ -303,16 +303,16 @@ bool GetAccountType( eiendb::Database & db, CString const & typeName, AccountTyp
             ret = true;
         }
     }
-    catch ( winux::Error const & e )
+    catch ( winplus::Error const & e )
     {
         AfxGetMainWnd()->FatalError( e.what(), _T("数据库错误") );
     }
     return ret;
 }
 
-bool AddAccountType( eiendb::Database & db, winux::Mixed const & newType )
+bool AddAccountType( eiendb::Database & db, winplus::Mixed const & newType )
 {
-    winux::Mixed newAccountType = newType;
+    winplus::Mixed newAccountType = newType;
 /*
     newAccountType.addPair()
         ( "name", (LPCTSTR)newType.m_typeName )
@@ -325,21 +325,21 @@ bool AddAccountType( eiendb::Database & db, winux::Mixed const & newType )
         auto mdf = db.mdf("am_account_types");
         return mdf->addNew(newAccountType);
     }
-    catch ( winux::Error const & e )
+    catch ( winplus::Error const & e )
     {
         AfxGetMainWnd()->FatalError( e.what(), _T("数据库错误") );
     }
     return false;
 }
 
-bool ModifyAccountType( eiendb::Database & db, CString const & typeName, winux::Mixed const & newTypeFields )
+bool ModifyAccountType( eiendb::Database & db, CString const & typeName, winplus::Mixed const & newTypeFields )
 {
     try
     {
         auto mdf = db.mdf("am_account_types");
         return mdf->modifyEx( newTypeFields, "name=" + db->escape( (LPCTSTR)typeName ) );
     }
-    catch ( winux::Error const & e )
+    catch ( winplus::Error const & e )
     {
         AfxGetMainWnd()->FatalError( e.what(), _T("数据库错误") );
     }
@@ -351,7 +351,7 @@ bool DeleteAccountType( eiendb::Database & db, CString const & typeName )
     try
     {
         auto resCountAccountCates = db->query( db->buildStmt( "SELECT COUNT(*) > 0 FROM am_account_cates WHERE type = ?;", (LPCTSTR)typeName ) );
-        winux::MixedArray f;
+        winplus::MixedArray f;
         if ( resCountAccountCates->fetchRow(&f) && f[0].toInt() > 0 )
         {
             // 不能删除此类型
@@ -362,7 +362,7 @@ bool DeleteAccountType( eiendb::Database & db, CString const & typeName )
         auto mdf = db.mdf("am_account_types");
         return mdf->deleteEx( "name=" + db->escape( (LPCTSTR)typeName ) );
     }
-    catch ( winux::Error const & e )
+    catch ( winplus::Error const & e )
     {
         AfxGetMainWnd()->FatalError( e.what(), _T("数据库错误") ); //*/
     }
@@ -370,10 +370,10 @@ bool DeleteAccountType( eiendb::Database & db, CString const & typeName )
 }
 
 // struct AccountCate ---------------------------------------------------------------------
-void AccountCate::assignTo( winux::Mixed * accountCateMixed, CString const & fieldNames )
+void AccountCate::assignTo( winplus::Mixed * accountCateMixed, CString const & fieldNames )
 {
-    winux::StringArray fnames;
-    winux::StrSplit( (LPCTSTR)fieldNames, ",", &fnames );
+    winplus::StringArray fnames;
+    winplus::StrSplit( (LPCTSTR)fieldNames, ",", &fnames );
     if ( !accountCateMixed->isCollection() )
         accountCateMixed->createCollection();
     for ( auto it = fnames.begin(); it != fnames.end(); ++it )
@@ -417,13 +417,13 @@ void AccountCate::assignTo( winux::Mixed * accountCateMixed, CString const & fie
     }
 }
 
-void AccountCate::assign( winux::Mixed const & accountCateMixed )
+void AccountCate::assign( winplus::Mixed const & accountCateMixed )
 {
     int n = accountCateMixed.getCount();
     for ( int i = 0; i < n; ++i )
     {
         auto & pr = accountCateMixed.getPair(i);
-        winux::String const & keyname = pr.first.refAnsi();
+        winplus::String const & keyname = pr.first.refAnsi();
         if ( keyname == "id" )
         {
             m_id = pr.second;
@@ -470,7 +470,7 @@ int LoadAccountCates( eiendb::Database & db, AccountCateArray * cates )
     try
     {
         auto resAccountCates = db->query("SELECT * FROM am_account_cates ORDER BY id;");
-        winux::StringMixedMap fields;
+        winplus::StringMixedMap fields;
         while ( resAccountCates->fetchRow(&fields) )
         {
             AccountCate cate;
@@ -488,7 +488,7 @@ int LoadAccountCates( eiendb::Database & db, AccountCateArray * cates )
             count++;
         }
     }
-    catch ( winux::Error const & e )
+    catch ( winplus::Error const & e )
     {
         AfxGetMainWnd()->FatalError( e.what(), _T("数据库错误") ); //*/
     }
@@ -501,7 +501,7 @@ bool GetAccountCate( eiendb::Database & db, int id, AccountCate * cate )
     try
     {
         auto resAccountCate = db->query( db->buildStmt( "SELECT * FROM am_account_cates WHERE id = ?;", id ) );
-        winux::StringMixedMap f;
+        winplus::StringMixedMap f;
         if ( resAccountCate->fetchRow(&f) )
         {
             IF_PTR(cate)->m_id = f["id"];
@@ -516,16 +516,16 @@ bool GetAccountCate( eiendb::Database & db, int id, AccountCate * cate )
             ret = true;
         }
     }
-    catch ( winux::Error const & e )
+    catch ( winplus::Error const & e )
     {
         AfxGetMainWnd()->FatalError( e.what(), _T("数据库错误") );
     }
     return ret;
 }
 
-int AddAccountCate( eiendb::Database & db, winux::Mixed const & newCate )
+int AddAccountCate( eiendb::Database & db, winplus::Mixed const & newCate )
 {
-    winux::Mixed newAccountCate = newCate;
+    winplus::Mixed newAccountCate = newCate;
     newAccountCate.addPair()
         ( "time", (int)winplus::GetUtcTime() )
         ;
@@ -543,21 +543,21 @@ int AddAccountCate( eiendb::Database & db, winux::Mixed const & newCate )
             return 0;
         }
     }
-    catch ( winux::Error const & e )
+    catch ( winplus::Error const & e )
     {
         AfxGetMainWnd()->FatalError( e.what(), _T("数据库错误") );
     }
     return 0;
 }
 
-bool ModifyAccountCate( eiendb::Database & db, int id, winux::Mixed const & newCateFields )
+bool ModifyAccountCate( eiendb::Database & db, int id, winplus::Mixed const & newCateFields )
 {
     try
     {
         auto mdf = db.mdf("am_account_cates");
         return mdf->modify( newCateFields, id );
     }
-    catch ( winux::Error const & e )
+    catch ( winplus::Error const & e )
     {
         AfxGetMainWnd()->FatalError( e.what(), _T("数据库错误") );
     }
@@ -569,7 +569,7 @@ bool DeleteAccountCate( eiendb::Database & db, int id )
     try
     {
         auto resCountAccounts = db->query( db->buildStmt( "SELECT COUNT(*) > 0 FROM am_accounts WHERE cate = ?;", id ) );
-        winux::MixedArray f;
+        winplus::MixedArray f;
         if ( resCountAccounts->fetchRow(&f) && f[0].toInt() > 0 )
         {
             // 不能删除此类型
@@ -579,7 +579,7 @@ bool DeleteAccountCate( eiendb::Database & db, int id )
         auto mdf = db.mdf("am_account_cates");
         return mdf->deleteOne(id);
     }
-    catch ( winux::Error const & e )
+    catch ( winplus::Error const & e )
     {
         AfxGetMainWnd()->FatalError( e.what(), _T("数据库错误") );
     }
@@ -594,7 +594,7 @@ int LoadAccountCatesSafeRank( eiendb::Database & db, CUIntArray * cateIds, CUInt
     try
     {
         auto resAccountCatesSafeRank = db->query("SELECT c.id, t.rank from am_account_cates AS c Left JOIN am_account_types AS t ON t.name = c.type;");
-        winux::MixedArray f;
+        winplus::MixedArray f;
         while ( resAccountCatesSafeRank->fetchRow(&f) )
         {
             IF_PTR(cateIds)->Add( f[0] );
@@ -603,7 +603,7 @@ int LoadAccountCatesSafeRank( eiendb::Database & db, CUIntArray * cateIds, CUInt
             count++;
         }
     }
-    catch ( winux::Error const & e )
+    catch ( winplus::Error const & e )
     {
         AfxGetMainWnd()->FatalError( e.what(), _T("数据库错误") );
     }
@@ -618,7 +618,7 @@ bool GetTypeByCateId( eiendb::Database & db, int cateId, AccountType * type )
     try
     {
         auto resAccountType = db->query( db->buildStmt( "SELECT c.id, t.name, t.rank FROM am_account_cates AS c Left JOIN am_account_types AS t ON t.name = c.type WHERE c.id = ?;", cateId ) );
-        winux::MixedArray f;
+        winplus::MixedArray f;
         if ( resAccountType->fetchRow(&f) )
         {
             ASSERT( cateId == f[0].toInt() );
@@ -627,7 +627,7 @@ bool GetTypeByCateId( eiendb::Database & db, int cateId, AccountType * type )
             ret = true;
         }
     }
-    catch ( winux::Error const & e )
+    catch ( winplus::Error const & e )
     {
         AfxGetMainWnd()->FatalError( e.what(), _T("数据库错误") );
     }
@@ -635,10 +635,10 @@ bool GetTypeByCateId( eiendb::Database & db, int cateId, AccountType * type )
 }
 
 // struct Account -------------------------------------------------------------------------
-void Account::assignTo( winux::Mixed * accountMixed, CString const & fieldNames )
+void Account::assignTo( winplus::Mixed * accountMixed, CString const & fieldNames )
 {
-    winux::StringArray fnames;
-    winux::StrSplit( (LPCTSTR)fieldNames, ",", &fnames );
+    winplus::StringArray fnames;
+    winplus::StrSplit( (LPCTSTR)fieldNames, ",", &fnames );
 
     if ( !accountMixed->isCollection() )
         accountMixed->createCollection();
@@ -650,11 +650,11 @@ void Account::assignTo( winux::Mixed * accountMixed, CString const & fieldNames 
         }
         else if ( *it == "account_name" )
         {
-            (*accountMixed)[*it] = winplus::EncryptContent( winplus::StringToUtf8( (LPCTSTR)m_accountName ) );
+            (*accountMixed)[*it] = winplus::EncryptContent( winplus::Buffer( winplus::StringToUtf8( (LPCTSTR)m_accountName ) ) );
         }
         else if ( *it == "account_pwd" )
         {
-            (*accountMixed)[*it] = winplus::EncryptContent( winplus::StringToUtf8( (LPCTSTR)m_accountPwd ) );
+            (*accountMixed)[*it] = winplus::EncryptContent( winplus::Buffer( winplus::StringToUtf8( (LPCTSTR)m_accountPwd ) ) );
         }
         else if ( *it == "cate" )
         {
@@ -679,13 +679,13 @@ void Account::assignTo( winux::Mixed * accountMixed, CString const & fieldNames 
     }
 }
 
-void Account::assign( winux::Mixed const & accountMixed )
+void Account::assign( winplus::Mixed const & accountMixed )
 {
     int n = accountMixed.getCount();
     for ( int i = 0; i < n; ++i )
     {
         auto & pr = accountMixed.getPair(i);
-        winux::String const & keyname = pr.first.refAnsi();
+        winplus::String const & keyname = pr.first.refAnsi();
         if ( keyname == "myname" )
         {
             m_myName = pr.second.refAnsi().c_str();
@@ -728,36 +728,26 @@ int LoadAccounts( eiendb::Database & db, int userId, AccountArray * accounts, in
     IF_PTR(accounts)->RemoveAll();
     try
     {
-        winux::Mixed params;
+        winplus::Mixed params;
         params.add()(userId);
         if ( cateId != -1 )
             params.add(cateId);
 
-        winux::String sql = "SELECT * FROM am_accounts WHERE user = ?";
+        winplus::String sql = "SELECT * FROM am_accounts WHERE user = ?";
         sql += ( cateId != -1 ? " AND cate = ?" : "" );
         sql += " ORDER BY cate;";
 
         auto resAccounts = db->query( db->buildStmt( sql, params ) );
-        winux::StringMixedMap f;
+        winplus::StringMixedMap f;
         while ( resAccounts->fetchRow(&f) )
         {
             Account account;
             account.assign(f);
-/*
-            account.m_myName = f["myname"].toAnsi().c_str();
-            account.m_accountName = winux::LocalFromUtf8( DecryptContent( f["account_name"].toBuffer() ) ).c_str();
-            account.m_accountPwd = winux::LocalFromUtf8( DecryptContent( f["account_pwd"].toBuffer() ) ).c_str();
-            account.m_cateId = f["cate"];
-            account.m_userId = f["user"];
-            account.m_safeRank = f["safe_rank"];
-            account.m_comment = f["comment"].toAnsi().c_str();
-            account.m_time = f["time"];
-*/
             IF_PTR(accounts)->Add(account);
             count++;
         }
     }
-    catch ( winux::Error const & e )
+    catch ( winplus::Error const & e )
     {
         AfxGetMainWnd()->FatalError( e.what(), _T("数据库错误") );
     }
@@ -769,8 +759,8 @@ bool GetAccount( eiendb::Database & db, int userId, CString const & myName, Acco
     bool ret = false;
     try
     {
-        auto resAccount = db->query( db->buildStmt( "SELECT * FROM am_accounts WHERE user = ? AND myname = ?;", winux::Mixed().add()(userId)((LPCTSTR)myName) ) );
-        winux::StringMixedMap f;
+        auto resAccount = db->query( db->buildStmt( "SELECT * FROM am_accounts WHERE user = ? AND myname = ?;", winplus::Mixed().add()(userId)((LPCTSTR)myName) ) );
+        winplus::StringMixedMap f;
         if ( resAccount->fetchRow(&f) )
         {
             IF_PTR(account)->m_myName = f["myname"].toAnsi().c_str();
@@ -784,46 +774,46 @@ bool GetAccount( eiendb::Database & db, int userId, CString const & myName, Acco
             ret = true;
         }
     }
-    catch ( winux::Error const & e )
+    catch ( winplus::Error const & e )
     {
         AfxGetMainWnd()->FatalError( e.what(), _T("数据库错误") );
     }
     return ret;
 }
 
-bool AddAccount( eiendb::Database & db, winux::Mixed const & newAccount )
+bool AddAccount( eiendb::Database & db, winplus::Mixed const & newAccount )
 {
-    winux::Mixed newAccountMixed = newAccount;
+    winplus::Mixed newAccountMixed = newAccount;
     newAccountMixed.addPair()
         //( "myname", (LPCTSTR)newAccount.m_myName )
-        //( "account_name", EncryptContent( winux::LocalToUtf8((LPCTSTR)newAccount.m_accountName) ) )
-        //( "account_pwd", EncryptContent( winux::LocalToUtf8((LPCTSTR)newAccount.m_accountPwd) ) )
+        //( "account_name", EncryptContent( winplus::LocalToUtf8((LPCTSTR)newAccount.m_accountName) ) )
+        //( "account_pwd", EncryptContent( winplus::LocalToUtf8((LPCTSTR)newAccount.m_accountPwd) ) )
         //( "cate", newAccount.m_cateId )
         //( "user", newAccount.m_userId )
         //( "safe_rank", newAccount.m_safeRank )
         //( "comment", (LPCTSTR)newAccount.m_comment )
-        ( "time", (int)winux::GetUtcTime() )
+        ( "time", (int)winplus::GetUtcTime() )
         ;
     try
     {
         auto mdf = db.mdf("am_accounts");
         return mdf->addNew(newAccountMixed);
     }
-    catch ( winux::Error const & e )
+    catch ( winplus::Error const & e )
     {
         AfxGetMainWnd()->FatalError( e.what(), _T("数据库错误") );
     }
     return false;
 }
 
-bool ModifyAccount( eiendb::Database & db, int userId, CString const & myName, winux::Mixed const & newAccountFields )
+bool ModifyAccount( eiendb::Database & db, int userId, CString const & myName, winplus::Mixed const & newAccountFields )
 {
     try
     {
         auto mdf = db.mdf("am_accounts");
-        return mdf->modifyEx( newAccountFields, "user=" + winux::Mixed(userId).toAnsi() + " AND myname=" + db->escape( (LPCTSTR)myName ) );
+        return mdf->modifyEx( newAccountFields, "user=" + winplus::Mixed(userId).toAnsi() + " AND myname=" + db->escape( (LPCTSTR)myName ) );
     }
-    catch ( winux::Error const & e )
+    catch ( winplus::Error const & e )
     {
         AfxGetMainWnd()->FatalError( e.what(), _T("数据库错误") );
     }
@@ -835,9 +825,9 @@ bool DeleteAccount( eiendb::Database & db, int userId, CString const & myName )
     try
     {
         auto mdf = db.mdf("am_accounts");
-        return mdf->deleteEx( "user=" + winux::Mixed(userId).toAnsi() + " AND myname=" + db->escape( (LPCTSTR)myName ) );
+        return mdf->deleteEx( "user=" + winplus::Mixed(userId).toAnsi() + " AND myname=" + db->escape( (LPCTSTR)myName ) );
     }
-    catch ( winux::Error const & e )
+    catch ( winplus::Error const & e )
     {
         AfxGetMainWnd()->FatalError( e.what(), _T("数据库错误") );
     }
@@ -852,7 +842,7 @@ CString GetCorrectAccountMyName( eiendb::Database & db, int userId, CString cons
     result = myName;
     try
     {
-        auto stmt = db->buildStmt( "SELECT myname FROM am_accounts WHERE user = ? AND myname = ?;", winux::Mixed().add()(userId)((LPCTSTR)result) );
+        auto stmt = db->buildStmt( "SELECT myname FROM am_accounts WHERE user = ? AND myname = ?;", winplus::Mixed().add()(userId)((LPCTSTR)result) );
         auto resAccount = db->query(stmt);
         while ( resAccount->rowsCount() > 0 )
         {
@@ -862,11 +852,11 @@ CString GetCorrectAccountMyName( eiendb::Database & db, int userId, CString cons
         #endif
             result.Format( "%s%d", (LPCTSTR)myName, number );
 
-            stmt = db->buildStmt( "SELECT myname FROM am_accounts WHERE user = ? AND myname = ?;", winux::Mixed().add()(userId)((LPCTSTR)result) );
+            stmt = db->buildStmt( "SELECT myname FROM am_accounts WHERE user = ? AND myname = ?;", winplus::Mixed().add()(userId)((LPCTSTR)result) );
             resAccount = db->query(stmt);
         }
     }
-    catch ( winux::Error const & e )
+    catch ( winplus::Error const & e )
     {
         AfxGetMainWnd()->FatalError( e.what(), _T("数据库错误") );
     }
@@ -880,14 +870,14 @@ int LoadTableNames( eiendb::Database & db, winplus::StringArray * tableNames, wi
     try
     {
         auto resTableNames = db->query( db->buildStmt( "SELECT tbl_name FROM sqlite_master WHERE type = \'table\' AND tbl_name LIKE ? ESCAPE \'\\\';", like ) );
-        winux::MixedArray f;
+        winplus::MixedArray f;
         while ( resTableNames->fetchRow(&f) )
         {
             IF_PTR(tableNames)->push_back(f[0]);
             count++;
         }
     }
-    catch ( winux::Error const & e )
+    catch ( winplus::Error const & e )
     {
         AfxGetMainWnd()->FatalError( e.what(), _T("数据库错误") );
     }
@@ -900,14 +890,14 @@ int DumpDDL( eiendb::Database & db, winplus::String * ddl, winplus::String const
     try
     {
         auto resDdlSqls = db->query( db->buildStmt( "SELECT sql FROM sqlite_master WHERE tbl_name LIKE ? ESCAPE \'\\\' AND NOT sql IS Null ORDER BY tbl_name;", like ) );
-        winux::MixedArray f;
+        winplus::MixedArray f;
         while ( resDdlSqls->fetchRow(&f) )
         {
-            ASSIGN_PTR(ddl) += f[0].toAnsi() + _T(";") + winux::LineSep;
+            ASSIGN_PTR(ddl) += f[0].toAnsi() + _T(";") + winplus::LineSep;
             count++;
         }
     }
-    catch ( winux::Error const & e )
+    catch ( winplus::Error const & e )
     {
         AfxGetMainWnd()->FatalError( e.what(), _T("数据库错误") );
     }
@@ -920,14 +910,14 @@ bool IsBrowserExeName( eiendb::Database & db, CString const & exeName, CString *
     try
     {
         auto resIsBrowser = db->query( db->buildStmt( "SELECT title FROM am_browsers WHERE exe_name = ?;", (LPCTSTR)exeName ) );
-        winux::MixedArray f;
+        winplus::MixedArray f;
         if ( resIsBrowser->fetchRow(&f) )
         {
             ASSIGN_PTR(browserTitle) = f[0].toAnsi().c_str();
             ret = true;
         }
     }
-    catch ( winux::Error const & e )
+    catch ( winplus::Error const & e )
     {
         AfxGetMainWnd()->FatalError( e.what(), _T("数据库错误") );
     }

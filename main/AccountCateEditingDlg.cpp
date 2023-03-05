@@ -12,7 +12,7 @@ static char THIS_FILE[] = __FILE__;
 /////////////////////////////////////////////////////////////////////////////
 // AccountCateEditingDlg dialog
 
-AccountCateEditingDlg::AccountCateEditingDlg( CWnd * parent, bool isAdd, winux::Mixed * cateFields )
+AccountCateEditingDlg::AccountCateEditingDlg( CWnd * parent, bool isAdd, winplus::Mixed * cateFields )
 : Dialog(AccountCateEditingDlg::IDD, parent), m_isAdd(isAdd), m_cate(cateFields)
 {
     //{{AFX_DATA_INIT(AccountCateEditingDlg)
@@ -75,7 +75,7 @@ BOOL AccountCateEditingDlg::OnInitDialog()
 
     for ( i = 0; i < n; ++i )
     {
-        if ( m_cate->get<winux::String>("type") == (LPCTSTR)types[i].m_typeName )
+        if ( m_cate->get<winplus::String>("type") == (LPCTSTR)types[i].m_typeName )
         {
             m_typeIndex = i;
             break;
@@ -84,7 +84,7 @@ BOOL AccountCateEditingDlg::OnInitDialog()
 
     for ( i = 0; i < countof(startups); ++i )
     {
-        if ( m_cate->get<winux::String>("startup") == (LPCTSTR)startups[i] )
+        if ( m_cate->get<winplus::String>("startup") == (LPCTSTR)startups[i] )
         {
             m_startupIndex = i;
             break;
