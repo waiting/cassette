@@ -129,10 +129,11 @@ void AccountCatesDlg::DoAdd( CWnd * parent, winux::Mixed * cate )
 //Ö§³Ö|·ûºÅ
 int FindEx( CString const & text, CString const & pattern, int * patternIndex = NULL )
 {
-    winplus::StringArray subs = winplus::StrSplit( (LPCTSTR)pattern, _T("|") );
+    winplus::StringArray subs;
+    winplus::StrSplit( (LPCTSTR)pattern, _T("|"), &subs );
     winplus::MultiMatch mm( subs, NULL );
     winplus::MultiMatch::MatchResult r = mm.search( (LPCTSTR)text );
-    AssignPTR(patternIndex) = r.item;
+    ASSIGN_PTR(patternIndex) = r.item;
     return r.pos;
 }
 
@@ -287,6 +288,9 @@ void AccountCatesDlg::OnModify()
 
             UpdateList( UPDATE_LIST_ITEMS, index );
             CString strId;
+        #ifdef Format
+            #undef Format
+        #endif
             strId.Format( _T("%d"), id );
             LVFINDINFO fi;
             fi.flags = LVFI_PARTIAL | LVFI_STRING;

@@ -36,7 +36,7 @@ void AccountEditingDlg::DoDataExchange( CDataExchange * pDX )
     DDX_Text(pDX, IDC_EDIT_SAFERANK, account.m_safeRank);
     DDX_Text(pDX, IDC_EDIT_COMMENT, account.m_comment);
 
-    account.assignTo(&m_accountFields,"myname,account_name,account_pwd,safe_rank,comment");
+    account.assignTo( &m_accountFields, "myname,account_name,account_pwd,safe_rank,comment" );
 }
 
 BEGIN_MESSAGE_MAP(AccountEditingDlg, Dialog)

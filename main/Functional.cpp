@@ -6,226 +6,6 @@
 #include "CassetteApp.h"
 #include "Functional.h"
 
-static winplus::AnsiString const _base64_encode_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-
-static char const _base64_decode_chars[] = 
-{
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 62, -1, -1, -1, 63,
-    52, 53, 54, 55, 56, 57, 58, 59, 60, 61, -1, -1, -1, -1, -1, -1,
-    -1,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14,
-    15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -1, -1, -1, -1, -1,
-    -1, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
-    41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, -1, -1, -1, -1, -1
-};
-
-winplus::String Base64Encode( winplus::AnsiString const & data )
-{
-    winplus::String outStr;
-    unsigned char c1, c2, c3;
-    int i = 0;
-    int size = data.size();
-
-    while ( i < size )
-    {
-        // read the first unsigned char
-        c1 = data[i++];
-        if ( i==size )       // pad with "="
-        {
-            outStr += _base64_encode_chars[ c1>>2 ];
-            outStr += _base64_encode_chars[ (c1&0x3)<<4 ];
-            outStr += "==";
-            break;
-        }
-
-        // read the second unsigned char
-        c2 = data[i++];
-        if ( i==size )       // pad with "="
-        {
-            outStr += _base64_encode_chars[ c1>>2 ];
-            outStr += _base64_encode_chars[ ((c1&0x3)<<4) | ((c2&0xF0)>>4) ];
-            outStr += _base64_encode_chars[ (c2&0xF)<<2 ];
-            outStr += "=";
-            break;
-        }
-
-        // read the third unsigned char
-        c3 = data[i++];
-        // convert into four bytes String
-        outStr += _base64_encode_chars[ c1>>2 ];
-        outStr += _base64_encode_chars[ ((c1&0x3)<<4) | ((c2&0xF0)>>4) ];
-        outStr += _base64_encode_chars[ ((c2&0xF)<<2) | ((c3&0xC0)>>6) ];
-        outStr += _base64_encode_chars[ c3&0x3F ];
-    }
-
-    return outStr;
-}
-
-winplus::AnsiString Base64Decode( winplus::String const & base64Str )
-{
-    winplus::AnsiString outData;
-    char c1, c2, c3, c4;
-    int i = 0;
-    int len = base64Str.length();
-
-    while ( i<len )
-    {
-        // read the first unsigned char
-        do {
-            c1 = _base64_decode_chars[ base64Str[i++] ];
-        } while ( i<len && c1==-1);
-
-        if ( c1==-1)
-            break;
-
-        // read the second unsigned char
-        do {
-            c2 = _base64_decode_chars[ base64Str[i++] ];
-        } while ( i<len && c2==-1);
-
-        if ( c2==-1 )
-            break;
-
-        // assamble the first unsigned char
-        outData += char( (c1<<2) | ((c2&0x30)>>4) );
-
-        // read the third unsigned char
-        do {
-            c3 = base64Str[i++];
-            if ( c3==61 )       // meet with "=", break
-                return outData;
-            c3 = _base64_decode_chars[ c3 ];
-        } while ( i<len && c3==-1);
-
-        if ( c3==-1 )
-            break;
-
-        // assamble the second unsigned char
-        outData += char( ((c2&0XF)<<4) | ((c3&0x3C)>>2) );
-
-        // read the fourth unsigned char
-        do {
-            c4 = base64Str[i++];
-            if ( c4==61 )       // meet with "=", break
-                return outData;
-            c4 = _base64_decode_chars[ c4 ];
-        } while ( i<len && c4==-1 );
-
-        if ( c4==-1 )
-            break;
-
-        // assamble the third unsigned char
-        outData += char( ((c3&0x03)<<6) | c4 );
-    }
-
-    return outData;
-}
-
-int encrypt_internal( unsigned char const key_if_only_one, unsigned char const * data, int data_size, unsigned char * buf, int buf_size, int * out_size )
-{
-    if ( data_size < 1 )
-    {
-        *out_size = 0;
-        return ERR_DATASIZE;
-    }
-    else if ( data_size == 1 )
-    {
-        buf[0] = data[0] ^ key_if_only_one;
-        *out_size = 1;
-    }
-    else
-    {
-        int i, j;
-        i = j = 0;
-        while ( i < data_size && j < buf_size )
-        {
-            buf[j] = data[i];
-            ++i;
-            ++j;
-        }
-        *out_size = j;
-        for ( i = 0; i < *out_size - 1; ++i )
-        {
-            buf[i] = buf[i] ^ buf[i + 1];
-        }
-        buf[i] = buf[i] ^ buf[0];
-    }
-    return ERR_SUCCEED;
-}
-
-int decrypt_internal( unsigned char const key_if_only_one, unsigned char const * encrypt_data, int data_size, unsigned char * buf, int buf_size, int * out_size )
-{
-    if ( data_size < 1 )
-    {
-        *out_size = 0;
-        return ERR_DATASIZE;
-    }
-    else if ( data_size == 1 )
-    {
-        buf[0] = encrypt_data[0] ^ key_if_only_one;
-        *out_size = 1;
-    }
-    else
-    {
-        int i, j;
-        i = j = 0;
-        while ( i < data_size && j < buf_size )
-        {
-            buf[j] = encrypt_data[i];
-            ++i;
-            ++j;
-        }
-        *out_size = j;
-        buf[*out_size - 1] = buf[*out_size - 1] ^ buf[0];
-        for ( i = *out_size - 1 - 1; i >= 0; --i )
-        {
-            buf[i] = buf[i] ^ buf[i + 1];
-        }
-    }
-    return ERR_SUCCEED;
-}
-
-int raw_encrypt( unsigned char const * data, int data_size, unsigned char * buf, int buf_size, int * out_size )
-{
-    int ret;
-    ret = encrypt_internal( 0x25, data, data_size, buf, buf_size, out_size );
-    //if ( ERR_SUCCEED != ret ) return ret;
-    //ret = encrypt_internal( 0x56, buf, *out_size, buf, buf_size, out_size );
-    //if ( ERR_SUCCEED != ret ) return ret;
-    //ret = encrypt_internal( 0xd1, buf, *out_size, buf, buf_size, out_size );
-    return ret;
-}
-int raw_decrypt( unsigned char const * encrypt_data, int data_size, unsigned char * buf, int buf_size, int * out_size )
-{
-    int ret;
-    ret = decrypt_internal( 0x25, encrypt_data, data_size, buf, buf_size, out_size );
-    //if ( ERR_SUCCEED != ret ) return ret;
-    //ret = decrypt_internal( 0x56, buf, *out_size, buf, buf_size, out_size );
-    //if ( ERR_SUCCEED != ret ) return ret;
-    //ret = decrypt_internal( 0xd1, buf, *out_size, buf, buf_size, out_size );
-    return ret;
-    
-}
-
-winux::Buffer EncryptContent( winplus::AnsiString const & content )
-{
-    winux::Buffer res( (void*)content.c_str(), content.size() );
-    int outSize = 0;
-    if ( res.getSize() > 0 )
-        raw_encrypt( (unsigned char *)content.c_str(), content.size(), (unsigned char *)res.getBuf(), res.getSize(), &outSize );
-    return res;
-}
-
-winplus::AnsiString DecryptContent( winux::Buffer const & encryptContent )
-{
-    winplus::AnsiString res( (char const*)encryptContent.getBuf(), encryptContent.getSize() );
-    int outSize = 0;
-    if ( res.size() > 0 )
-        raw_decrypt( (unsigned char *)encryptContent.getBuf(), encryptContent.getSize(), (unsigned char *)&res[0], res.size(), &outSize );
-    return res;
-}
-
 winplus::String ExplainCustomVars( winplus::String const & str )
 {
     winplus::String vars[] = {
@@ -236,7 +16,7 @@ winplus::String ExplainCustomVars( winplus::String const & str )
         winplus::ModulePath(),
         winplus::GetCurrentDir()
     };
-    winplus::MultiMatch mm( vars, countof(vars), vals, countof(vals) );
+    winplus::MultiMatch mm( vars, vals );
     return mm.replace(str);
 }
 
@@ -249,7 +29,7 @@ CString GetExecutablePath()
 
 bool RegisterUser( eiendb::Database & db, User const & newUser )
 {
-    winux::Mixed encPassword = EncryptContent( (LPCTSTR)newUser.m_password );
+    winux::Mixed encPassword = winplus::EncryptContent( (LPCTSTR)newUser.m_password );
 
     winux::Mixed fields;
     fields.addPair()
@@ -312,7 +92,7 @@ bool LoginUser( eiendb::Database & db, CString const & username, CString const &
             }
 
             // 验证密码
-            tmpUserInfo.m_password = DecryptContent( userFields["pwd"].toBuffer() ).c_str();
+            tmpUserInfo.m_password = winplus::DecryptContent( userFields["pwd"].toAnsi() ).c_str();
             if ( tmpUserInfo.m_password != password )
             {
                 // 减少当前容错次数
@@ -418,7 +198,7 @@ bool VerifyUserPassword( eiendb::Database & db, CString const & username, CStrin
 {
     try
     {
-        winux::Buffer encPassword = EncryptContent( (LPCTSTR)password );
+        winux::Buffer encPassword = winplus::EncryptContent( (LPCTSTR)password );
         auto res = db->query( db->buildStmt("SELECT pwd = ? FROM am_users WHERE name = ?;", winux::Mixed().add()(encPassword)((LPCTSTR)username) ) );
         winux::MixedArray f;
         if ( res->fetchRow(&f) )
@@ -488,7 +268,7 @@ void AccountType::assign( winux::Mixed const & accountTypeMixed )
 int LoadAccountTypes( eiendb::Database & db, AccountTypeArray * types )
 {
     int count = 0;
-    IfPTR(types)->RemoveAll();
+    IF_PTR(types)->RemoveAll();
     try
     {
         auto resAccountTypes = db->query("SELECT * FROM am_account_types ORDER BY rank;");
@@ -498,7 +278,7 @@ int LoadAccountTypes( eiendb::Database & db, AccountTypeArray * types )
             AccountType t;
             t.m_typeName = f[0].toAnsi().c_str();
             t.m_safeRank = f[1];
-            IfPTR(types)->Add(t);
+            IF_PTR(types)->Add(t);
             count++;
         }
     }
@@ -518,8 +298,8 @@ bool GetAccountType( eiendb::Database & db, CString const & typeName, AccountTyp
         winux::MixedArray f;
         if ( resAccountType->fetchRow(&f) )
         {
-            IfPTR(type)->m_typeName = f[0].toAnsi().c_str();
-            IfPTR(type)->m_safeRank = f[1];
+            IF_PTR(type)->m_typeName = f[0].toAnsi().c_str();
+            IF_PTR(type)->m_safeRank = f[1];
             ret = true;
         }
     }
@@ -686,7 +466,7 @@ void AccountCate::assign( winux::Mixed const & accountCateMixed )
 int LoadAccountCates( eiendb::Database & db, AccountCateArray * cates )
 {
     int count = 0;
-    IfPTR(cates)->RemoveAll();
+    IF_PTR(cates)->RemoveAll();
     try
     {
         auto resAccountCates = db->query("SELECT * FROM am_account_cates ORDER BY id;");
@@ -703,7 +483,7 @@ int LoadAccountCates( eiendb::Database & db, AccountCateArray * cates )
             cate.m_startup = fields["startup"].toAnsi().c_str();
             cate.m_keywords = fields["keywords"].toAnsi().c_str();
             cate.m_timeWriten = fields["time"];
-            IfPTR(cates)->Add(cate);
+            IF_PTR(cates)->Add(cate);
 
             count++;
         }
@@ -724,15 +504,15 @@ bool GetAccountCate( eiendb::Database & db, int id, AccountCate * cate )
         winux::StringMixedMap f;
         if ( resAccountCate->fetchRow(&f) )
         {
-            IfPTR(cate)->m_id = f["id"];
-            IfPTR(cate)->m_cateName = f["name"].toAnsi().c_str();
-            IfPTR(cate)->m_cateDesc = f["desc"].toAnsi().c_str();
-            IfPTR(cate)->m_typeName = f["type"].toAnsi().c_str();
-            IfPTR(cate)->m_url = f["url"].toAnsi().c_str();
-            IfPTR(cate)->m_icoPath = f["icon"].toAnsi().c_str();
-            IfPTR(cate)->m_startup = f["startup"].toAnsi().c_str();
-            IfPTR(cate)->m_keywords = f["keywords"].toAnsi().c_str();
-            IfPTR(cate)->m_timeWriten = f["time"];
+            IF_PTR(cate)->m_id = f["id"];
+            IF_PTR(cate)->m_cateName = f["name"].toAnsi().c_str();
+            IF_PTR(cate)->m_cateDesc = f["desc"].toAnsi().c_str();
+            IF_PTR(cate)->m_typeName = f["type"].toAnsi().c_str();
+            IF_PTR(cate)->m_url = f["url"].toAnsi().c_str();
+            IF_PTR(cate)->m_icoPath = f["icon"].toAnsi().c_str();
+            IF_PTR(cate)->m_startup = f["startup"].toAnsi().c_str();
+            IF_PTR(cate)->m_keywords = f["keywords"].toAnsi().c_str();
+            IF_PTR(cate)->m_timeWriten = f["time"];
             ret = true;
         }
     }
@@ -809,16 +589,16 @@ bool DeleteAccountCate( eiendb::Database & db, int id )
 int LoadAccountCatesSafeRank( eiendb::Database & db, CUIntArray * cateIds, CUIntArray * typeSafeRanks )
 {
     int count = 0;
-    IfPTR(cateIds)->RemoveAll();
-    IfPTR(typeSafeRanks)->RemoveAll();
+    IF_PTR(cateIds)->RemoveAll();
+    IF_PTR(typeSafeRanks)->RemoveAll();
     try
     {
         auto resAccountCatesSafeRank = db->query("SELECT c.id, t.rank from am_account_cates AS c Left JOIN am_account_types AS t ON t.name = c.type;");
         winux::MixedArray f;
         while ( resAccountCatesSafeRank->fetchRow(&f) )
         {
-            IfPTR(cateIds)->Add( f[0] );
-            IfPTR(typeSafeRanks)->Add( f[1] );
+            IF_PTR(cateIds)->Add( f[0] );
+            IF_PTR(typeSafeRanks)->Add( f[1] );
 
             count++;
         }
@@ -842,8 +622,8 @@ bool GetTypeByCateId( eiendb::Database & db, int cateId, AccountType * type )
         if ( resAccountType->fetchRow(&f) )
         {
             ASSERT( cateId == f[0].toInt() );
-            IfPTR(type)->m_typeName = f[1].toAnsi().c_str();
-            IfPTR(type)->m_safeRank = f[2];
+            IF_PTR(type)->m_typeName = f[1].toAnsi().c_str();
+            IF_PTR(type)->m_safeRank = f[2];
             ret = true;
         }
     }
@@ -870,11 +650,11 @@ void Account::assignTo( winux::Mixed * accountMixed, CString const & fieldNames 
         }
         else if ( *it == "account_name" )
         {
-            (*accountMixed)[*it] = EncryptContent( winux::LocalToUtf8( (LPCTSTR)m_accountName ) );
+            (*accountMixed)[*it] = winplus::EncryptContent( winplus::StringToUtf8( (LPCTSTR)m_accountName ) );
         }
         else if ( *it == "account_pwd" )
         {
-            (*accountMixed)[*it] = EncryptContent( winux::LocalToUtf8( (LPCTSTR)m_accountPwd ) );
+            (*accountMixed)[*it] = winplus::EncryptContent( winplus::StringToUtf8( (LPCTSTR)m_accountPwd ) );
         }
         else if ( *it == "cate" )
         {
@@ -912,11 +692,11 @@ void Account::assign( winux::Mixed const & accountMixed )
         }
         else if ( keyname == "account_name" )
         {
-            m_accountName = winux::LocalFromUtf8( DecryptContent( pr.second.toBuffer() ) ).c_str();
+            m_accountName = winplus::Utf8ToString( winplus::DecryptContent( pr.second.toAnsi() ) ).c_str();
         }
         else if ( keyname == "account_pwd" )
         {
-            m_accountPwd = winux::LocalFromUtf8( DecryptContent( pr.second.toBuffer() ) ).c_str();
+            m_accountPwd = winplus::Utf8ToString( winplus::DecryptContent( pr.second.toAnsi() ) ).c_str();
         }
         else if ( keyname == "cate" )
         {
@@ -945,7 +725,7 @@ void Account::assign( winux::Mixed const & accountMixed )
 int LoadAccounts( eiendb::Database & db, int userId, AccountArray * accounts, int cateId )
 {
     int count = 0;
-    IfPTR(accounts)->RemoveAll();
+    IF_PTR(accounts)->RemoveAll();
     try
     {
         winux::Mixed params;
@@ -973,7 +753,7 @@ int LoadAccounts( eiendb::Database & db, int userId, AccountArray * accounts, in
             account.m_comment = f["comment"].toAnsi().c_str();
             account.m_time = f["time"];
 */
-            IfPTR(accounts)->Add(account);
+            IF_PTR(accounts)->Add(account);
             count++;
         }
     }
@@ -993,14 +773,14 @@ bool GetAccount( eiendb::Database & db, int userId, CString const & myName, Acco
         winux::StringMixedMap f;
         if ( resAccount->fetchRow(&f) )
         {
-            IfPTR(account)->m_myName = f["myname"].toAnsi().c_str();
-            IfPTR(account)->m_accountName = winux::LocalFromUtf8( DecryptContent( f["account_name"].toBuffer() ) ).c_str();
-            IfPTR(account)->m_accountPwd = winux::LocalFromUtf8( DecryptContent( f["account_pwd"].toBuffer() ) ).c_str();
-            IfPTR(account)->m_cateId = f["cate"];
-            IfPTR(account)->m_userId = f["user"];
-            IfPTR(account)->m_safeRank = f["safe_rank"];
-            IfPTR(account)->m_comment = f["comment"].toAnsi().c_str();
-            IfPTR(account)->m_time = f["time"];
+            IF_PTR(account)->m_myName = f["myname"].toAnsi().c_str();
+            IF_PTR(account)->m_accountName = winplus::Utf8ToString( winplus::DecryptContent( f["account_name"].toAnsi() ) ).c_str();
+            IF_PTR(account)->m_accountPwd = winplus::Utf8ToString( winplus::DecryptContent( f["account_pwd"].toAnsi() ) ).c_str();
+            IF_PTR(account)->m_cateId = f["cate"];
+            IF_PTR(account)->m_userId = f["user"];
+            IF_PTR(account)->m_safeRank = f["safe_rank"];
+            IF_PTR(account)->m_comment = f["comment"].toAnsi().c_str();
+            IF_PTR(account)->m_time = f["time"];
             ret = true;
         }
     }
@@ -1077,6 +857,9 @@ CString GetCorrectAccountMyName( eiendb::Database & db, int userId, CString cons
         while ( resAccount->rowsCount() > 0 )
         {
             number++;
+        #ifdef Format
+            #undef Format
+        #endif
             result.Format( "%s%d", (LPCTSTR)myName, number );
 
             stmt = db->buildStmt( "SELECT myname FROM am_accounts WHERE user = ? AND myname = ?;", winux::Mixed().add()(userId)((LPCTSTR)result) );
@@ -1093,14 +876,14 @@ CString GetCorrectAccountMyName( eiendb::Database & db, int userId, CString cons
 int LoadTableNames( eiendb::Database & db, winplus::StringArray * tableNames, winplus::String const & like )
 {
     int count = 0;
-    IfPTR(tableNames)->clear();
+    IF_PTR(tableNames)->clear();
     try
     {
         auto resTableNames = db->query( db->buildStmt( "SELECT tbl_name FROM sqlite_master WHERE type = \'table\' AND tbl_name LIKE ? ESCAPE \'\\\';", like ) );
         winux::MixedArray f;
         while ( resTableNames->fetchRow(&f) )
         {
-            IfPTR(tableNames)->push_back(f[0]);
+            IF_PTR(tableNames)->push_back(f[0]);
             count++;
         }
     }
@@ -1120,7 +903,7 @@ int DumpDDL( eiendb::Database & db, winplus::String * ddl, winplus::String const
         winux::MixedArray f;
         while ( resDdlSqls->fetchRow(&f) )
         {
-            AssignPTR(ddl) += f[0].toAnsi() + _T(";") + winux::LineSep;
+            ASSIGN_PTR(ddl) += f[0].toAnsi() + _T(";") + winux::LineSep;
             count++;
         }
     }
@@ -1140,7 +923,7 @@ bool IsBrowserExeName( eiendb::Database & db, CString const & exeName, CString *
         winux::MixedArray f;
         if ( resIsBrowser->fetchRow(&f) )
         {
-            AssignPTR(browserTitle) = f[0].toAnsi().c_str();
+            ASSIGN_PTR(browserTitle) = f[0].toAnsi().c_str();
             ret = true;
         }
     }

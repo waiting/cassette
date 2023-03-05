@@ -1,6 +1,10 @@
+.vs/
 bin/
+lib/
 objs/
 ipch/
+nouse/
+thirdparties/
 *.opt
 *.ncb
 *.aps

@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
-// Microsoft Visual C++ generated include file.
-// Used by Cassette.rc
+// Microsoft Visual C++ 生成的包含文件。
+// 供 Cassette.rc 使用
 //
 #define IDD_FORGETPWD1                  100
 #define IDR_MAINFRAME                   128
@@ -25,6 +25,7 @@
 #define IDR_PNG_TOOLBAR                 149
 #define IDR_INTEGRATEDBKIMG             150
 #define IDM_TRAYNOTI_MENU               155
+#define IDB_TOOLBAR32                   156
 #define IDR_KEY_DB                      200
 #define IDC_REGISTERED_HOTKEY           998
 #define IDC_SYSLINK_WEBSITE             1000
@@ -104,7 +105,7 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        156
+#define _APS_NEXT_RESOURCE_VALUE        157
 #define _APS_NEXT_COMMAND_VALUE         32807
 #define _APS_NEXT_CONTROL_VALUE         1038
 #define _APS_NEXT_SYMED_VALUE           101

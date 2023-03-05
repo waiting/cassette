@@ -1,0 +1,368 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="源文件">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="头文件">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="资源文件">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="头文件\winux">
+      <UniqueIdentifier>{f5da00eb-8ef2-4bcf-9bc0-c81f81e56f6b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\winplus">
+      <UniqueIdentifier>{fba3e596-6947-4b44-b13b-d638e69b81b2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\sqlite3secure">
+      <UniqueIdentifier>{dbb18200-4396-41a8-a633-dbd474e246a4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\eiendb">
+      <UniqueIdentifier>{96a9ff3c-f788-4953-a6d6-6006629f83bf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\winux">
+      <UniqueIdentifier>{85be796f-1f54-429e-be86-e9c386e5b109}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\winplus">
+      <UniqueIdentifier>{a4bf952e-ff4e-4522-add8-e3f52b1c5293}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\sqlite3secure">
+      <UniqueIdentifier>{0a8d5ae1-47eb-498e-a626-0223f3c793b3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\eiendb">
+      <UniqueIdentifier>{f7fa5f67-7c1f-4860-8344-719169fbe2da}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="winux\include\archives.hpp">
+      <Filter>头文件\winux</Filter>
+    </ClInclude>
+    <ClInclude Include="winux\include\compress.hpp">
+      <Filter>头文件\winux</Filter>
+    </ClInclude>
+    <ClInclude Include="winux\include\console.hpp">
+      <Filter>头文件\winux</Filter>
+    </ClInclude>
+    <ClInclude Include="winux\include\encoding.hpp">
+      <Filter>头文件\winux</Filter>
+    </ClInclude>
+    <ClInclude Include="winux\include\filesys.hpp">
+      <Filter>头文件\winux</Filter>
+    </ClInclude>
+    <ClInclude Include="winux\include\json.hpp">
+      <Filter>头文件\winux</Filter>
+    </ClInclude>
+    <ClInclude Include="winux\include\md5.hpp">
+      <Filter>头文件\winux</Filter>
+    </ClInclude>
+    <ClInclude Include="winux\include\smartptr.hpp">
+      <Filter>头文件\winux</Filter>
+    </ClInclude>
+    <ClInclude Include="winux\include\strings.hpp">
+      <Filter>头文件\winux</Filter>
+    </ClInclude>
+    <ClInclude Include="winux\include\system.hpp">
+      <Filter>头文件\winux</Filter>
+    </ClInclude>
+    <ClInclude Include="winux\include\threads.hpp">
+      <Filter>头文件\winux</Filter>
+    </ClInclude>
+    <ClInclude Include="winux\include\threadtask.hpp">
+      <Filter>头文件\winux</Filter>
+    </ClInclude>
+    <ClInclude Include="winux\include\time.hpp">
+      <Filter>头文件\winux</Filter>
+    </ClInclude>
+    <ClInclude Include="winux\include\utilities.hpp">
+      <Filter>头文件\winux</Filter>
+    </ClInclude>
+    <ClInclude Include="winux\include\winux.hpp">
+      <Filter>头文件\winux</Filter>
+    </ClInclude>
+    <ClInclude Include="winplus\include\winplus.hpp">
+      <Filter>头文件\winplus</Filter>
+    </ClInclude>
+    <ClInclude Include="winplus\include\winplus_compoundfile.hpp">
+      <Filter>头文件\winplus</Filter>
+    </ClInclude>
+    <ClInclude Include="winplus\include\winplus_console.hpp">
+      <Filter>头文件\winplus</Filter>
+    </ClInclude>
+    <ClInclude Include="winplus\include\winplus_definitions.hpp">
+      <Filter>头文件\winplus</Filter>
+    </ClInclude>
+    <ClInclude Include="winplus\include\winplus_graphics.hpp">
+      <Filter>头文件\winplus</Filter>
+    </ClInclude>
+    <ClInclude Include="winplus\include\winplus_ini.hpp">
+      <Filter>头文件\winplus</Filter>
+    </ClInclude>
+    <ClInclude Include="winplus\include\winplus_picture.hpp">
+      <Filter>头文件\winplus</Filter>
+    </ClInclude>
+    <ClInclude Include="winplus\include\winplus_resource.hpp">
+      <Filter>头文件\winplus</Filter>
+    </ClInclude>
+    <ClInclude Include="winplus\include\winplus_shell.hpp">
+      <Filter>头文件\winplus</Filter>
+    </ClInclude>
+    <ClInclude Include="winplus\include\winplus_strings.hpp">
+      <Filter>头文件\winplus</Filter>
+    </ClInclude>
+    <ClInclude Include="winplus\include\winplus_system.hpp">
+      <Filter>头文件\winplus</Filter>
+    </ClInclude>
+    <ClInclude Include="winplus\include\winplus_winctrl.hpp">
+      <Filter>头文件\winplus</Filter>
+    </ClInclude>
+    <ClInclude Include="winplus\include\winplus_wordslib.hpp">
+      <Filter>头文件\winplus</Filter>
+    </ClInclude>
+    <ClInclude Include="sqlite3secure\src\codec.h">
+      <Filter>头文件\sqlite3secure</Filter>
+    </ClInclude>
+    <ClInclude Include="sqlite3secure\src\fastpbkdf2.h">
+      <Filter>头文件\sqlite3secure</Filter>
+    </ClInclude>
+    <ClInclude Include="sqlite3secure\src\mystdint.h">
+      <Filter>头文件\sqlite3secure</Filter>
+    </ClInclude>
+    <ClInclude Include="sqlite3secure\src\rijndael.h">
+      <Filter>头文件\sqlite3secure</Filter>
+    </ClInclude>
+    <ClInclude Include="sqlite3secure\src\sha1.h">
+      <Filter>头文件\sqlite3secure</Filter>
+    </ClInclude>
+    <ClInclude Include="sqlite3secure\src\sha2.h">
+      <Filter>头文件\sqlite3secure</Filter>
+    </ClInclude>
+    <ClInclude Include="sqlite3secure\src\sqlite3.h">
+      <Filter>头文件\sqlite3secure</Filter>
+    </ClInclude>
+    <ClInclude Include="sqlite3secure\src\sqlite3ext.h">
+      <Filter>头文件\sqlite3secure</Filter>
+    </ClInclude>
+    <ClInclude Include="sqlite3secure\src\sqlite3secure.h">
+      <Filter>头文件\sqlite3secure</Filter>
+    </ClInclude>
+    <ClInclude Include="sqlite3secure\src\sqlite3userauth.h">
+      <Filter>头文件\sqlite3secure</Filter>
+    </ClInclude>
+    <ClInclude Include="sqlite3secure\src\test_windirent.h">
+      <Filter>头文件\sqlite3secure</Filter>
+    </ClInclude>
+    <ClInclude Include="eiendb\include\eiendb.hpp">
+      <Filter>头文件\eiendb</Filter>
+    </ClInclude>
+    <ClInclude Include="eiendb\include\eiendb_base.hpp">
+      <Filter>头文件\eiendb</Filter>
+    </ClInclude>
+    <ClInclude Include="eiendb\include\eiendb_common.hpp">
+      <Filter>头文件\eiendb</Filter>
+    </ClInclude>
+    <ClInclude Include="eiendb\include\eiendb_mysql.hpp">
+      <Filter>头文件\eiendb</Filter>
+    </ClInclude>
+    <ClInclude Include="eiendb\include\eiendb_sqlite.hpp">
+      <Filter>头文件\eiendb</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="winux\include\func_invoker.inl">
+      <Filter>头文件\winux</Filter>
+    </None>
+    <None Include="winux\include\func_runable.inl">
+      <Filter>头文件\winux</Filter>
+    </None>
+    <None Include="winux\include\func_traits.inl">
+      <Filter>头文件\winux</Filter>
+    </None>
+    <None Include="winux\include\is_x_funcs.inl">
+      <Filter>头文件\winux</Filter>
+    </None>
+    <None Include="winux\include\mixed_ref_specified_type.inl">
+      <Filter>头文件\winux</Filter>
+    </None>
+    <None Include="winux\include\system_detection.inl">
+      <Filter>头文件\winux</Filter>
+    </None>
+    <None Include="sqlite3secure\src\sqlite3.def">
+      <Filter>源文件\sqlite3secure</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="eienexpr\src\eienexpr.cpp">
+      <Filter>源文件\winux</Filter>
+    </ClCompile>
+    <ClCompile Include="winux\src\archives.cpp">
+      <Filter>源文件\winux</Filter>
+    </ClCompile>
+    <ClCompile Include="winux\src\compress.cpp">
+      <Filter>源文件\winux</Filter>
+    </ClCompile>
+    <ClCompile Include="winux\src\console.cpp">
+      <Filter>源文件\winux</Filter>
+    </ClCompile>
+    <ClCompile Include="winux\src\encoding.cpp">
+      <Filter>源文件\winux</Filter>
+    </ClCompile>
+    <ClCompile Include="winux\src\filesys.cpp">
+      <Filter>源文件\winux</Filter>
+    </ClCompile>
+    <ClCompile Include="winux\src\json.cpp">
+      <Filter>源文件\winux</Filter>
+    </ClCompile>
+    <ClCompile Include="winux\src\md5.cpp">
+      <Filter>源文件\winux</Filter>
+    </ClCompile>
+    <ClCompile Include="winux\src\sha1.cpp">
+      <Filter>源文件\winux</Filter>
+    </ClCompile>
+    <ClCompile Include="winux\src\smartptr.cpp">
+      <Filter>源文件\winux</Filter>
+    </ClCompile>
+    <ClCompile Include="winux\src\strings.cpp">
+      <Filter>源文件\winux</Filter>
+    </ClCompile>
+    <ClCompile Include="winux\src\system.cpp">
+      <Filter>源文件\winux</Filter>
+    </ClCompile>
+    <ClCompile Include="winux\src\threads.cpp">
+      <Filter>源文件\winux</Filter>
+    </ClCompile>
+    <ClCompile Include="winux\src\time.cpp">
+      <Filter>源文件\winux</Filter>
+    </ClCompile>
+    <ClCompile Include="winux\src\unzip.cpp">
+      <Filter>源文件\winux</Filter>
+    </ClCompile>
+    <ClCompile Include="winux\src\utilities.cpp">
+      <Filter>源文件\winux</Filter>
+    </ClCompile>
+    <ClCompile Include="winux\src\zip.cpp">
+      <Filter>源文件\winux</Filter>
+    </ClCompile>
+    <ClCompile Include="winplus\src\winplus_compoundfile.cpp">
+      <Filter>源文件\winplus</Filter>
+    </ClCompile>
+    <ClCompile Include="winplus\src\winplus_console.cpp">
+      <Filter>源文件\winplus</Filter>
+    </ClCompile>
+    <ClCompile Include="winplus\src\winplus_definitions.cpp">
+      <Filter>源文件\winplus</Filter>
+    </ClCompile>
+    <ClCompile Include="winplus\src\winplus_graphics.cpp">
+      <Filter>源文件\winplus</Filter>
+    </ClCompile>
+    <ClCompile Include="winplus\src\winplus_ini.cpp">
+      <Filter>源文件\winplus</Filter>
+    </ClCompile>
+    <ClCompile Include="winplus\src\winplus_picture.cpp">
+      <Filter>源文件\winplus</Filter>
+    </ClCompile>
+    <ClCompile Include="winplus\src\winplus_resource.cpp">
+      <Filter>源文件\winplus</Filter>
+    </ClCompile>
+    <ClCompile Include="winplus\src\winplus_shell.cpp">
+      <Filter>源文件\winplus</Filter>
+    </ClCompile>
+    <ClCompile Include="winplus\src\winplus_strings.cpp">
+      <Filter>源文件\winplus</Filter>
+    </ClCompile>
+    <ClCompile Include="winplus\src\winplus_system.cpp">
+      <Filter>源文件\winplus</Filter>
+    </ClCompile>
+    <ClCompile Include="winplus\src\winplus_winctrl.cpp">
+      <Filter>源文件\winplus</Filter>
+    </ClCompile>
+    <ClCompile Include="winplus\src\winplus_wordslib.cpp">
+      <Filter>源文件\winplus</Filter>
+    </ClCompile>
+    <ClCompile Include="sqlite3secure\src\chacha20poly1305.c">
+      <Filter>源文件\sqlite3secure</Filter>
+    </ClCompile>
+    <ClCompile Include="sqlite3secure\src\codec.c">
+      <Filter>源文件\sqlite3secure</Filter>
+    </ClCompile>
+    <ClCompile Include="sqlite3secure\src\codecext.c">
+      <Filter>源文件\sqlite3secure</Filter>
+    </ClCompile>
+    <ClCompile Include="sqlite3secure\src\csv.c">
+      <Filter>源文件\sqlite3secure</Filter>
+    </ClCompile>
+    <ClCompile Include="sqlite3secure\src\extensionfunctions.c">
+      <Filter>源文件\sqlite3secure</Filter>
+    </ClCompile>
+    <ClCompile Include="sqlite3secure\src\fastpbkdf2.c">
+      <Filter>源文件\sqlite3secure</Filter>
+    </ClCompile>
+    <ClCompile Include="sqlite3secure\src\fileio.c">
+      <Filter>源文件\sqlite3secure</Filter>
+    </ClCompile>
+    <ClCompile Include="sqlite3secure\src\md5.c">
+      <Filter>源文件\sqlite3secure</Filter>
+    </ClCompile>
+    <ClCompile Include="sqlite3secure\src\regexp.c">
+      <Filter>源文件\sqlite3secure</Filter>
+    </ClCompile>
+    <ClCompile Include="sqlite3secure\src\rekeyvacuum.c">
+      <Filter>源文件\sqlite3secure</Filter>
+    </ClCompile>
+    <ClCompile Include="sqlite3secure\src\rijndael.c">
+      <Filter>源文件\sqlite3secure</Filter>
+    </ClCompile>
+    <ClCompile Include="sqlite3secure\src\series.c">
+      <Filter>源文件\sqlite3secure</Filter>
+    </ClCompile>
+    <ClCompile Include="sqlite3secure\src\sha1.c">
+      <Filter>源文件\sqlite3secure</Filter>
+    </ClCompile>
+    <ClCompile Include="sqlite3secure\src\sha2.c">
+      <Filter>源文件\sqlite3secure</Filter>
+    </ClCompile>
+    <ClCompile Include="sqlite3secure\src\shathree.c">
+      <Filter>源文件\sqlite3secure</Filter>
+    </ClCompile>
+    <ClCompile Include="sqlite3secure\src\shell.c">
+      <Filter>源文件\sqlite3secure</Filter>
+    </ClCompile>
+    <ClCompile Include="sqlite3secure\src\sqlite3.c">
+      <Filter>源文件\sqlite3secure</Filter>
+    </ClCompile>
+    <ClCompile Include="sqlite3secure\src\sqlite3secure.c">
+      <Filter>源文件\sqlite3secure</Filter>
+    </ClCompile>
+    <ClCompile Include="sqlite3secure\src\test_windirent.c">
+      <Filter>源文件\sqlite3secure</Filter>
+    </ClCompile>
+    <ClCompile Include="sqlite3secure\src\userauth.c">
+      <Filter>源文件\sqlite3secure</Filter>
+    </ClCompile>
+    <ClCompile Include="sqlite3secure\src\uuid.c">
+      <Filter>源文件\sqlite3secure</Filter>
+    </ClCompile>
+    <ClCompile Include="sqlite3secure\src\carray.c">
+      <Filter>源文件\sqlite3secure</Filter>
+    </ClCompile>
+    <ClCompile Include="eiendb\src\eiendb.cpp">
+      <Filter>源文件\eiendb</Filter>
+    </ClCompile>
+    <ClCompile Include="eiendb\src\eiendb_base.cpp">
+      <Filter>源文件\eiendb</Filter>
+    </ClCompile>
+    <ClCompile Include="eiendb\src\eiendb_common.cpp">
+      <Filter>源文件\eiendb</Filter>
+    </ClCompile>
+    <ClCompile Include="eiendb\src\eiendb_mysql.cpp">
+      <Filter>源文件\eiendb</Filter>
+    </ClCompile>
+    <ClCompile Include="eiendb\src\eiendb_sqlite.cpp">
+      <Filter>源文件\eiendb</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

@@ -79,6 +79,9 @@ END_MESSAGE_MAP()
 void MainFrame::UpdateTitle()
 {
     CString newTitle;
+#ifdef Format
+    #undef Format
+#endif
     newTitle.Format( _T("%s [%s]"), winplus::LoadString(AFX_IDS_APP_TITLE).c_str(), (LPCTSTR)g_theApp.m_loginedUser.m_username );
     this->SetWindowText(newTitle);
 }
@@ -102,7 +105,7 @@ void MainFrame::RefreshHotkey( int hotkey )
 
 void MainFrame::UpdateList( int flag, long itemIndex )
 {
-    IfPTR(m_pAccountsView)->UpdateList( flag, itemIndex );
+    IF_PTR(m_pAccountsView)->UpdateList( flag, itemIndex );
 }
 
 void MainFrame::DoAddAccount( CWnd * parent, winux::Mixed & newAccount )
@@ -187,12 +190,13 @@ int MainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
         TRACE0("Failed to create toolbar\n");
         return -1;      // fail to create
     }
+
     // 载入工具条图片
     // 资源文件中可改变工具条按钮大小,比较方便
     // 图片和工具条按钮大小应该匹配
     CImageList imgList;
     imgList.Create( 48, 48, ILC_COLOR32, 0, 1 );
-    winplus::ImageList_Add32bpp( imgList.GetSafeHandle(), IDR_MAINFRAME, IMAGE_BITMAP );
+    winplus::ImageList_Add32bpp( imgList.GetSafeHandle(), IDB_TOOLBAR32, IMAGE_BITMAP );
     //ImageList_AddAlphaImage( imgList.GetSafeHandle(), IDR_PNG_TOOLBAR, _T("PNG") );
     m_toolBar.GetToolBarCtrl().SetImageList(&imgList);
     imgList.Detach();//*/

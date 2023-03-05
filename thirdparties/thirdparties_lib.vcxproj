@@ -1,0 +1,391 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>15.0</VCProjectVersion>
+    <ProjectGuid>{FFC125CD-6DA3-4CB0-AB66-0C0AA466AB1B}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>thirdpartieslib</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0.19041.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+    <OutDir>$(SolutionDir)lib\$(PlatformShortName)-$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)objs\$(PlatformShortName)-$(Configuration)\$(ProjectName)\</IntDir>
+    <TargetName>thirdparties_a</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LinkIncremental>true</LinkIncremental>
+    <OutDir>$(SolutionDir)lib\$(PlatformShortName)-$(Configuration)\</OutDir>
+    <TargetName>thirdparties_a</TargetName>
+    <IntDir>$(SolutionDir)objs\$(PlatformShortName)-$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <OutDir>$(SolutionDir)lib\$(PlatformShortName)-$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)objs\$(PlatformShortName)-$(Configuration)\$(ProjectName)\</IntDir>
+    <TargetName>thirdparties_a</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+    <OutDir>$(SolutionDir)lib\$(PlatformShortName)-$(Configuration)\</OutDir>
+    <TargetName>thirdparties_a</TargetName>
+    <IntDir>$(SolutionDir)objs\$(PlatformShortName)-$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>HAVE_SQLITE_DRIVER;THREADSAFE=1;SQLITE_THREADSAFE=1;SQLITE_DQS=0;SQLITE_MAX_ATTACHED=10;SQLITE_SOUNDEX;SQLITE_ENABLE_COLUMN_METADATA;SQLITE_HAS_CODEC;SQLITE_SECURE_DELETE;SQLITE_ENABLE_FTS3;SQLITE_ENABLE_FTS3_PARENTHESIS;SQLITE_ENABLE_FTS4;SQLITE_ENABLE_FTS5;SQLITE_ENABLE_JSON1;SQLITE_ENABLE_RTREE;SQLITE_ENABLE_GEOPOLY;SQLITE_CORE;SQLITE_ENABLE_EXTFUNC;SQLITE_ENABLE_CSV;SQLITE_ENABLE_SHA3;SQLITE_ENABLE_CARRAY;SQLITE_ENABLE_FILEIO;SQLITE_ENABLE_SERIES;SQLITE_ENABLE_UUID;SQLITE_TEMP_STORE=2;SQLITE_USE_URI;SQLITE_USER_AUTHENTICATION;_LIB;WIN32;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>false</ConformanceMode>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <AdditionalIncludeDirectories>winux\include;eienexpr\include;winplus\include;sqlite3secure\src;eiendb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>HAVE_SQLITE_DRIVER;THREADSAFE=1;SQLITE_THREADSAFE=1;SQLITE_DQS=0;SQLITE_MAX_ATTACHED=10;SQLITE_SOUNDEX;SQLITE_ENABLE_COLUMN_METADATA;SQLITE_HAS_CODEC;SQLITE_SECURE_DELETE;SQLITE_ENABLE_FTS3;SQLITE_ENABLE_FTS3_PARENTHESIS;SQLITE_ENABLE_FTS4;SQLITE_ENABLE_FTS5;SQLITE_ENABLE_JSON1;SQLITE_ENABLE_RTREE;SQLITE_ENABLE_GEOPOLY;SQLITE_CORE;SQLITE_ENABLE_EXTFUNC;SQLITE_ENABLE_CSV;SQLITE_ENABLE_SHA3;SQLITE_ENABLE_CARRAY;SQLITE_ENABLE_FILEIO;SQLITE_ENABLE_SERIES;SQLITE_ENABLE_UUID;SQLITE_TEMP_STORE=2;SQLITE_USE_URI;SQLITE_USER_AUTHENTICATION;_LIB;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>false</ConformanceMode>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <AdditionalIncludeDirectories>winux\include;eienexpr\include;winplus\include;sqlite3secure\src;eiendb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>HAVE_SQLITE_DRIVER;THREADSAFE=1;SQLITE_THREADSAFE=1;SQLITE_DQS=0;SQLITE_MAX_ATTACHED=10;SQLITE_SOUNDEX;SQLITE_ENABLE_COLUMN_METADATA;SQLITE_HAS_CODEC;SQLITE_SECURE_DELETE;SQLITE_ENABLE_FTS3;SQLITE_ENABLE_FTS3_PARENTHESIS;SQLITE_ENABLE_FTS4;SQLITE_ENABLE_FTS5;SQLITE_ENABLE_JSON1;SQLITE_ENABLE_RTREE;SQLITE_ENABLE_GEOPOLY;SQLITE_CORE;SQLITE_ENABLE_EXTFUNC;SQLITE_ENABLE_CSV;SQLITE_ENABLE_SHA3;SQLITE_ENABLE_CARRAY;SQLITE_ENABLE_FILEIO;SQLITE_ENABLE_SERIES;SQLITE_ENABLE_UUID;SQLITE_TEMP_STORE=2;SQLITE_USE_URI;SQLITE_USER_AUTHENTICATION;_LIB;WIN32;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>false</ConformanceMode>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <AdditionalIncludeDirectories>winux\include;eienexpr\include;winplus\include;sqlite3secure\src;eiendb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>HAVE_SQLITE_DRIVER;THREADSAFE=1;SQLITE_THREADSAFE=1;SQLITE_DQS=0;SQLITE_MAX_ATTACHED=10;SQLITE_SOUNDEX;SQLITE_ENABLE_COLUMN_METADATA;SQLITE_HAS_CODEC;SQLITE_SECURE_DELETE;SQLITE_ENABLE_FTS3;SQLITE_ENABLE_FTS3_PARENTHESIS;SQLITE_ENABLE_FTS4;SQLITE_ENABLE_FTS5;SQLITE_ENABLE_JSON1;SQLITE_ENABLE_RTREE;SQLITE_ENABLE_GEOPOLY;SQLITE_CORE;SQLITE_ENABLE_EXTFUNC;SQLITE_ENABLE_CSV;SQLITE_ENABLE_SHA3;SQLITE_ENABLE_CARRAY;SQLITE_ENABLE_FILEIO;SQLITE_ENABLE_SERIES;SQLITE_ENABLE_UUID;SQLITE_TEMP_STORE=2;SQLITE_USE_URI;SQLITE_USER_AUTHENTICATION;_LIB;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>false</ConformanceMode>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <AdditionalIncludeDirectories>winux\include;eienexpr\include;winplus\include;sqlite3secure\src;eiendb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="eiendb\include\eiendb.hpp" />
+    <ClInclude Include="eiendb\include\eiendb_base.hpp" />
+    <ClInclude Include="eiendb\include\eiendb_common.hpp" />
+    <ClInclude Include="eiendb\include\eiendb_mysql.hpp" />
+    <ClInclude Include="eiendb\include\eiendb_sqlite.hpp" />
+    <ClInclude Include="sqlite3secure\src\codec.h" />
+    <ClInclude Include="sqlite3secure\src\fastpbkdf2.h" />
+    <ClInclude Include="sqlite3secure\src\mystdint.h" />
+    <ClInclude Include="sqlite3secure\src\rijndael.h" />
+    <ClInclude Include="sqlite3secure\src\sha1.h" />
+    <ClInclude Include="sqlite3secure\src\sha2.h" />
+    <ClInclude Include="sqlite3secure\src\sqlite3.h" />
+    <ClInclude Include="sqlite3secure\src\sqlite3ext.h" />
+    <ClInclude Include="sqlite3secure\src\sqlite3secure.h" />
+    <ClInclude Include="sqlite3secure\src\sqlite3userauth.h" />
+    <ClInclude Include="sqlite3secure\src\test_windirent.h" />
+    <ClInclude Include="winplus\include\winplus.hpp" />
+    <ClInclude Include="winplus\include\winplus_compoundfile.hpp" />
+    <ClInclude Include="winplus\include\winplus_console.hpp" />
+    <ClInclude Include="winplus\include\winplus_definitions.hpp" />
+    <ClInclude Include="winplus\include\winplus_graphics.hpp" />
+    <ClInclude Include="winplus\include\winplus_ini.hpp" />
+    <ClInclude Include="winplus\include\winplus_picture.hpp" />
+    <ClInclude Include="winplus\include\winplus_resource.hpp" />
+    <ClInclude Include="winplus\include\winplus_shell.hpp" />
+    <ClInclude Include="winplus\include\winplus_strings.hpp" />
+    <ClInclude Include="winplus\include\winplus_system.hpp" />
+    <ClInclude Include="winplus\include\winplus_winctrl.hpp" />
+    <ClInclude Include="winplus\include\winplus_wordslib.hpp" />
+    <ClInclude Include="winux\include\archives.hpp" />
+    <ClInclude Include="winux\include\compress.hpp" />
+    <ClInclude Include="winux\include\console.hpp" />
+    <ClInclude Include="winux\include\encoding.hpp" />
+    <ClInclude Include="winux\include\filesys.hpp" />
+    <ClInclude Include="winux\include\json.hpp" />
+    <ClInclude Include="winux\include\md5.hpp" />
+    <ClInclude Include="winux\include\smartptr.hpp" />
+    <ClInclude Include="winux\include\strings.hpp" />
+    <ClInclude Include="winux\include\system.hpp" />
+    <ClInclude Include="winux\include\threads.hpp" />
+    <ClInclude Include="winux\include\threadtask.hpp" />
+    <ClInclude Include="winux\include\time.hpp" />
+    <ClInclude Include="winux\include\utilities.hpp" />
+    <ClInclude Include="winux\include\winux.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="sqlite3secure\src\sqlite3.def" />
+    <None Include="winux\include\func_invoker.inl" />
+    <None Include="winux\include\func_runable.inl" />
+    <None Include="winux\include\func_traits.inl" />
+    <None Include="winux\include\is_x_funcs.inl" />
+    <None Include="winux\include\mixed_ref_specified_type.inl" />
+    <None Include="winux\include\system_detection.inl" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="eiendb\src\eiendb.cpp" />
+    <ClCompile Include="eiendb\src\eiendb_base.cpp" />
+    <ClCompile Include="eiendb\src\eiendb_common.cpp" />
+    <ClCompile Include="eiendb\src\eiendb_mysql.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="eiendb\src\eiendb_sqlite.cpp" />
+    <ClCompile Include="eienexpr\src\eienexpr.cpp" />
+    <ClCompile Include="sqlite3secure\src\carray.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="sqlite3secure\src\chacha20poly1305.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="sqlite3secure\src\codec.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="sqlite3secure\src\codecext.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="sqlite3secure\src\csv.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="sqlite3secure\src\extensionfunctions.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="sqlite3secure\src\fastpbkdf2.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="sqlite3secure\src\fileio.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="sqlite3secure\src\md5.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="sqlite3secure\src\regexp.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="sqlite3secure\src\rekeyvacuum.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="sqlite3secure\src\rijndael.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="sqlite3secure\src\series.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="sqlite3secure\src\sha1.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="sqlite3secure\src\sha2.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="sqlite3secure\src\shathree.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="sqlite3secure\src\shell.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="sqlite3secure\src\sqlite3.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="sqlite3secure\src\sqlite3secure.c" />
+    <ClCompile Include="sqlite3secure\src\test_windirent.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="sqlite3secure\src\userauth.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="sqlite3secure\src\uuid.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="winplus\src\winplus_compoundfile.cpp" />
+    <ClCompile Include="winplus\src\winplus_console.cpp" />
+    <ClCompile Include="winplus\src\winplus_definitions.cpp" />
+    <ClCompile Include="winplus\src\winplus_graphics.cpp" />
+    <ClCompile Include="winplus\src\winplus_ini.cpp" />
+    <ClCompile Include="winplus\src\winplus_picture.cpp" />
+    <ClCompile Include="winplus\src\winplus_resource.cpp" />
+    <ClCompile Include="winplus\src\winplus_shell.cpp" />
+    <ClCompile Include="winplus\src\winplus_strings.cpp" />
+    <ClCompile Include="winplus\src\winplus_system.cpp" />
+    <ClCompile Include="winplus\src\winplus_winctrl.cpp" />
+    <ClCompile Include="winplus\src\winplus_wordslib.cpp" />
+    <ClCompile Include="winux\src\archives.cpp" />
+    <ClCompile Include="winux\src\compress.cpp" />
+    <ClCompile Include="winux\src\console.cpp" />
+    <ClCompile Include="winux\src\encoding.cpp" />
+    <ClCompile Include="winux\src\filesys.cpp" />
+    <ClCompile Include="winux\src\json.cpp" />
+    <ClCompile Include="winux\src\md5.cpp" />
+    <ClCompile Include="winux\src\sha1.cpp" />
+    <ClCompile Include="winux\src\smartptr.cpp" />
+    <ClCompile Include="winux\src\strings.cpp" />
+    <ClCompile Include="winux\src\system.cpp" />
+    <ClCompile Include="winux\src\threads.cpp" />
+    <ClCompile Include="winux\src\time.cpp" />
+    <ClCompile Include="winux\src\unzip.cpp" />
+    <ClCompile Include="winux\src\utilities.cpp" />
+    <ClCompile Include="winux\src\zip.cpp" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

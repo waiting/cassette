@@ -108,7 +108,7 @@ void UserSettingsDlg::OnOK()
             WarningError( _T("确认密码不一样!"), _T("错误") );
             return;
         }
-        m_userFields["pwd"] = EncryptContent( (LPCTSTR)m_newPassword );
+        m_userFields["pwd"] = winplus::EncryptContent( (LPCTSTR)m_newPassword );
     }
 
     this->EndDialog(IDOK);

@@ -65,8 +65,11 @@ END
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
 IDR_MAINFRAME           ICON                    "..\\res\\AccountMaster_01.ico"
+
 IDI_ICON2               ICON                    "..\\res\\AccountMaster_02.ico"
+
 IDI_ICON3               ICON                    "..\\res\\AccountMaster_03.ico"
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -74,7 +77,11 @@ IDI_ICON3               ICON                    "..\\res\\AccountMaster_03.ico"
 //
 
 IDR_MAINFRAME           BITMAP                  "..\\res\\Toolbar.bmp"
+
 IDR_INTEGRATEDBKIMG     BITMAP                  "..\\res\\IntegratedBackground.bmp"
+
+IDB_TOOLBAR32           BITMAP                  "..\\res\\Toolbar32.bmp"
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -524,12 +531,14 @@ END
 
 IDR_HTML_ABOUT          HTML                    "..\\res\\about.html"
 
+
 /////////////////////////////////////////////////////////////////////////////
 //
 // PNG
 //
 
 IDR_PNG_ABOUT_IMAGE     PNG                     "..\\res\\AccountMaster_01.png"
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -538,12 +547,14 @@ IDR_PNG_ABOUT_IMAGE     PNG                     "..\\res\\AccountMaster_01.png"
 
 IDR_SQL_DBSCHEMA        SQL                     "..\\res\\dbschema.sql"
 
+
 /////////////////////////////////////////////////////////////////////////////
 //
 // RT_MANIFEST
 //
 
 1                       RT_MANIFEST             "..\\res\\AccountMaster.manifest"
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -625,7 +636,7 @@ STRINGTABLE
 BEGIN
     AFX_IDS_SCRESTORE       "把窗口恢复到正常大小"
     AFX_IDS_SCTASKLIST      "激活任务表"
-    IDS_SHAREDMEM_NAME      "Cassette 0.1.0.0 - Shared Memory"
+    IDS_SHAREDMEM_NAME      "Cassette 0.1.1.0 - Shared Memory"
 END
 
 STRINGTABLE

@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -14,17 +14,21 @@
     <SccProjectName />
     <SccLocalPath />
     <Keyword>MFCProj</Keyword>
+    <ProjectGuid>{EF924FA5-4E9E-FE63-A1E2-BD183ADC53A3}</ProjectGuid>
+    <WindowsTargetPlatformVersion>10.0.19041.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <UseOfMfc>Dynamic</UseOfMfc>
+    <UseOfMfc>Static</UseOfMfc>
     <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v141</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <UseOfMfc>Dynamic</UseOfMfc>
+    <UseOfMfc>Static</UseOfMfc>
     <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v141</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -37,33 +41,31 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <OutDir>$(SolutionDir)bin\$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)objs\$(Configuration)\</IntDir>
+    <OutDir>$(SolutionDir)bin\$(PlatformShortName)-$(Configuration)\</OutDir>
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>..\thirdparties\sqlite3\include;..\thirdparties\winplus\include;..\thirdparties\fastdo\include;$(IncludePath)</IncludePath>
-    <LibraryPath>..\thirdparties\sqlite3\lib;..\thirdparties\winplus\lib\$(Configuration);..\thirdparties\fastdo\lib\$(Configuration);$(LibraryPath)</LibraryPath>
+    <IntDir>$(SolutionDir)objs\$(PlatformShortName)-$(Configuration)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <OutDir>$(SolutionDir)bin\$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)objs\$(Configuration)\</IntDir>
+    <OutDir>$(SolutionDir)bin\$(PlatformShortName)-$(Configuration)\</OutDir>
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>..\thirdparties\sqlite3\include;..\thirdparties\winplus\include;..\thirdparties\fastdo\include;$(IncludePath)</IncludePath>
-    <LibraryPath>..\thirdparties\sqlite3\lib;..\thirdparties\winplus\lib\$(Configuration);..\thirdparties\fastdo\lib\$(Configuration);$(LibraryPath)</LibraryPath>
+    <IntDir>$(SolutionDir)objs\$(PlatformShortName)-$(Configuration)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
-      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <InlineFunctionExpansion>Default</InlineFunctionExpansion>
       <FunctionLevelLinking>false</FunctionLevelLinking>
       <Optimization>Disabled</Optimization>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;NOT_EXIST_REGOPERATE_DLL;SQLITE_HAS_CODEC;PSAPI_VERSION=1;WINPLUS_DLL_USE;WINUX_DLL_USE;EIENDB_DLL_USE;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_WINDOWS;NOT_EXIST_REGOPERATE_DLL;PSAPI_VERSION=1;_DEBUG;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\thirdparties\winux\include;..\thirdparties\eienexpr\include;..\thirdparties\winplus\include;..\thirdparties\eiendb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
-      <AdditionalDependencies>winplus.lib;gdiplus.lib;winux.lib;eiendb.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>gdiplus.lib;thirdparties_a.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)lib\$(PlatformShortName)-$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <ResourceCompile>
       <Culture>0x0804</Culture>
@@ -71,21 +73,23 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
-      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
       <StringPooling>true</StringPooling>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <Optimization>MaxSpeed</Optimization>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;NOT_EXIST_REGOPERATE_DLL;SQLITE_HAS_CODEC;PSAPI_VERSION=1;WINPLUS_DLL_USE;WINUX_DLL_USE;EIENDB_DLL_USE;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_WINDOWS;NOT_EXIST_REGOPERATE_DLL;PSAPI_VERSION=1;NDEBUG;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\thirdparties\winux\include;..\thirdparties\eienexpr\include;..\thirdparties\winplus\include;..\thirdparties\eiendb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <ResourceCompile>
       <Culture>0x0804</Culture>
     </ResourceCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
-      <AdditionalDependencies>winplus.lib;gdiplus.lib;winux.lib;eiendb.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>gdiplus.lib;thirdparties_a.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)lib\$(PlatformShortName)-$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -142,13 +146,11 @@
     <CustomBuild Include="..\res\AccountMaster_01.ico" />
     <CustomBuild Include="..\res\AccountMaster_02.ico" />
     <CustomBuild Include="..\res\AccountMaster_03.ico" />
-    <CustomBuild Include="res\Cassette.ico" />
     <CustomBuild Include="..\res\Cassette.ico" />
-    <CustomBuild Include="res\Cassette.rc2">
+    <CustomBuild Include="..\res\Cassette.rc2">
       <FileType>RC</FileType>
     </CustomBuild>
     <CustomBuild Include="..\res\IntegratedBackground.bmp" />
-    <CustomBuild Include="res\Toolbar.bmp" />
     <CustomBuild Include="..\res\Toolbar.bmp" />
     <CustomBuild Include="..\res\toolbar1.bmp" />
     <CustomBuild Include="..\res\about.html" />
@@ -169,6 +171,9 @@
     <Manifest Include="..\res\AccountMaster.manifest">
       <SubType>Designer</SubType>
     </Manifest>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="..\res\Toolbar32.bmp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

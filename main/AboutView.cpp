@@ -81,7 +81,7 @@ BOOL AboutView::PreTranslateMessage(MSG* pMsg)
     if ( GetCursor() == curIbeam )
     {
         HCURSOR curArrow = LoadCursor( NULL, IDC_ARROW );
-        SetCursor( curArrow );
+        SetCursor(curArrow);
     }
 
 
@@ -97,7 +97,7 @@ BOOL AboutView::PreTranslateMessage(MSG* pMsg)
     //½ûÖ¹Ñ¡Ôñ
     if ( pMsg->message == WM_MOUSEMOVE )
     {
-        int nVirtKey = GetKeyState( VK_LBUTTON ); 
+        int nVirtKey = GetKeyState(VK_LBUTTON);
         if ( nVirtKey & 0x8000 )
         {
             return TRUE;

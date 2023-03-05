@@ -165,19 +165,10 @@
     <CustomBuild Include="..\res\AccountMaster_03.ico">
       <Filter>Resource Files</Filter>
     </CustomBuild>
-    <CustomBuild Include="res\Cassette.ico">
-      <Filter>Resource Files</Filter>
-    </CustomBuild>
     <CustomBuild Include="..\res\Cassette.ico">
       <Filter>Resource Files</Filter>
     </CustomBuild>
-    <CustomBuild Include="res\Cassette.rc2">
-      <Filter>Resource Files</Filter>
-    </CustomBuild>
     <CustomBuild Include="..\res\IntegratedBackground.bmp">
-      <Filter>Resource Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="res\Toolbar.bmp">
       <Filter>Resource Files</Filter>
     </CustomBuild>
     <CustomBuild Include="..\res\Toolbar.bmp">
@@ -191,5 +182,13 @@
     <CustomBuild Include="..\res\db.key" />
     <CustomBuild Include="..\res\dbschema.sql" />
     <CustomBuild Include="..\res\Toolbar.png" />
+    <CustomBuild Include="..\res\Cassette.rc2">
+      <Filter>Resource Files</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="..\res\Toolbar32.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
 </Project>

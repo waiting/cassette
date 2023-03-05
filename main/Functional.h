@@ -52,30 +52,6 @@ private:
     SetNullScopeOut & operator = ( SetNullScopeOut const & );
 };
 
-//////////////////////////////////////////////////////////////////////////
-// base64
-//////////////////////////////////////////////////////////////////////////
-winplus::String Base64Encode( winplus::AnsiString const & data );
-winplus::AnsiString Base64Decode( winplus::String const & base64Str );
-//////////////////////////////////////////////////////////////////////////
-// encrypt content functional
-//////////////////////////////////////////////////////////////////////////
-// 内容加密错误代码
-enum EncryptErrorCode
-{
-    ERR_SUCCEED,
-    ERR_DATASIZE,
-    ERR_BUFFSIZE,
-};
-
-winux::Buffer EncryptContent( winplus::AnsiString const & content );
-winplus::AnsiString DecryptContent( winux::Buffer const & encryptContent );
-
-//#define EncryptCArray(data) EncryptContent( BufferToAnsiString( data, sizeof(data) ) )
-//#define EncryptBuffer( buf, size ) EncryptContent( BufferToAnsiString( buf, size ) )
-//#define DecryptCArray(data) DecryptContent( BufferToAnsiString( data, sizeof(data) ) )
-//#define DecryptBuffer( buf, size ) DecryptContent( BufferToAnsiString( buf, size ) )
-
 // 解释文本中的$xxx$程序自定变量
 winplus::String ExplainCustomVars( winplus::String const & str );
 

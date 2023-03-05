@@ -60,9 +60,11 @@ BOOL CassetteApp::InitInstance()
     Enable3dControlsStatic();   // Call this when linking to MFC statically
 #endif
 
+    /*winplus::CommandArguments();
+
     // 命令行解释
-    winplus::CommandLine cmd;
-    if ( cmd.include("url") )
+    winplus::CommandLineVars cmd{};
+    if ( cmd.hasParam("url") )
     {
         winplus::Win32GUI_ShowConsole();
 
@@ -70,7 +72,7 @@ BOOL CassetteApp::InitInstance()
 
         system("pause");
         return FALSE;
-    }
+    }*/
 
     if ( !DoSingletonRunning() ) return FALSE;
 
@@ -88,8 +90,8 @@ BOOL CassetteApp::InitInstance()
 
     if ( isSavePassword ) // 载入保存的用户和密码
     {
-        username = DecryptContent( winux::Mixed( Base64Decode(m_settings.username) ).toBuffer() ).c_str();
-        password = DecryptContent( winux::Mixed( Base64Decode(m_settings.password) ).toBuffer() ).c_str();
+        username = winplus::DecryptContent( winplus::Base64Decode(m_settings.username) ).c_str();
+        password = winplus::DecryptContent( winplus::Base64Decode(m_settings.password) ).c_str();
     }
 
     if ( isAutoLogin && !username.IsEmpty() && LoginUser( g_theApp.GetDatabase(), username, password, &m_loginedUser ) ) // 自动登录
@@ -111,8 +113,8 @@ BOOL CassetteApp::InitInstance()
                 m_settings.isSavePassword = isSavePassword != FALSE;
                 if ( isSavePassword ) // 保存用户和密码
                 {
-                    m_settings.username = Base64Encode( winux::Mixed( EncryptContent( (LPCSTR)username ) ).toAnsi() );
-                    m_settings.password = Base64Encode( winux::Mixed( EncryptContent( (LPCSTR)password ) ).toAnsi() );
+                    m_settings.username = winplus::Base64Encode( winplus::EncryptContent( (LPCSTR)username ) );
+                    m_settings.password = winplus::Base64Encode( winplus::EncryptContent( (LPCSTR)password ) );
                 }
                 else
                 {
@@ -166,7 +168,7 @@ void CassetteApp::InitDatabaseSchema()
     {
         for ( i = 0; i < nSQLs; ++i )
         {
-            if ( winplus::_StrTrim(sqls[i]).empty() ) continue;
+            if ( winplus::StrTrimA(sqls[i]).empty() ) continue;
             m_db->cnn()->exec( sqls[i].c_str() );
         }
     }
