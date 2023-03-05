@@ -418,7 +418,7 @@ BEGIN
         BLOCK "080404b0"
         BEGIN
             VALUE "CompanyName", "X86PRO.COM"
-            VALUE "FileDescription", "Cassette 账户管理系统 Ver 0.1.1"
+            VALUE "FileDescription", "Cassette 账户管理系统 v0.1.1"
             VALUE "FileVersion", "0.1.1.0"
             VALUE "InternalName", "Cassette"
             VALUE "LegalCopyright", "(C) X86PRO.COM 版权所有 2013-2023."

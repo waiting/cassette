@@ -50,6 +50,7 @@ END_MESSAGE_MAP()
 BOOL AppSettingsDlg::OnInitDialog() 
 {
     Dialog::OnInitDialog();
+    m_ToolTips.SetTipBkColor( RGB(255,255,0) );
     m_ToolTips.SetTipTextColor( RGB( 255, 96, 0 ) ); // 设置提示文本颜色
     m_ToolTips.SetMaxTipWidth(240);
 

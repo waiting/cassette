@@ -59,20 +59,26 @@ BOOL CassetteApp::InitInstance()
 #else
     Enable3dControlsStatic();   // Call this when linking to MFC statically
 #endif
-
-    /*winplus::CommandArguments();
+    winplus::StringArray argArr;
+    winplus::CommandArguments(&argArr);
+    std::vector<const char *> args;
+    for ( auto && arg : argArr )
+    {
+        args.push_back( arg.c_str() );
+    }
+    args.push_back(nullptr);
 
     // √¸¡Ó––Ω‚ Õ
-    winplus::CommandLineVars cmd{};
-    if ( cmd.hasParam("url") )
+    winplus::CommandLineVars cmd( (int)argArr.size(), &args[0], "-url", "", "" );
+    if ( cmd.hasParam("-url") )
     {
         winplus::Win32GUI_ShowConsole();
 
-        std::cout << cmd.getParam("url") << std::endl;
+        std::cout << cmd.getParam("-url") << std::endl;
 
         system("pause");
         return FALSE;
-    }*/
+    }//*/
 
     if ( !DoSingletonRunning() ) return FALSE;
 

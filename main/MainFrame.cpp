@@ -24,7 +24,7 @@ IMPLEMENT_DYNAMIC(MainFrame, CFrameWnd)
 /////////////////////////////////////////////////////////////////////////////
 // MainFrame construction/destruction
 
-MainFrame::MainFrame() : m_pAccountsView(new AccountsView)
+MainFrame::MainFrame() : m_pAccountsView(new AccountsView), m_noti(0)
 {
 }
 
@@ -244,7 +244,7 @@ int MainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
     m_noti.add( GetSafeHwnd(), 1, trayIcon, winplus::LoadString(IDR_MAINFRAME) );
     m_noti.setMessage(WM_TRAY_NOTIFICATION);
-    //m_noti.setBalloonInfo( winplus::LoadString(IDR_MAINFRAME), "已经启动" );
+    m_noti.setBalloonInfo( winplus::LoadString(IDR_MAINFRAME), "Cassette 正在运行" );
     m_noti.modify();
 
     return 0;
@@ -697,8 +697,8 @@ void MainFrame::DoIntelligentHotkey()
 
 LRESULT MainFrame::OnTrayNotification( WPARAM wParam, LPARAM lParam )
 {
-    USHORT x = GET_X_LPARAM(wParam), y = GET_Y_LPARAM(wParam);
-    //winplus::String tips = winplus::FormatA("lw:%x, hw:%x, ll:%x, hl:%x\n", LOWORD(wParam), HIWORD(wParam), LOWORD(lParam), HIWORD(lParam) );
+    //USHORT x = GET_X_LPARAM(wParam), y = GET_Y_LPARAM(wParam);
+    //winplus::String tips = winplus::FormatA("lw:%u, hw:%u, ll:%u, hl:%u\n", LOWORD(wParam), HIWORD(wParam), LOWORD(lParam), HIWORD(lParam) );
     //WriteFile( GetStdHandle(STD_OUTPUT_HANDLE), tips.c_str(), tips.length(), 0, 0 );
 
     switch ( LOWORD(lParam) )
@@ -710,14 +710,19 @@ LRESULT MainFrame::OnTrayNotification( WPARAM wParam, LPARAM lParam )
         break;
     case NIN_SELECT:
     case NIN_KEYSELECT:
+    case WM_LBUTTONUP:
         this->OnMainWndShowHide();
         break;
+    case WM_RBUTTONUP:
     case WM_CONTEXTMENU:
         {
             SetForegroundWindow();
+            CPoint pt;
+            GetCursorPos(&pt);
             CMenu menu;
             menu.LoadMenu(IDM_TRAYNOTI_MENU);
-            menu.GetSubMenu(0)->TrackPopupMenu( TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_HORPOSANIMATION, x, y, this );
+            menu.GetSubMenu(0)->TrackPopupMenu( TPM_LEFTALIGN | TPM_LEFTBUTTON | TPM_HORPOSANIMATION, pt.x, pt.y, this );
+
             /* menu.CreatePopupMenu();
             menu.AppendMenu( MF_STRING, ID_MAINWND_SHOWHIDE, "显示/隐藏" );
             menu.AppendMenu( MF_SEPARATOR );
@@ -751,8 +756,8 @@ void MainFrame::OnShowWindow(BOOL bShow, UINT nStatus)
     __super::OnShowWindow(bShow, nStatus);
     if ( bShow )
     {
-        //BringWindowToTop();
-        SetWindowPos( &CWnd::wndTopMost, 0,0,0,0,SWP_NOMOVE|SWP_NOSIZE);
-        //SetForegroundWindow();
+        BringWindowToTop();
+        SetWindowPos( &CWnd::wndTop, 0,0,0,0,SWP_NOMOVE|SWP_NOSIZE);
+        SetForegroundWindow();
     }
 }
