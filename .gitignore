@@ -4,6 +4,7 @@ lib/
 objs/
 ipch/
 nouse/
+thirdparties-symlink/
 thirdparties/
 *.opt
 *.ncb

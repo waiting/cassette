@@ -61,6 +61,7 @@
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>_WINDOWS;NOT_EXIST_REGOPERATE_DLL;PSAPI_VERSION=1;_DEBUG;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\thirdparties\winux\include;..\thirdparties\eienexpr\include;..\thirdparties\winplus\include;..\thirdparties\eiendb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PrecompiledHeaderFile>$(TargetName).h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -83,6 +84,7 @@
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>_WINDOWS;NOT_EXIST_REGOPERATE_DLL;PSAPI_VERSION=1;NDEBUG;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\thirdparties\winux\include;..\thirdparties\eienexpr\include;..\thirdparties\winplus\include;..\thirdparties\eiendb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PrecompiledHeaderFile>$(TargetName).h</PrecompiledHeaderFile>
     </ClCompile>
     <ResourceCompile>
       <Culture>0x0804</Culture>
