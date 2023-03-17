@@ -36,11 +36,11 @@ END_MESSAGE_MAP()
 BOOL Dialog::OnToolTipText( UINT id, NMHDR * pNMHDR, LRESULT * pResult )
 {
     TOOLTIPTEXT * pTTT = (TOOLTIPTEXT *)pNMHDR;
-    UINT nID = pNMHDR->idFrom;
+    UINT nID = 0;
     if ( pTTT->uFlags & TTF_IDISHWND )
     {
         // idFrom is actually the HWND of the tool
-        nID = ::GetDlgCtrlID( reinterpret_cast<HWND>(nID) );
+        nID = ::GetDlgCtrlID( reinterpret_cast<HWND>(pNMHDR->idFrom) );
         if ( nID != 0 )
         {
             pTTT->lpszText = MAKEINTRESOURCE(nID); // 利用同ID的字符串资源作提示文本
@@ -73,20 +73,19 @@ BOOL Dialog::OnInitDialog()
 
     //m_ToolTips.SetTipTextColor( RGB( 255, 96, 0 ) ); // 设置提示文本颜色
 
-    // 枚举子窗口,并将其添加ToolTips,添加拥有者自绘风格
-    HWND hChildWnd;
-    if ( hChildWnd = ::GetWindow( GetSafeHwnd(), GW_CHILD ) ) do
+    // 枚举子窗口，并将其添加ToolTips，添加拥有者自绘风格
+    CWnd * pChildWnd;
+    if ( pChildWnd = this->GetWindow(GW_CHILD) ) do
     {
-        CWnd * pChildWnd =  CWnd::FromHandle(hChildWnd);
         m_ToolTips.AddTool(pChildWnd);
         CString clsName;
-        GetClassName( hChildWnd, clsName.GetBuffer(256), 256 );
+        GetClassName( pChildWnd->GetSafeHwnd(), clsName.GetBuffer(256), 256 );
         if ( !clsName.IsEmpty() ) clsName.MakeUpper();
         if ( clsName == _T("STATIC") )
         {
         }
     }
-    while ( hChildWnd = ::GetWindow( hChildWnd, GW_HWNDNEXT ) );
+    while ( pChildWnd = pChildWnd->GetWindow(GW_HWNDNEXT) );
 
     m_ToolTips.Activate(TRUE);
 
@@ -166,8 +165,10 @@ void Dialog::OnInitMenuPopup( CMenu * pMenu, UINT nIndex, BOOL bSysMenu )
         if (nCount < state.m_nIndexMax)
         {
             state.m_nIndex -= (state.m_nIndexMax - nCount);
-            while (state.m_nIndex < nCount &&
-                pMenu->GetMenuItemID(state.m_nIndex) == state.m_nID)
+            while (
+                state.m_nIndex < nCount &&
+                pMenu->GetMenuItemID(state.m_nIndex) == state.m_nID
+            )
             {
                 state.m_nIndex++;
             }
@@ -196,7 +197,7 @@ BOOL Dialog::OnEraseBkgnd( CDC * pDC )
     );
     g.FillRectangle( &brush, clientRect );//*/
 
-    return 1;CDialog::OnEraseBkgnd(pDC);
+    return 1;//CDialog::OnEraseBkgnd(pDC);
 }
 
 HBRUSH Dialog::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor) 

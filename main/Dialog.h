@@ -16,7 +16,7 @@
 
 /////////////////////////////////////////////////////////////////////////////
 // Dialog dialog
-
+// 自定义对话框，支持工具提示，菜单状态更新
 class Dialog : public CDialog
 {
 // Construction
@@ -55,7 +55,7 @@ protected:
     //}}AFX_MSG
     afx_msg BOOL OnEraseBkgnd( CDC * pDC );
 
-    // 当弹出菜单时调用,更新菜单项的状态
+    // 当弹出菜单时调用，更新菜单项的状态
     afx_msg void OnInitMenuPopup( CMenu * pMenu, UINT nIndex, BOOL bSysMenu );
 
     // 当工具提示需要显示文本时调用

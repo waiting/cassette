@@ -677,6 +677,11 @@ BEGIN
     ID_MAINWND_SHOWHIDE     "显示或隐藏主窗口\n显示/隐藏"
 END
 
+STRINGTABLE
+BEGIN
+    IDC_HOTKEY_CUSTOM       "请按键盘输入快捷键，你的按键会被记录在这个框里"
+END
+
 #endif    // 中文(简体，中国) resources
 /////////////////////////////////////////////////////////////////////////////
 
