@@ -13,20 +13,40 @@
 
 /////////////////////////////////////////////////////////////////////////////
 // AccountIntegratedWnd window
-
 class AccountIntegratedWnd : public CFrameWnd
 {
+protected:
+    // 存储已经在当前窗口上显示的本窗口，确保每个当前窗口上只显示一次本窗口
+    static std::map<HWND, AccountIntegratedWnd *> m_hasDisplayed;
+
+public:
+    static AccountIntegratedWnd * GetDisplayedWnd( HWND hWnd )
+    {
+        if ( m_hasDisplayed.find(hWnd) != m_hasDisplayed.end() )
+            return m_hasDisplayed[hWnd];
+        return NULL;
+    }
+
+    static void AddDisplayedWnd( HWND hWnd, AccountIntegratedWnd * pIntegratedWnd )
+    {
+        m_hasDisplayed[hWnd] = pIntegratedWnd;
+    }
+
+    static void DelDisplayedWnd( AccountIntegratedWnd * pIntegratedWnd )
+    {
+        std::map<HWND, AccountIntegratedWnd *>::iterator it;
+        for ( it = m_hasDisplayed.begin(); it != m_hasDisplayed.end(); ++it )
+        {
+            if ( it->second == pIntegratedWnd )
+            {
+                m_hasDisplayed.erase(it->first);
+                break;
+            }
+        }
+    }
+
 public:
     AccountIntegratedWnd( CWnd * pParentWnd, LPCTSTR lpszWindowName, DWORD dwStyle, DWORD dwExStyle, const RECT& rect );
-
-    // ClassWizard generated virtual function overrides
-    //{{AFX_VIRTUAL(AccountIntegratedWnd)
-    protected:
-    virtual void PostNcDestroy();
-    virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
-    //}}AFX_VIRTUAL
-
-public:
     virtual ~AccountIntegratedWnd();
 
 protected:
@@ -36,9 +56,13 @@ protected:
     std::auto_ptr<CachedBitmap> m_CBCached;
     std::auto_ptr<Bitmap> m_loadedBgImg;
     HDC m_hClientDC;
-    //重新创建所有相关对象
+    // 重新创建所有相关对象
     void RefreshAllCreate();
+    // 重新显示账户信息
+    void RefreshAccountsInfo( AccountCate const & cate, AccountArray const & accounts );
+    // 作画
     void MakeDraw();
+    // 绘出
     void Draw();
 
 
@@ -63,38 +87,21 @@ protected:
     // 绘制一个白色圆角背景
     void DrawBackground( RectF const & rect );
 
-    // 存储已经在当前窗口上显示的本窗口,确保每个当前窗口上只显示一次本窗口
-    static std::map<HWND, AccountIntegratedWnd *> m_hasDisplayed;
-public:
-    static AccountIntegratedWnd * GetDisplayedWnd( HWND hWnd )
-    {
-        if ( m_hasDisplayed.find(hWnd) != m_hasDisplayed.end() )
-            return m_hasDisplayed[hWnd];
-        return NULL;
-    }
-    static void AddDisplayedWnd( HWND hWnd, AccountIntegratedWnd * pIntegratedWnd )
-    {
-        m_hasDisplayed[hWnd] = pIntegratedWnd;
-    }
-    static void DelDisplayedWnd( AccountIntegratedWnd * pIntegratedWnd )
-    {
-        std::map<HWND, AccountIntegratedWnd *>::iterator it;
-        for ( it = m_hasDisplayed.begin(); it != m_hasDisplayed.end(); ++it )
-        {
-            if ( it->second == pIntegratedWnd )
-            {
-                m_hasDisplayed.erase(it->first);
-                break;
-            }
-        }
-    }
+
+    // ClassWizard generated virtual function overrides
+    //{{AFX_VIRTUAL(AccountIntegratedWnd)
+    protected:
+    virtual void PostNcDestroy();
+    virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
+    //}}AFX_VIRTUAL
+
+protected:
     //{{AFX_MSG(AccountIntegratedWnd)
     afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
     afx_msg void OnDestroy();
     afx_msg LRESULT OnNcHitTest(CPoint point);
     afx_msg BOOL OnEraseBkgnd(CDC* pDC);
     afx_msg void OnPaint();
-    afx_msg void OnSize(UINT nType, int cx, int cy);
     afx_msg void OnTimer(UINT nIDEvent);
     afx_msg void OnMouseMove(UINT nFlags, CPoint point);
     //}}AFX_MSG

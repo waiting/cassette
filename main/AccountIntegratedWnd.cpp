@@ -4,9 +4,8 @@
 #include "AccountIntegratedWnd.h"
 
 std::map<HWND, AccountIntegratedWnd *> AccountIntegratedWnd::m_hasDisplayed;
-/////////////////////////////////////////////////////////////////////////////
-// AccountIntegratedWnd
 
+// AccountIntegratedWnd -------------------------------------------------------------------
 AccountIntegratedWnd::AccountIntegratedWnd( CWnd * pParentWnd, LPCTSTR lpszWindowName, DWORD dwStyle, DWORD dwExStyle, const RECT& rect )
 {
     m_hClientDC = NULL;
@@ -36,6 +35,10 @@ void AccountIntegratedWnd::RefreshAllCreate()
 
     //作图
     MakeDraw();
+}
+
+void AccountIntegratedWnd::RefreshAccountsInfo( AccountCate const & cate, AccountArray const & accounts )
+{
 
 }
 
@@ -44,18 +47,13 @@ void AccountIntegratedWnd::MakeDraw()
 {
     // 画背景
     m_gCached->DrawImage( m_loadedBgImg.get(), 0, 0, 0, 0, m_loadedBgImg->GetWidth(), m_loadedBgImg->GetHeight(), UnitPixel );
-    /*m_gCached->DrawImage( 
-        m_loadedBgImg.get(),
-        Rect( 0, 0, m_rcClient.Width(), m_rcClient.Height() ),
-        0, 0, m_loadedBgImg->GetWidth(), m_loadedBgImg->GetHeight(),
-        UnitPixel
-    );*/
+
     // 画鼠标特效
-    /*int x, y;
+    int x, y;
     x = m_ptCurMouse.x - m_radiusMouseCircle / 2;
     y = m_ptCurMouse.y - m_radiusMouseCircle / 2;
     m_gCached->FillEllipse( &SolidBrush( Color(64,255,255,255) ), x, y, m_radiusMouseCircle, m_radiusMouseCircle );
-    //m_gCached->DrawEllipse( &Pen( Color(128,255,255,255), 0.5f ), x, y, m_radiusMouseCircle, m_radiusMouseCircle );//*/
+    m_gCached->DrawEllipse( &Pen( Color(128,255,255,255), 0.5f ), x, y, m_radiusMouseCircle, m_radiusMouseCircle );
 
     Gdiplus::Font font( L"宋体", 24, 0, UnitPixel );
     StringFormat fmt;
@@ -139,14 +137,14 @@ BEGIN_MESSAGE_MAP(AccountIntegratedWnd, CFrameWnd)
     ON_WM_NCHITTEST()
     ON_WM_ERASEBKGND()
     ON_WM_PAINT()
-    ON_WM_SIZE()
     ON_WM_TIMER()
     ON_WM_MOUSEMOVE()
     //}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
-void AccountIntegratedWnd::PostNcDestroy() 
+void AccountIntegratedWnd::PostNcDestroy()
 {
+    std::cout << "AccountIntegratedWnd::PostNcDestroy()\n";
     DelDisplayedWnd(this);
     delete this;
 }
@@ -171,7 +169,7 @@ int AccountIntegratedWnd::OnCreate(LPCREATESTRUCT lpCreateStruct)
     if (CFrameWnd::OnCreate(lpCreateStruct) == -1)
         return -1;
     //设置透明度
-    ::SetLayeredWindowAttributes( *this, 0, 255, LWA_ALPHA );
+    //SetLayeredWindowAttributes( 0, 255, LWA_ALPHA );
     //载入背景图
     HBITMAP hBmpBgImage = LoadBitmap( g_theApp.m_hInstance, MAKEINTRESOURCE(IDR_INTEGRATEDBKIMG) );
     m_loadedBgImg = std::auto_ptr<Bitmap>( new Bitmap( hBmpBgImage, NULL ) );
@@ -181,12 +179,13 @@ int AccountIntegratedWnd::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
     RefreshAllCreate();
 
-    //m_timer1.create( *this, 100 );
+    m_timer1.create( *this, 100 );
     return 0;
 }
 
-void AccountIntegratedWnd::OnDestroy() 
+void AccountIntegratedWnd::OnDestroy()
 {
+    std::cout << "AccountIntegratedWnd::OnDestroy()\n";
     if ( m_hClientDC )
     {
         ::ReleaseDC( GetSafeHwnd(), m_hClientDC );
@@ -201,31 +200,25 @@ void AccountIntegratedWnd::OnPaint()
     Draw();
 }
 
-void AccountIntegratedWnd::OnSize(UINT nType, int cx, int cy) 
+LRESULT AccountIntegratedWnd::OnNcHitTest( CPoint point )
 {
-    CFrameWnd::OnSize(nType, cx, cy);
-    if ( cx < 1 || cy < 1 )
-        return;
+    LRESULT ret = CFrameWnd::OnNcHitTest(point);
+    std::cout << "AccountIntegratedWnd::OnNcHitTest( CPoint point )" << ret << "\n";
 
-    //Invalidate(FALSE);
-}
-
-LRESULT AccountIntegratedWnd::OnNcHitTest(CPoint point) 
-{
-    //伪造点击标题栏，使得可以点击任意位置移动窗口
-    if ( HTCLIENT == CFrameWnd::OnNcHitTest(point) && GetAsyncKeyState(MK_LBUTTON) < 0 )
+    // 伪造点击标题栏，使得可以点击任意位置移动窗口
+    if ( HTCLIENT == ret && GetAsyncKeyState(MK_LBUTTON) < 0 )
     {
         return HTCAPTION;
     }
-    return CFrameWnd::OnNcHitTest(point);
+    return ret;
 }
 
-BOOL AccountIntegratedWnd::OnEraseBkgnd(CDC* pDC) 
+BOOL AccountIntegratedWnd::OnEraseBkgnd( CDC * pDC )
 {
-    return TRUE;//CFrameWnd::OnEraseBkgnd(pDC);
+    return TRUE; // CFrameWnd::OnEraseBkgnd(pDC);
 }
 
-void AccountIntegratedWnd::OnTimer(UINT nIDEvent) 
+void AccountIntegratedWnd::OnTimer( UINT nIDEvent )
 {
     if ( nIDEvent == m_timer1.getId() )
     {
@@ -238,15 +231,21 @@ void AccountIntegratedWnd::OnTimer(UINT nIDEvent)
         }
 
         MakeDraw();
-        Invalidate(FALSE);
+        //Invalidate(FALSE);
+        CRect rc( m_ptCurMouse, m_ptCurMouse );
+        rc.InflateRect( 30, 30 );
+        InvalidateRect( &rc, FALSE );
     }
-
 }
 
-void AccountIntegratedWnd::OnMouseMove(UINT nFlags, CPoint point) 
+void AccountIntegratedWnd::OnMouseMove( UINT nFlags, CPoint point )
 {
-    CFrameWnd::OnMouseMove(nFlags, point);
+    //CFrameWnd::OnMouseMove(nFlags, point);
     m_ptCurMouse = point;
-    //MakeDraw();
+    MakeDraw();
     //Invalidate(FALSE);
+    std::cout << point.x << ", " << point.y << std::endl;
+    CRect rc( point, point );
+    rc.InflateRect( 30, 30 );
+    InvalidateRect( &rc, FALSE );
 }

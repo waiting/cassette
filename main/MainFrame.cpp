@@ -244,7 +244,7 @@ int MainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
     m_noti.add( GetSafeHwnd(), 1, trayIcon, winplus::LoadString(IDR_MAINFRAME) );
     m_noti.setMessage(WM_TRAY_NOTIFICATION);
-    m_noti.setBalloonInfo( winplus::LoadString(IDR_MAINFRAME), "Cassette 正在运行" );
+    //m_noti.setBalloonInfo( winplus::LoadString(IDR_MAINFRAME), "Cassette 正在运行" );
     m_noti.modify();
 
     return 0;
@@ -595,7 +595,7 @@ void MainFrame::DoIntelligentHotkey()
     winplus::String exeName, exePath;
     exePath = winplus::GetAppPathFromHWND(*pCurWnd);
     winplus::FilePath( exePath, &exeName );
-    _strlwr(&exeName[0]);
+    winplus::StrMakeLower(&exeName);
     CString browserTitle;
     bool isBrowser = IsBrowserExeName( g_theApp.GetDatabase(), exeName.c_str(), &browserTitle );
     winplus::String curWndTitle = winplus::Window_GetText( pCurWnd->GetSafeHwnd() ); // 当前窗口标题
@@ -659,10 +659,8 @@ void MainFrame::DoIntelligentHotkey()
             // 计算综合窗口的位置
             Gdiplus::Size siIntegratedWnd( 240, 300 );
             CRect rcIntegratedWnd = winplus::RectGdiplusToGdi<RECT>(
-                    Gdiplus::Rect( Gdiplus::Point(
-                    rcCurWnd.Width()-siIntegratedWnd.Width,
-                    rcCurWnd.Height()-siIntegratedWnd.Height
-                ),
+                Gdiplus::Rect(
+                    Gdiplus::Point( rcCurWnd.Width() - siIntegratedWnd.Width, rcCurWnd.Height() - siIntegratedWnd.Height ),
                     siIntegratedWnd
                 )
             );
@@ -673,23 +671,21 @@ void MainFrame::DoIntelligentHotkey()
             {
                 //pIntegratedWnd->RefreshAccountsInfo( AccountCate const & cate, AccountArray const & accounts );
                 pIntegratedWnd->SetWindowPos( NULL, rcIntegratedWnd.left, rcIntegratedWnd.top, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE );
+                pCurWnd->SetWindowPos( &wndTop, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE );
             }
             else
             {
-/*
                 pIntegratedWnd = new AccountIntegratedWnd(
                     pCurWnd,
                     m_catesDlg.m_cates[cateIndex].m_cateName,
                     WS_SYSMENU,
-                    WS_EX_LAYERED,
+                    0,
                     rcIntegratedWnd
                 );
                 //pIntegratedWnd->RefreshAccountsInfo( AccountCate const & cate, AccountArray const & accounts );
-                //pIntegratedWnd->UpdateWindow();
+                pIntegratedWnd->UpdateWindow();
                 pIntegratedWnd->ShowWindow(SW_NORMAL);
-
-                pCurWnd->SetWindowPos( &wndTop, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE );*/
-
+                pCurWnd->SetWindowPos( &wndTop, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE );
             }
         }
     }
