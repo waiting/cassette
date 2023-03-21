@@ -90,8 +90,6 @@ BOOL CassetteApp::InitInstance()
     // ----------------------------------------------------------------------------------
     LoadSettings(); // 从ini加载设置
     DoSettings();   // 处理设置选项
-    //OpenDatabase(); // 打开数据库  移到DoSettings()中去了
-    //OpenWordslib(); // 打开词库  移到DoSettings()中去了
 
     BOOL isLogined = FALSE; // 是否已经登录
     m_viaAutoLogin = FALSE;
@@ -205,23 +203,17 @@ void CassetteApp::OpenDatabase()
         encryptKey.resize( objResDbKey.getSize() );
         CopyMemory( &encryptKey[0], objResDbKey.getData(), encryptKey.size() );
     }
-    //判断数据库文件是否存在,不存在则需要初始化
-    CFileStatus fstatus;
-    bool isNeedInit = !CFile::GetStatus( databasePath.c_str(), fstatus );
-
-    winplus::Mixed dbConfig;
-    dbConfig.addPair()
-        ( "driver", "sqlite" )
-        ( "path", databasePath )
-        ( "dbkey", encryptKey )
-        ( "charset", "" )
-        ;
-
-    //AfxMessageBox( dbConfig.myJson().c_str() );
+    // 判断数据库文件是否存在，不存在则需要初始化
+    bool isNeedInit = !winplus::DetectPath(databasePath);
 
     try
     {
-        m_db = new eiendb::Database(dbConfig);
+        m_db = new eiendb::Database( winplus::$c{
+            { "driver", "sqlite" },
+            { "path", databasePath },
+            { "dbkey", encryptKey },
+            { "charset", "" }
+        } );
     }
     catch ( winplus::Error const & e )
     {
@@ -287,7 +279,7 @@ void CassetteApp::LoadSettings( UINT flag )
 {
     winplus::Ini settingsIni( winplus::ModulePath() + winplus::dirSep + winplus::LoadString(AFX_IDS_APP_TITLE) + TEXT(".ini") );
     winplus::String sname = winplus::LoadString(AFX_IDS_APP_TITLE);
-    winplus::Ini::Section & s = settingsIni( sname.c_str() );
+    winplus::Ini::Section s = settingsIni( sname.c_str() );
 
     if ( flag & Setting_EnabledAutoRun ) m_settings.isEnabledAutoRun = winplus::Mixed( s.get( _T("EnabledAutoRun"), _T("false") ) );
     if ( flag & Setting_EnabledHotkey ) m_settings.isEnabledHotkey = winplus::Mixed( s.get( _T("EnabledHotkey"), _T("true") ) );
@@ -309,7 +301,7 @@ void CassetteApp::SaveSettings( UINT flag )
 {
     winplus::Ini settingsIni( winplus::ModulePath() + winplus::dirSep + winplus::LoadString(AFX_IDS_APP_TITLE) + TEXT(".ini") );
     winplus::String sname = winplus::LoadString(AFX_IDS_APP_TITLE);
-    winplus::Ini::Section & s = settingsIni( sname.c_str() );
+    winplus::Ini::Section s = settingsIni( sname.c_str() );
 
     if ( flag & Setting_EnabledAutoRun ) s.set( _T("EnabledAutoRun"), (winplus::String)winplus::Mixed(m_settings.isEnabledAutoRun) );
     if ( flag & Setting_EnabledHotkey ) s.set( _T("EnabledHotkey"), (winplus::String)winplus::Mixed(m_settings.isEnabledHotkey) );

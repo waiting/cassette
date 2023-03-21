@@ -139,15 +139,15 @@ int FindEx( CString const & text, CString const & pattern, int * patternIndex = 
 
 int AccountCatesDlg::GetCateIndexMatchWndTitle( CString const & wndTitle, bool isBrowser ) const
 {
-    //载入关键字
+    // 载入关键字
     std::vector<winplus::StringArray> keywordsArr;
     int i, j;
     int catesCount = m_cates.GetSize(); // 种类数
-    int oneItemKeywordMaxCount = 0;//单个种类关键词最大数
+    int oneItemKeywordMaxCount = 0; // 单个种类关键词最大数
     for ( i = 0; i < catesCount; ++i )
     {
         winplus::StringArray keywords;
-        int m = winplus::StrSplit( (LPCTSTR)m_cates[i].m_keywords, _T(","), &keywords );
+        int m = (int)winplus::StrSplit( (LPCTSTR)m_cates[i].m_keywords, _T(","), &keywords );
         if ( m > oneItemKeywordMaxCount ) oneItemKeywordMaxCount = m;
         keywordsArr.push_back(keywords);
     }
@@ -200,7 +200,7 @@ int AccountCatesDlg::GetCateIndexMatchWndTitle( CString const & wndTitle, bool i
         {
             if ( keywordsArr[checkCateIndexs[i]].size() > m )
             {
-                m = keywordsArr[checkCateIndexs[i]].size();
+                m = (int)keywordsArr[checkCateIndexs[i]].size();
                 mIndex = i;
             }
         }

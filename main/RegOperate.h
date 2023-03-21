@@ -12,24 +12,20 @@
 #define ERROR_BUFFER     0x08
 #define ERROR_OTHER      0x10
 
-#ifndef	EXIST_REGOPERATE_DLL
-
-	#define	REGOPERATE_DLL
-	#define REGOPERATE_API
+#ifndef	REGOPERATE_DLL_USE
+    #define REGOPERATE_DLL
+    #define REGOPERATE_API
 #else
+    #ifdef REGOPERATE_DLL_EXPORTS
+        #define REGOPERATE_DLL  __declspec(dllexport)
+    #else
+        #define REGOPERATE_DLL  __declspec(dllimport)
+    #endif
 
-	#ifdef	REGOPERATE_DLL_EXPORTS
-	#define	REGOPERATE_DLL	__declspec(dllexport)
-	#else
-	#define	REGOPERATE_DLL	__declspec(dllimport)
-	#endif
-
-	#define REGOPERATE_API __stdcall
-
+    #define REGOPERATE_API  __stdcall
 #endif
 
 #define REGOPERATE_DECL_FUNC(ret) REGOPERATE_DLL ret REGOPERATE_API
-
 #define REGOPERATE_IMPL_FUNC(ret) ret REGOPERATE_API
 
 #ifdef	__cplusplus

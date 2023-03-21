@@ -22,7 +22,7 @@ winplus::String ExplainCustomVars( winplus::String const & str )
 
 CString GetExecutablePath()
 {
-    return ( winplus::ModulePath() + winplus::dirSep ).c_str();
+    return ( winplus::ModulePath() + winplus::DirSep ).c_str();
 }
 
 //Database//////////////////////////////////////////////////////////////////////////

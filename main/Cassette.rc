@@ -241,7 +241,7 @@ END
 IDD_USER_LOGIN DIALOGEX 0, 0, 152, 115
 STYLE DS_SETFONT | DS_MODALFRAME | WS_MINIMIZEBOX | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "用户登录"
-FONT 9, "宋体", 0, 0, 0x1
+FONT 9, "宋体"
 BEGIN
     ICON            IDI_ICON2,IDC_STATIC,20,4,20,20,0,WS_EX_TRANSPARENT
     CTEXT           "用户登录",IDC_LABEL_LOGIN,45,0,85,30,SS_CENTERIMAGE
@@ -546,14 +546,6 @@ IDR_PNG_ABOUT_IMAGE     PNG                     "..\\res\\AccountMaster_01.png"
 //
 
 IDR_SQL_DBSCHEMA        SQL                     "..\\res\\dbschema.sql"
-
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// RT_MANIFEST
-//
-
-1                       RT_MANIFEST             "..\\res\\AccountMaster.manifest"
 
 
 /////////////////////////////////////////////////////////////////////////////

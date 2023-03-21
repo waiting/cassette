@@ -14,15 +14,15 @@ REGOPERATE_IMPL_FUNC(HKEY) reg_open_key( LPCSTR key_name, BOOL w /*= FALSE*/ )
 	HKEY base_key_handle = NULL, key_handle = NULL;
 	LPCSTR str = strchr( key_name, '\\' );
 	if ( !str ) str = key_name + strlen(key_name);	//只是根键的情况.
-	if ( !strnicmp( key_name, "HKEY_CLASSES_ROOT", str - key_name ) || !strnicmp( key_name, "HKCR", str - key_name ) )
+	if ( !_strnicmp( key_name, "HKEY_CLASSES_ROOT", str - key_name ) || !_strnicmp( key_name, "HKCR", str - key_name ) )
 		base_key_handle = HKEY_CLASSES_ROOT;
-	else if ( !strnicmp( key_name, "HKEY_CURRENT_CONFIG", str - key_name ) || !strnicmp( key_name, "HKCC", str - key_name ) )
+	else if ( !_strnicmp( key_name, "HKEY_CURRENT_CONFIG", str - key_name ) || !_strnicmp( key_name, "HKCC", str - key_name ) )
 		base_key_handle = HKEY_CURRENT_CONFIG;
-	else if ( !strnicmp( key_name, "HKEY_CURRENT_USER", str - key_name ) || !strnicmp( key_name, "HKCU", str - key_name ) )
+	else if ( !_strnicmp( key_name, "HKEY_CURRENT_USER", str - key_name ) || !_strnicmp( key_name, "HKCU", str - key_name ) )
 		base_key_handle = HKEY_CURRENT_USER;
-	else if ( !strnicmp( key_name, "HKEY_LOCAL_MACHINE", str - key_name ) || !strnicmp( key_name, "HKLM", str - key_name ) )
+	else if ( !_strnicmp( key_name, "HKEY_LOCAL_MACHINE", str - key_name ) || !_strnicmp( key_name, "HKLM", str - key_name ) )
 		base_key_handle = HKEY_LOCAL_MACHINE;
-	else if ( !strnicmp( key_name, "HKEY_USERS", str - key_name ) || !strnicmp( key_name, "HKU", str - key_name ) )
+	else if ( !_strnicmp( key_name, "HKEY_USERS", str - key_name ) || !_strnicmp( key_name, "HKU", str - key_name ) )
 		base_key_handle = HKEY_USERS;
 	else
 	{

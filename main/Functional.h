@@ -354,11 +354,9 @@ interface IUpdateListView
 // 错误提示框
 
 // 警告型错误
-#define WarningError( str, title )\
-    MessageBox( str, title, MB_OK | MB_ICONEXCLAMATION );
+#define WarningError( str, title ) MessageBox( str, title, MB_OK | MB_ICONEXCLAMATION );
 // 致命型错误
-#define FatalError( str, title )\
-    MessageBox( str, title, MB_OK | MB_ICONERROR );
+#define FatalError( str, title ) MessageBox( str, title, MB_OK | MB_ICONERROR );
 
 
 //////////////////////////////////////////////////////////////////////////

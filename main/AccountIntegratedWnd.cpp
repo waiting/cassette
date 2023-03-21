@@ -80,7 +80,7 @@ void AccountIntegratedWnd::DrawShadowString( winplus::String const & s, Gdiplus:
     {
         m_gCanvas->MeasureString(
             sU.c_str(),
-            sU.length(),
+            (INT)sU.length(),
             &font,
             layoutRect,
             &fmt,
@@ -90,7 +90,7 @@ void AccountIntegratedWnd::DrawShadowString( winplus::String const & s, Gdiplus:
     
     m_gCanvas->DrawString(
         sU.c_str(),
-        sU.length(),
+        (INT)sU.length(),
         &font,
         RectF( layoutRect.X + 1, layoutRect.Y + 1, layoutRect.Width, layoutRect.Height ),
         &fmt,
@@ -99,7 +99,7 @@ void AccountIntegratedWnd::DrawShadowString( winplus::String const & s, Gdiplus:
     
     m_gCanvas->DrawString(
         sU.c_str(),
-        sU.length(),
+        (INT)sU.length(),
         &font,
         layoutRect,
         &fmt,
@@ -206,7 +206,7 @@ BOOL AccountIntegratedWnd::OnEraseBkgnd( CDC * pDC )
     return TRUE; // CFrameWnd::OnEraseBkgnd(pDC);
 }
 
-void AccountIntegratedWnd::OnTimer( UINT nIDEvent )
+void AccountIntegratedWnd::OnTimer( UINT_PTR nIDEvent )
 {
     if ( nIDEvent == m_timer1.getId() )
     {
@@ -233,14 +233,12 @@ void AccountIntegratedWnd::OnMouseMove( UINT nFlags, CPoint point )
     //CWnd::OnMouseMove(nFlags, point);
 }
 
-
 void AccountIntegratedWnd::OnLButtonUp( UINT nFlags, CPoint point )
 {
     std::cout << "AccountIntegratedWnd::OnLButtonUp()\n";
     PlaySound( MAKEINTRESOURCE(IDR_WAVE_SELECTED), AfxGetApp()->m_hInstance, SND_RESOURCE | SND_ASYNC );
     //CWnd::OnLButtonUp( nFlags, point );
 }
-
 
 void AccountIntegratedWnd::OnLButtonDown( UINT nFlags, CPoint point )
 {
