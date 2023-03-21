@@ -26,6 +26,8 @@
 #define IDR_INTEGRATEDBKIMG             150
 #define IDM_TRAYNOTI_MENU               155
 #define IDB_TOOLBAR32                   156
+#define IDR_WAVE1                       157
+#define IDR_WAVE_SELECTED               157
 #define IDR_KEY_DB                      200
 #define IDC_REGISTERED_HOTKEY           998
 #define IDC_SYSLINK_WEBSITE             1000
@@ -85,18 +87,6 @@
 #define ID_LIST_STYLE_REPORT            32790
 #define ID_LIST_STYLE_ICON              32791
 #define ID_MAINWND_SHOWHIDE             32792
-#define ID_BUTTON32793                  32793
-#define ID_BUTTON32794                  32794
-#define ID_BUTTON32795                  32795
-#define ID_BUTTON32796                  32796
-#define ID_BUTTON32797                  32797
-#define ID_32799                        32799
-#define ID_32800                        32800
-#define ID_32801                        32801
-#define ID_32802                        32802
-#define ID_32803                        32803
-#define ID_32804                        32804
-#define ID_Menu                         32805
 #define ID_MAIN                         32806
 #define IDS_SHAREDMEM_NAME              61204
 
@@ -105,7 +95,7 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        157
+#define _APS_NEXT_RESOURCE_VALUE        158
 #define _APS_NEXT_COMMAND_VALUE         32807
 #define _APS_NEXT_CONTROL_VALUE         1038
 #define _APS_NEXT_SYMED_VALUE           101

@@ -1,4 +1,4 @@
-ï»¿
+
 #if !defined(__FUNCTIONAL_H__)
 #define __FUNCTIONAL_H__
 
@@ -7,7 +7,7 @@
 #endif // _MSC_VER > 1000
 
 //////////////////////////////////////////////////////////////////////////
-// å®æ”¯æŒ
+// ºêÖ§³Ö
 //////////////////////////////////////////////////////////////////////////
 // calc array's count
 #ifndef countof
@@ -37,7 +37,7 @@ if ( GetCurrentProcessId() == dwProcessId && parent != AfxGetMainWnd() )\
 #define Bool(v) ((v) != FALSE)
 
 //////////////////////////////////////////////////////////////////////////
-// æ¨¡æ¿æ”¯æŒ
+// Ä£°åÖ§³Ö
 //////////////////////////////////////////////////////////////////////////
 // Set pointer as null when the scope out.
 class SetNullScopeOut
@@ -48,62 +48,21 @@ public:
     SetNullScopeOut( _Ty * & p ) : _p((void*&)p) {}
     ~SetNullScopeOut() { if ( _p ) _p = NULL; }
 private:
-    SetNullScopeOut( SetNullScopeOut const & );
-    SetNullScopeOut & operator = ( SetNullScopeOut const & );
+    DISABLE_OBJECT_COPY(SetNullScopeOut)
 };
 
-// è§£é‡Šæ–‡æœ¬ä¸­çš„$xxx$ç¨‹åºè‡ªå®šå˜é‡
+// ½âÊÍÎÄ±¾ÖĞµÄ$xxx$³ÌĞò×Ô¶¨±äÁ¿
 winplus::String ExplainCustomVars( winplus::String const & str );
 
-// è·å–å¯æ‰§è¡Œæ–‡ä»¶æ‰€åœ¨è·¯å¾„, æœ«å°¾å«ç›®å½•åˆ†å‰²ç¬¦
+// »ñÈ¡¿ÉÖ´ĞĞÎÄ¼şËùÔÚÂ·¾¶, Ä©Î²º¬Ä¿Â¼·Ö¸î·û
 CString GetExecutablePath();
 
 //////////////////////////////////////////////////////////////////////////
-// æ•°æ®åº“ç›¸å…³æ“ä½œ
+// Êı¾İ¿âÏà¹Ø²Ù×÷
 //////////////////////////////////////////////////////////////////////////
 
-/*
-struct Fields
-{
-    // ç»‘å®šintå‚æ•°,ç´¢å¼•èµ·å§‹ä¸º1
-    static int _bindInt( sqlite3_stmt * stmt, int sqlParamIndex, int val )
-    {
-        return sqlite3_bind_int( stmt, sqlParamIndex, val );
-    }
-    // ç»‘å®šstringå‚æ•°,ç´¢å¼•èµ·å§‹ä¸º1
-    static int _bindString( sqlite3_stmt * stmt, int sqlParamIndex, CString const & val )
-    {
-        // è½¬ä¸ºutf8å†ç»‘å®š
-        return sqlite3_bind_text( stmt, sqlParamIndex, winplus::StringToUtf8( (LPCTSTR)val ).c_str(), -1, SQLITE_TRANSIENT );
-    }
-    // ç»‘å®šblobå‚æ•°,ç´¢å¼•èµ·å§‹ä¸º1
-    static int _bindBlob( sqlite3_stmt * stmt, int sqlParamIndex, LPCVOID data, int size )
-    {
-        return sqlite3_bind_blob( stmt, sqlParamIndex, data, size, SQLITE_TRANSIENT );
-    }
-
-    // è·å–å­—æ®µintå€¼,å­—æ®µç´¢å¼•èµ·å§‹ä¸º0
-    static int _getInt( sqlite3_stmt * stmt, int sqlFieldIndex )
-    {
-        return sqlite3_column_int( stmt, sqlFieldIndex );
-    }
-    // è·å–å­—æ®µstringå€¼,å­—æ®µç´¢å¼•èµ·å§‹ä¸º0
-    static CString _getString( sqlite3_stmt * stmt, int sqlFieldIndex )
-    {
-        char const * sUTF8 = (char const *)sqlite3_column_text( stmt, sqlFieldIndex );
-        return winplus::Utf8ToString( sUTF8 ? sUTF8 : "" ).c_str();
-    }
-    // è·å–å­—æ®µblobå€¼,å­—æ®µç´¢å¼•èµ·å§‹ä¸º0
-    static void _getBlob( sqlite3_stmt * stmt, int sqlFieldIndex, winplus::AnsiString * blob )
-    {
-        int size;
-        size = sqlite3_column_bytes( stmt, sqlFieldIndex );
-        blob->assign( (char const *)sqlite3_column_blob( stmt, sqlFieldIndex ), size );
-    }
-};*/
-
 // Users -----------------------------------------------------------------
-// ä»£è¡¨ä¸€ä¸ªç”¨æˆ·çš„ç›¸å…³æ•°æ®
+// ´ú±íÒ»¸öÓÃ»§µÄÏà¹ØÊı¾İ
 
 /*enum FieldBits__am_users
 {
@@ -118,7 +77,7 @@ struct Fields
     am_users__time        = winplus::Bin0<0100000000>::val,
 };*/
 
-// å½“æŸ¥è¯¢å…¨éƒ¨å­—æ®µæ—¶æ‰å¯ç”¨è¿™ä¸ªå‡½æ•°ç¡®å®šå­—æ®µç´¢å¼•
+// µ±²éÑ¯È«²¿×Ö¶ÎÊ±²Å¿ÉÓÃÕâ¸öº¯ÊıÈ·¶¨×Ö¶ÎË÷Òı
 inline int FieldIndex( UINT fieldBitFlag )
 {
     return (int)( log((double)fieldBitFlag) / log(2.0) + 0.0000005 );
@@ -165,24 +124,24 @@ struct User/* : Fields*/
     }
 };
 
-// æ³¨å†Œç”¨æˆ·, æ³¨å†ŒæˆåŠŸè¿”å›true, å¦åˆ™false
-// userå¿½ç•¥m_id,m_condone,m_curCondone,m_unlockTime,m_regTime
+// ×¢²áÓÃ»§, ×¢²á³É¹¦·µ»Øtrue, ·ñÔòfalse
+// userºöÂÔm_id,m_condone,m_curCondone,m_unlockTime,m_regTime
 bool RegisterUser( eiendb::Database & db, User const & newUser );
 
-// ç™»å½•ç”¨æˆ·, æ‰§è¡ŒéªŒè¯æˆåŠŸè¿”å›true,å¹¶è·å–Useræ•°æ®, å¦åˆ™è¿”å›false.
+// µÇÂ¼ÓÃ»§, Ö´ĞĞÑéÖ¤³É¹¦·µ»Øtrue,²¢»ñÈ¡UserÊı¾İ, ·ñÔò·µ»Øfalse.
 bool LoginUser( eiendb::Database & db, CString const & username, CString const & password, User * userData );
-// è½½å…¥ç”¨æˆ·ä¿¡æ¯
+// ÔØÈëÓÃ»§ĞÅÏ¢
 bool LoadUser( eiendb::Database & db, CString const & username, User * userData );
-// åˆ é™¤ç”¨æˆ·
+// É¾³ıÓÃ»§
 bool DeleteUser( eiendb::Database & db, CString const & username );
-// éªŒè¯ç”¨æˆ·å¯†ç 
+// ÑéÖ¤ÓÃ»§ÃÜÂë
 bool VerifyUserPassword( eiendb::Database & db, CString const & username, CString const & password );
-// ä¿®æ”¹ç”¨æˆ·ä¿¡æ¯
+// ĞŞ¸ÄÓÃ»§ĞÅÏ¢
 bool ModifyUserEx( eiendb::Database & db, CString const & username, winplus::Mixed const & userFields );
 
 // Types -----------------------------------------------------------------
 
-//ä¸€æ¡è´¦æˆ·ç±»å‹ç›¸å…³æ•°æ®
+//Ò»ÌõÕË»§ÀàĞÍÏà¹ØÊı¾İ
 struct AccountType/* : public Fields*/
 {
     CString m_typeName;
@@ -209,20 +168,20 @@ struct AccountType/* : public Fields*/
 
 typedef CArray<AccountType, AccountType const &> AccountTypeArray;
 
-// åŠ è½½è´¦æˆ·ç±»åˆ«ä¿¡æ¯,è¿”å›è®°å½•æ•°
+// ¼ÓÔØÕË»§Àà±ğĞÅÏ¢,·µ»Ø¼ÇÂ¼Êı
 int LoadAccountTypes( eiendb::Database & db, AccountTypeArray * types );
 
-// è·å–ä¸€ä¸ªç±»å‹
+// »ñÈ¡Ò»¸öÀàĞÍ
 bool GetAccountType( eiendb::Database & db, CString const & typeName, AccountType * type );
 
-// æ·»åŠ è´¦æˆ·ç±»åˆ«ä¿¡æ¯, æˆåŠŸè¿”å›true, å¦åˆ™è¿”å›false.
+// Ìí¼ÓÕË»§Àà±ğĞÅÏ¢, ³É¹¦·µ»Øtrue, ·ñÔò·µ»Øfalse.
 bool AddAccountType( eiendb::Database & db, winplus::Mixed const & newType );
 
-// ä¿®æ”¹è´¦æˆ·ç±»åˆ«ä¿¡æ¯, æˆåŠŸè¿”å›true, å¦åˆ™è¿”å›false.
+// ĞŞ¸ÄÕË»§Àà±ğĞÅÏ¢, ³É¹¦·µ»Øtrue, ·ñÔò·µ»Øfalse.
 // name,rank
 bool ModifyAccountType( eiendb::Database & db, CString const & typeName, winplus::Mixed const & newTypeFields );
 
-// åˆ é™¤è´¦æˆ·ç±»åˆ«ä¿¡æ¯, æˆåŠŸè¿”å›true, å¦åˆ™è¿”å›false.
+// É¾³ıÕË»§Àà±ğĞÅÏ¢, ³É¹¦·µ»Øtrue, ·ñÔò·µ»Øfalse.
 bool DeleteAccountType( eiendb::Database & db, CString const & typeName );
 
 // Cates -----------------------------------------------------------------
@@ -267,27 +226,27 @@ struct AccountCate
 
 typedef CArray<AccountCate, AccountCate const &> AccountCateArray;
 
-// è½½å…¥è´¦æˆ·ç§ç±»ä¿¡æ¯, è¿”å›è®°å½•æ•°
+// ÔØÈëÕË»§ÖÖÀàĞÅÏ¢, ·µ»Ø¼ÇÂ¼Êı
 int LoadAccountCates( eiendb::Database & db, AccountCateArray * cates );
 
-// è½½å…¥ä¸€æ¡è´¦æˆ·ç§ç±»ä¿¡æ¯
+// ÔØÈëÒ»ÌõÕË»§ÖÖÀàĞÅÏ¢
 bool GetAccountCate( eiendb::Database & db, int id, AccountCate * cate );
 
-// æ·»åŠ è´¦æˆ·ç§ç±»ä¿¡æ¯ï¼ŒæˆåŠŸè¿”å›IDï¼Œå¤±è´¥è¿”å›0
-// newCateå¿½ç•¥m_id,m_timeWriten
+// Ìí¼ÓÕË»§ÖÖÀàĞÅÏ¢£¬³É¹¦·µ»ØID£¬Ê§°Ü·µ»Ø0
+// newCateºöÂÔm_id,m_timeWriten
 int AddAccountCate( eiendb::Database & db, winplus::Mixed const & newCate );
 
-// ä¿®æ”¹è´¦æˆ·ç§ç±»ä¿¡æ¯
+// ĞŞ¸ÄÕË»§ÖÖÀàĞÅÏ¢
 // id,name,desc,type,url,icon,startup,keywords,time
 bool ModifyAccountCate( eiendb::Database & db, int id, winplus::Mixed const & newCateFields );
 
-// åˆ é™¤è´¦æˆ·ç§ç±»ä¿¡æ¯
+// É¾³ıÕË»§ÖÖÀàĞÅÏ¢
 bool DeleteAccountCate( eiendb::Database & db, int id );
 
-// è½½å…¥æ‰€æœ‰è´¦æˆ·ç§ç±»çš„IDä»¥åŠç›¸åº”çš„å®‰å…¨å€¼
+// ÔØÈëËùÓĞÕË»§ÖÖÀàµÄIDÒÔ¼°ÏàÓ¦µÄ°²È«Öµ
 int LoadAccountCatesSafeRank( eiendb::Database & db, CUIntArray * cateIds, CUIntArray * typeSafeRanks );
 
-// è·å–æŒ‡å®šcateIdçš„ç±»åˆ«
+// »ñÈ¡Ö¸¶¨cateIdµÄÀà±ğ
 bool GetTypeByCateId( eiendb::Database & db, int cateId, AccountType * type );
 
 // Accounts --------------------------------------------------------------
@@ -332,47 +291,47 @@ struct Account/* : public Fields*/
 
 typedef CArray<Account, Account const &> AccountArray;
 
-// è½½å…¥æŒ‡å®šç”¨æˆ·æ‰€æœ‰çš„è´¦æˆ·ä¿¡æ¯,å¯æŒ‡å®šç§ç±»:-1ä¸ºå…¨éƒ¨ç§ç±»
+// ÔØÈëÖ¸¶¨ÓÃ»§ËùÓĞµÄÕË»§ĞÅÏ¢,¿ÉÖ¸¶¨ÖÖÀà:-1ÎªÈ«²¿ÖÖÀà
 int LoadAccounts( eiendb::Database & db, int userId, AccountArray * accounts, int cateId = -1 );
 
-// è·å–æŒ‡å®šç”¨æˆ·çš„ä¸€ä¸ªè´¦æˆ·ä¿¡æ¯
-// ä¸»é”®(user,myname)
+// »ñÈ¡Ö¸¶¨ÓÃ»§µÄÒ»¸öÕË»§ĞÅÏ¢
+// Ö÷¼ü(user,myname)
 bool GetAccount( eiendb::Database & db, int userId, CString const & myName, Account * account );
 
-// æ·»åŠ ä¸€ä¸ªæŒ‡å®šç”¨æˆ·çš„è´¦æˆ·ï¼ŒæˆåŠŸtrueï¼Œå¤±è´¥falseã€‚
-// ä¸»é”®(user,myname)
-// æ„å‘³ç€æ¯ä¸ªç”¨æˆ·(user)æ‹¥æœ‰è´¦æˆ·çš„mynameå¿…é¡»ä¸åŒï¼Œå¦åˆ™å¤±è´¥ã€‚ä¿®æ”¹æ—¶ä¹Ÿä¸€æ ·ã€‚
-// newAccountå¿½ç•¥m_time
+// Ìí¼ÓÒ»¸öÖ¸¶¨ÓÃ»§µÄÕË»§£¬³É¹¦true£¬Ê§°Üfalse¡£
+// Ö÷¼ü(user,myname)
+// ÒâÎ¶×ÅÃ¿¸öÓÃ»§(user)ÓµÓĞÕË»§µÄmyname±ØĞë²»Í¬£¬·ñÔòÊ§°Ü¡£ĞŞ¸ÄÊ±Ò²Ò»Ñù¡£
+// newAccountºöÂÔm_time
 bool AddAccount( eiendb::Database & db, winplus::Mixed const & newAccount );
 
-// ä¿®æ”¹ä¸€ä¸ªæŒ‡å®šç”¨æˆ·çš„è´¦æˆ·
-// ä¸»é”®(user,myname)
+// ĞŞ¸ÄÒ»¸öÖ¸¶¨ÓÃ»§µÄÕË»§
+// Ö÷¼ü(user,myname)
 // myname,account_name,account_pwd,cate,user,safe_rank,comment,time
 bool ModifyAccount( eiendb::Database & db, int userId, CString const & myName, winplus::Mixed const & newAccountFields );
 
-// åˆ é™¤ä¸€ä¸ªæŒ‡å®šç”¨æˆ·çš„è´¦æˆ·
+// É¾³ıÒ»¸öÖ¸¶¨ÓÃ»§µÄÕË»§
 bool DeleteAccount( eiendb::Database & db, int userId, CString const & myName );
 
 // Others ----------------------------------------------------------------
 
-// å–å¾—ä¸€ä¸ªæ­£ç¡®çš„Account MyNameä»¥ä¾¿æ·»åŠ è´¦æˆ·
+// È¡µÃÒ»¸öÕıÈ·µÄAccount MyNameÒÔ±ãÌí¼ÓÕË»§
 CString GetCorrectAccountMyName( eiendb::Database & db, int userId, CString const & myName );
 
-// è·å–æ•°æ®åº“å…¨éƒ¨è¡¨å
+// »ñÈ¡Êı¾İ¿âÈ«²¿±íÃû
 int LoadTableNames( eiendb::Database & db, winplus::StringArray * tableNames, winplus::String const & like = _T("am\\_%") );
 
-// è·å–æ•°æ®åº“çš„DDL,è¿”å›SQLè¯­å¥æ¡æ•°
+// »ñÈ¡Êı¾İ¿âµÄDDL,·µ»ØSQLÓï¾äÌõÊı
 int DumpDDL( eiendb::Database & db, winplus::String * ddl, winplus::String const & like = _T("am\\_%") );
 
-// åˆ¤æ–­ExeNameæ˜¯å¦ä¸ºä¸€ä¸ªæµè§ˆå™¨
+// ÅĞ¶ÏExeNameÊÇ·ñÎªÒ»¸öä¯ÀÀÆ÷
 bool IsBrowserExeName( eiendb::Database & db, CString const & exeName, CString * browserTitle );
 
 
 //////////////////////////////////////////////////////////////////////////
-// æ¥å£
+// ½Ó¿Ú
 //////////////////////////////////////////////////////////////////////////
 
-// æ›´æ–°ListViewæ•°æ®å’Œåˆ—è¡¨é¡¹
+// ¸üĞÂListViewÊı¾İºÍÁĞ±íÏî
 interface IUpdateListView
 {
     enum
@@ -380,31 +339,31 @@ interface IUpdateListView
         UPDATE_LOAD_DATA = 1,
         UPDATE_LIST_ITEMS = 2,
     };
-    // æ›´æ–°æ•°æ®å’Œåˆ—è¡¨é¡¹
-    // itemIndexä¸º-1æ—¶,åŠ è½½æ•°æ®åº“å†…å…¨éƒ¨çš„æ•°æ®å¹¶æ›´æ–°æ•´ä¸ªåˆ—è¡¨,ç¬¬ä¸€æ¬¡è°ƒç”¨è¯·ç”¨å®ƒ
-    // itemIndexä¸ºåˆ—è¡¨é¡¹ç´¢å¼•æ—¶,è¯»å–ç´¢å¼•æŒ‡ç¤ºçš„æ•°ç»„è®°å½•,é€šè¿‡ä¸»é”®æŸ¥è¯¢æ•°è¯¥æ¡æ•°æ®å†…å®¹
-    // ä¾æ®flagçš„æŒ‡ç¤ºè¿›è¡Œæ“ä½œ:
-    // UPDATE_LOAD_DATA ä»æ•°æ®åº“åŠ è½½æ•°æ®åˆ°æ•°ç»„ä¸­å‚¨å­˜
-    // UPDATE_LIST_ITEMS æŠŠæ•°ç»„ä¸­çš„æ•°æ®æ›´æ–°åˆ°åˆ—è¡¨é¡¹
+    // ¸üĞÂÊı¾İºÍÁĞ±íÏî
+    // itemIndexÎª-1Ê±,¼ÓÔØÊı¾İ¿âÄÚÈ«²¿µÄÊı¾İ²¢¸üĞÂÕû¸öÁĞ±í,µÚÒ»´Îµ÷ÓÃÇëÓÃËü
+    // itemIndexÎªÁĞ±íÏîË÷ÒıÊ±,¶ÁÈ¡Ë÷ÒıÖ¸Ê¾µÄÊı×é¼ÇÂ¼,Í¨¹ıÖ÷¼ü²éÑ¯Êı¸ÃÌõÊı¾İÄÚÈİ
+    // ÒÀ¾İflagµÄÖ¸Ê¾½øĞĞ²Ù×÷:
+    // UPDATE_LOAD_DATA ´ÓÊı¾İ¿â¼ÓÔØÊı¾İµ½Êı×éÖĞ´¢´æ
+    // UPDATE_LIST_ITEMS °ÑÊı×éÖĞµÄÊı¾İ¸üĞÂµ½ÁĞ±íÏî
     virtual void UpdateList( int flag = UPDATE_LOAD_DATA | UPDATE_LIST_ITEMS, long itemIndex = -1 ) PURE;
 
 };
 
 //////////////////////////////////////////////////////////////////////////
 
-// é”™è¯¯æç¤ºæ¡†
+// ´íÎóÌáÊ¾¿ò
 
-// è­¦å‘Šå‹é”™è¯¯
+// ¾¯¸æĞÍ´íÎó
 #define WarningError( str, title )\
     MessageBox( str, title, MB_OK | MB_ICONEXCLAMATION );
-// è‡´å‘½å‹é”™è¯¯
+// ÖÂÃüĞÍ´íÎó
 #define FatalError( str, title )\
     MessageBox( str, title, MB_OK | MB_ICONERROR );
 
 
 //////////////////////////////////////////////////////////////////////////
 
-/* æŠŠä¸€ä¸ªæ•°ç»„è½½å…¥ç»„åˆæ¡†æ§ä»¶ */
+/* °ÑÒ»¸öÊı×éÔØÈë×éºÏ¿ò¿Ø¼ş */
 inline int ComboBoxLoadDataFromArray( CComboBox * pCbo, CStringArray const & arr )
 {
     int i;

@@ -639,7 +639,7 @@ void MainFrame::DoIntelligentHotkey()
     {
         AccountArray accounts;
         int accountsCount = LoadAccounts( g_theApp.GetDatabase(), g_theApp.m_loginedUser.m_id, &accounts, m_catesDlg.m_cates[cateIndex].m_id );
-        if ( accountsCount < 1 )
+        if ( accountsCount < 1 ) // 没有账户数据
         {
             Account newAccount;
             newAccount.m_cateId = m_catesDlg.m_cates[cateIndex].m_id;
@@ -675,13 +675,7 @@ void MainFrame::DoIntelligentHotkey()
             }
             else
             {
-                pIntegratedWnd = new AccountIntegratedWnd(
-                    pCurWnd,
-                    m_catesDlg.m_cates[cateIndex].m_cateName,
-                    WS_SYSMENU,
-                    0,
-                    rcIntegratedWnd
-                );
+                pIntegratedWnd = new AccountIntegratedWnd( pCurWnd, m_catesDlg.m_cates[cateIndex].m_cateName, rcIntegratedWnd );
                 //pIntegratedWnd->RefreshAccountsInfo( AccountCate const & cate, AccountArray const & accounts );
                 pIntegratedWnd->UpdateWindow();
                 pIntegratedWnd->ShowWindow(SW_NORMAL);

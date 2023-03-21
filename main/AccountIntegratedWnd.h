@@ -1,19 +1,15 @@
-//////////////////////////////////////////////////////////////////////////
-// 账户综合窗口,显示一个账户种类下的账户
-// author: WT
-//////////////////////////////////////////////////////////////////////////
+
 #if !defined(AFX_ACCOUNTINTEGRATEDWND_H__1FE251B8_B64F_47C2_B695_4BFB32FC6E83__INCLUDED_)
 #define AFX_ACCOUNTINTEGRATEDWND_H__1FE251B8_B64F_47C2_B695_4BFB32FC6E83__INCLUDED_
 
 #if _MSC_VER > 1000
 #pragma once
 #endif // _MSC_VER > 1000
-// AccountIntegratedWnd.h : header file
-//
 
 /////////////////////////////////////////////////////////////////////////////
+// 账户综合窗口，显示一个账户种类下的账户
 // AccountIntegratedWnd window
-class AccountIntegratedWnd : public CFrameWnd
+class AccountIntegratedWnd : public CWnd
 {
 protected:
     // 存储已经在当前窗口上显示的本窗口，确保每个当前窗口上只显示一次本窗口
@@ -46,28 +42,29 @@ public:
     }
 
 public:
-    AccountIntegratedWnd( CWnd * pParentWnd, LPCTSTR lpszWindowName, DWORD dwStyle, DWORD dwExStyle, const RECT& rect );
+    AccountIntegratedWnd( CWnd * pParentWnd, LPCTSTR lpszWindowName, const RECT& rect );
     virtual ~AccountIntegratedWnd();
 
 protected:
-    std::auto_ptr<Graphics> m_gDevice;
-    std::auto_ptr<Graphics> m_gCached;
-    winplus::MemImage m_imgCached;
-    std::auto_ptr<CachedBitmap> m_CBCached;
-    std::auto_ptr<Bitmap> m_loadedBgImg;
-    HDC m_hClientDC;
     // 重新创建所有相关对象
     void RefreshAllCreate();
     // 重新显示账户信息
-    void RefreshAccountsInfo( AccountCate const & cate, AccountArray const & accounts );
+    void SetAccountsInfo( AccountCate const & cate, AccountArray const & accounts );
     // 作画
     void MakeDraw();
-    // 绘出
-    void Draw();
 
+    winplus::WindowTimer m_timer1; // 定时器
 
-    winplus::WindowTimer m_timer1;
+    /* 账户信息 */
+    AccountCate m_cate;
+    AccountArray m_accounts;
+
     /* 绘图数据 */
+    std::auto_ptr<Bitmap> m_loadedBgImg; // 背景图
+    std::auto_ptr<Graphics> m_gCanvas; // 绘图对象
+    winplus::MemImage m_memCanvas; // 内存画布
+    //winplus::MemDC m_memCanvas; // 内存画布
+
     CRect m_rcClient; // 客户区矩形
     CPoint m_ptCurMouse; // 当前鼠标位置
     int m_radiusMouseCircle; // 鼠标特效圆形半径
@@ -104,9 +101,12 @@ protected:
     afx_msg void OnPaint();
     afx_msg void OnTimer(UINT nIDEvent);
     afx_msg void OnMouseMove(UINT nFlags, CPoint point);
+    afx_msg void OnLButtonUp( UINT nFlags, CPoint point );
+    afx_msg void OnLButtonDown( UINT nFlags, CPoint point );
     //}}AFX_MSG
 
     DECLARE_MESSAGE_MAP()
+
 };
 
 /////////////////////////////////////////////////////////////////////////////

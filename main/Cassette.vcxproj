@@ -68,6 +68,7 @@
       <SubSystem>Windows</SubSystem>
       <AdditionalDependencies>gdiplus.lib;thirdparties_a.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)lib\$(PlatformShortName)-$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <ImageHasSafeExceptionHandlers />
     </Link>
     <ResourceCompile>
       <Culture>0x0804</Culture>
@@ -176,6 +177,9 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="..\res\Toolbar32.bmp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Media Include="..\res\se_selected.wav" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

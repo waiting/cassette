@@ -1,6 +1,6 @@
-ï»¿///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
 // Name:         Functional.cpp
-// Purpos:       ç¨‹åºæ‰€æœ‰çš„åŠŸèƒ½æ“ä½œ
+// Purpos:       ³ÌĞòËùÓĞµÄ¹¦ÄÜ²Ù×÷
 ///////////////////////////////////////////////////////////////////////////
 #include "Cassette.h"
 #include "CassetteApp.h"
@@ -50,7 +50,7 @@ bool RegisterUser( eiendb::Database & db, User const & newUser )
     }
     catch ( winplus::Error const & e )
     {
-        AfxGetMainWnd()->FatalError( e.what(), _T("æ•°æ®åº“é”™è¯¯") );
+        AfxGetMainWnd()->FatalError( e.what(), _T("Êı¾İ¿â´íÎó") );
     }
     return false;
 }
@@ -65,7 +65,7 @@ bool LoginUser( eiendb::Database & db, CString const & username, CString const &
 
         auto resUser = db->query( db->buildStmt("SELECT * FROM am_users WHERE name = ?;", (LPCTSTR)username ) );
         winplus::StringMixedMap userFields;
-        if( resUser->fetchRow(&userFields) ) // æ‰¾åˆ°è¿™ä¸ªç”¨æˆ·
+        if( resUser->fetchRow(&userFields) ) // ÕÒµ½Õâ¸öÓÃ»§
         {
             int nowTime = (int)winplus::GetUtcTime();
 
@@ -73,35 +73,35 @@ bool LoginUser( eiendb::Database & db, CString const & username, CString const &
             tmpUserInfo.m_condone = userFields["condone"];
             tmpUserInfo.m_curCondone = userFields["cur_condone"];
 
-            if ( nowTime < tmpUserInfo.m_unlockTime ) // å½“å‰æ—¶åˆ»å°äºé”å®šæ—¶åˆ»è¯´æ˜å¤„äºé”å®šä¸­
+            if ( nowTime < tmpUserInfo.m_unlockTime ) // µ±Ç°Ê±¿ÌĞ¡ÓÚËø¶¨Ê±¿ÌËµÃ÷´¦ÓÚËø¶¨ÖĞ
             {
                 int hours = ( tmpUserInfo.m_unlockTime - nowTime ) / 3600;
                 int minutes = ( ( tmpUserInfo.m_unlockTime - nowTime ) - hours * 3600 ) / 60;
                 int seconds = ( tmpUserInfo.m_unlockTime - nowTime ) - hours * 3600 - minutes * 60;
-                AfxGetMainWnd()->WarningError( winplus::Format( _T("ç”¨æˆ·é”å®šä¸­ï¼Œè§£é”è¿˜éœ€è¦%då°æ—¶%dåˆ†%dç§’"), hours, minutes, seconds ).c_str(), _T("é”™è¯¯") );
+                AfxGetMainWnd()->WarningError( winplus::Format( _T("ÓÃ»§Ëø¶¨ÖĞ£¬½âËø»¹ĞèÒª%dĞ¡Ê±%d·Ö%dÃë"), hours, minutes, seconds ).c_str(), _T("´íÎó") );
                 ret = false;
                 goto ExitProc;
             }
             else
             {
-                if ( tmpUserInfo.m_curCondone < 1 ) // è¡¨ç¤ºè¿™æ˜¯åˆšä»é”å®šçŠ¶æ€æ¢å¤,é‡ç½®cur_condone=condone
+                if ( tmpUserInfo.m_curCondone < 1 ) // ±íÊ¾ÕâÊÇ¸Õ´ÓËø¶¨×´Ì¬»Ö¸´,ÖØÖÃcur_condone=condone
                 {
                     tmpUserInfo.m_curCondone = tmpUserInfo.m_condone;
                     ModifyUserEx( db, username, winplus::Mixed().addPair()( "cur_condone", tmpUserInfo.m_curCondone ) );
                 }
             }
 
-            // éªŒè¯å¯†ç 
+            // ÑéÖ¤ÃÜÂë
             tmpUserInfo.m_password = winplus::DecryptContent( userFields["pwd"].toAnsi() ).c_str();
             if ( tmpUserInfo.m_password != password )
             {
-                // å‡å°‘å½“å‰å®¹é”™æ¬¡æ•°
+                // ¼õÉÙµ±Ç°Èİ´í´ÎÊı
                 tmpUserInfo.m_curCondone--;
                 ModifyUserEx( db, username, winplus::Mixed().addPair()( "cur_condone", tmpUserInfo.m_curCondone ) );
 
-                AfxGetMainWnd()->WarningError( winplus::Format( _T("å¯†ç ä¸æ­£ç¡®ï¼Œä½ è¿˜å‰©%dæ¬¡æœºä¼š"), tmpUserInfo.m_curCondone ).c_str(), _T("é”™è¯¯") );
+                AfxGetMainWnd()->WarningError( winplus::Format( _T("ÃÜÂë²»ÕıÈ·£¬Äã»¹Ê£%d´Î»ú»á"), tmpUserInfo.m_curCondone ).c_str(), _T("´íÎó") );
 
-                if ( tmpUserInfo.m_curCondone < 1 ) // æ²¡æœ‰å®¹é”™æ•°,é”å®šç”¨æˆ·
+                if ( tmpUserInfo.m_curCondone < 1 ) // Ã»ÓĞÈİ´íÊı,Ëø¶¨ÓÃ»§
                 {
                     int lockTime = 3600 * 3;
                     tmpUserInfo.m_unlockTime = winplus::GetUtcTime() + lockTime;
@@ -110,7 +110,7 @@ bool LoginUser( eiendb::Database & db, CString const & username, CString const &
                 ret = false;
                 goto ExitProc;
             }
-            // ç™»å½•éªŒè¯æˆåŠŸ,é‡ç½®cur_condone=condone
+            // µÇÂ¼ÑéÖ¤³É¹¦,ÖØÖÃcur_condone=condone
             tmpUserInfo.m_curCondone = tmpUserInfo.m_condone;
             ModifyUserEx( db, username, winplus::Mixed().addPair()( "cur_condone", tmpUserInfo.m_curCondone ) );
 
@@ -128,16 +128,16 @@ bool LoginUser( eiendb::Database & db, CString const & username, CString const &
             ret = true;
             goto ExitProc;
         }
-        else //æ²¡æœ‰æŒ‡å®šåç§°çš„ç”¨æˆ·
+        else //Ã»ÓĞÖ¸¶¨Ãû³ÆµÄÓÃ»§
         {
-            AfxGetMainWnd()->WarningError( _T("æ²¡æœ‰æ­¤ç”¨æˆ·"), _T("é”™è¯¯") );
+            AfxGetMainWnd()->WarningError( _T("Ã»ÓĞ´ËÓÃ»§"), _T("´íÎó") );
             ret = false;
             goto ExitProc;
         }
     }
     catch ( winplus::Error const & e )
     {
-        AfxGetMainWnd()->FatalError( e.what(), _T("æ•°æ®åº“é”™è¯¯") );
+        AfxGetMainWnd()->FatalError( e.what(), _T("Êı¾İ¿â´íÎó") );
     }
 
 ExitProc:
@@ -151,7 +151,7 @@ bool LoadUser( eiendb::Database & db, CString const & username, User * userData 
     {
         auto resUser = db->query( db->buildStmt("SELECT * FROM am_users WHERE name = ?;", (LPCTSTR)username ) );
         winplus::StringMixedMap userFields;
-        if( resUser->fetchRow(&userFields) ) // æ‰¾åˆ°è¿™ä¸ªç”¨æˆ·
+        if( resUser->fetchRow(&userFields) ) // ÕÒµ½Õâ¸öÓÃ»§
         {
             if ( userData != NULL )
             {
@@ -168,13 +168,13 @@ bool LoadUser( eiendb::Database & db, CString const & username, User * userData 
         }
         else
         {
-            //AfxGetMainWnd()->WarningError( _T("æ²¡æœ‰æ­¤ç”¨æˆ·"), _T("é”™è¯¯") );
+            //AfxGetMainWnd()->WarningError( _T("Ã»ÓĞ´ËÓÃ»§"), _T("´íÎó") );
             ret = false;
         }
     }
     catch ( winplus::Error const & e )
     {
-        AfxGetMainWnd()->FatalError( e.what(), _T("æ•°æ®åº“é”™è¯¯") ); //*/
+        AfxGetMainWnd()->FatalError( e.what(), _T("Êı¾İ¿â´íÎó") ); //*/
     }
 
     return ret;
@@ -189,7 +189,7 @@ bool DeleteUser( eiendb::Database & db, CString const & username )
     }
     catch ( winplus::Error const & e )
     {
-        AfxGetMainWnd()->FatalError( e.what(), _T("æ•°æ®åº“é”™è¯¯") ); //*/
+        AfxGetMainWnd()->FatalError( e.what(), _T("Êı¾İ¿â´íÎó") ); //*/
     }
     return false;
 }
@@ -208,7 +208,7 @@ bool VerifyUserPassword( eiendb::Database & db, CString const & username, CStrin
     }
     catch ( winplus::Error const & e )
     {
-        AfxGetMainWnd()->FatalError( e.what(), _T("æ•°æ®åº“é”™è¯¯") ); //*/
+        AfxGetMainWnd()->FatalError( e.what(), _T("Êı¾İ¿â´íÎó") ); //*/
     }
     return false;
 }
@@ -222,7 +222,7 @@ bool ModifyUserEx( eiendb::Database & db, CString const & username, winplus::Mix
     }
     catch ( winplus::Error const & e )
     {
-        AfxGetMainWnd()->FatalError( e.what(), _T("æ•°æ®åº“é”™è¯¯") );
+        AfxGetMainWnd()->FatalError( e.what(), _T("Êı¾İ¿â´íÎó") );
     }
     return false;
 }
@@ -284,7 +284,7 @@ int LoadAccountTypes( eiendb::Database & db, AccountTypeArray * types )
     }
     catch ( winplus::Error const & e )
     {
-        AfxGetMainWnd()->FatalError( e.what(), _T("æ•°æ®åº“é”™è¯¯") );
+        AfxGetMainWnd()->FatalError( e.what(), _T("Êı¾İ¿â´íÎó") );
     }
     return count;
 }
@@ -305,7 +305,7 @@ bool GetAccountType( eiendb::Database & db, CString const & typeName, AccountTyp
     }
     catch ( winplus::Error const & e )
     {
-        AfxGetMainWnd()->FatalError( e.what(), _T("æ•°æ®åº“é”™è¯¯") );
+        AfxGetMainWnd()->FatalError( e.what(), _T("Êı¾İ¿â´íÎó") );
     }
     return ret;
 }
@@ -327,7 +327,7 @@ bool AddAccountType( eiendb::Database & db, winplus::Mixed const & newType )
     }
     catch ( winplus::Error const & e )
     {
-        AfxGetMainWnd()->FatalError( e.what(), _T("æ•°æ®åº“é”™è¯¯") );
+        AfxGetMainWnd()->FatalError( e.what(), _T("Êı¾İ¿â´íÎó") );
     }
     return false;
 }
@@ -341,7 +341,7 @@ bool ModifyAccountType( eiendb::Database & db, CString const & typeName, winplus
     }
     catch ( winplus::Error const & e )
     {
-        AfxGetMainWnd()->FatalError( e.what(), _T("æ•°æ®åº“é”™è¯¯") );
+        AfxGetMainWnd()->FatalError( e.what(), _T("Êı¾İ¿â´íÎó") );
     }
     return false;
 }
@@ -354,8 +354,8 @@ bool DeleteAccountType( eiendb::Database & db, CString const & typeName )
         winplus::MixedArray f;
         if ( resCountAccountCates->fetchRow(&f) && f[0].toInt() > 0 )
         {
-            // ä¸èƒ½åˆ é™¤æ­¤ç±»å‹
-            AfxGetMainWnd()->WarningError( _T("è¯¥ç±»å‹ä¸‹å…³è”æœ‰è´¦æˆ·ç§ç±»ï¼Œå› æ­¤ä¸èƒ½åˆ é™¤"), _T("é”™è¯¯") );
+            // ²»ÄÜÉ¾³ı´ËÀàĞÍ
+            AfxGetMainWnd()->WarningError( _T("¸ÃÀàĞÍÏÂ¹ØÁªÓĞÕË»§ÖÖÀà£¬Òò´Ë²»ÄÜÉ¾³ı"), _T("´íÎó") );
             return false;
         }
 
@@ -364,7 +364,7 @@ bool DeleteAccountType( eiendb::Database & db, CString const & typeName )
     }
     catch ( winplus::Error const & e )
     {
-        AfxGetMainWnd()->FatalError( e.what(), _T("æ•°æ®åº“é”™è¯¯") ); //*/
+        AfxGetMainWnd()->FatalError( e.what(), _T("Êı¾İ¿â´íÎó") ); //*/
     }
     return false;
 }
@@ -490,7 +490,7 @@ int LoadAccountCates( eiendb::Database & db, AccountCateArray * cates )
     }
     catch ( winplus::Error const & e )
     {
-        AfxGetMainWnd()->FatalError( e.what(), _T("æ•°æ®åº“é”™è¯¯") ); //*/
+        AfxGetMainWnd()->FatalError( e.what(), _T("Êı¾İ¿â´íÎó") ); //*/
     }
     return count;
 }
@@ -518,7 +518,7 @@ bool GetAccountCate( eiendb::Database & db, int id, AccountCate * cate )
     }
     catch ( winplus::Error const & e )
     {
-        AfxGetMainWnd()->FatalError( e.what(), _T("æ•°æ®åº“é”™è¯¯") );
+        AfxGetMainWnd()->FatalError( e.what(), _T("Êı¾İ¿â´íÎó") );
     }
     return ret;
 }
@@ -545,7 +545,7 @@ int AddAccountCate( eiendb::Database & db, winplus::Mixed const & newCate )
     }
     catch ( winplus::Error const & e )
     {
-        AfxGetMainWnd()->FatalError( e.what(), _T("æ•°æ®åº“é”™è¯¯") );
+        AfxGetMainWnd()->FatalError( e.what(), _T("Êı¾İ¿â´íÎó") );
     }
     return 0;
 }
@@ -559,7 +559,7 @@ bool ModifyAccountCate( eiendb::Database & db, int id, winplus::Mixed const & ne
     }
     catch ( winplus::Error const & e )
     {
-        AfxGetMainWnd()->FatalError( e.what(), _T("æ•°æ®åº“é”™è¯¯") );
+        AfxGetMainWnd()->FatalError( e.what(), _T("Êı¾İ¿â´íÎó") );
     }
     return false;
 }
@@ -572,8 +572,8 @@ bool DeleteAccountCate( eiendb::Database & db, int id )
         winplus::MixedArray f;
         if ( resCountAccounts->fetchRow(&f) && f[0].toInt() > 0 )
         {
-            // ä¸èƒ½åˆ é™¤æ­¤ç±»å‹
-            AfxGetMainWnd()->WarningError( _T("è¯¥ç§ç±»ä¸‹å…³è”æœ‰è´¦æˆ·ï¼Œå› æ­¤ä¸èƒ½åˆ é™¤"), _T("é”™è¯¯") );
+            // ²»ÄÜÉ¾³ı´ËÀàĞÍ
+            AfxGetMainWnd()->WarningError( _T("¸ÃÖÖÀàÏÂ¹ØÁªÓĞÕË»§£¬Òò´Ë²»ÄÜÉ¾³ı"), _T("´íÎó") );
             return false;
         }
         auto mdf = db.mdf("am_account_cates");
@@ -581,7 +581,7 @@ bool DeleteAccountCate( eiendb::Database & db, int id )
     }
     catch ( winplus::Error const & e )
     {
-        AfxGetMainWnd()->FatalError( e.what(), _T("æ•°æ®åº“é”™è¯¯") );
+        AfxGetMainWnd()->FatalError( e.what(), _T("Êı¾İ¿â´íÎó") );
     }
     return false;
 }
@@ -605,7 +605,7 @@ int LoadAccountCatesSafeRank( eiendb::Database & db, CUIntArray * cateIds, CUInt
     }
     catch ( winplus::Error const & e )
     {
-        AfxGetMainWnd()->FatalError( e.what(), _T("æ•°æ®åº“é”™è¯¯") );
+        AfxGetMainWnd()->FatalError( e.what(), _T("Êı¾İ¿â´íÎó") );
     }
 
     return count;
@@ -629,7 +629,7 @@ bool GetTypeByCateId( eiendb::Database & db, int cateId, AccountType * type )
     }
     catch ( winplus::Error const & e )
     {
-        AfxGetMainWnd()->FatalError( e.what(), _T("æ•°æ®åº“é”™è¯¯") );
+        AfxGetMainWnd()->FatalError( e.what(), _T("Êı¾İ¿â´íÎó") );
     }
     return ret;
 }
@@ -749,7 +749,7 @@ int LoadAccounts( eiendb::Database & db, int userId, AccountArray * accounts, in
     }
     catch ( winplus::Error const & e )
     {
-        AfxGetMainWnd()->FatalError( e.what(), _T("æ•°æ®åº“é”™è¯¯") );
+        AfxGetMainWnd()->FatalError( e.what(), _T("Êı¾İ¿â´íÎó") );
     }
     return count;
 }
@@ -776,7 +776,7 @@ bool GetAccount( eiendb::Database & db, int userId, CString const & myName, Acco
     }
     catch ( winplus::Error const & e )
     {
-        AfxGetMainWnd()->FatalError( e.what(), _T("æ•°æ®åº“é”™è¯¯") );
+        AfxGetMainWnd()->FatalError( e.what(), _T("Êı¾İ¿â´íÎó") );
     }
     return ret;
 }
@@ -801,7 +801,7 @@ bool AddAccount( eiendb::Database & db, winplus::Mixed const & newAccount )
     }
     catch ( winplus::Error const & e )
     {
-        AfxGetMainWnd()->FatalError( e.what(), _T("æ•°æ®åº“é”™è¯¯") );
+        AfxGetMainWnd()->FatalError( e.what(), _T("Êı¾İ¿â´íÎó") );
     }
     return false;
 }
@@ -815,7 +815,7 @@ bool ModifyAccount( eiendb::Database & db, int userId, CString const & myName, w
     }
     catch ( winplus::Error const & e )
     {
-        AfxGetMainWnd()->FatalError( e.what(), _T("æ•°æ®åº“é”™è¯¯") );
+        AfxGetMainWnd()->FatalError( e.what(), _T("Êı¾İ¿â´íÎó") );
     }
     return false;
 }
@@ -829,7 +829,7 @@ bool DeleteAccount( eiendb::Database & db, int userId, CString const & myName )
     }
     catch ( winplus::Error const & e )
     {
-        AfxGetMainWnd()->FatalError( e.what(), _T("æ•°æ®åº“é”™è¯¯") );
+        AfxGetMainWnd()->FatalError( e.what(), _T("Êı¾İ¿â´íÎó") );
     }
     return false;
 }
@@ -858,7 +858,7 @@ CString GetCorrectAccountMyName( eiendb::Database & db, int userId, CString cons
     }
     catch ( winplus::Error const & e )
     {
-        AfxGetMainWnd()->FatalError( e.what(), _T("æ•°æ®åº“é”™è¯¯") );
+        AfxGetMainWnd()->FatalError( e.what(), _T("Êı¾İ¿â´íÎó") );
     }
     return result;
 }
@@ -879,7 +879,7 @@ int LoadTableNames( eiendb::Database & db, winplus::StringArray * tableNames, wi
     }
     catch ( winplus::Error const & e )
     {
-        AfxGetMainWnd()->FatalError( e.what(), _T("æ•°æ®åº“é”™è¯¯") );
+        AfxGetMainWnd()->FatalError( e.what(), _T("Êı¾İ¿â´íÎó") );
     }
     return count;
 }
@@ -899,7 +899,7 @@ int DumpDDL( eiendb::Database & db, winplus::String * ddl, winplus::String const
     }
     catch ( winplus::Error const & e )
     {
-        AfxGetMainWnd()->FatalError( e.what(), _T("æ•°æ®åº“é”™è¯¯") );
+        AfxGetMainWnd()->FatalError( e.what(), _T("Êı¾İ¿â´íÎó") );
     }
     return count;
 }
@@ -919,7 +919,7 @@ bool IsBrowserExeName( eiendb::Database & db, CString const & exeName, CString *
     }
     catch ( winplus::Error const & e )
     {
-        AfxGetMainWnd()->FatalError( e.what(), _T("æ•°æ®åº“é”™è¯¯") );
+        AfxGetMainWnd()->FatalError( e.what(), _T("Êı¾İ¿â´íÎó") );
     }
     return ret;
 }

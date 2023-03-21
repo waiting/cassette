@@ -188,4 +188,7 @@
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>
+  <ItemGroup>
+    <Media Include="..\res\se_selected.wav" />
+  </ItemGroup>
 </Project>
