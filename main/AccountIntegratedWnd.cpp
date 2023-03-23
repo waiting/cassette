@@ -8,10 +8,19 @@
 std::map<HWND, AccountIntegratedWnd *> AccountIntegratedWnd::m_hasDisplayed;
 
 // AccountIntegratedWnd -------------------------------------------------------------------
-AccountIntegratedWnd::AccountIntegratedWnd( CWnd * pParentWnd, LPCTSTR lpszWindowName, const RECT& rect )
+AccountIntegratedWnd::AccountIntegratedWnd( CWnd * pParentWnd, LPCTSTR lpszWindowName, const RECT& rect ) :
+    m_primaryFont( L"宋体", 24, 0, UnitPixel ),
+    m_penBlack( Color( 0, 0, 0 ) ),
+    m_penHalfWhite( Color( 128, 255, 255, 255 ), 0.5f ),
+    m_penWhite( Color( 255, 255, 255 ) ),
+    m_brushHalfWhite( Color( 64, 255, 255, 255 ) ),
+    m_brushBlack( Color( 0, 0, 0 ) ),
+    m_brushWhite( Color( 255, 255, 255 ) )
 {
     m_ptCurMouse = CPoint( -100, -100 );
     m_radiusMouseCircle = 8;
+    m_sfHVCenter.SetAlignment(StringAlignmentCenter);
+    m_sfHVCenter.SetLineAlignment(StringAlignmentCenter);
 
     CWnd::CreateEx( 0, AfxRegisterWndClass( CS_HREDRAW | CS_VREDRAW ), lpszWindowName, WS_POPUP | WS_CAPTION | WS_SYSMENU, rect, pParentWnd, 0, NULL );
     AddDisplayedWnd( pParentWnd->GetSafeHwnd(), this );
@@ -29,11 +38,11 @@ void AccountIntegratedWnd::RefreshAllCreate()
     // 创建缓冲图
     //m_memCanvas.create( NULL, m_rcClient.Width(), m_rcClient.Height() );
     m_memCanvas.create( m_rcClient.Width(), m_rcClient.Height() );
-    m_gCanvas = std::auto_ptr<Graphics>( new Graphics(m_memCanvas) );
+    m_gCanvas.attachNew( new Graphics(m_memCanvas) );
     m_gCanvas->SetSmoothingMode(SmoothingModeAntiAlias);
     m_gCanvas->SetTextRenderingHint(TextRenderingHintAntiAlias);
 
-    //作图
+    // 作图
     MakeDraw();
 }
 
@@ -53,16 +62,12 @@ void AccountIntegratedWnd::MakeDraw()
     int x, y;
     x = m_ptCurMouse.x - m_radiusMouseCircle / 2;
     y = m_ptCurMouse.y - m_radiusMouseCircle / 2;
-    m_gCanvas->FillEllipse( &SolidBrush( Color(64,255,255,255) ), x, y, m_radiusMouseCircle, m_radiusMouseCircle );
-    m_gCanvas->DrawEllipse( &Pen( Color(128,255,255,255), 0.5f ), x, y, m_radiusMouseCircle, m_radiusMouseCircle );
+    m_gCanvas->FillEllipse( &m_brushHalfWhite, x, y, m_radiusMouseCircle, m_radiusMouseCircle );
+    m_gCanvas->DrawEllipse( &m_penHalfWhite, x, y, m_radiusMouseCircle, m_radiusMouseCircle );
 
-    Gdiplus::Font font( L"宋体", 24, 0, UnitPixel );
-    StringFormat fmt;
-    fmt.SetAlignment(StringAlignmentCenter);
-    fmt.SetLineAlignment(StringAlignmentCenter);
 
     RectF outRect( 0, 0, m_rcClient.Width(), 40 );
-    DrawShadowString( _T("账户信息查看"), font, outRect, fmt, &m_captionRect );
+    DrawShadowString( _T("账户信息查看"), m_primaryFont, outRect, m_sfHVCenter, &m_captionRect );
 
     // 画内容背景
     RectF rcContentBg( 10, 40, m_rcClient.Width() - 20, m_rcClient.Height() - 40 - 10 );
@@ -162,12 +167,13 @@ int AccountIntegratedWnd::OnCreate( LPCREATESTRUCT lpCreateStruct )
     if ( CWnd::OnCreate(lpCreateStruct) == -1 )
         return -1;
 
-    //设置透明度
+    // 设置透明度
     //SetLayeredWindowAttributes( 0, 255, LWA_ALPHA );
-    //载入背景图
-    m_loadedBgImg = std::auto_ptr<Bitmap>( new Bitmap( AfxGetApp()->m_hInstance, MAKEINTRESOURCEW(IDR_INTEGRATEDBKIMG) ) );
 
-    RefreshAllCreate();
+    // 载入背景图
+    m_loadedBgImg.attachNew( new Bitmap( AfxGetApp()->m_hInstance, MAKEINTRESOURCEW(IDR_INTEGRATEDBKIMG) ) );
+
+    this->RefreshAllCreate();
 
     m_timer1.create( *this, 100 );
     return 0;

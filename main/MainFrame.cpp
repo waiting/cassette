@@ -603,7 +603,7 @@ void MainFrame::DoIntelligentHotkey()
     AccountCate cate;
     if ( isBrowser ) // 若是浏览器，说明是网站
     {
-        int pos = curWndTitle.rfind( _T(" - ") );
+        int pos = (int)curWndTitle.rfind( _T(" - ") );
         if ( pos != -1 )
         {
             curWndTitle = curWndTitle.substr( 0, pos );
