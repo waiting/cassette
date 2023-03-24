@@ -69,6 +69,7 @@ protected:
     CPoint m_ptCurMouse; // 当前鼠标位置
     int m_radiusMouseCircle; // 鼠标特效圆形半径
     RectF m_captionRect; // 标题矩形
+    RectF m_contentRect; // 内容矩形
 
     Gdiplus::Font m_primaryFont; // 主字体
     StringFormat m_sfHVCenter; // 字符串输出对齐格式

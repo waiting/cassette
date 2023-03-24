@@ -70,12 +70,27 @@ void AccountIntegratedWnd::MakeDraw()
     DrawShadowString( _T("账户信息查看"), m_primaryFont, outRect, m_sfHVCenter, &m_captionRect );
 
     // 画内容背景
-    RectF rcContentBg( 10, 40, m_rcClient.Width() - 20, m_rcClient.Height() - 40 - 10 );
-    DrawBackground(rcContentBg);
-    DrawShadowFrame(rcContentBg);
+    m_contentRect = RectF( 10, 40, m_rcClient.Width() - 20, m_rcClient.Height() - 40 - 10 );
+    DrawBackground(m_contentRect);
+    //DrawShadowFrame(m_contentRect);
 
     // 画账户信息
+    // std::cout << m_contentRect.Height / 5 << std::endl;
 
+    // 行高
+    constexpr int lineHeight = 28;
+    // 边距
+    constexpr int padding = 4;
+    Pen *penWhite = m_penHalfWhite.Clone();
+    penWhite->SetDashStyle(DashStyleDot);
+    for ( int height = lineHeight; height < m_contentRect.Height; height += lineHeight )
+    {
+        m_gCanvas->DrawLine( penWhite, m_contentRect.GetLeft() + padding, m_contentRect.GetTop() + height, m_contentRect.GetRight() - 1 - padding, m_contentRect.GetTop() + height );
+
+        RectF rect;
+
+    }
+    delete penWhite;
 }
 
 void AccountIntegratedWnd::DrawShadowString( winplus::String const & s, Gdiplus::Font const & font, RectF const & layoutRect, StringFormat const & fmt, RectF * boundingRect )
@@ -99,7 +114,7 @@ void AccountIntegratedWnd::DrawShadowString( winplus::String const & s, Gdiplus:
         &font,
         RectF( layoutRect.X + 1, layoutRect.Y + 1, layoutRect.Width, layoutRect.Height ),
         &fmt,
-        &SolidBrush( Color( 0, 0, 0 ) )
+        &m_brushBlack
     );
     
     m_gCanvas->DrawString(
@@ -108,22 +123,19 @@ void AccountIntegratedWnd::DrawShadowString( winplus::String const & s, Gdiplus:
         &font,
         layoutRect,
         &fmt,
-        &SolidBrush( Color( 255, 255, 255 ) )
+        &m_brushWhite
     );
 }
 
 void AccountIntegratedWnd::DrawShadowFrame( RectF const & rect )
 {
-    //创建一个的画笔
-    Pen pen1( Color( 0, 0, 0 ) );
-    winplus::DrawRoundRectangle( *m_gCanvas.get(), pen1, RectF( rect.X+1,rect.Y+1,rect.Width,rect.Height ), 10 );
-    Pen pen2( Color( 255, 255, 255 ) ); 
-    winplus::DrawRoundRectangle( *m_gCanvas.get(), pen2, rect, 10 );
+    winplus::DrawRoundRectangle( *m_gCanvas.get(), m_penBlack, RectF( rect.X + 1, rect.Y + 1, rect.Width, rect.Height ), 10.0 );
+    winplus::DrawRoundRectangle( *m_gCanvas.get(), m_penWhite, rect, 10.0 );
 }
 
 void AccountIntegratedWnd::DrawBackground( RectF const & rect )
 {
-    winplus::FillRoundRectangle( *m_gCanvas.get(), SolidBrush( Color( 64, 255, 255, 255 ) ), rect, 10 );
+    winplus::FillRoundRectangle( *m_gCanvas.get(), m_brushHalfWhite, rect, 10.0 );
 }
 
 void AccountIntegratedWnd::PostNcDestroy()
@@ -241,8 +253,12 @@ void AccountIntegratedWnd::OnMouseMove( UINT nFlags, CPoint point )
 
 void AccountIntegratedWnd::OnLButtonUp( UINT nFlags, CPoint point )
 {
-    std::cout << "AccountIntegratedWnd::OnLButtonUp()\n";
-    PlaySound( MAKEINTRESOURCE(IDR_WAVE_SELECTED), AfxGetApp()->m_hInstance, SND_RESOURCE | SND_ASYNC );
+    std::cout << "AccountIntegratedWnd::OnLButtonUp(" << point.x << ", " << point.y << ")\n";
+
+    if ( m_contentRect.Contains( point.x, point.y ) )
+    {
+        PlaySound( MAKEINTRESOURCE(IDR_WAVE_SELECTED), AfxGetApp()->m_hInstance, SND_RESOURCE | SND_ASYNC );
+    }
     //CWnd::OnLButtonUp( nFlags, point );
 }
 
