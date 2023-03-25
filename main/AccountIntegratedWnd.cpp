@@ -2,6 +2,7 @@
 #include "Cassette.h"
 #include "CassetteApp.h"
 #include "AccountIntegratedWnd.h"
+#include "AccountEditingDlg.h"
 
 #include <playsoundapi.h>
 
@@ -30,11 +31,19 @@ AccountIntegratedWnd::~AccountIntegratedWnd()
 {
 }
 
+void AccountIntegratedWnd::SetAccountsInfo( AccountCate const & cate, AccountArray const & accounts )
+{
+    m_cate = cate;
+    m_accounts.Copy(accounts);
+}
+
 void AccountIntegratedWnd::RefreshAllCreate()
 {
     // 创建相关对象
     GetClientRect(&m_rcClient);
-    
+    // 载入背景图
+    m_loadedBgImg.attachNew( new Bitmap( AfxGetApp()->m_hInstance, MAKEINTRESOURCEW(IDR_INTEGRATEDBKIMG) ) );
+    m_timer1.create( *this, 100 );
     // 创建缓冲图
     //m_memCanvas.create( NULL, m_rcClient.Width(), m_rcClient.Height() );
     m_memCanvas.create( m_rcClient.Width(), m_rcClient.Height() );
@@ -46,12 +55,6 @@ void AccountIntegratedWnd::RefreshAllCreate()
     MakeDraw();
 }
 
-void AccountIntegratedWnd::SetAccountsInfo( AccountCate const & cate, AccountArray const & accounts )
-{
-    m_cate = cate;
-    m_accounts.Copy(accounts);
-}
-
 // 作画逻辑
 void AccountIntegratedWnd::MakeDraw()
 {
@@ -59,36 +62,57 @@ void AccountIntegratedWnd::MakeDraw()
     m_gCanvas->DrawImage( m_loadedBgImg.get(), 0, 0, 0, 0, m_loadedBgImg->GetWidth(), m_loadedBgImg->GetHeight(), UnitPixel );
 
     // 画鼠标特效
-    int x, y;
-    x = m_ptCurMouse.x - m_radiusMouseCircle / 2;
-    y = m_ptCurMouse.y - m_radiusMouseCircle / 2;
-    m_gCanvas->FillEllipse( &m_brushHalfWhite, x, y, m_radiusMouseCircle, m_radiusMouseCircle );
-    m_gCanvas->DrawEllipse( &m_penHalfWhite, x, y, m_radiusMouseCircle, m_radiusMouseCircle );
+    //int x, y;
+    //x = m_ptCurMouse.x - m_radiusMouseCircle / 2;
+    //y = m_ptCurMouse.y - m_radiusMouseCircle / 2;
+    //m_gCanvas->FillEllipse( &m_brushHalfWhite, x, y, m_radiusMouseCircle, m_radiusMouseCircle );
+    //m_gCanvas->DrawEllipse( &m_penHalfWhite, x, y, m_radiusMouseCircle, m_radiusMouseCircle );
 
-
-    RectF outRect( 0, 0, m_rcClient.Width(), 40 );
-    DrawShadowString( _T("账户信息查看"), m_primaryFont, outRect, m_sfHVCenter, &m_captionRect );
+    // 画主标题
+    DrawShadowString( _T("账户信息查看"), m_primaryFont, RectF( 0, 0, m_rcClient.Width(), 40 ), m_sfHVCenter, &m_captionRect );
 
     // 画内容背景
     m_contentRect = RectF( 10, 40, m_rcClient.Width() - 20, m_rcClient.Height() - 40 - 10 );
-    DrawBackground(m_contentRect);
+    //DrawBackground(m_contentRect);
     //DrawShadowFrame(m_contentRect);
 
     // 画账户信息
     // std::cout << m_contentRect.Height / 5 << std::endl;
-
-    // 行高
-    constexpr int lineHeight = 28;
+    int nAcountsCount = (int)m_accounts.GetCount();
+    int i = 0;
     // 边距
     constexpr int padding = 4;
+    // 行高
+    constexpr int lineHeight = 68;
     Pen *penWhite = m_penHalfWhite.Clone();
     penWhite->SetDashStyle(DashStyleDot);
-    for ( int height = lineHeight; height < m_contentRect.Height; height += lineHeight )
+    for ( int height = lineHeight; height < m_contentRect.Height && i < nAcountsCount; height += lineHeight, i++ )
     {
         m_gCanvas->DrawLine( penWhite, m_contentRect.GetLeft() + padding, m_contentRect.GetTop() + height, m_contentRect.GetRight() - 1 - padding, m_contentRect.GetTop() + height );
 
-        RectF rect;
+        RectF accountInfoRect( m_contentRect.X + padding, m_contentRect.Y + height - (lineHeight - padding), m_contentRect.Width - 1 - padding - padding, (lineHeight - padding) );
 
+        SolidBrush brushHalfBlack( Color( 32, 0, 0, 0 ) );
+        m_gCanvas->FillRectangle( &brushHalfBlack, accountInfoRect );
+        StringFormat fmt;
+        fmt.SetLineAlignment(StringAlignmentNear);
+        Gdiplus::Font font( L"宋体", 10 );
+
+        RectF targetRect = accountInfoRect;
+        targetRect.Inflate( -padding, -padding );
+        RectF outRect;
+        DrawShadowString( CStringToString(m_accounts[i].m_myName), font, targetRect, fmt, &outRect );
+
+        RectF targetRect1 = targetRect;
+        targetRect1.Offset( 0, outRect.Height + padding );
+        DrawShadowString( "" + CStringToString(m_accounts[i].m_accountName), font, targetRect1, fmt, &outRect );
+
+        RectF targetRect2 = targetRect1;
+        targetRect2.Offset( 0, outRect.Height + padding );
+        DrawShadowString( "" + CStringToString(m_accounts[i].m_accountPwd), font, targetRect2, fmt, &outRect );
+
+        //winplus::UnicodeString strMyName = winplus::StringToUnicode( CStringToString(m_accounts[i].m_myName) );
+        //m_gCanvas->DrawString( strMyName.c_str(), strMyName.length(), &font, rect, &fmt, &m_brushBlack );
     }
     delete penWhite;
 }
@@ -182,12 +206,8 @@ int AccountIntegratedWnd::OnCreate( LPCREATESTRUCT lpCreateStruct )
     // 设置透明度
     //SetLayeredWindowAttributes( 0, 255, LWA_ALPHA );
 
-    // 载入背景图
-    m_loadedBgImg.attachNew( new Bitmap( AfxGetApp()->m_hInstance, MAKEINTRESOURCEW(IDR_INTEGRATEDBKIMG) ) );
-
     this->RefreshAllCreate();
 
-    m_timer1.create( *this, 100 );
     return 0;
 }
 
@@ -257,7 +277,7 @@ void AccountIntegratedWnd::OnLButtonUp( UINT nFlags, CPoint point )
 
     if ( m_contentRect.Contains( point.x, point.y ) )
     {
-        PlaySound( MAKEINTRESOURCE(IDR_WAVE_SELECTED), AfxGetApp()->m_hInstance, SND_RESOURCE | SND_ASYNC );
+        //PlaySound( MAKEINTRESOURCE(IDR_WAVE_SELECTED), AfxGetApp()->m_hInstance, SND_RESOURCE | SND_ASYNC );
     }
     //CWnd::OnLButtonUp( nFlags, point );
 }

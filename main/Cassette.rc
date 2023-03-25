@@ -241,7 +241,7 @@ END
 IDD_USER_LOGIN DIALOGEX 0, 0, 152, 115
 STYLE DS_SETFONT | DS_MODALFRAME | WS_MINIMIZEBOX | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "用户登录"
-FONT 9, "宋体"
+FONT 9, "宋体", 0, 0, 0x1
 BEGIN
     ICON            IDI_ICON2,IDC_STATIC,20,4,20,20,0,WS_EX_TRANSPARENT
     CTEXT           "用户登录",IDC_LABEL_LOGIN,45,0,85,30,SS_CENTERIMAGE
@@ -401,8 +401,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 0,1,1,0
- PRODUCTVERSION 0,1,1,0
+ FILEVERSION 0,1,2,0
+ PRODUCTVERSION 0,1,2,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -418,13 +418,13 @@ BEGIN
         BLOCK "080404b0"
         BEGIN
             VALUE "CompanyName", "X86PRO.COM"
-            VALUE "FileDescription", "Cassette 账户管理系统 v0.1.1"
-            VALUE "FileVersion", "0.1.1.0"
+            VALUE "FileDescription", "Cassette 账户管理系统 v0.1.2"
+            VALUE "FileVersion", "0.1.2.0"
             VALUE "InternalName", "Cassette"
             VALUE "LegalCopyright", "(C) X86PRO.COM 版权所有 2013-2023."
             VALUE "OriginalFilename", "Cassette.exe"
             VALUE "ProductName", "Cassette 账户管理系统"
-            VALUE "ProductVersion", "0.1.1.0"
+            VALUE "ProductVersion", "0.1.2.0"
         END
     END
     BLOCK "VarFileInfo"

@@ -51,6 +51,17 @@ private:
     DISABLE_OBJECT_COPY(SetNullScopeOut)
 };
 
+// winplus::String和CString字符串互相转换
+inline winplus::String CStringToString( CString const & str )
+{
+    return winplus::String( str.GetString(), str.GetLength() );
+}
+
+inline CString StringToCString( winplus::String const & str )
+{
+    return CString( str.c_str(), (int)str.length() );
+}
+
 // 解释文本中的$xxx$程序自定变量
 winplus::String ExplainCustomVars( winplus::String const & str );
 

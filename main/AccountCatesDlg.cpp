@@ -126,15 +126,28 @@ void AccountCatesDlg::DoAdd( CWnd * parent, winplus::Mixed * cate )
     }
 }
 
-//支持|符号
-int FindEx( CString const & text, CString const & pattern, int * patternIndex = NULL )
+// 搜索关键字，输出匹配的关键字
+size_t SearchKeywords( CString const & text, winplus::StringArray * pArrKeywords )
 {
-    winplus::StringArray subs;
-    winplus::StrSplit( (LPCTSTR)pattern, _T("|"), &subs );
-    winplus::MultiMatch mm( subs, NULL );
-    winplus::MultiMatch::MatchResult r = mm.search( (LPCTSTR)text );
-    ASSIGN_PTR(patternIndex) = r.item;
-    return r.pos;
+    if ( pArrKeywords->size() < 1 ) return 0;
+    winplus::StringArray matchedKeywords;
+    winplus::ssize_t offset = 0;
+    winplus::MultiMatch::MatchResult r;
+    do
+    {
+        winplus::MultiMatch mm( *pArrKeywords, NULL );
+        r = mm.search( CStringToString(text), offset );
+        if ( r.pos != winplus::npos )
+        {
+            matchedKeywords.push_back(mm.getMatchItem(r.item));
+            offset = r.pos + mm.getMatchItem(r.item).length();
+            pArrKeywords->erase( pArrKeywords->begin() + r.item );
+        }
+    }
+    while ( r.pos != winplus::npos );
+
+    *pArrKeywords = matchedKeywords;
+    return pArrKeywords->size();
 }
 
 int AccountCatesDlg::GetCateIndexMatchWndTitle( CString const & wndTitle, bool isBrowser ) const
@@ -143,16 +156,16 @@ int AccountCatesDlg::GetCateIndexMatchWndTitle( CString const & wndTitle, bool i
     std::vector<winplus::StringArray> keywordsArr;
     int i, j;
     int catesCount = m_cates.GetSize(); // 种类数
-    int oneItemKeywordMaxCount = 0; // 单个种类关键词最大数
+
     for ( i = 0; i < catesCount; ++i )
     {
         winplus::StringArray keywords;
-        int m = (int)winplus::StrSplit( (LPCTSTR)m_cates[i].m_keywords, _T(","), &keywords );
-        if ( m > oneItemKeywordMaxCount ) oneItemKeywordMaxCount = m;
+        winplus::StrSplit( CStringToString(m_cates[i].m_keywords), _T(","), &keywords );
         keywordsArr.push_back(keywords);
     }
 
-    std::vector<int> checkCateIndexs; // 待检测的CateIndex
+    // 待检测的CateIndex
+    std::vector<int> checkCateIndexs;
     for ( i = 0; i < catesCount; ++i )
     {
         if ( isBrowser )
@@ -171,22 +184,18 @@ int AccountCatesDlg::GetCateIndexMatchWndTitle( CString const & wndTitle, bool i
         }
     }
 
-    for ( i = 0; i < oneItemKeywordMaxCount; ++i )
+    // 应该按每个种类的关键字搜寻标题，找到关键字匹配最多的种类
+    for ( j = 0; j < checkCateIndexs.size(); )
     {
-        for ( j = 0; j < checkCateIndexs.size(); )
+        winplus::StringArray & keywords = keywordsArr[checkCateIndexs[j]];
+        if ( SearchKeywords( wndTitle, &keywords ) == 0 )
         {
-            winplus::StringArray & keywords = keywordsArr[checkCateIndexs[j]];
-            if ( i < keywords.size() )
-            {
-                if ( FindEx( wndTitle, keywords[i].c_str() ) == -1 )
-                {
-                    checkCateIndexs.erase( checkCateIndexs.begin() + j );
-                    continue;
-                }
-            }
-            ++j;
+            checkCateIndexs.erase( checkCateIndexs.begin() + j );
+            continue;
         }
+        ++j;
     }
+
     // 判断所属种类索引
     if ( checkCateIndexs.size() == 0 )
     {
@@ -194,20 +203,19 @@ int AccountCatesDlg::GetCateIndexMatchWndTitle( CString const & wndTitle, bool i
     }
     else
     {
-        int m = 0, mIndex = 0;
-        // 选出关键字最多的那个
+        int m = 0, mIndex = -1;
+        // 选出匹配关键字最多的那个
         for ( i = 0; i < checkCateIndexs.size(); ++i )
         {
             if ( keywordsArr[checkCateIndexs[i]].size() > m )
             {
                 m = (int)keywordsArr[checkCateIndexs[i]].size();
-                mIndex = i;
+                mIndex = checkCateIndexs[i];
             }
         }
 
-        return checkCateIndexs[mIndex];
+        return mIndex;
     }
-    return -1;
 }
 
 /////////////////////////////////////////////////////////////////////////////

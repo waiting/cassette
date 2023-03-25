@@ -600,7 +600,7 @@ void MainFrame::DoIntelligentHotkey()
     bool isBrowser = IsBrowserExeName( g_theApp.GetDatabase(), exeName.c_str(), &browserTitle );
     winplus::String curWndTitle = winplus::Window_GetText( pCurWnd->GetSafeHwnd() ); // 当前窗口标题
     
-    AccountCate cate;
+    AccountCate newCate;
     if ( isBrowser ) // 若是浏览器，说明是网站
     {
         int pos = (int)curWndTitle.rfind( _T(" - ") );
@@ -608,15 +608,15 @@ void MainFrame::DoIntelligentHotkey()
         {
             curWndTitle = curWndTitle.substr( 0, pos );
         }
-        cate.m_cateName = curWndTitle.c_str();
-        cate.m_startup = _T("网站");
+        newCate.m_cateName = StringToCString(curWndTitle);
+        newCate.m_startup = _T("网站");
     }
     else // 否则为软件
     {
-        cate.m_cateName = curWndTitle.c_str();
-        cate.m_startup = _T("软件");
-        cate.m_url = exePath.c_str();
-        cate.m_icoPath = (exePath + _T(",0")).c_str();
+        newCate.m_cateName = StringToCString(curWndTitle);
+        newCate.m_startup = _T("软件");
+        newCate.m_url = StringToCString(exePath);
+        newCate.m_icoPath = StringToCString( exePath + _T(",0") );
     }
 
     // 根据窗口标题和关键字匹配以及是否为浏览器判断是哪个种类
@@ -628,10 +628,10 @@ void MainFrame::DoIntelligentHotkey()
         winplus::StringArray autoKeywords;
         if ( g_theApp.GetWordslib() )
             g_theApp.GetWordslib()->splitWords( curWndTitle, &autoKeywords );
-        cate.m_keywords = winplus::StrJoin( _T(","), autoKeywords ).c_str();
+        newCate.m_keywords = winplus::StrJoin( _T(","), autoKeywords ).c_str();
 
         winplus::Mixed cateFields;
-        cate.assignTo(&cateFields,"name,desc,type,url,icon,startup,keywords");
+        newCate.assignTo(&cateFields,"name,desc,type,url,icon,startup,keywords");
 
         m_catesDlg.DoAdd( pCurWnd, &cateFields );
     }
@@ -669,14 +669,14 @@ void MainFrame::DoIntelligentHotkey()
             AccountIntegratedWnd * pIntegratedWnd = NULL;
             if ( pIntegratedWnd = AccountIntegratedWnd::GetDisplayedWnd(*pCurWnd) )
             {
-                //pIntegratedWnd->RefreshAccountsInfo( AccountCate const & cate, AccountArray const & accounts );
+                pIntegratedWnd->SetAccountsInfo( m_catesDlg.m_cates[cateIndex], accounts );
                 pIntegratedWnd->SetWindowPos( NULL, rcIntegratedWnd.left, rcIntegratedWnd.top, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE );
                 pCurWnd->SetWindowPos( &wndTop, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE );
             }
             else
             {
                 pIntegratedWnd = new AccountIntegratedWnd( pCurWnd, m_catesDlg.m_cates[cateIndex].m_cateName, rcIntegratedWnd );
-                //pIntegratedWnd->RefreshAccountsInfo( AccountCate const & cate, AccountArray const & accounts );
+                pIntegratedWnd->SetAccountsInfo( m_catesDlg.m_cates[cateIndex], accounts );
                 pIntegratedWnd->UpdateWindow();
                 pIntegratedWnd->ShowWindow(SW_NORMAL);
                 pCurWnd->SetWindowPos( &wndTop, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE );

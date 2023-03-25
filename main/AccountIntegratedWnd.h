@@ -45,11 +45,12 @@ public:
     AccountIntegratedWnd( CWnd * pParentWnd, LPCTSTR lpszWindowName, const RECT& rect );
     virtual ~AccountIntegratedWnd();
 
+    // 重新显示账户信息
+    void SetAccountsInfo( AccountCate const & cate, AccountArray const & accounts );
+
 protected:
     // 重新创建所有相关对象
     void RefreshAllCreate();
-    // 重新显示账户信息
-    void SetAccountsInfo( AccountCate const & cate, AccountArray const & accounts );
     // 作画
     void MakeDraw();
 
