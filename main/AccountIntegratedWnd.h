@@ -7,8 +7,8 @@
 #endif // _MSC_VER > 1000
 
 /////////////////////////////////////////////////////////////////////////////
-// 账户综合窗口，显示一个账户种类下的账户
-// AccountIntegratedWnd window
+
+// 账户信息窗口，显示一个账户种类下的账户
 class AccountIntegratedWnd : public CWnd
 {
 protected:
@@ -16,19 +16,22 @@ protected:
     static std::map<HWND, AccountIntegratedWnd *> m_hasDisplayed;
 
 public:
-    static AccountIntegratedWnd * GetDisplayedWnd( HWND hWnd )
+    // 获取指定窗口上的账户信息窗口
+    static AccountIntegratedWnd * GetAccountIntegratedWnd( HWND hWnd )
     {
         if ( m_hasDisplayed.find(hWnd) != m_hasDisplayed.end() )
             return m_hasDisplayed[hWnd];
         return NULL;
     }
 
-    static void AddDisplayedWnd( HWND hWnd, AccountIntegratedWnd * pIntegratedWnd )
+    // 设置指定窗口上的账户信息窗口
+    static void SetAccountIntegratedWnd( HWND hWnd, AccountIntegratedWnd * pIntegratedWnd )
     {
         m_hasDisplayed[hWnd] = pIntegratedWnd;
     }
 
-    static void DelDisplayedWnd( AccountIntegratedWnd * pIntegratedWnd )
+    // 删除指定窗口上的账户信息窗口
+    static void DelAccountIntegratedWnd( AccountIntegratedWnd * pIntegratedWnd )
     {
         std::map<HWND, AccountIntegratedWnd *>::iterator it;
         for ( it = m_hasDisplayed.begin(); it != m_hasDisplayed.end(); ++it )
@@ -58,13 +61,43 @@ protected:
 
     /* 账户信息 */
     AccountCate m_cate;
-    AccountArray m_accounts;
+    struct AccountContext
+    {
+        // 账户
+        Account account;
+        // 账户绘画区域
+        RectF accountRect;
+        // 账户字段显示区域
+        RectF accountField0Rect;
+        RectF accountField1Rect;
+        // 是否选中
+        //bool isSelected;
+        // 是否显示密码
+        bool isPwdShown;
+        AccountContext()
+        {
+            this->_zeroInit();
+        }
+        AccountContext( Account const & account ) : account(account)
+        {
+            this->_zeroInit();
+        }
+        void _zeroInit()
+        {
+            using MyRect = decltype(accountRect);
+            ZeroMemory( &accountRect, sizeof(MyRect) );
+            ZeroMemory( &accountField0Rect, sizeof(MyRect) );
+            ZeroMemory( &accountField1Rect, sizeof(MyRect) );
+            //isSelected = false;
+            isPwdShown = false;
+        }
+    };
+    CArray<AccountContext> m_accounts;
 
     /* 绘图数据 */
     winplus::SimplePointer<Bitmap> m_loadedBgImg; // 背景图
     winplus::SimplePointer<Graphics> m_gCanvas; // 绘图对象
     winplus::MemImage m_memCanvas; // 内存画布
-    //winplus::MemDC m_memCanvas; // 内存画布
 
     CRect m_rcClient; // 客户区矩形
     CPoint m_ptCurMouse; // 当前鼠标位置
@@ -82,18 +115,12 @@ protected:
     SolidBrush m_brushWhite;
 
     /* 封装的特效方法 */
-    // 绘制一个白色阴影文字
-    void DrawShadowString(
-        winplus::String const & s,
-        Gdiplus::Font const & font,
-        RectF const & layoutRect,
-        StringFormat const & fmt,
-        RectF * boundingRect
-    );
-    // 绘制一个白色阴影圆角的框架
-    void DrawShadowFrame( RectF const & rect );
-    // 绘制一个白色圆角背景
-    void DrawBackground( RectF const & rect );
+    // 绘制一个有阴影的文字
+    void DrawShadowString( winplus::String const & str, Gdiplus::Font const & font, Brush const * brushLight, Brush const * brushDark, RectF const & layoutRect, StringFormat const & fmt, RectF * boundingRect );
+    // 绘制一个阴影圆角的框架
+    void DrawShadowFrame( RectF const & rect, Pen const * penLight, Pen const * penDark, float round );
+    // 绘制一个圆角背景色
+    void DrawBackground( RectF const & rect, Brush const * brush, float round );
 
 
     // ClassWizard generated virtual function overrides
@@ -112,12 +139,14 @@ protected:
     afx_msg void OnPaint();
     afx_msg void OnTimer(UINT_PTR nIDEvent);
     afx_msg void OnMouseMove(UINT nFlags, CPoint point);
-    afx_msg void OnLButtonUp( UINT nFlags, CPoint point );
     afx_msg void OnLButtonDown( UINT nFlags, CPoint point );
+    afx_msg void OnLButtonUp( UINT nFlags, CPoint point );
+    afx_msg void OnRButtonDown( UINT nFlags, CPoint point );
+    afx_msg void OnRButtonUp( UINT nFlags, CPoint point );
     //}}AFX_MSG
 
     DECLARE_MESSAGE_MAP()
-
+public:
 };
 
 /////////////////////////////////////////////////////////////////////////////

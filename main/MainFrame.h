@@ -62,9 +62,10 @@ protected:
        当settings为关闭热键时:
          清空先前注册的热键, hotkey忽略 */
     void RefreshHotkey( int hotkey );
+public:
     // 弹出添加账户的对话框
     void DoAddAccount( CWnd * parent, winplus::Mixed & newAccount );
-
+protected:
     // 执行智能热键操作
     void DoIntelligentHotkey();
 

@@ -126,7 +126,7 @@ void AccountCatesDlg::DoAdd( CWnd * parent, winplus::Mixed * cate )
     }
 }
 
-// ËÑË÷¹Ø¼ü×Ö£¬Êä³öÆ¥ÅäµÄ¹Ø¼ü×Ö
+// ËÑË÷¹Ø¼ü×Ö£¬Êä³öÆ¥ÅäµÄ¹Ø¼ü×Ö£¬·µ»Ø¸öÊý
 size_t SearchKeywords( CString const & text, winplus::StringArray * pArrKeywords )
 {
     if ( pArrKeywords->size() < 1 ) return 0;

@@ -249,7 +249,7 @@ void AccountType::assignTo( winplus::Mixed * accountTypeMixed, CString const & f
 
 void AccountType::assign( winplus::Mixed const & accountTypeMixed )
 {
-    int n = accountTypeMixed.getCount();
+    int n = (int)accountTypeMixed.getCount();
     for ( int i = 0; i < n; ++i )
     {
         auto & pr = accountTypeMixed.getPair(i);
@@ -419,7 +419,7 @@ void AccountCate::assignTo( winplus::Mixed * accountCateMixed, CString const & f
 
 void AccountCate::assign( winplus::Mixed const & accountCateMixed )
 {
-    int n = accountCateMixed.getCount();
+    int n = (int)accountCateMixed.getCount();
     for ( int i = 0; i < n; ++i )
     {
         auto & pr = accountCateMixed.getPair(i);
@@ -681,7 +681,7 @@ void Account::assignTo( winplus::Mixed * accountMixed, CString const & fieldName
 
 void Account::assign( winplus::Mixed const & accountMixed )
 {
-    int n = accountMixed.getCount();
+    int n = (int)accountMixed.getCount();
     for ( int i = 0; i < n; ++i )
     {
         auto & pr = accountMixed.getPair(i);

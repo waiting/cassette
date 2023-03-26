@@ -1,10 +1,12 @@
 
 #include "Cassette.h"
 #include "CassetteApp.h"
+#include "MainFrame.h"
 #include "AccountIntegratedWnd.h"
 #include "AccountEditingDlg.h"
 
 #include <playsoundapi.h>
+
 
 std::map<HWND, AccountIntegratedWnd *> AccountIntegratedWnd::m_hasDisplayed;
 
@@ -23,8 +25,11 @@ AccountIntegratedWnd::AccountIntegratedWnd( CWnd * pParentWnd, LPCTSTR lpszWindo
     m_sfHVCenter.SetAlignment(StringAlignmentCenter);
     m_sfHVCenter.SetLineAlignment(StringAlignmentCenter);
 
+    // 创建窗口
     CWnd::CreateEx( 0, AfxRegisterWndClass( CS_HREDRAW | CS_VREDRAW ), lpszWindowName, WS_POPUP | WS_CAPTION | WS_SYSMENU, rect, pParentWnd, 0, NULL );
-    AddDisplayedWnd( pParentWnd->GetSafeHwnd(), this );
+
+    // 加入维护表
+    SetAccountIntegratedWnd( pParentWnd->GetSafeHwnd(), this );
 }
 
 AccountIntegratedWnd::~AccountIntegratedWnd()
@@ -33,19 +38,47 @@ AccountIntegratedWnd::~AccountIntegratedWnd()
 
 void AccountIntegratedWnd::SetAccountsInfo( AccountCate const & cate, AccountArray const & accounts )
 {
+    m_accounts.RemoveAll();
+
     m_cate = cate;
-    m_accounts.Copy(accounts);
+    int nAccountsCount = accounts.GetCount();
+
+    // 边距
+    constexpr int padding = 4;
+    // 项高
+    constexpr int itemHeight = 48;
+    int height = itemHeight;
+    for ( int i = 0; i < nAccountsCount; i++, height += itemHeight )
+    {
+        AccountContext ctx;
+        ctx.account = accounts[i];
+
+        ctx.accountRect = RectF( m_contentRect.X + padding, m_contentRect.Y + height - (itemHeight - padding), m_contentRect.Width - 1 - padding - padding, (itemHeight - padding) );
+        
+        RectF targetRect = ctx.accountRect;
+        targetRect.Height /= 2;
+        targetRect.Inflate( -padding, 0 );
+        ctx.accountField0Rect = targetRect;
+
+        targetRect.Offset( 0, targetRect.Height );
+        ctx.accountField1Rect = targetRect;
+
+        m_accounts.Add(ctx);
+    }
 }
 
 void AccountIntegratedWnd::RefreshAllCreate()
 {
     // 创建相关对象
     GetClientRect(&m_rcClient);
+    // 内容区域
+    m_contentRect = RectF( 10, 40, m_rcClient.Width() - 20, m_rcClient.Height() - 40 - 10 );
+
     // 载入背景图
     m_loadedBgImg.attachNew( new Bitmap( AfxGetApp()->m_hInstance, MAKEINTRESOURCEW(IDR_INTEGRATEDBKIMG) ) );
     m_timer1.create( *this, 100 );
+
     // 创建缓冲图
-    //m_memCanvas.create( NULL, m_rcClient.Width(), m_rcClient.Height() );
     m_memCanvas.create( m_rcClient.Width(), m_rcClient.Height() );
     m_gCanvas.attachNew( new Graphics(m_memCanvas) );
     m_gCanvas->SetSmoothingMode(SmoothingModeAntiAlias);
@@ -68,58 +101,58 @@ void AccountIntegratedWnd::MakeDraw()
     //m_gCanvas->FillEllipse( &m_brushHalfWhite, x, y, m_radiusMouseCircle, m_radiusMouseCircle );
     //m_gCanvas->DrawEllipse( &m_penHalfWhite, x, y, m_radiusMouseCircle, m_radiusMouseCircle );
 
+    SolidBrush brushHalfBlack( Color( 32, 0, 0, 0 ) );
+    Gdiplus::Font font( L"微软雅黑", 10, 0, UnitPoint );
+    StringFormat fmt;
+    fmt.SetLineAlignment(StringAlignmentFar);
+
     // 画主标题
-    DrawShadowString( _T("账户信息查看"), m_primaryFont, RectF( 0, 0, m_rcClient.Width(), 40 ), m_sfHVCenter, &m_captionRect );
+    DrawShadowString( _T("点此添加账户"), m_primaryFont, &m_brushWhite, &m_brushBlack, RectF( 0, 4, m_rcClient.Width(), 40 ), m_sfHVCenter, &m_captionRect );
 
     // 画内容背景
-    m_contentRect = RectF( 10, 40, m_rcClient.Width() - 20, m_rcClient.Height() - 40 - 10 );
-    //DrawBackground(m_contentRect);
+    DrawBackground( m_contentRect, &m_brushHalfWhite, 8 );
     //DrawShadowFrame(m_contentRect);
 
     // 画账户信息
-    // std::cout << m_contentRect.Height / 5 << std::endl;
     int nAcountsCount = (int)m_accounts.GetCount();
     int i = 0;
     // 边距
     constexpr int padding = 4;
     // 行高
-    constexpr int lineHeight = 68;
+    constexpr int lineHeight = 48;
     Pen *penWhite = m_penHalfWhite.Clone();
     penWhite->SetDashStyle(DashStyleDot);
     for ( int height = lineHeight; height < m_contentRect.Height && i < nAcountsCount; height += lineHeight, i++ )
     {
-        m_gCanvas->DrawLine( penWhite, m_contentRect.GetLeft() + padding, m_contentRect.GetTop() + height, m_contentRect.GetRight() - 1 - padding, m_contentRect.GetTop() + height );
+        AccountContext & accountCtx = m_accounts[i];
 
-        RectF accountInfoRect( m_contentRect.X + padding, m_contentRect.Y + height - (lineHeight - padding), m_contentRect.Width - 1 - padding - padding, (lineHeight - padding) );
+        m_gCanvas->DrawLine( penWhite, accountCtx.accountRect.GetLeft(), accountCtx.accountRect.GetBottom(), accountCtx.accountRect.GetRight(), accountCtx.accountRect.GetBottom() );
 
-        SolidBrush brushHalfBlack( Color( 32, 0, 0, 0 ) );
-        m_gCanvas->FillRectangle( &brushHalfBlack, accountInfoRect );
-        StringFormat fmt;
-        fmt.SetLineAlignment(StringAlignmentNear);
-        Gdiplus::Font font( L"宋体", 10 );
+        m_gCanvas->FillRectangle( &brushHalfBlack, accountCtx.accountRect );
 
-        RectF targetRect = accountInfoRect;
-        targetRect.Inflate( -padding, -padding );
-        RectF outRect;
-        DrawShadowString( CStringToString(m_accounts[i].m_myName), font, targetRect, fmt, &outRect );
+        //DrawBackground( accountCtx.accountField0Rect, &SolidBrush( Color() ), 2 );
+        DrawShadowString( CStringToString(accountCtx.account.m_myName), font, &m_brushWhite, &brushHalfBlack, accountCtx.accountField0Rect, fmt, NULL );
+        //DrawBackground( accountCtx.accountNameRect, &SolidBrush( Color() ), 2 );
+        if ( accountCtx.isPwdShown )
+        {
+            DrawShadowString( CStringToString(accountCtx.account.m_accountPwd), font, &SolidBrush( Color( 0, 255, 0 ) ), &brushHalfBlack, accountCtx.accountField1Rect, fmt, NULL );
+        }
+        else
+        {
+            DrawShadowString( CStringToString(accountCtx.account.m_accountName), font, &SolidBrush( Color( 255, 255, 0 ) ), &brushHalfBlack, accountCtx.accountField1Rect, fmt, NULL );
+        }
 
-        RectF targetRect1 = targetRect;
-        targetRect1.Offset( 0, outRect.Height + padding );
-        DrawShadowString( "" + CStringToString(m_accounts[i].m_accountName), font, targetRect1, fmt, &outRect );
-
-        RectF targetRect2 = targetRect1;
-        targetRect2.Offset( 0, outRect.Height + padding );
-        DrawShadowString( "" + CStringToString(m_accounts[i].m_accountPwd), font, targetRect2, fmt, &outRect );
-
-        //winplus::UnicodeString strMyName = winplus::StringToUnicode( CStringToString(m_accounts[i].m_myName) );
-        //m_gCanvas->DrawString( strMyName.c_str(), strMyName.length(), &font, rect, &fmt, &m_brushBlack );
+        //if ( accountCtx.isSelected )
+        //{
+        //    DrawShadowFrame( accountCtx.accountRect, &Pen( Color( 200, 0, 127, 255 ), 2 ), NULL, 2 );
+        //}
     }
     delete penWhite;
 }
 
-void AccountIntegratedWnd::DrawShadowString( winplus::String const & s, Gdiplus::Font const & font, RectF const & layoutRect, StringFormat const & fmt, RectF * boundingRect )
+void AccountIntegratedWnd::DrawShadowString( winplus::String const & str, Gdiplus::Font const & font, Brush const * brushLight, Brush const * brushDark, RectF const & layoutRect, StringFormat const & fmt, RectF * boundingRect )
 {
-    winplus::UnicodeString sU = winplus::StringToUnicode(s);
+    winplus::UnicodeString sU = winplus::StringToUnicode(str);
     if ( boundingRect )
     {
         m_gCanvas->MeasureString(
@@ -132,40 +165,46 @@ void AccountIntegratedWnd::DrawShadowString( winplus::String const & s, Gdiplus:
         );
     }
     
-    m_gCanvas->DrawString(
-        sU.c_str(),
-        (INT)sU.length(),
-        &font,
-        RectF( layoutRect.X + 1, layoutRect.Y + 1, layoutRect.Width, layoutRect.Height ),
-        &fmt,
-        &m_brushBlack
-    );
+    if ( brushDark )
+    {
+        m_gCanvas->DrawString(
+            sU.c_str(),
+            (INT)sU.length(),
+            &font,
+            RectF( layoutRect.X + 1, layoutRect.Y + 1, layoutRect.Width, layoutRect.Height ),
+            &fmt,
+            brushDark
+        );
+    }
     
-    m_gCanvas->DrawString(
-        sU.c_str(),
-        (INT)sU.length(),
-        &font,
-        layoutRect,
-        &fmt,
-        &m_brushWhite
-    );
+    if ( brushLight )
+    {
+        m_gCanvas->DrawString(
+            sU.c_str(),
+            (INT)sU.length(),
+            &font,
+            layoutRect,
+            &fmt,
+            brushLight
+        );
+    }
 }
 
-void AccountIntegratedWnd::DrawShadowFrame( RectF const & rect )
+void AccountIntegratedWnd::DrawShadowFrame( RectF const & rect, Pen const * penLight, Pen const * penDark, float round )
 {
-    winplus::DrawRoundRectangle( *m_gCanvas.get(), m_penBlack, RectF( rect.X + 1, rect.Y + 1, rect.Width, rect.Height ), 10.0 );
-    winplus::DrawRoundRectangle( *m_gCanvas.get(), m_penWhite, rect, 10.0 );
+    if ( penDark ) winplus::DrawRoundRectangle( *m_gCanvas.get(), *penDark, RectF( rect.X + 1, rect.Y + 1, rect.Width, rect.Height ), round );
+    if ( penLight ) winplus::DrawRoundRectangle( *m_gCanvas.get(), *penLight, rect, round );
 }
 
-void AccountIntegratedWnd::DrawBackground( RectF const & rect )
+void AccountIntegratedWnd::DrawBackground( RectF const & rect, Brush const * brush, float round )
 {
-    winplus::FillRoundRectangle( *m_gCanvas.get(), m_brushHalfWhite, rect, 10.0 );
+    if ( brush ) winplus::FillRoundRectangle( *m_gCanvas.get(), *brush, rect, round );
 }
 
 void AccountIntegratedWnd::PostNcDestroy()
 {
     std::cout << "AccountIntegratedWnd::PostNcDestroy()\n";
-    DelDisplayedWnd(this);
+    DelAccountIntegratedWnd(this);
     delete this;
 }
 
@@ -190,8 +229,10 @@ BEGIN_MESSAGE_MAP(AccountIntegratedWnd, CWnd)
     ON_WM_PAINT()
     ON_WM_TIMER()
     ON_WM_MOUSEMOVE()
-    ON_WM_LBUTTONUP()
     ON_WM_LBUTTONDOWN()
+    ON_WM_LBUTTONUP()
+    ON_WM_RBUTTONDOWN()
+    ON_WM_RBUTTONUP()
     //}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -265,21 +306,8 @@ void AccountIntegratedWnd::OnMouseMove( UINT nFlags, CPoint point )
 {
     //std::cout << "AccountIntegratedWnd::OnMouseMove()\n";
     m_ptCurMouse = point;
-    MakeDraw();
-    Invalidate(FALSE);
 
     //CWnd::OnMouseMove(nFlags, point);
-}
-
-void AccountIntegratedWnd::OnLButtonUp( UINT nFlags, CPoint point )
-{
-    std::cout << "AccountIntegratedWnd::OnLButtonUp(" << point.x << ", " << point.y << ")\n";
-
-    if ( m_contentRect.Contains( point.x, point.y ) )
-    {
-        //PlaySound( MAKEINTRESOURCE(IDR_WAVE_SELECTED), AfxGetApp()->m_hInstance, SND_RESOURCE | SND_ASYNC );
-    }
-    //CWnd::OnLButtonUp( nFlags, point );
 }
 
 void AccountIntegratedWnd::OnLButtonDown( UINT nFlags, CPoint point )
@@ -287,4 +315,94 @@ void AccountIntegratedWnd::OnLButtonDown( UINT nFlags, CPoint point )
     std::cout << "AccountIntegratedWnd::OnLButtonDown()\n";
     //PlaySound( MAKEINTRESOURCE(IDR_WAVE_SELECTED), AfxGetApp()->m_hInstance, SND_RESOURCE | SND_ASYNC );
     //CWnd::OnLButtonDown( nFlags, point );
+}
+
+void AccountIntegratedWnd::OnLButtonUp( UINT nFlags, CPoint point )
+{
+    std::cout << "AccountIntegratedWnd::OnLButtonUp(" << point.x << ", " << point.y << ")\n";
+
+    if ( m_captionRect.Contains( point.x, point.y ) )
+    {
+        //PlaySound( MAKEINTRESOURCE(IDR_WAVE_SELECTED), AfxGetApp()->m_hInstance, SND_RESOURCE | SND_ASYNC );
+        winplus::Mixed accountFields = winplus::$c{
+            { "cate", m_cate.m_id },
+            { "user", g_theApp.m_loginedUser.m_id }
+        };
+        ((MainFrame *)AfxGetMainWnd())->DoAddAccount( GetParent(), accountFields );
+
+        return;
+    }
+
+    for ( int i = 0; i < m_accounts.GetCount(); i++ )
+    {
+        if ( m_accounts[i].accountRect.Contains( point.x, point.y ) )
+        {
+            m_accounts[i].isPwdShown = !m_accounts[i].isPwdShown;
+            break;
+        }
+    }
+
+    MakeDraw();
+    Invalidate(FALSE);
+
+    //CWnd::OnLButtonUp( nFlags, point );
+}
+
+void AccountIntegratedWnd::OnRButtonDown( UINT nFlags, CPoint point )
+{
+    // TODO: 在此添加消息处理程序代码和/或调用默认值
+
+    //CWnd::OnRButtonDown( nFlags, point );
+}
+
+void AccountIntegratedWnd::OnRButtonUp( UINT nFlags, CPoint point )
+{
+    // TODO: 在此添加消息处理程序代码和/或调用默认值
+
+    for ( int i = 0; i < m_accounts.GetCount(); i++ )
+    {
+        if ( m_accounts[i].accountRect.Contains( point.x, point.y ) )
+        {
+            CString data;
+            if ( m_accounts[i].isPwdShown )
+            {
+                data = m_accounts[i].account.m_accountPwd;
+                PlaySound( MAKEINTRESOURCE(IDR_WAVE_SE02), AfxGetApp()->m_hInstance, SND_RESOURCE | SND_ASYNC );
+            }
+            else
+            {
+                data = m_accounts[i].account.m_accountName;
+                PlaySound( MAKEINTRESOURCE(IDR_WAVE_SE01), AfxGetApp()->m_hInstance, SND_RESOURCE | SND_ASYNC );
+            }
+
+            // 复制到剪贴板
+            BOOL b = ::OpenClipboard( this->GetParent()->GetSafeHwnd() );
+
+            HANDLE hGlobalMem = GlobalAlloc( GMEM_MOVEABLE, data.GetLength() + 1 );
+            if ( !hGlobalMem )
+            {
+                ::CloseClipboard();
+                continue;
+            }
+            LPVOID lpData = GlobalLock(hGlobalMem);
+            if ( !lpData )
+            {
+                GlobalFree(hGlobalMem);
+                ::CloseClipboard();
+                continue;
+            }
+            CopyMemory( lpData, data.GetString(), data.GetLength() );
+            GlobalUnlock(hGlobalMem);
+
+            EmptyClipboard();
+            SetClipboardData( CF_TEXT, hGlobalMem );
+
+            ::CloseClipboard();
+            break;
+        }
+    }
+
+    MakeDraw();
+    Invalidate(FALSE);
+    //CWnd::OnRButtonUp( nFlags, point );
 }

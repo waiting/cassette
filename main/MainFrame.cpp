@@ -310,7 +310,6 @@ void MainFrame::OnUpdateOpenUrl( CCmdUI * pCmdUI )
 {
     CListCtrl & lst = this->m_pAccountsView->GetListCtrl();
     int index = lst.GetNextItem( -1, LVNI_ALL | LVNI_SELECTED );
-    pCmdUI->Enable(FALSE);
     if ( index != -1 )
     {
         AccountCate cate;
@@ -320,10 +319,15 @@ void MainFrame::OnUpdateOpenUrl( CCmdUI * pCmdUI )
             pCmdUI->SetText( _T("打开") + cate.m_cateName + _T("(&Go)\tCtrl+G") );
             pCmdUI->Enable(TRUE);
         }
+        else
+        {
+            pCmdUI->Enable(FALSE);
+        }
     }
     else
     {
         pCmdUI->SetText( _T("打开URL(&Go)\tCtrl+G") );
+        pCmdUI->Enable(FALSE);
     }
 }
 
@@ -576,7 +580,7 @@ LRESULT MainFrame::OnHotkey( WPARAM wHotkeyId, LPARAM lParam )
 LRESULT MainFrame::OnUpdateListAll( WPARAM wParam, LPARAM lParam )
 {
     if ( wParam & UpdateList_Main )
-        UpdateList();
+        this->UpdateList();
     if ( wParam & UpdateList_TypesDlg )
         m_typesDlg.UpdateList();
     if ( wParam & UpdateList_CatesDlg )
@@ -631,7 +635,7 @@ void MainFrame::DoIntelligentHotkey()
         newCate.m_keywords = winplus::StrJoin( _T(","), autoKeywords ).c_str();
 
         winplus::Mixed cateFields;
-        newCate.assignTo(&cateFields,"name,desc,type,url,icon,startup,keywords");
+        newCate.assignTo( &cateFields, "name,desc,type,url,icon,startup,keywords" );
 
         m_catesDlg.DoAdd( pCurWnd, &cateFields );
     }
@@ -655,21 +659,21 @@ void MainFrame::DoIntelligentHotkey()
         }
         else // 有账户数据
         {
-            CRect rcCurWnd = winplus::Window_GetClient(*pCurWnd);
-            // 计算综合窗口的位置
-            Gdiplus::Size siIntegratedWnd( 240, 300 );
-            CRect rcIntegratedWnd = winplus::RectGdiplusToGdi<RECT>(
-                Gdiplus::Rect(
-                    Gdiplus::Point( rcCurWnd.Width() - siIntegratedWnd.Width, rcCurWnd.Height() - siIntegratedWnd.Height ),
-                    siIntegratedWnd
-                )
+            CRect rcCurWnd;
+            pCurWnd->GetClientRect(&rcCurWnd);
+            // 计算账户信息窗口的位置
+            CSize siIntegratedWnd( 240, 300 );
+            CRect rcIntegratedWnd(
+                CPoint( rcCurWnd.Width() - siIntegratedWnd.cx, rcCurWnd.Height() - siIntegratedWnd.cy ),
+                siIntegratedWnd
             );
             pCurWnd->ClientToScreen(&rcIntegratedWnd);
 
+            // 显示账户信息窗口
             AccountIntegratedWnd * pIntegratedWnd = NULL;
-            if ( pIntegratedWnd = AccountIntegratedWnd::GetDisplayedWnd(*pCurWnd) )
+            if ( pIntegratedWnd = AccountIntegratedWnd::GetAccountIntegratedWnd(*pCurWnd) )
             {
-                pIntegratedWnd->SetAccountsInfo( m_catesDlg.m_cates[cateIndex], accounts );
+                //pIntegratedWnd->SetAccountsInfo( m_catesDlg.m_cates[cateIndex], accounts );
                 pIntegratedWnd->SetWindowPos( NULL, rcIntegratedWnd.left, rcIntegratedWnd.top, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE );
                 pCurWnd->SetWindowPos( &wndTop, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE );
             }
@@ -677,9 +681,10 @@ void MainFrame::DoIntelligentHotkey()
             {
                 pIntegratedWnd = new AccountIntegratedWnd( pCurWnd, m_catesDlg.m_cates[cateIndex].m_cateName, rcIntegratedWnd );
                 pIntegratedWnd->SetAccountsInfo( m_catesDlg.m_cates[cateIndex], accounts );
-                pIntegratedWnd->UpdateWindow();
-                pIntegratedWnd->ShowWindow(SW_NORMAL);
                 pCurWnd->SetWindowPos( &wndTop, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE );
+
+                //pIntegratedWnd->UpdateWindow();
+                pIntegratedWnd->ShowWindow(SW_NORMAL);
             }
         }
     }

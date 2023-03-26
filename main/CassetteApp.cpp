@@ -171,8 +171,8 @@ void CassetteApp::InitDatabaseSchema()
     winplus::Resource ResSQL( IDR_SQL_DBSCHEMA, _T("SQL") );
     if ( !ResSQL ) goto OccurDbError;
     sql.resize( ResSQL.getSize() );
-    ResSQL.copyTo( &sql[0], sql.size() );
-    nSQLs = winplus::StrSplit( sql, _T(";"), &sqls );
+    if ( sql.size() ) ResSQL.copyTo( &sql[0], (DWORD)sql.size() );
+    nSQLs = (int)winplus::StrSplit( sql, _T(";"), &sqls );
     try
     {
         for ( i = 0; i < nSQLs; ++i )

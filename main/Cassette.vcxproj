@@ -232,6 +232,8 @@
     <Image Include="..\res\Toolbar32.bmp" />
   </ItemGroup>
   <ItemGroup>
+    <Media Include="..\res\se_01.wav" />
+    <Media Include="..\res\se_02.wav" />
     <Media Include="..\res\se_selected.wav" />
   </ItemGroup>
   <ItemGroup>

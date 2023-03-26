@@ -419,12 +419,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "X86PRO.COM"
             VALUE "FileDescription", "Cassette 账户管理系统 v0.1.2"
-            VALUE "FileVersion", "0.1.2.0"
+            VALUE "FileVersion", "0.1.2"
             VALUE "InternalName", "Cassette"
             VALUE "LegalCopyright", "(C) X86PRO.COM 版权所有 2013-2023."
             VALUE "OriginalFilename", "Cassette.exe"
             VALUE "ProductName", "Cassette 账户管理系统"
-            VALUE "ProductVersion", "0.1.2.0"
+            VALUE "ProductVersion", "0.1.2"
         END
     END
     BLOCK "VarFileInfo"
@@ -553,7 +553,9 @@ IDR_SQL_DBSCHEMA        SQL                     "..\\res\\dbschema.sql"
 // WAVE
 //
 
-IDR_WAVE_SELECTED       WAVE                    "..\\res\\se_selected.wav"
+IDR_WAVE_SE01           WAVE                    "..\\res\\se_01.wav"
+
+IDR_WAVE_SE02           WAVE                    "..\\res\\se_02.wav"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -636,7 +638,7 @@ STRINGTABLE
 BEGIN
     AFX_IDS_SCRESTORE       "把窗口恢复到正常大小"
     AFX_IDS_SCTASKLIST      "激活任务表"
-    IDS_SHAREDMEM_NAME      "Cassette 0.1.1.0 - Shared Memory"
+    IDS_SHAREDMEM_NAME      "Cassette 0.1.2 - Shared Memory"
 END
 
 STRINGTABLE
