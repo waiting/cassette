@@ -79,9 +79,6 @@ END_MESSAGE_MAP()
 void MainFrame::UpdateTitle()
 {
     CString newTitle;
-#ifdef Format
-    #undef Format
-#endif
     newTitle.Format( _T("%s [%s]"), winplus::LoadString(AFX_IDS_APP_TITLE).c_str(), (LPCTSTR)g_theApp.m_loginedUser.m_username );
     this->SetWindowText(newTitle);
 }

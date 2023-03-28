@@ -296,9 +296,6 @@ void AccountCatesDlg::OnModify()
 
             UpdateList( UPDATE_LIST_ITEMS, index );
             CString strId;
-        #ifdef Format
-            #undef Format
-        #endif
             strId.Format( _T("%d"), id );
             LVFINDINFO fi;
             fi.flags = LVFI_PARTIAL | LVFI_STRING;

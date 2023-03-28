@@ -26,14 +26,16 @@
 #include <afxhtml.h>
 #include <afxtempl.h>
 
-
-#include "winux.hpp"
-#include "eiendb.hpp"
+#ifdef StrTrim
+#undef StrTrim
+#endif
 
 //#include "sqlite3.h"
 
 #include "RegOperate.h"
 
+#include "winux.hpp"
+#include "eiendb.hpp"
 #include "winplus.hpp"
 
 using namespace Gdiplus;

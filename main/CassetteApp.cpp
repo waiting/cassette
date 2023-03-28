@@ -11,10 +11,6 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
-#ifdef StrTrim
-#undef StrTrim
-#endif
-
 // The one and only CassetteApp object
 CassetteApp g_theApp;
 // GDI+ initialize
@@ -177,7 +173,7 @@ void CassetteApp::InitDatabaseSchema()
     {
         for ( i = 0; i < nSQLs; ++i )
         {
-            if ( winplus::StrTrimA(sqls[i]).empty() ) continue;
+            if ( winplus::StrTrim(sqls[i]).empty() ) continue;
             m_db->cnn()->exec( sqls[i].c_str() );
         }
     }

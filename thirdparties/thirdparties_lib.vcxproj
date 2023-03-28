@@ -104,7 +104,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>HAVE_SQLITE_DRIVER;THREADSAFE=1;SQLITE_THREADSAFE=1;SQLITE_DQS=0;SQLITE_MAX_ATTACHED=10;SQLITE_SOUNDEX;SQLITE_ENABLE_COLUMN_METADATA;SQLITE_HAS_CODEC;SQLITE_SECURE_DELETE;SQLITE_ENABLE_FTS3;SQLITE_ENABLE_FTS3_PARENTHESIS;SQLITE_ENABLE_FTS4;SQLITE_ENABLE_FTS5;SQLITE_ENABLE_JSON1;SQLITE_ENABLE_RTREE;SQLITE_ENABLE_GEOPOLY;SQLITE_CORE;SQLITE_ENABLE_EXTFUNC;SQLITE_ENABLE_CSV;SQLITE_ENABLE_SHA3;SQLITE_ENABLE_CARRAY;SQLITE_ENABLE_FILEIO;SQLITE_ENABLE_SERIES;SQLITE_ENABLE_UUID;SQLITE_TEMP_STORE=2;SQLITE_USE_URI;SQLITE_USER_AUTHENTICATION;_LIB;WIN32;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <ConformanceMode>false</ConformanceMode>
+      <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>winux\include;eienexpr\include;winplus\include;sqlite3secure\src;eiendb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -118,7 +118,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>HAVE_SQLITE_DRIVER;THREADSAFE=1;SQLITE_THREADSAFE=1;SQLITE_DQS=0;SQLITE_MAX_ATTACHED=10;SQLITE_SOUNDEX;SQLITE_ENABLE_COLUMN_METADATA;SQLITE_HAS_CODEC;SQLITE_SECURE_DELETE;SQLITE_ENABLE_FTS3;SQLITE_ENABLE_FTS3_PARENTHESIS;SQLITE_ENABLE_FTS4;SQLITE_ENABLE_FTS5;SQLITE_ENABLE_JSON1;SQLITE_ENABLE_RTREE;SQLITE_ENABLE_GEOPOLY;SQLITE_CORE;SQLITE_ENABLE_EXTFUNC;SQLITE_ENABLE_CSV;SQLITE_ENABLE_SHA3;SQLITE_ENABLE_CARRAY;SQLITE_ENABLE_FILEIO;SQLITE_ENABLE_SERIES;SQLITE_ENABLE_UUID;SQLITE_TEMP_STORE=2;SQLITE_USE_URI;SQLITE_USER_AUTHENTICATION;_LIB;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <ConformanceMode>false</ConformanceMode>
+      <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>winux\include;eienexpr\include;winplus\include;sqlite3secure\src;eiendb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -134,7 +134,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>HAVE_SQLITE_DRIVER;THREADSAFE=1;SQLITE_THREADSAFE=1;SQLITE_DQS=0;SQLITE_MAX_ATTACHED=10;SQLITE_SOUNDEX;SQLITE_ENABLE_COLUMN_METADATA;SQLITE_HAS_CODEC;SQLITE_SECURE_DELETE;SQLITE_ENABLE_FTS3;SQLITE_ENABLE_FTS3_PARENTHESIS;SQLITE_ENABLE_FTS4;SQLITE_ENABLE_FTS5;SQLITE_ENABLE_JSON1;SQLITE_ENABLE_RTREE;SQLITE_ENABLE_GEOPOLY;SQLITE_CORE;SQLITE_ENABLE_EXTFUNC;SQLITE_ENABLE_CSV;SQLITE_ENABLE_SHA3;SQLITE_ENABLE_CARRAY;SQLITE_ENABLE_FILEIO;SQLITE_ENABLE_SERIES;SQLITE_ENABLE_UUID;SQLITE_TEMP_STORE=2;SQLITE_USE_URI;SQLITE_USER_AUTHENTICATION;_LIB;WIN32;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <ConformanceMode>false</ConformanceMode>
+      <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>winux\include;eienexpr\include;winplus\include;sqlite3secure\src;eiendb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -152,7 +152,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>HAVE_SQLITE_DRIVER;THREADSAFE=1;SQLITE_THREADSAFE=1;SQLITE_DQS=0;SQLITE_MAX_ATTACHED=10;SQLITE_SOUNDEX;SQLITE_ENABLE_COLUMN_METADATA;SQLITE_HAS_CODEC;SQLITE_SECURE_DELETE;SQLITE_ENABLE_FTS3;SQLITE_ENABLE_FTS3_PARENTHESIS;SQLITE_ENABLE_FTS4;SQLITE_ENABLE_FTS5;SQLITE_ENABLE_JSON1;SQLITE_ENABLE_RTREE;SQLITE_ENABLE_GEOPOLY;SQLITE_CORE;SQLITE_ENABLE_EXTFUNC;SQLITE_ENABLE_CSV;SQLITE_ENABLE_SHA3;SQLITE_ENABLE_CARRAY;SQLITE_ENABLE_FILEIO;SQLITE_ENABLE_SERIES;SQLITE_ENABLE_UUID;SQLITE_TEMP_STORE=2;SQLITE_USE_URI;SQLITE_USER_AUTHENTICATION;_LIB;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <ConformanceMode>false</ConformanceMode>
+      <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>winux\include;eienexpr\include;winplus\include;sqlite3secure\src;eiendb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>

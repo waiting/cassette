@@ -44,10 +44,6 @@ END_MESSAGE_MAP()
 
 void AccountsView::UpdateList( int flag, long itemIndex )
 {
-#ifdef Format
-    #undef Format
-#endif
-
     int count = 0;
     CListCtrl & lst = this->GetListCtrl();
 
@@ -87,7 +83,7 @@ void AccountsView::UpdateList( int flag, long itemIndex )
                 AccountType type;
                 GetTypeByCateId( g_theApp.GetDatabase(), m_accounts[i].m_cateId, &type );
                 lst.SetItem( i, 2, LVIF_TEXT, type.m_typeName, 0, 0, 0, 0 );
-                lst.SetItem( i, 3, LVIF_TEXT, winplus::FormatA( _T("%d"), m_accounts[i].m_safeRank ).c_str(), 0, 0, 0, 0 );
+                lst.SetItem( i, 3, LVIF_TEXT, winplus::Format( _T("%d"), m_accounts[i].m_safeRank ).c_str(), 0, 0, 0, 0 );
                 CTime dateTime(m_accounts[i].m_time);
                 lst.SetItem( i, 4, LVIF_TEXT, dateTime.Format( _T("%Y-%m-%dT%H:%M:%S") ), 0, 0, 0, 0 );
                 lst.SetItem( i, 5, LVIF_TEXT, m_accounts[i].m_comment, 0, 0, 0, 0 );
@@ -100,7 +96,7 @@ void AccountsView::UpdateList( int flag, long itemIndex )
             AccountType type;
             GetTypeByCateId( g_theApp.GetDatabase(), m_accounts[itemIndex].m_cateId, &type );
             lst.SetItem( itemIndex, 2, LVIF_TEXT, type.m_typeName, 0, 0, 0, 0 );
-            lst.SetItem( itemIndex, 3, LVIF_TEXT, winplus::FormatA( _T("%d"), m_accounts[itemIndex].m_safeRank ).c_str(), 0, 0, 0, 0 );
+            lst.SetItem( itemIndex, 3, LVIF_TEXT, winplus::Format( _T("%d"), m_accounts[itemIndex].m_safeRank ).c_str(), 0, 0, 0, 0 );
             CTime dateTime(m_accounts[itemIndex].m_time);
             lst.SetItem( itemIndex, 4, LVIF_TEXT, dateTime.Format( _T("%Y-%m-%dT%H:%M:%S") ), 0, 0, 0, 0 );
             lst.SetItem( itemIndex, 5, LVIF_TEXT, m_accounts[itemIndex].m_comment, 0, 0, 0, 0 );

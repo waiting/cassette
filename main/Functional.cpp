@@ -847,9 +847,6 @@ CString GetCorrectAccountMyName( eiendb::Database & db, int userId, CString cons
         while ( resAccount->rowsCount() > 0 )
         {
             number++;
-        #ifdef Format
-            #undef Format
-        #endif
             result.Format( "%s%d", (LPCTSTR)myName, number );
 
             stmt = db->buildStmt( "SELECT myname FROM am_accounts WHERE user = ? AND myname = ?;", winplus::Mixed().add()(userId)((LPCTSTR)result) );
