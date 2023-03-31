@@ -171,6 +171,7 @@
     <ClCompile Include="AboutWnd.cpp" />
     <ClCompile Include="AccountCateEditingDlg.cpp" />
     <ClCompile Include="AccountCatesDlg.cpp" />
+    <ClCompile Include="AccountComprehensiveWnd.cpp" />
     <ClCompile Include="AccountEditingDlg.cpp" />
     <ClCompile Include="AccountIntegratedWnd.cpp" />
     <ClCompile Include="AccountsView.cpp" />
@@ -194,6 +195,7 @@
     <ClInclude Include="AboutWnd.h" />
     <ClInclude Include="AccountCateEditingDlg.h" />
     <ClInclude Include="AccountCatesDlg.h" />
+    <ClInclude Include="AccountComprehensiveWnd.h" />
     <ClInclude Include="AccountEditingDlg.h" />
     <ClInclude Include="AccountIntegratedWnd.h" />
     <ClInclude Include="AccountsView.h" />
@@ -209,6 +211,7 @@
     <ClInclude Include="MainFrame.h" />
     <ClInclude Include="RegOperate.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="stdafx.h" />
     <ClInclude Include="UserLoginDlg.h" />
     <ClInclude Include="UserRegisterDlg.h" />
     <ClInclude Include="UserSettingsDlg.h" />

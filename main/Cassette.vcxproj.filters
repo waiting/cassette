@@ -78,6 +78,9 @@
     <ClCompile Include="UserSettingsDlg.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="AccountComprehensiveWnd.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AboutView.h">
@@ -144,6 +147,12 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="UserSettingsDlg.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="stdafx.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="AccountComprehensiveWnd.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
