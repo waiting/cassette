@@ -7,59 +7,6 @@
 
 #include <playsoundapi.h>
 
-// class MyGraphics -----------------------------------------------------------------------
-void MyGraphics::DrawShadowString( winplus::String const & str, Gdiplus::Font const & font, Brush const * brushLight, Brush const * brushDark, RectF const & layoutRect, StringFormat const & fmt, RectF * boundingRect )
-{
-    winplus::UnicodeString sU = winplus::StringToUnicode( str );
-    if ( boundingRect )
-    {
-        this->MeasureString(
-            sU.c_str(),
-            (INT)sU.length(),
-            &font,
-            layoutRect,
-            &fmt,
-            boundingRect
-        );
-    }
-
-    if ( brushDark )
-    {
-        this->DrawString(
-            sU.c_str(),
-            (INT)sU.length(),
-            &font,
-            RectF( layoutRect.X + 1, layoutRect.Y + 1, layoutRect.Width, layoutRect.Height ),
-            &fmt,
-            brushDark
-        );
-    }
-
-    if ( brushLight )
-    {
-        this->DrawString(
-            sU.c_str(),
-            (INT)sU.length(),
-            &font,
-            layoutRect,
-            &fmt,
-            brushLight
-        );
-    }
-}
-
-void MyGraphics::DrawShadowFrame( RectF const & rect, Pen const * penLight, Pen const * penDark, float round )
-{
-    if ( penDark ) winplus::DrawRoundRectangle( *this, *penDark, RectF( rect.X + 1, rect.Y + 1, rect.Width, rect.Height ), round );
-    if ( penLight ) winplus::DrawRoundRectangle( *this, *penLight, rect, round );
-}
-
-void MyGraphics::DrawBackground( RectF const & rect, Brush const * brush, float round )
-{
-    if ( brush ) winplus::FillRoundRectangle( *this, *brush, rect, round );
-}
-
-
 // AccountIntegratedWnd -------------------------------------------------------------------
 std::map<HWND, AccountIntegratedWnd *> AccountIntegratedWnd::m_hasDisplayed;
 
@@ -132,7 +79,7 @@ void AccountIntegratedWnd::RefreshAllCreate()
 
     // 创建缓冲图
     m_memCanvas.create( m_rcClient.Width(), m_rcClient.Height() );
-    m_gCanvas.attachNew( new MyGraphics(m_memCanvas) );
+    m_gCanvas.attachNew( new winplus::Graphics(m_memCanvas) );
     m_gCanvas->SetSmoothingMode(SmoothingModeAntiAlias);
     m_gCanvas->SetTextRenderingHint(TextRenderingHintAntiAlias);
 
@@ -155,8 +102,10 @@ void AccountIntegratedWnd::MakeDraw()
 
     SolidBrush brushHalfBlack( Color( 32, 0, 0, 0 ) );
     Gdiplus::Font font( L"微软雅黑", 10, 0, UnitPoint );
-    StringFormat fmt;
-    fmt.SetLineAlignment(StringAlignmentFar);
+    StringFormat fmt( StringFormat::GenericTypographic() );
+    fmt.SetAlignment(StringAlignmentNear);
+    fmt.SetLineAlignment(StringAlignmentCenter);
+    fmt.SetTrimming(StringTrimmingEllipsisCharacter);
 
     // 画主标题
     m_gCanvas->DrawShadowString( _T("点此添加账户"), m_primaryFont, &m_brushWhite, &m_brushBlack, RectF( 0, 4, m_rcClient.Width(), 40 ), m_sfHVCenter, &m_captionRect );
