@@ -7,10 +7,62 @@
 
 #include <playsoundapi.h>
 
+// class MyGraphics -----------------------------------------------------------------------
+void MyGraphics::DrawShadowString( winplus::String const & str, Gdiplus::Font const & font, Brush const * brushLight, Brush const * brushDark, RectF const & layoutRect, StringFormat const & fmt, RectF * boundingRect )
+{
+    winplus::UnicodeString sU = winplus::StringToUnicode( str );
+    if ( boundingRect )
+    {
+        this->MeasureString(
+            sU.c_str(),
+            (INT)sU.length(),
+            &font,
+            layoutRect,
+            &fmt,
+            boundingRect
+        );
+    }
 
-std::map<HWND, AccountIntegratedWnd *> AccountIntegratedWnd::m_hasDisplayed;
+    if ( brushDark )
+    {
+        this->DrawString(
+            sU.c_str(),
+            (INT)sU.length(),
+            &font,
+            RectF( layoutRect.X + 1, layoutRect.Y + 1, layoutRect.Width, layoutRect.Height ),
+            &fmt,
+            brushDark
+        );
+    }
+
+    if ( brushLight )
+    {
+        this->DrawString(
+            sU.c_str(),
+            (INT)sU.length(),
+            &font,
+            layoutRect,
+            &fmt,
+            brushLight
+        );
+    }
+}
+
+void MyGraphics::DrawShadowFrame( RectF const & rect, Pen const * penLight, Pen const * penDark, float round )
+{
+    if ( penDark ) winplus::DrawRoundRectangle( *this, *penDark, RectF( rect.X + 1, rect.Y + 1, rect.Width, rect.Height ), round );
+    if ( penLight ) winplus::DrawRoundRectangle( *this, *penLight, rect, round );
+}
+
+void MyGraphics::DrawBackground( RectF const & rect, Brush const * brush, float round )
+{
+    if ( brush ) winplus::FillRoundRectangle( *this, *brush, rect, round );
+}
+
 
 // AccountIntegratedWnd -------------------------------------------------------------------
+std::map<HWND, AccountIntegratedWnd *> AccountIntegratedWnd::m_hasDisplayed;
+
 AccountIntegratedWnd::AccountIntegratedWnd( CWnd * pParentWnd, LPCTSTR lpszWindowName, const RECT& rect ) :
     m_primaryFont( L"宋体", 24, 0, UnitPixel ),
     m_penBlack( Color( 0, 0, 0 ) ),
@@ -80,7 +132,7 @@ void AccountIntegratedWnd::RefreshAllCreate()
 
     // 创建缓冲图
     m_memCanvas.create( m_rcClient.Width(), m_rcClient.Height() );
-    m_gCanvas.attachNew( new Graphics(m_memCanvas) );
+    m_gCanvas.attachNew( new MyGraphics(m_memCanvas) );
     m_gCanvas->SetSmoothingMode(SmoothingModeAntiAlias);
     m_gCanvas->SetTextRenderingHint(TextRenderingHintAntiAlias);
 
@@ -107,10 +159,10 @@ void AccountIntegratedWnd::MakeDraw()
     fmt.SetLineAlignment(StringAlignmentFar);
 
     // 画主标题
-    DrawShadowString( _T("点此添加账户"), m_primaryFont, &m_brushWhite, &m_brushBlack, RectF( 0, 4, m_rcClient.Width(), 40 ), m_sfHVCenter, &m_captionRect );
+    m_gCanvas->DrawShadowString( _T("点此添加账户"), m_primaryFont, &m_brushWhite, &m_brushBlack, RectF( 0, 4, m_rcClient.Width(), 40 ), m_sfHVCenter, &m_captionRect );
 
     // 画内容背景
-    DrawBackground( m_contentRect, &m_brushHalfWhite, 8 );
+    m_gCanvas->DrawBackground( m_contentRect, &m_brushHalfWhite, 8 );
     //DrawShadowFrame(m_contentRect);
 
     // 画账户信息
@@ -131,15 +183,15 @@ void AccountIntegratedWnd::MakeDraw()
         m_gCanvas->FillRectangle( &brushHalfBlack, accountCtx.accountRect );
 
         //DrawBackground( accountCtx.accountField0Rect, &SolidBrush( Color() ), 2 );
-        DrawShadowString( CStringToString(accountCtx.account.m_myName), font, &m_brushWhite, &brushHalfBlack, accountCtx.accountField0Rect, fmt, NULL );
+        m_gCanvas->DrawShadowString( CStringToString(accountCtx.account.m_myName), font, &m_brushWhite, &brushHalfBlack, accountCtx.accountField0Rect, fmt, NULL );
         //DrawBackground( accountCtx.accountNameRect, &SolidBrush( Color() ), 2 );
         if ( accountCtx.isPwdShown )
         {
-            DrawShadowString( CStringToString(accountCtx.account.m_accountPwd), font, &SolidBrush( Color( 0, 255, 0 ) ), &brushHalfBlack, accountCtx.accountField1Rect, fmt, NULL );
+            m_gCanvas->DrawShadowString( CStringToString(accountCtx.account.m_accountPwd), font, &SolidBrush( Color( 0, 255, 0 ) ), &brushHalfBlack, accountCtx.accountField1Rect, fmt, NULL );
         }
         else
         {
-            DrawShadowString( CStringToString(accountCtx.account.m_accountName), font, &SolidBrush( Color( 255, 255, 0 ) ), &brushHalfBlack, accountCtx.accountField1Rect, fmt, NULL );
+            m_gCanvas->DrawShadowString( CStringToString(accountCtx.account.m_accountName), font, &SolidBrush( Color( 255, 255, 0 ) ), &brushHalfBlack, accountCtx.accountField1Rect, fmt, NULL );
         }
 
         //if ( accountCtx.isSelected )
@@ -148,57 +200,6 @@ void AccountIntegratedWnd::MakeDraw()
         //}
     }
     delete penWhite;
-}
-
-void AccountIntegratedWnd::DrawShadowString( winplus::String const & str, Gdiplus::Font const & font, Brush const * brushLight, Brush const * brushDark, RectF const & layoutRect, StringFormat const & fmt, RectF * boundingRect )
-{
-    winplus::UnicodeString sU = winplus::StringToUnicode(str);
-    if ( boundingRect )
-    {
-        m_gCanvas->MeasureString(
-            sU.c_str(),
-            (INT)sU.length(),
-            &font,
-            layoutRect,
-            &fmt,
-            boundingRect
-        );
-    }
-    
-    if ( brushDark )
-    {
-        m_gCanvas->DrawString(
-            sU.c_str(),
-            (INT)sU.length(),
-            &font,
-            RectF( layoutRect.X + 1, layoutRect.Y + 1, layoutRect.Width, layoutRect.Height ),
-            &fmt,
-            brushDark
-        );
-    }
-    
-    if ( brushLight )
-    {
-        m_gCanvas->DrawString(
-            sU.c_str(),
-            (INT)sU.length(),
-            &font,
-            layoutRect,
-            &fmt,
-            brushLight
-        );
-    }
-}
-
-void AccountIntegratedWnd::DrawShadowFrame( RectF const & rect, Pen const * penLight, Pen const * penDark, float round )
-{
-    if ( penDark ) winplus::DrawRoundRectangle( *m_gCanvas.get(), *penDark, RectF( rect.X + 1, rect.Y + 1, rect.Width, rect.Height ), round );
-    if ( penLight ) winplus::DrawRoundRectangle( *m_gCanvas.get(), *penLight, rect, round );
-}
-
-void AccountIntegratedWnd::DrawBackground( RectF const & rect, Brush const * brush, float round )
-{
-    if ( brush ) winplus::FillRoundRectangle( *m_gCanvas.get(), *brush, rect, round );
 }
 
 void AccountIntegratedWnd::PostNcDestroy()

@@ -6,6 +6,21 @@
 #pragma once
 #endif // _MSC_VER > 1000
 
+// 绘图对象
+class MyGraphics : public Graphics
+{
+public:
+    using Graphics::Graphics;
+    /* 封装的特效方法 */
+    // 绘制一个有阴影的文字
+    void DrawShadowString( winplus::String const & str, Gdiplus::Font const & font, Brush const * brushLight, Brush const * brushDark, RectF const & layoutRect, StringFormat const & fmt, RectF * boundingRect );
+    // 绘制一个阴影圆角的框架
+    void DrawShadowFrame( RectF const & rect, Pen const * penLight, Pen const * penDark, float round );
+    // 绘制一个圆角背景色
+    void DrawBackground( RectF const & rect, Brush const * brush, float round );
+
+};
+
 /////////////////////////////////////////////////////////////////////////////
 
 // 账户信息窗口，显示一个账户种类下的账户
@@ -96,7 +111,7 @@ protected:
 
     /* 绘图数据 */
     winplus::SimplePointer<Bitmap> m_loadedBgImg; // 背景图
-    winplus::SimplePointer<Graphics> m_gCanvas; // 绘图对象
+    winplus::SimplePointer<MyGraphics> m_gCanvas; // 绘图对象
     winplus::MemImage m_memCanvas; // 内存画布
 
     CRect m_rcClient; // 客户区矩形
@@ -113,15 +128,6 @@ protected:
     SolidBrush m_brushHalfWhite;
     SolidBrush m_brushBlack;
     SolidBrush m_brushWhite;
-
-    /* 封装的特效方法 */
-    // 绘制一个有阴影的文字
-    void DrawShadowString( winplus::String const & str, Gdiplus::Font const & font, Brush const * brushLight, Brush const * brushDark, RectF const & layoutRect, StringFormat const & fmt, RectF * boundingRect );
-    // 绘制一个阴影圆角的框架
-    void DrawShadowFrame( RectF const & rect, Pen const * penLight, Pen const * penDark, float round );
-    // 绘制一个圆角背景色
-    void DrawBackground( RectF const & rect, Brush const * brush, float round );
-
 
     // ClassWizard generated virtual function overrides
     //{{AFX_VIRTUAL(AccountIntegratedWnd)
