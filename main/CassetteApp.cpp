@@ -4,6 +4,7 @@
 #include "AccountsView.h"
 #include "MainFrame.h"
 #include "UserLoginDlg.h"
+#include "AccountComprehensiveWnd.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -67,6 +68,7 @@ BOOL CassetteApp::InitInstance()
 
     // 命令行解释
     winplus::CommandLineVars cmd( (int)argArr.size(), &args[0], "-url", "", "--verbose" );
+    // 解释URL
     if ( cmd.hasParam("-url") )
     {
         winplus::Win32GUI_ShowConsole();
@@ -76,11 +78,13 @@ BOOL CassetteApp::InitInstance()
         system("pause");
         return FALSE;
     }
+    // 开启命令行窗口输出详细信息
     if ( cmd. hasFlag("--verbose") )
     {
         winplus::Win32GUI_ShowConsole();
     }
 
+    // 单例运行
     if ( !DoSingletonRunning() ) return FALSE;
 
     // ----------------------------------------------------------------------------------
@@ -136,7 +140,7 @@ BOOL CassetteApp::InitInstance()
 
     if ( isLogined ) // 若已经登录,则显示主界面
     {
-        MainFrame * pFrame = new MainFrame;
+        MainFrame * pFrame = new MainFrame();
         m_pMainWnd = pFrame;
         // create and load the frame with its resources
         pFrame->LoadFrame( IDR_MAINFRAME, WS_OVERLAPPEDWINDOW | FWS_ADDTOTITLE, NULL, NULL );
@@ -144,6 +148,10 @@ BOOL CassetteApp::InitInstance()
         pFrame->UpdateWindow();
         pFrame->ShowWindow(this->m_nCmdShow);
 
+        AccountComprehensiveWnd * pComprehensiveWnd = new AccountComprehensiveWnd( pFrame, "Comprehensive Window", CRect(0,0,360,480) );
+        pComprehensiveWnd->UpdateWindow();
+        winplus::Window_Center( *pComprehensiveWnd, *pFrame );
+        pComprehensiveWnd->ShowWindow(this->m_nCmdShow);
         return TRUE;
     }
     return FALSE;

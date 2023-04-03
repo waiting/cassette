@@ -128,12 +128,8 @@ void AccountIntegratedWnd::MakeDraw()
         AccountContext & accountCtx = m_accounts[i];
 
         m_gCanvas->DrawLine( penWhite, accountCtx.accountRect.GetLeft(), accountCtx.accountRect.GetBottom(), accountCtx.accountRect.GetRight(), accountCtx.accountRect.GetBottom() );
-
         m_gCanvas->FillRectangle( &brushHalfBlack, accountCtx.accountRect );
-
-        //DrawBackground( accountCtx.accountField0Rect, &SolidBrush( Color() ), 2 );
         m_gCanvas->DrawShadowString( CStringToString(accountCtx.account.m_myName), font, &m_brushWhite, &brushHalfBlack, accountCtx.accountField0Rect, fmt, NULL );
-        //DrawBackground( accountCtx.accountNameRect, &SolidBrush( Color() ), 2 );
         if ( accountCtx.isPwdShown )
         {
             m_gCanvas->DrawShadowString( CStringToString(accountCtx.account.m_accountPwd), font, &SolidBrush( Color( 0, 255, 0 ) ), &brushHalfBlack, accountCtx.accountField1Rect, fmt, NULL );
@@ -153,7 +149,6 @@ void AccountIntegratedWnd::MakeDraw()
 
 void AccountIntegratedWnd::PostNcDestroy()
 {
-    std::cout << "AccountIntegratedWnd::PostNcDestroy()\n";
     DelAccountIntegratedWnd(this);
     delete this;
 }
@@ -173,7 +168,6 @@ BOOL AccountIntegratedWnd::PreCreateWindow(CREATESTRUCT& cs)
 BEGIN_MESSAGE_MAP(AccountIntegratedWnd, CWnd)
     //{{AFX_MSG_MAP(AccountIntegratedWnd)
     ON_WM_CREATE()
-    ON_WM_DESTROY()
     //ON_WM_NCHITTEST()
     ON_WM_ERASEBKGND()
     ON_WM_PAINT()
@@ -200,13 +194,6 @@ int AccountIntegratedWnd::OnCreate( LPCREATESTRUCT lpCreateStruct )
     this->RefreshAllCreate();
 
     return 0;
-}
-
-void AccountIntegratedWnd::OnDestroy()
-{
-    std::cout << "AccountIntegratedWnd::OnDestroy()\n";
-
-    CWnd::OnDestroy();
 }
 
 void AccountIntegratedWnd::OnPaint()
@@ -307,8 +294,6 @@ void AccountIntegratedWnd::OnRButtonDown( UINT nFlags, CPoint point )
 
 void AccountIntegratedWnd::OnRButtonUp( UINT nFlags, CPoint point )
 {
-    // TODO: 在此添加消息处理程序代码和/或调用默认值
-
     for ( int i = 0; i < m_accounts.GetCount(); i++ )
     {
         if ( m_accounts[i].accountRect.Contains( point.x, point.y ) )

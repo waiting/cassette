@@ -122,7 +122,6 @@ protected:
 protected:
     //{{AFX_MSG(AccountIntegratedWnd)
     afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
-    afx_msg void OnDestroy();
     afx_msg LRESULT OnNcHitTest(CPoint point);
     afx_msg BOOL OnEraseBkgnd(CDC* pDC);
     afx_msg void OnPaint();
