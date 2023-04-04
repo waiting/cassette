@@ -111,7 +111,7 @@ void AccountIntegratedWnd::MakeDraw()
     m_gCanvas->DrawShadowString( _T("点此添加账户"), m_primaryFont, &m_brushWhite, &m_brushBlack, RectF( 0, 4, m_rcClient.Width(), 40 ), m_sfHVCenter, &m_captionRect );
 
     // 画内容背景
-    m_gCanvas->DrawBackground( m_contentRect, &m_brushHalfWhite, 8 );
+    m_gCanvas->FillRoundRectangle( &m_brushHalfWhite, m_contentRect, 8 );
     //DrawShadowFrame(m_contentRect);
 
     // 画账户信息

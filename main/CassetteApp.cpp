@@ -204,9 +204,11 @@ void CassetteApp::OpenDatabase()
     // 从资源加载KEY
     if ( objResDbKey.load( IDR_KEY_DB, _T("KEY") ) )
     {
-        encryptKey.resize( objResDbKey.getSize() );
-        CopyMemory( &encryptKey[0], objResDbKey.getData(), encryptKey.size() );
+        winplus::AnsiString keyJson;
+        keyJson.assign( objResDbKey.getData<char>(), objResDbKey.getSize() );
+        encryptKey = winplus::Mixed().json(keyJson).get("key");
     }
+
     // 判断数据库文件是否存在，不存在则需要初始化
     bool isNeedInit = !winplus::DetectPath(databasePath);
 
