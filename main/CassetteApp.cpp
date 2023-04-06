@@ -335,6 +335,10 @@ void CassetteApp::DoSettings( UINT flag )
         // 是否开启http服务
         EnableHttpService(m_settings.isEnabledHttpSrv);
     }
+    if ( flag & Setting_EnabledHotkey )
+    {
+        // 注册热键的功能移到了主窗口
+    }
     if ( flag & Setting_EnabledAutoRun )
     {
         // 是否开机自启动

@@ -38,13 +38,7 @@ protected:
 
     // 数组存储账户记录
     AccountArray m_accounts;
-    /*CStringArray m_myNames;
-    CStringArray m_accountNames;
-    CStringArray m_accountPwds;
-    CUIntArray m_cateIds;
-    CUIntArray m_safeRanks;
-    CStringArray m_comments;
-    CUIntArray m_times;*/
+
 // Generated message map functions
     //{{AFX_MSG(AccountsView)
     afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);

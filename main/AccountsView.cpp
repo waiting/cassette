@@ -163,7 +163,7 @@ void AccountsView::OnListViewRClick(NMHDR* pNMHDR, LRESULT* pResult)
     menu.GetSubMenu(0)->TrackPopupMenu( 0, pt.x, pt.y, GetParentFrame() );
 }
 
-void AccountsView::OnListViewActivated(NMHDR* pNMHDR, LRESULT* pResult) 
+void AccountsView::OnListViewActivated( NMHDR * pNMHDR, LRESULT * pResult ) 
 {
     CListCtrl & lst = GetListCtrl();
     int index = lst.GetNextItem( -1, LVNI_ALL | LVNI_SELECTED );
