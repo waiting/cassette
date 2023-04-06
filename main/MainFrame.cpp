@@ -681,8 +681,8 @@ void MainFrame::DoIntelligentHotkey()
             pCurWnd->ClientToScreen(&rcIntegratedWnd);
 
             // 显示账户信息窗口
-            AccountIntegratedWnd * pIntegratedWnd = NULL;
-            if ( pIntegratedWnd = AccountIntegratedWnd::GetAccountIntegratedWnd(*pCurWnd) )
+            auto pIntegratedWnd = (AccountIntegratedWnd *)AccountIntegratedWnd::GetWnd(*pCurWnd);
+            if ( pIntegratedWnd )
             {
                 //pIntegratedWnd->SetAccountsInfo( m_catesDlg.m_cates[cateIndex], accounts );
                 pIntegratedWnd->SetWindowPos( NULL, rcIntegratedWnd.left, rcIntegratedWnd.top, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE );
@@ -691,6 +691,7 @@ void MainFrame::DoIntelligentHotkey()
             else
             {
                 pIntegratedWnd = new AccountIntegratedWnd( pCurWnd, m_catesDlg.m_cates[cateIndex].m_cateName, rcIntegratedWnd );
+                pIntegratedWnd->AutoDelete(TRUE);
                 pIntegratedWnd->SetAccountsInfo( m_catesDlg.m_cates[cateIndex], accounts );
                 pCurWnd->SetWindowPos( &wndTop, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE );
 

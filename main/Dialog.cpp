@@ -12,8 +12,7 @@ static char THIS_FILE[] = __FILE__;
 /////////////////////////////////////////////////////////////////////////////
 // Dialog dialog
 
-Dialog::Dialog( UINT nIDTemplate, CWnd * pParentWnd )
-: CDialog( nIDTemplate, pParentWnd ), m_nIDTemplate(nIDTemplate)
+Dialog::Dialog( UINT nIDTemplate, CWnd * pParentWnd ) : CDialog( nIDTemplate, pParentWnd ), m_nIDTemplate(nIDTemplate)
 {
     //{{AFX_DATA_INIT(Dialog)
         // NOTE: the ClassWizard will add member initialization here
@@ -78,12 +77,19 @@ BOOL Dialog::OnInitDialog()
     if ( pChildWnd = this->GetWindow(GW_CHILD) ) do
     {
         m_ToolTips.AddTool(pChildWnd);
-        CString clsName;
-        GetClassName( pChildWnd->GetSafeHwnd(), clsName.GetBuffer(256), 256 );
-        if ( !clsName.IsEmpty() ) clsName.MakeUpper();
-        if ( clsName == _T("STATIC") )
-        {
-        }
+        //CString clsName;
+        //int nChars = GetClassName( pChildWnd->GetSafeHwnd(), clsName.GetBuffer(256), 256 );
+        //clsName.GetBufferSetLength(nChars);
+        //if ( !clsName.IsEmpty() ) clsName.MakeUpper();
+        //if ( clsName == _T("STATIC") )
+        //{
+        //    size_t i = m_allLabels.size();
+        //    m_allLabels.push_back( winplus::MakeSimple( new Label() ) );
+        //    m_allLabels[i]->SubclassWindow( pChildWnd->GetSafeHwnd() );
+        //    m_allLabels[i]->SetColor( RGB( 255, 2, 3 ) );
+
+        //    pChildWnd->UpdateWindow();
+        //}
     }
     while ( pChildWnd = pChildWnd->GetWindow(GW_HWNDNEXT) );
 

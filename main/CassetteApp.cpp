@@ -285,43 +285,42 @@ void CassetteApp::LoadSettings( UINT flag )
 {
     winplus::Ini settingsIni( winplus::ModulePath() + winplus::dirSep + winplus::LoadString(AFX_IDS_APP_TITLE) + TEXT(".ini") );
     winplus::String sname = winplus::LoadString(AFX_IDS_APP_TITLE);
-    winplus::Ini::Section s = settingsIni( sname.c_str() );
+    winplus::Ini::Section sec = settingsIni( sname.c_str() );
 
-    if ( flag & Setting_EnabledAutoRun ) m_settings.isEnabledAutoRun = winplus::Mixed( s.get( _T("EnabledAutoRun"), _T("false") ) );
-    if ( flag & Setting_EnabledHotkey ) m_settings.isEnabledHotkey = winplus::Mixed( s.get( _T("EnabledHotkey"), _T("true") ) );
-    if ( flag & Setting_EnabledHttpSrv ) m_settings.isEnabledHttpSrv = winplus::Mixed( s.get( _T("EnabledHttpSrv"), _T("false") ) );
-    if ( flag & Setting_EnabledScheme ) m_settings.isEnabledScheme = winplus::Mixed( s.get( _T("EnabledScheme"), _T("false") ) );
-    if ( flag & Setting_DatabasePath ) m_settings.databasePath = s.get( _T("DatabasePath"), winplus::Format( _T("$ROOT$\\%s.db"), winplus::LoadString(AFX_IDS_APP_TITLE).c_str() ) );
-    if ( flag & Setting_BackupPath ) m_settings.backupPath = s.get( _T("BackupPath"), _T("$ROOT$") );
-    if ( flag & Setting_WordslibPath ) m_settings.wordslibPath = s.get( _T("WordslibPath"), _T("$ROOT$\\words.wl") );
+    if ( flag & Setting_EnabledAutoRun ) winplus::Mixed::ParseBool( sec.get( _T("EnabledAutoRun"), _T("false") ), &m_settings.isEnabledAutoRun );
+    if ( flag & Setting_EnabledHotkey ) winplus::Mixed::ParseBool( sec.get( _T("EnabledHotkey"), _T("true") ), &m_settings.isEnabledHotkey );
+    if ( flag & Setting_EnabledHttpSrv ) winplus::Mixed::ParseBool( sec.get( _T("EnabledHttpSrv"), _T("false") ), &m_settings.isEnabledHttpSrv );
+    if ( flag & Setting_EnabledScheme ) winplus::Mixed::ParseBool( sec.get( _T("EnabledScheme"), _T("false") ), &m_settings.isEnabledScheme );
+    if ( flag & Setting_DatabasePath ) m_settings.databasePath = sec.get( _T("DatabasePath"), winplus::Format( _T("$ROOT$\\%s.db"), winplus::LoadString(AFX_IDS_APP_TITLE).c_str() ) );
+    if ( flag & Setting_BackupPath ) m_settings.backupPath = sec.get( _T("BackupPath"), _T("$ROOT$") );
+    if ( flag & Setting_WordslibPath ) m_settings.wordslibPath = sec.get( _T("WordslibPath"), _T("$ROOT$\\words.wl") );
 
-    if ( flag & Setting_AutoLogin ) m_settings.isAutoLogin = winplus::Mixed( s.get( _T("AutoLogin"), _T("false") ) );
-    if ( flag & Setting_SavePassword ) m_settings.isSavePassword = winplus::Mixed( s.get( _T("SavePassword"), _T("false") ) );
+    if ( flag & Setting_AutoLogin ) winplus::Mixed::ParseBool( sec.get( _T("AutoLogin"), _T("false") ), &m_settings.isAutoLogin );
+    if ( flag & Setting_SavePassword ) winplus::Mixed::ParseBool( sec.get( _T("SavePassword"), _T("false") ), &m_settings.isSavePassword );
 
-    if ( flag & Setting_Username ) m_settings.username = s.get( _T("Username"), _T("") );
-    if ( flag & Setting_Password ) m_settings.password = s.get( _T("Password"), _T("") );
-
+    if ( flag & Setting_Username ) m_settings.username = sec.get( _T("Username"), _T("") );
+    if ( flag & Setting_Password ) m_settings.password = sec.get( _T("Password"), _T("") );
 }
 
 void CassetteApp::SaveSettings( UINT flag )
 {
     winplus::Ini settingsIni( winplus::ModulePath() + winplus::dirSep + winplus::LoadString(AFX_IDS_APP_TITLE) + TEXT(".ini") );
     winplus::String sname = winplus::LoadString(AFX_IDS_APP_TITLE);
-    winplus::Ini::Section s = settingsIni( sname.c_str() );
+    winplus::Ini::Section sec = settingsIni( sname.c_str() );
 
-    if ( flag & Setting_EnabledAutoRun ) s.set( _T("EnabledAutoRun"), (winplus::String)winplus::Mixed(m_settings.isEnabledAutoRun) );
-    if ( flag & Setting_EnabledHotkey ) s.set( _T("EnabledHotkey"), (winplus::String)winplus::Mixed(m_settings.isEnabledHotkey) );
-    if ( flag & Setting_EnabledHttpSrv ) s.set( _T("EnabledHttpSrv"), (winplus::String)winplus::Mixed(m_settings.isEnabledHttpSrv) );
-    if ( flag & Setting_EnabledScheme ) s.set( _T("EnabledScheme"), (winplus::String)winplus::Mixed(m_settings.isEnabledScheme) );
-    if ( flag & Setting_DatabasePath ) s.set( _T("DatabasePath"), m_settings.databasePath );
-    if ( flag & Setting_BackupPath ) s.set( _T("BackupPath"), m_settings.backupPath );
-    if ( flag & Setting_WordslibPath ) s.set( _T("WordslibPath"), m_settings.wordslibPath );
+    if ( flag & Setting_EnabledAutoRun ) sec.set( _T("EnabledAutoRun"), (winplus::String)winplus::Mixed(m_settings.isEnabledAutoRun) );
+    if ( flag & Setting_EnabledHotkey ) sec.set( _T("EnabledHotkey"), (winplus::String)winplus::Mixed(m_settings.isEnabledHotkey) );
+    if ( flag & Setting_EnabledHttpSrv ) sec.set( _T("EnabledHttpSrv"), (winplus::String)winplus::Mixed(m_settings.isEnabledHttpSrv) );
+    if ( flag & Setting_EnabledScheme ) sec.set( _T("EnabledScheme"), (winplus::String)winplus::Mixed(m_settings.isEnabledScheme) );
+    if ( flag & Setting_DatabasePath ) sec.set( _T("DatabasePath"), m_settings.databasePath );
+    if ( flag & Setting_BackupPath ) sec.set( _T("BackupPath"), m_settings.backupPath );
+    if ( flag & Setting_WordslibPath ) sec.set( _T("WordslibPath"), m_settings.wordslibPath );
 
-    if ( flag & Setting_AutoLogin ) s.set( _T("AutoLogin"), (winplus::String)winplus::Mixed(m_settings.isAutoLogin) );
-    if ( flag & Setting_SavePassword ) s.set( _T("SavePassword"), (winplus::String)winplus::Mixed(m_settings.isSavePassword) );
+    if ( flag & Setting_AutoLogin ) sec.set( _T("AutoLogin"), (winplus::String)winplus::Mixed(m_settings.isAutoLogin) );
+    if ( flag & Setting_SavePassword ) sec.set( _T("SavePassword"), (winplus::String)winplus::Mixed(m_settings.isSavePassword) );
 
-    if ( flag & Setting_Username ) s.set( _T("Username"), m_settings.username );
-    if ( flag & Setting_Password ) s.set( _T("Password"), m_settings.password );
+    if ( flag & Setting_Username ) sec.set( _T("Username"), m_settings.username );
+    if ( flag & Setting_Password ) sec.set( _T("Password"), m_settings.password );
 }
 
 void CassetteApp::DoSettings( UINT flag )
@@ -414,7 +413,7 @@ void CassetteApp::EnableScheme( bool isEnabled )
 BOOL CassetteApp::DoSingletonRunning()
 {
     winplus::String sharedMemName = winplus::LoadString(IDS_SHAREDMEM_NAME);
-    if ( m_sharedMem.open( sharedMemName.c_str() ) )
+    if ( m_sharedMem.open(sharedMemName) )
     {
         HWND hwndMain = m_sharedMem->hMainWnd;
 

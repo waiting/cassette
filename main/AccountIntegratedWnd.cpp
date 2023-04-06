@@ -8,9 +8,7 @@
 #include <playsoundapi.h>
 
 // AccountIntegratedWnd -------------------------------------------------------------------
-std::map<HWND, AccountIntegratedWnd *> AccountIntegratedWnd::m_hasDisplayed;
-
-AccountIntegratedWnd::AccountIntegratedWnd( CWnd * pParentWnd, LPCTSTR lpszWindowName, const RECT& rect ) :
+AccountIntegratedWnd::AccountIntegratedWnd( CWnd * pParentWnd, LPCTSTR lpszWindowName, const RECT& rect ) : SpwWindow(pParentWnd),
     m_primaryFont( L"宋体", 24, 0, UnitPixel ),
     m_penBlack( Color( 0, 0, 0 ) ),
     m_penHalfWhite( Color( 128, 255, 255, 255 ), 0.5f ),
@@ -27,8 +25,6 @@ AccountIntegratedWnd::AccountIntegratedWnd( CWnd * pParentWnd, LPCTSTR lpszWindo
     // 创建窗口
     CWnd::CreateEx( 0, AfxRegisterWndClass( CS_HREDRAW | CS_VREDRAW ), lpszWindowName, WS_POPUP | WS_CAPTION | WS_SYSMENU, rect, pParentWnd, 0, NULL );
 
-    // 加入维护表
-    SetAccountIntegratedWnd( pParentWnd->GetSafeHwnd(), this );
 }
 
 AccountIntegratedWnd::~AccountIntegratedWnd()
@@ -147,12 +143,6 @@ void AccountIntegratedWnd::MakeDraw()
     delete penWhite;
 }
 
-void AccountIntegratedWnd::PostNcDestroy()
-{
-    DelAccountIntegratedWnd(this);
-    delete this;
-}
-
 BOOL AccountIntegratedWnd::PreCreateWindow(CREATESTRUCT& cs) 
 {
     if ( !CWnd::PreCreateWindow(cs) ) return FALSE;
@@ -165,7 +155,7 @@ BOOL AccountIntegratedWnd::PreCreateWindow(CREATESTRUCT& cs)
     return TRUE;
 }
 
-BEGIN_MESSAGE_MAP(AccountIntegratedWnd, CWnd)
+BEGIN_MESSAGE_MAP(AccountIntegratedWnd, SpwWindow)
     //{{AFX_MSG_MAP(AccountIntegratedWnd)
     ON_WM_CREATE()
     //ON_WM_NCHITTEST()

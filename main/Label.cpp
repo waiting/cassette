@@ -11,7 +11,6 @@ static char THIS_FILE[] = __FILE__;
 
 /////////////////////////////////////////////////////////////////////////////
 // Label
-
 Label::Label()
 {
     m_bFontChanged = FALSE;
@@ -26,13 +25,13 @@ Label::Label()
 
 Label::~Label()
 {
+
 }
 
 
 BEGIN_MESSAGE_MAP(Label, CStatic)
     //{{AFX_MSG_MAP(Label)
     ON_WM_CTLCOLOR_REFLECT()
-    ON_WM_PAINT()
     //}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -57,22 +56,4 @@ HBRUSH Label::CtlColor(CDC* pDC, UINT nCtlColor)
     {
         return (HBRUSH)GetStockObject(NULL_BRUSH);
     }
-}
-
-void Label::OnPaint() 
-{
-    //CPaintDC dc(this); // device context for painting
-    {
-        //CClientDC dc(this);
-        //CRect rc;
-        //GetClientRect(&rc);
-        //CBrush brush( RGB( 255, 238, 255 ) );
-        //gdi_object_selector<HBRUSH> sel( dc, brush );
-        //gdi_object_selector<HPEN> sel2( dc, GetStockObject(NULL_PEN) );
-
-        //dc.RoundRect( &rc, CPoint( 10, 10 ) );
-
-    }
-
-    CStatic::OnPaint();
 }

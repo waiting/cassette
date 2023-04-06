@@ -189,6 +189,7 @@
     <ClCompile Include="UserLoginDlg.cpp" />
     <ClCompile Include="UserRegisterDlg.cpp" />
     <ClCompile Include="UserSettingsDlg.cpp" />
+    <ClCompile Include="Window.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AboutView.h" />
@@ -211,10 +212,10 @@
     <ClInclude Include="MainFrame.h" />
     <ClInclude Include="RegOperate.h" />
     <ClInclude Include="resource.h" />
-    <ClInclude Include="stdafx.h" />
     <ClInclude Include="UserLoginDlg.h" />
     <ClInclude Include="UserRegisterDlg.h" />
     <ClInclude Include="UserSettingsDlg.h" />
+    <ClInclude Include="Window.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Cassette.rc" />

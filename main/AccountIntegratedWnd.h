@@ -6,42 +6,11 @@
 #pragma once
 #endif // _MSC_VER > 1000
 
+#include "Window.h"
+
 // 账户信息窗口，显示一个账户种类下的账户
-class AccountIntegratedWnd : public CWnd
+class AccountIntegratedWnd : public SpwWindow
 {
-protected:
-    // 存储已经在当前窗口上显示的本窗口，确保每个当前窗口上只显示一次本窗口
-    static std::map<HWND, AccountIntegratedWnd *> m_hasDisplayed;
-
-public:
-    // 获取指定窗口上的账户信息窗口
-    static AccountIntegratedWnd * GetAccountIntegratedWnd( HWND hWnd )
-    {
-        if ( m_hasDisplayed.find(hWnd) != m_hasDisplayed.end() )
-            return m_hasDisplayed[hWnd];
-        return NULL;
-    }
-
-    // 设置指定窗口上的账户信息窗口
-    static void SetAccountIntegratedWnd( HWND hWnd, AccountIntegratedWnd * pIntegratedWnd )
-    {
-        m_hasDisplayed[hWnd] = pIntegratedWnd;
-    }
-
-    // 删除指定窗口上的账户信息窗口
-    static void DelAccountIntegratedWnd( AccountIntegratedWnd * pIntegratedWnd )
-    {
-        std::map<HWND, AccountIntegratedWnd *>::iterator it;
-        for ( it = m_hasDisplayed.begin(); it != m_hasDisplayed.end(); ++it )
-        {
-            if ( it->second == pIntegratedWnd )
-            {
-                m_hasDisplayed.erase(it->first);
-                break;
-            }
-        }
-    }
-
 public:
     AccountIntegratedWnd( CWnd * pParentWnd, LPCTSTR lpszWindowName, const RECT& rect );
     virtual ~AccountIntegratedWnd();
@@ -114,8 +83,7 @@ protected:
 
     // ClassWizard generated virtual function overrides
     //{{AFX_VIRTUAL(AccountIntegratedWnd)
-    protected:
-    virtual void PostNcDestroy();
+protected:
     virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
     //}}AFX_VIRTUAL
 

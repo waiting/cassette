@@ -81,7 +81,6 @@ protected:
 
     //{{AFX_MSG(Label)
     afx_msg HBRUSH CtlColor(CDC* pDC, UINT nCtlColor);
-    afx_msg void OnPaint();
     //}}AFX_MSG
 
     DECLARE_MESSAGE_MAP()

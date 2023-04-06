@@ -44,9 +44,9 @@ protected:
 
 // Implementation
 protected:
-    UINT m_nIDTemplate;
+    UINT m_nIDTemplate; // 对话框模板资源ID
     CToolTipCtrl m_ToolTips; // 工具提示控件
-    Label m_allLabel; // 标签，用于子类化Static，自绘
+    //std::vector< winplus::SimplePointer<Label> > m_allLabels; // 标签，用于子类化Static，自绘
 
     // Generated message map functions
     //{{AFX_MSG(Dialog)
