@@ -539,6 +539,8 @@ IDR_HTML_ABOUT          HTML                    "..\\res\\about.html"
 
 IDR_PNG_ABOUT_IMAGE     PNG                     "..\\res\\AccountMaster_01.png"
 
+IDR_PNG_ACCOUNT_COMPREHENSIVE_WND PNG                     "J:\\Projects\\Cassette\\res\\AccountComprehensiveWnd.png"
+
 
 /////////////////////////////////////////////////////////////////////////////
 //

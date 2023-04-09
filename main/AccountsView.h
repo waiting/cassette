@@ -36,6 +36,7 @@ public:
 
 protected:
 
+    CImageList m_iconList;
     // 数组存储账户记录
     AccountArray m_accounts;
 

@@ -155,10 +155,11 @@ void MainFrame::Dump(CDumpContext& dc) const
 /////////////////////////////////////////////////////////////////////////////
 // MainFrame message handlers
 
-int MainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
+int MainFrame::OnCreate( LPCREATESTRUCT lpCreateStruct )
 {
     if ( CFrameWnd::OnCreate(lpCreateStruct) == -1 )
         return -1;
+
     // 创建一个账户视图占据整个框架窗口的客户区域
     if ( !m_pAccountsView->Create(
             NULL,
@@ -173,6 +174,7 @@ int MainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
         TRACE0("Failed to create view window\n");
         return -1;
     }
+
     // 更新列表
     m_pAccountsView->UpdateList();
 
@@ -221,6 +223,7 @@ int MainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
     // 设置图标
     SetIcon( winplus::Icon( IDR_MAINFRAME, 16, 16 ), TRUE );
+
     // 把窗口句柄提交给共享内存,以便激活
     g_theApp.GetSharedMemory()->hMainWnd = GetSafeHwnd();
 

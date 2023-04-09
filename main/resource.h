@@ -28,6 +28,7 @@
 #define IDB_TOOLBAR32                   156
 #define IDR_WAVE_SE01                   157
 #define IDR_WAVE_SE02                   158
+#define IDR_PNG_ACCOUNT_COMPREHENSIVE_WND 160
 #define IDR_KEY_DB                      200
 #define IDC_REGISTERED_HOTKEY           998
 #define IDC_SYSLINK_WEBSITE             1000
@@ -95,7 +96,7 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        159
+#define _APS_NEXT_RESOURCE_VALUE        162
 #define _APS_NEXT_COMMAND_VALUE         32807
 #define _APS_NEXT_CONTROL_VALUE         1038
 #define _APS_NEXT_SYMED_VALUE           101

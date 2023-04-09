@@ -78,7 +78,7 @@ void AccountsView::UpdateList( int flag, long itemIndex )
             int i;
             for ( i = 0; i < count; ++i )
             {
-                lst.InsertItem( i, m_accounts[i].m_myName );
+                lst.InsertItem( i, m_accounts[i].m_myName, 0 );
                 lst.SetItem( i, 1, LVIF_TEXT, m_accounts[i].m_accountName, 0, 0, 0, 0 );
                 AccountType type;
                 GetTypeByCateId( g_theApp.GetDatabase(), m_accounts[i].m_cateId, &type );
@@ -123,6 +123,15 @@ int AccountsView::OnCreate( LPCREATESTRUCT lpCreateStruct )
     lst.InsertColumn( 3, _T("安全权值"), LVCFMT_LEFT, 48 );
     lst.InsertColumn( 4, _T("录入时刻"), LVCFMT_LEFT, 120 );
     lst.InsertColumn( 5, _T("备注"), LVCFMT_LEFT, 160 );
+
+    //lst.SetImageList();
+    m_iconList.Create( 48, 48, ILC_COLOR32 | ILC_MASK, 0, 1 );
+
+    m_iconList.Add( winplus::Icon( IDI_ICON2 ) );
+    // m_iconList.Add( winplus::Icon( IDI_ICON3 ) );
+    // m_iconList.Add( winplus::Icon( IDR_MAINFRAME ) );
+
+    lst.SetImageList( &m_iconList, LVSIL_NORMAL );
 
     return 0;
 }

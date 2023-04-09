@@ -227,6 +227,7 @@
     <None Include="..\res\dbschema.sql" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="..\res\AccountComprehensiveWnd.png" />
     <Image Include="..\res\AccountMaster_01.ico" />
     <Image Include="..\res\AccountMaster_01.png" />
     <Image Include="..\res\AccountMaster_02.ico" />

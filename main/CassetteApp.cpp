@@ -45,11 +45,6 @@ BOOL CassetteApp::InitInstance()
     AfxEnableControlContainer();
     InitCommonControls();
     AfxOleInit();
-    //AfxOleInit();
-    // Standard initialization
-    // If you are not using these features and wish to reduce the size
-    //  of your final executable, you should remove from the following
-    //  the specific initialization routines you do not need.
 
 #ifdef _AFXDLL
     Enable3dControls();         // Call this when using MFC in a shared DLL
@@ -58,13 +53,8 @@ BOOL CassetteApp::InitInstance()
 #endif
 
     winplus::StringArray argArr;
-    winplus::CommandArguments(&argArr);
-    std::vector<const char *> args;
-    for ( auto && arg : argArr )
-    {
-        args.push_back( arg.c_str() );
-    }
-    args.push_back(nullptr);
+    winplus::CommandArgumentArray(&argArr);
+    auto args = winplus::CommandArgs(&argArr);
 
     // 命令行解释
     winplus::CommandLineVars cmd( (int)argArr.size(), &args[0], "-url", "", "--verbose" );
@@ -148,7 +138,9 @@ BOOL CassetteApp::InitInstance()
         pFrame->UpdateWindow();
         pFrame->ShowWindow(this->m_nCmdShow);
 
-        AccountComprehensiveWnd * pComprehensiveWnd = new AccountComprehensiveWnd( pFrame, "Comprehensive Window", CRect(0,0,360,480) );
+
+        // 测试新账户综合窗口
+        AccountComprehensiveWnd * pComprehensiveWnd = new AccountComprehensiveWnd( pFrame, "Comprehensive Window", CRect(0,0,300,412) );
         pComprehensiveWnd->UpdateWindow();
         winplus::Window_Center( *pComprehensiveWnd, *pFrame );
         pComprehensiveWnd->ShowWindow(this->m_nCmdShow);
@@ -432,7 +424,7 @@ BOOL CassetteApp::DoSingletonRunning()
     }
     else
     {
-        m_sharedMem.create( sharedMemName.c_str(), sizeof(CassetteSharedData) );
+        m_sharedMem.create( sharedMemName, sizeof(CassetteSharedData) );
     }
     return TRUE;
 }
