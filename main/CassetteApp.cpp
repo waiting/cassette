@@ -141,6 +141,7 @@ BOOL CassetteApp::InitInstance()
 
         // 测试新账户综合窗口
         AccountComprehensiveWnd * pComprehensiveWnd = new AccountComprehensiveWnd( pFrame, "Comprehensive Window", CRect(0,0,300,412) );
+        pComprehensiveWnd->AutoDelete(TRUE);
         pComprehensiveWnd->UpdateWindow();
         winplus::Window_Center( *pComprehensiveWnd, *pFrame );
         pComprehensiveWnd->ShowWindow(this->m_nCmdShow);

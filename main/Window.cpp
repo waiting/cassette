@@ -57,7 +57,7 @@ void SpwWindow::DelWnd( CWnd * pWnd )
     {
         if ( it->second == pWnd )
         {
-            _hasDisplayed.erase( it->first );
+            _hasDisplayed.erase(it->first);
             break;
         }
     }
@@ -69,10 +69,9 @@ SpwWindow::SpwWindow( CWnd * pWndParent )
     SetWnd( pWndParent->GetSafeHwnd(), this );
 }
 
-void SpwWindow::PostNcDestroy()
+SpwWindow::~SpwWindow()
 {
     DelWnd(this);
-    Window::PostNcDestroy();
 }
 
 BEGIN_MESSAGE_MAP(SpwWindow, Window)

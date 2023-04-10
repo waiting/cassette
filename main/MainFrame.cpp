@@ -182,7 +182,7 @@ int MainFrame::OnCreate( LPCREATESTRUCT lpCreateStruct )
     if ( !m_toolBar.CreateEx(
             this,
             TBSTYLE_FLAT | TBSTYLE_LIST /*| TBSTYLE_TRANSPARENT | TBSTYLE_TOOLTIPS*/,
-            WS_CHILD | WS_VISIBLE | CBRS_TOP /*| CBRS_GRIPPER*/ | CBRS_TOOLTIPS | CBRS_FLYBY | CBRS_SIZE_DYNAMIC
+            WS_CHILD | WS_VISIBLE | CBRS_TOP | CBRS_GRIPPER | CBRS_TOOLTIPS | CBRS_FLYBY | CBRS_SIZE_DYNAMIC
         ) || !m_toolBar.LoadToolBar(IDR_MAINFRAME)
     )
     {
@@ -194,7 +194,7 @@ int MainFrame::OnCreate( LPCREATESTRUCT lpCreateStruct )
     // 资源文件中可改变工具条按钮大小,比较方便
     // 图片和工具条按钮大小应该匹配
     CImageList imgList;
-    imgList.Create( 48, 48, ILC_COLOR32, 0, 1 );
+    imgList.Create( 48, 48, ILC_COLOR32 | ILC_MASK, 0, 1 );
     winplus::ImageList_Add32bpp( imgList.GetSafeHandle(), IDB_TOOLBAR32, IMAGE_BITMAP );
     //ImageList_AddAlphaImage( imgList.GetSafeHandle(), IDR_PNG_TOOLBAR, _T("PNG") );
     m_toolBar.GetToolBarCtrl().SetImageList(&imgList);

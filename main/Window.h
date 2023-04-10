@@ -55,9 +55,7 @@ public:
 
     // Constructors
     SpwWindow( CWnd * pWndParent );
-
-protected:
-    virtual void PostNcDestroy();
+    virtual ~SpwWindow();
 
 protected:
     // 存储已经在HWND窗口上显示的本类窗口，确保每个HWND窗口上只显示一个本类窗口

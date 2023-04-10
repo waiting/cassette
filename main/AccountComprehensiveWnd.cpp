@@ -7,19 +7,30 @@
 
 IMPLEMENT_DYNAMIC(AccountComprehensiveWnd, CWnd)
 
+#define ID_TIMER_RENDER 1
 struct AccountComprehensive_Data
 {
     // 画布
     winplus::MemDC memCanvas;
+    // 背景框架图
+    winplus::SimplePointer<Bitmap> imgBgFrame;
+    // 边框宽度
+    int lBorder;
+    int rBorder;
+    int tBorder;
+    int bBorder;
+
     // 窗口大小矩形
     RectF rectWindow;
     // 客户区大小矩形
     RectF rectClient;
-    // 右上角关闭按钮区域
+    // 右上角关闭按钮的路径区域
     GraphicsPath closeBtnPath;
+    // 当前鼠标位置
+    Point ptCurMouse;
 };
 
-AccountComprehensiveWnd::AccountComprehensiveWnd( CWnd * pParentWnd, winplus::String const & strWindowName, CRect const & rect )
+AccountComprehensiveWnd::AccountComprehensiveWnd( CWnd * pParentWnd, winplus::String const & strWindowName, CRect const & rect ) : SpwWindow(pParentWnd)
 {
     _self.create();
 
@@ -29,11 +40,12 @@ AccountComprehensiveWnd::AccountComprehensiveWnd( CWnd * pParentWnd, winplus::St
 
     // 背景图画刷
     //HBRUSH hbrBkgnd = CreatePatternBrush( (HBITMAP)LoadImage( AfxGetApp()->m_hInstance, MAKEINTRESOURCE(IDR_INTEGRATEDBKIMG), IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION ) );
-    HBRUSH hbrBkgnd = CreatePatternBrush( (HBITMAP)LoadImage( AfxGetApp()->m_hInstance, MAKEINTRESOURCE(IDR_INTEGRATEDBKIMG), IMAGE_BITMAP, 0, 0, 0 ) );
+    //HBRUSH hbrBkgnd = CreatePatternBrush( (HBITMAP)LoadImage( AfxGetApp()->m_hInstance, MAKEINTRESOURCE(IDR_INTEGRATEDBKIMG), IMAGE_BITMAP, 0, 0, 0 ) );
+
     // 创建窗口
-    CWnd::CreateEx(
+    __super::CreateEx(
         WS_EX_LAYERED,
-        AfxRegisterWndClass( CS_HREDRAW | CS_VREDRAW, NULL, hbrBkgnd ),
+        AfxRegisterWndClass( CS_HREDRAW | CS_VREDRAW, NULL, NULL ),
         strWindowName.c_str(),
         WS_POPUP /*| WS_CAPTION | WS_SYSMENU*/,
         rect,
@@ -52,95 +64,73 @@ AccountComprehensiveWnd::~AccountComprehensiveWnd()
     _self.destroy();
 }
 
-BOOL AccountComprehensiveWnd::PreCreateWindow( CREATESTRUCT & cs )
+void AccountComprehensiveWnd::RefreshUi()
 {
-    if ( !CWnd::PreCreateWindow(cs) ) return FALSE;
-    cs.dwExStyle &= ~WS_EX_CLIENTEDGE;
-    cs.dwExStyle |= WS_EX_TOOLWINDOW;
-    return TRUE;
+    // 获取窗口矩形
+    CRect rc;
+    GetWindowRect(&rc);
+    _self->rectWindow = winplus::RectGdiToGdiplus<RectF>(rc);
+    std::cout << "Window " << _self->rectWindow << "\n";
+
+    // 客户区
+    _self->rectClient = RectF( _self->lBorder, _self->tBorder, _self->rectWindow.Width - _self->lBorder - _self->rBorder, _self->rectWindow.Height - _self->tBorder - _self->bBorder );
 }
 
-void AccountComprehensiveWnd::PostNcDestroy()
+void AccountComprehensiveWnd::Draw()
 {
-    delete this;
-}
+    // 创建画布
+    _self->memCanvas.create( NULL, _self->rectWindow.Width, _self->rectWindow.Height );
 
-BEGIN_MESSAGE_MAP(AccountComprehensiveWnd, CWnd)
-    ON_WM_CREATE()
-    ON_WM_PAINT()
-    ON_WM_NCHITTEST()
-    ON_WM_MOUSEMOVE()
-END_MESSAGE_MAP()
-
-// AccountComprehensiveWnd 消息处理程序
-
-int AccountComprehensiveWnd::OnCreate( LPCREATESTRUCT lpCreateStruct )
-{
-    if ( CWnd::OnCreate( lpCreateStruct ) == -1 )
-        return -1;
-
-    CRect rectWnd;
-    GetWindowRect(&rectWnd);
-    _self->rectWindow = winplus::RectGdiToGdiplus<RectF>(rectWnd);
-    std::cout << rectWnd << "\n";
-
-    // 从图片载入
-    Bitmap bmpBkgnd( winplus::Resource( IDR_PNG_ACCOUNT_COMPREHENSIVE_WND, _T("PNG") ).createStream(), FALSE );
-    _self->memCanvas.create( NULL, rectWnd.Width(), rectWnd.Height() );
+    Bitmap & imgBgFrame = *_self->imgBgFrame.get();
     winplus::Graphics g(_self->memCanvas);
 
-    //g.SetSmoothingMode(SmoothingModeAntiAlias);
-    //g.DrawImage( &bmpBkgnd, 0, 0, bmpBkgnd.GetWidth(), bmpBkgnd.GetHeight() );
-    constexpr int lBorder = 8;
-    constexpr int rBorder = 8;
-    constexpr int tBorder = 23;
-    constexpr int bBorder = 8;
+    int lBorder = _self->lBorder;
+    int rBorder = _self->rBorder;
+    int tBorder = _self->tBorder;
+    int bBorder = _self->bBorder;
 
-    _self->rectClient = RectF( lBorder, tBorder, _self->memCanvas.width() - lBorder - rBorder, _self->memCanvas.height() - tBorder - bBorder );
     g.FillRectangle( &SolidBrush( Color( 96, 255, 255, 255 ) ), _self->rectClient );
 
-    TextureBrush ltBrush{ &bmpBkgnd, WrapModeTile, RectF( 0, 0, lBorder, tBorder ) };
+    TextureBrush ltBrush{ &imgBgFrame, WrapModeTile, RectF( 0, 0, lBorder, tBorder ) };
     RectF ltCornerRect( 0, 0, lBorder, tBorder );
     ltBrush.TranslateTransform( ltCornerRect.GetLeft(), ltCornerRect.GetTop() );
     g.FillRectangle( &ltBrush, ltCornerRect );
 
-    TextureBrush rtBrush{ &bmpBkgnd, WrapModeTile, RectF( bmpBkgnd.GetWidth() - rBorder, 0, rBorder, tBorder ) };
+    TextureBrush rtBrush{ &imgBgFrame, WrapModeTile, RectF( imgBgFrame.GetWidth() - rBorder, 0, rBorder, tBorder ) };
     RectF rtCornerRect( _self->memCanvas.width() - rBorder, 0, rBorder, tBorder );
     rtBrush.TranslateTransform( rtCornerRect.GetLeft(), rtCornerRect.GetTop() );
     g.FillRectangle( &rtBrush, rtCornerRect );
 
-    TextureBrush rbBrush{ &bmpBkgnd, WrapModeTile, RectF( bmpBkgnd.GetWidth() - rBorder, bmpBkgnd.GetHeight() - bBorder, rBorder, bBorder ) };
+    TextureBrush rbBrush{ &imgBgFrame, WrapModeTile, RectF( imgBgFrame.GetWidth() - rBorder, imgBgFrame.GetHeight() - bBorder, rBorder, bBorder ) };
     RectF rbCornerRect( _self->memCanvas.width() - rBorder, _self->memCanvas.height() - bBorder, rBorder, bBorder );
     rbBrush.TranslateTransform( rbCornerRect.GetLeft(), rbCornerRect.GetTop() );
     g.FillRectangle( &rbBrush, rbCornerRect );
 
-    TextureBrush lbBrush{ &bmpBkgnd, WrapModeTile, RectF( 0, bmpBkgnd.GetHeight() - bBorder, lBorder, bBorder ) };
+    TextureBrush lbBrush{ &imgBgFrame, WrapModeTile, RectF( 0, imgBgFrame.GetHeight() - bBorder, lBorder, bBorder ) };
     RectF lbCornerRect( 0, _self->memCanvas.height() - bBorder, lBorder, bBorder );
     lbBrush.TranslateTransform( lbCornerRect.GetLeft(), lbCornerRect.GetTop() );
     g.FillRectangle( &lbBrush, lbCornerRect );
 
-    TextureBrush lBrush{ &bmpBkgnd, WrapModeTile, RectF( 0, tBorder, lBorder, 1 ) };
+    TextureBrush lBrush{ &imgBgFrame, WrapModeTile, RectF( 0, tBorder, lBorder, 1 ) };
     RectF lEdgeRect( 0, tBorder, lBorder, _self->memCanvas.height() - tBorder - bBorder );
     lBrush.TranslateTransform( lEdgeRect.GetLeft(), lEdgeRect.GetTop() );
     g.FillRectangle( &lBrush, lEdgeRect );
 
-    TextureBrush tBrush{ &bmpBkgnd, WrapModeTile, RectF( lBorder, 0, 1, tBorder ) };
+    TextureBrush tBrush{ &imgBgFrame, WrapModeTile, RectF( lBorder, 0, 1, tBorder ) };
     RectF tEdgeRect( lBorder, 0, _self->memCanvas.width() - lBorder - rBorder, tBorder );
     tBrush.TranslateTransform( tEdgeRect.GetLeft(), tEdgeRect.GetTop() );
     g.FillRectangle( &tBrush, tEdgeRect );
 
-    TextureBrush rBrush{ &bmpBkgnd, WrapModeTile, RectF( bmpBkgnd.GetWidth() - rBorder, tBorder, rBorder, 1 ) };
+    TextureBrush rBrush{ &imgBgFrame, WrapModeTile, RectF( imgBgFrame.GetWidth() - rBorder, tBorder, rBorder, 1 ) };
     RectF rEdgeRect( _self->memCanvas.width() - rBorder, tBorder, rBorder, _self->memCanvas.height() - tBorder - bBorder );
     rBrush.TranslateTransform( rEdgeRect.GetLeft(), rEdgeRect.GetTop() );
     g.FillRectangle( &rBrush, rEdgeRect );
 
-    TextureBrush bBrush{ &bmpBkgnd, WrapModeTile, RectF( lBorder, bmpBkgnd.GetHeight() - bBorder, 1, bBorder ) };
+    TextureBrush bBrush{ &imgBgFrame, WrapModeTile, RectF( lBorder, imgBgFrame.GetHeight() - bBorder, 1, bBorder ) };
     RectF bEdgeRect( lBorder, _self->memCanvas.height() - bBorder, _self->memCanvas.width() - lBorder - rBorder, bBorder );
     bBrush.TranslateTransform( bEdgeRect.GetLeft(), bEdgeRect.GetTop() );
     g.FillRectangle( &bBrush, bEdgeRect );
 
-
-    SolidBrush closeBtnBrush( Color( 255, 204, 0 ) );
     RectF closeBtnRect( _self->memCanvas.width() - 8 - 16, 3.5, 16, 16 );
     //g.FillRectangle( &closeBtnBrush, closeBtnRect );
 
@@ -152,71 +142,28 @@ int AccountComprehensiveWnd::OnCreate( LPCREATESTRUCT lpCreateStruct )
         PointF{ closeBtnRect.X + ( closeBtnRect.Width / 2 ) - ( closeBtnRect.Width / 4 ) * (REAL)tan( 3.14159265 / 3 ), closeBtnRect.Y + ( closeBtnRect.Height * 3 / 4 ) },
         PointF{ closeBtnRect.X + ( closeBtnRect.Width / 2 ) - ( closeBtnRect.Width / 4 ) * (REAL)tan( 3.14159265 / 3 ), closeBtnRect.Y + ( closeBtnRect.Height / 4 ) }
     };
-    g.SetSmoothingMode(SmoothingModeAntiAlias);
 
+    _self->closeBtnPath.Reset();
     _self->closeBtnPath.AddPolygon( points, countof(points) );
-    g.FillPath( &closeBtnBrush, &_self->closeBtnPath );
 
+    winplus::SimplePointer<SolidBrush> pCloseBtnBrush;
+    if ( _self->closeBtnPath.IsVisible(_self->ptCurMouse) )
+    {
+        pCloseBtnBrush.attachNew( new SolidBrush( Color( 255, 123, 215 ) ) );
+    }
+    else
+    {
+        pCloseBtnBrush.attachNew( new SolidBrush( Color( 255, 204, 0 ) ) );
+    }
+
+    g.SetCompositingMode(CompositingModeSourceOver);
+    g.SetSmoothingMode(SmoothingModeAntiAlias);
+    g.FillPath( pCloseBtnBrush.get(), &_self->closeBtnPath );
     //g.FillPolygon( &closeBtnBrush, points, countof(points) );
+}
 
-    /*// 自己绘制窗口的代码
-    //CRect rectClient;
-    //GetClientRect(&rectClient);
-    //_memdc.create( nullptr, rectClient.Width(), rectClient.Height() );
-
-    //winplus::Graphics g(_memdc);
-    //g.SetSmoothingMode(SmoothingModeAntiAlias);
-
-    //rectClient.InflateRect( -8, -8 );
- 
-    //int padding = 16;
-
-    //RectF rect = winplus::RectGdiToGdiplus<RectF>(rectClient);
-    //RectF rect1, rect2;
-    //rect1 = rect2 = rect;
-
-    //rect1.X += padding;
-    //rect1.Y += padding;
-    //rect1.Width -= padding;
-    //rect1.Height -= padding;
-    //g.FillRectangle( &SolidBrush( Color( 16, 0, 0, 0 ) ), rect1 );
-    //g.DrawRectangle( &Pen( Color(255, 204, 0), 1 ), rect1 );
-
-    //rect.Width -= padding;
-    //rect.Height -= padding;
-    //g.FillRectangle( &SolidBrush( Color( 16, 0, 0, 0 ) ), rect );
-    //g.DrawRectangle( &Pen( Color(51, 153, 255), 1 ), rect );
-
-    //rect2.Width = padding + 1;
-    //rect2.Height = padding + 1;
-    //rect2.X = rect1.GetRight() - rect2.Width + 1;
-    //rect2.Y = rect.GetTop() - 1;
-    //rect2.Inflate( 6, 6 );
-    //SolidBrush brush1( Color( 160, 255, 80, 175 ) );
-    //SolidBrush brush2( Color( 90, 255, 173, 218 ) );
-
-    //g.SetCompositingMode(CompositingModeSourceCopy);
-    //g.FillEllipse( &brush1, rect2 );
-    //g.SetCompositingMode(CompositingModeSourceOver);
-    //rect2.Inflate( -1, -1 );
-    //g.FillEllipse( &brush2, rect2 );
-
-
-    //g.SetTextRenderingHint(TextRenderingHintAntiAliasGridFit);
-    //StringFormat sf( StringFormat::GenericTypographic() );
-    //sf.SetLineAlignment(StringAlignmentCenter);
-
-    //g.DrawShadowString(
-    //    winplus::Window_GetText(GetSafeHwnd()),
-    //    Gdiplus::Font( L"微软雅黑", 12 ),
-    //    &SolidBrush( Color( 0, 0x99, 0 ) ),
-    //    &SolidBrush( Color( 32, 0, 0, 0 ) ),
-    //    RectF( 8, 6, 200, 30 ),
-    //    &sf,
-    //    nullptr
-    //);*/
-
-
+void AccountComprehensiveWnd::Render()
+{
     BLENDFUNCTION blend;
     blend.BlendOp = AC_SRC_OVER;
     blend.SourceConstantAlpha = 255;
@@ -224,6 +171,48 @@ int AccountComprehensiveWnd::OnCreate( LPCREATESTRUCT lpCreateStruct )
     POINT ptPos = { 0, 0 };
     SIZE sizeWnd = { _self->memCanvas.width(), _self->memCanvas.height() };
     ::UpdateLayeredWindow( GetSafeHwnd(), NULL, NULL, &sizeWnd, _self->memCanvas, &ptPos, 0, &blend, ULW_ALPHA );
+}
+
+BOOL AccountComprehensiveWnd::PreCreateWindow( CREATESTRUCT & cs )
+{
+    if ( !__super::PreCreateWindow(cs) ) return FALSE;
+    cs.dwExStyle &= ~WS_EX_CLIENTEDGE;
+    cs.dwExStyle |= WS_EX_TOOLWINDOW;
+    return TRUE;
+}
+
+BEGIN_MESSAGE_MAP(AccountComprehensiveWnd, SpwWindow)
+    ON_WM_CREATE()
+    ON_WM_PAINT()
+    ON_WM_NCHITTEST()
+    ON_WM_MOUSEMOVE()
+    ON_WM_TIMER()
+    ON_WM_LBUTTONDOWN()
+    ON_WM_LBUTTONUP()
+    ON_WM_LBUTTONDBLCLK()
+    ON_WM_RBUTTONDOWN()
+    ON_WM_RBUTTONUP()
+    ON_WM_RBUTTONDBLCLK()
+END_MESSAGE_MAP()
+
+// AccountComprehensiveWnd 消息处理程序
+
+int AccountComprehensiveWnd::OnCreate( LPCREATESTRUCT lpCreateStruct )
+{
+    if ( __super::OnCreate( lpCreateStruct ) == -1 )
+        return -1;
+
+    // 载入背景框架图
+    _self->imgBgFrame.attachNew( new Bitmap( winplus::CreateStreamFromResource( IDR_PNG_ACCOUNT_COMPREHENSIVE_WND, _T("PNG") ), FALSE ) );
+    _self->lBorder = 8;
+    _self->rBorder = 8;
+    _self->tBorder = 23;
+    _self->bBorder = 8;
+
+
+    this->RefreshUi();
+    this->Draw();
+    this->Render();
 
     return 0;
 }
@@ -235,35 +224,95 @@ void AccountComprehensiveWnd::OnPaint()
     //_memdc.alphaEntireTo( dc, 0, 0, _memdc.width(), _memdc.height() );
     //_memdc.copyEntireTo( dc, 0, 0 );
 
-    //BLENDFUNCTION blend;
-    //blend.BlendOp = AC_SRC_OVER;
-    //blend.SourceConstantAlpha = 255;
-    //blend.AlphaFormat = AC_SRC_ALPHA;
-
-    //POINT ptPos = { 0, 0 };
-    //SIZE sizeWnd = { _memdc.width(), _memdc.height() };
-
-    //::UpdateLayeredWindow( GetSafeHwnd(), NULL, NULL, &sizeWnd, _memdc, &ptPos, 0, &blend, ULW_ALPHA );
 }
 
 LRESULT AccountComprehensiveWnd::OnNcHitTest( CPoint point )
 {
+    LRESULT lResult = HTCAPTION;
     CPoint point2 = point;
     ScreenToClient(&point2);
-    //std::cout << point.x << "," << point.y << "\n";
+    _self->ptCurMouse.X = point2.x;
+    _self->ptCurMouse.Y = point2.y;
+
+    //std::cout << "NcHitTest" << " " << point2 << "\n";
     if ( _self->rectClient.Contains( point2.x, point2.y ) )
     {
-        return HTCLIENT;
+        if ( ( GetAsyncKeyState(VK_LBUTTON) & 0x8001 ) == 0x8000 )
+        {
+            lResult = HTCAPTION;
+        }
+        else
+        {
+            lResult = HTCLIENT;
+        }
     }
     else if ( _self->closeBtnPath.IsVisible( point2.x, point2.y ) )
     {
-        return HTCLOSE;
+        lResult = HTCLIENT;
+        /*if ( ( GetAsyncKeyState(VK_LBUTTON) & 0x8000 ) == 0x8000 )
+        {
+            lResult = HTCLIENT;
+        }
+        else
+        {
+            lResult = HTCLOSE;
+        }*/
     }
 
-    return HTCAPTION;
+    this->Draw();
+    this->Render();
+
+    return lResult;
 }
 
 void AccountComprehensiveWnd::OnMouseMove( UINT nFlags, CPoint point )
 {
-
+    //std::cout << "MouseMove: nFlags=" << nFlags << ", " << point << "\n";
 }
+
+void AccountComprehensiveWnd::OnTimer( UINT_PTR nIDEvent )
+{
+    switch ( nIDEvent )
+    {
+    case ID_TIMER_RENDER:
+        this->Render();
+        break;
+    }
+}
+
+void AccountComprehensiveWnd::OnLButtonDown( UINT nFlags, CPoint point )
+{
+    std::cout << "LButtonDown: nFlags=" << nFlags << ", " << point << "\n";
+}
+
+void AccountComprehensiveWnd::OnLButtonUp( UINT nFlags, CPoint point )
+{
+    std::cout << "LButtonUp: nFlags=" << nFlags << ", " << point << "\n";
+
+    if ( _self->closeBtnPath.IsVisible( point.x, point.y ) )
+    {
+        SendMessage(WM_CLOSE);
+    }
+}
+
+void AccountComprehensiveWnd::OnLButtonDblClk( UINT nFlags, CPoint point )
+{
+    std::cout << "LButtonDblClk: nFlags=" << nFlags << ", " << point << "\n";
+}
+
+void AccountComprehensiveWnd::OnRButtonDown( UINT nFlags, CPoint point )
+{
+    std::cout << "RButtonDown: nFlags=" << nFlags << ", " << point << "\n";
+}
+
+void AccountComprehensiveWnd::OnRButtonUp( UINT nFlags, CPoint point )
+{
+    std::cout << "RButtonUp: nFlags=" << nFlags << ", " << point << "\n";
+}
+
+void AccountComprehensiveWnd::OnRButtonDblClk( UINT nFlags, CPoint point )
+{
+    std::cout << "RButtonDblClk: nFlags=" << nFlags << ", " << point << "\n";
+}
+
+
