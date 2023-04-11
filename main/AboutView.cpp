@@ -3,6 +3,7 @@
 #include "CassetteApp.h"
 #include "AboutView.h"
 
+
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #undef THIS_FILE
@@ -71,38 +72,56 @@ BOOL AboutView::PreCreateWindow(CREATESTRUCT& cs)
 void AboutView::OnInitialUpdate() 
 {
     CHtmlView::OnInitialUpdate();
+
     this->LoadFromResource(IDR_HTML_ABOUT);
 }
 
-BOOL AboutView::PreTranslateMessage(MSG* pMsg) 
+BOOL AboutView::PreTranslateMessage( MSG * pMsg ) 
 {
-    //禁止鼠标显示I型指针
-    HCURSOR curIbeam = LoadCursor( NULL, IDC_IBEAM );
-    if ( GetCursor() == curIbeam )
-    {
-        HCURSOR curArrow = LoadCursor( NULL, IDC_ARROW );
-        SetCursor(curArrow);
-    }
+    // 禁止鼠标显示I型指针，在HTML代码里设置body{ cursor: default; }的CSS即可
+    //static HCURSOR curIbeam = LoadCursor( NULL, IDC_IBEAM );
+    //if ( GetCursor() == curIbeam )
+    //{
+    //    static HCURSOR curArrow = LoadCursor( NULL, IDC_ARROW );
+    //    SetCursor(curArrow);
+    //}
 
-
-    //屏蔽右键菜单,左键双击
+    // 屏蔽右键菜单，左键双击
     switch ( pMsg->message )
     {
     case WM_RBUTTONDOWN:
+    case WM_RBUTTONUP:
     case WM_RBUTTONDBLCLK:
     case WM_LBUTTONDBLCLK:
         return TRUE;
     }
-
-    //禁止选择
+ 
+    // 禁止选择
     if ( pMsg->message == WM_MOUSEMOVE )
     {
-        int nVirtKey = GetKeyState(VK_LBUTTON);
-        if ( nVirtKey & 0x8000 )
-        {
+        if ( GetKeyState(VK_LBUTTON) & 0x8000 )
             return TRUE;
-        }
+    }
+    else if ( pMsg->message == WM_LBUTTONDOWN )
+    {
+        if ( GetAsyncKeyState(VK_CONTROL) & 0x8000 )
+            return TRUE;
     }
 
     return CHtmlView::PreTranslateMessage(pMsg);
+}
+
+void AboutView::OnBeforeNavigate2( LPCTSTR lpszURL, DWORD nFlags, LPCTSTR lpszTargetFrameName, CByteArray& baPostedData, LPCTSTR lpszHeaders, BOOL* pbCancel )
+{
+    winplus::String strUrl = lpszURL;
+    // 如果是外部网站则用shellexec打开
+    if ( strUrl.length() > 3 && winplus::StrLower( strUrl.substr( 0, 4 ) ) == "http" )
+    {
+        ShellExecute( NULL, _T("open"), strUrl.c_str(), NULL, NULL, SW_NORMAL );
+
+        *pbCancel = TRUE;
+        return;
+    }
+
+    CHtmlView::OnBeforeNavigate2( lpszURL, nFlags, lpszTargetFrameName, baPostedData, lpszHeaders, pbCancel );
 }

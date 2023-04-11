@@ -425,7 +425,7 @@ BOOL CassetteApp::DoSingletonRunning()
     }
     else
     {
-        m_sharedMem.create( sharedMemName, sizeof(CassetteSharedData) );
+        m_sharedMem.create(sharedMemName);
     }
     return TRUE;
 }

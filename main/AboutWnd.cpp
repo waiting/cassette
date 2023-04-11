@@ -18,7 +18,7 @@ IMPLEMENT_DYNCREATE(AboutWnd, CFrameWnd)
 
 AboutWnd * AboutWnd::ms_pSingleAboutWnd = NULL;
 
-AboutWnd * AboutWnd::GetSingleton( CWnd * parent /*= NULL */ )
+AboutWnd * AboutWnd::GetSingleton( CWnd * parent )
 {
     if ( ms_pSingleAboutWnd == NULL )
     {
@@ -28,9 +28,10 @@ AboutWnd * AboutWnd::GetSingleton( CWnd * parent /*= NULL */ )
     return ms_pSingleAboutWnd;
 }
 
-AboutWnd::AboutWnd( CWnd * parent /*= NULL*/ )
+AboutWnd::AboutWnd( CWnd * parent )
 {
     m_pAboutView = new AboutView();
+
     this->Create(
         NULL,
         (_T("¹ØÓÚ - ") + winplus::LoadString(AFX_IDS_APP_TITLE)).c_str(),
@@ -38,7 +39,6 @@ AboutWnd::AboutWnd( CWnd * parent /*= NULL*/ )
         CRect( 0, 0, 480, 340 ),
         parent
     );
-
 }
 
 AboutWnd::~AboutWnd()

@@ -22,8 +22,8 @@
 #define IDM_OPERATE_ACCOUNTS            145
 #define IDM_OPERATE_CATES               146
 #define IDR_SQL_DBSCHEMA                147
-#define IDR_PNG_TOOLBAR                 149
-#define IDR_INTEGRATEDBKIMG             150
+#define IDR_PNG_TOOLBAR32               149
+#define IDB_INTEGRATEDBKIMG             150
 #define IDM_TRAYNOTI_MENU               155
 #define IDB_TOOLBAR32                   156
 #define IDR_WAVE_SE01                   157
@@ -96,7 +96,7 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        162
+#define _APS_NEXT_RESOURCE_VALUE        161
 #define _APS_NEXT_COMMAND_VALUE         32807
 #define _APS_NEXT_CONTROL_VALUE         1038
 #define _APS_NEXT_SYMED_VALUE           101

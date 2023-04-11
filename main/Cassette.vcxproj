@@ -235,6 +235,7 @@
     <Image Include="..\res\IntegratedBackground.bmp" />
     <Image Include="..\res\Toolbar.bmp" />
     <Image Include="..\res\Toolbar32.bmp" />
+    <Image Include="..\res\Toolbar32.png" />
   </ItemGroup>
   <ItemGroup>
     <Media Include="..\res\se_01.wav" />

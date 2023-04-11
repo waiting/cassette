@@ -36,12 +36,12 @@ public:
 // Overrides
     // ClassWizard generated virtual function overrides
     //{{AFX_VIRTUAL(AboutView)
-    public:
+protected:
     virtual void OnInitialUpdate();
     virtual BOOL PreTranslateMessage(MSG* pMsg);
-    protected:
     virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
     virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
+    virtual void OnBeforeNavigate2( LPCTSTR lpszURL, DWORD nFlags, LPCTSTR lpszTargetFrameName, CByteArray& baPostedData, LPCTSTR lpszHeaders, BOOL* pbCancel );
     //}}AFX_VIRTUAL
 
 // Implementation
@@ -56,6 +56,7 @@ protected:
     //{{AFX_MSG(AboutView)
     //}}AFX_MSG
     DECLARE_MESSAGE_MAP()
+
 };
 
 /////////////////////////////////////////////////////////////////////////////

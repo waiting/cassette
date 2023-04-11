@@ -70,7 +70,7 @@ void AccountIntegratedWnd::RefreshAllCreate()
     m_contentRect = RectF( 10, 40, m_rcClient.Width() - 20, m_rcClient.Height() - 40 - 10 );
 
     // ÔØÈë±³¾°Í¼
-    m_loadedBgImg.attachNew( new Bitmap( AfxGetApp()->m_hInstance, MAKEINTRESOURCEW(IDR_INTEGRATEDBKIMG) ) );
+    m_loadedBgImg.attachNew( new Bitmap( AfxGetApp()->m_hInstance, MAKEINTRESOURCEW(IDB_INTEGRATEDBKIMG) ) );
     m_timer1.create( *this, 100 );
 
     // ´´½¨»º³åÍ¼

@@ -181,7 +181,7 @@ int MainFrame::OnCreate( LPCREATESTRUCT lpCreateStruct )
     // 创建一个工具条
     if ( !m_toolBar.CreateEx(
             this,
-            TBSTYLE_FLAT | TBSTYLE_LIST /*| TBSTYLE_TRANSPARENT | TBSTYLE_TOOLTIPS*/,
+            TBSTYLE_FLAT | TBSTYLE_LIST | TBSTYLE_TRANSPARENT | TBSTYLE_TOOLTIPS,
             WS_CHILD | WS_VISIBLE | CBRS_TOP | CBRS_GRIPPER | CBRS_TOOLTIPS | CBRS_FLYBY | CBRS_SIZE_DYNAMIC
         ) || !m_toolBar.LoadToolBar(IDR_MAINFRAME)
     )
@@ -195,8 +195,8 @@ int MainFrame::OnCreate( LPCREATESTRUCT lpCreateStruct )
     // 图片和工具条按钮大小应该匹配
     CImageList imgList;
     imgList.Create( 48, 48, ILC_COLOR32 | ILC_MASK, 0, 1 );
-    winplus::ImageList_Add32bpp( imgList.GetSafeHandle(), IDB_TOOLBAR32, IMAGE_BITMAP );
-    //ImageList_AddAlphaImage( imgList.GetSafeHandle(), IDR_PNG_TOOLBAR, _T("PNG") );
+    //winplus::ImageList_Add32bpp( imgList.GetSafeHandle(), IDB_TOOLBAR32, IMAGE_BITMAP );
+    winplus::ImageList_AddAlphaImage( imgList.GetSafeHandle(), IDR_PNG_TOOLBAR32, _T("PNG") );
     m_toolBar.GetToolBarCtrl().SetImageList(&imgList);
     imgList.Detach();//*/
 
@@ -280,7 +280,6 @@ void MainFrame::OnAppAbout()
     pAbout->ShowWindow(SW_NORMAL);
     pAbout->SetForegroundWindow();
     pAbout->SetFocus();
-    
 }
 
 void MainFrame::OnUpdateViaAutoLogin( CCmdUI * pCmdUI ) 
