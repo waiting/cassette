@@ -36,5 +36,3 @@ public:
     afx_msg void OnRButtonUp( UINT nFlags, CPoint point );
     afx_msg void OnRButtonDblClk( UINT nFlags, CPoint point );
 };
-
-

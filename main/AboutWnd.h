@@ -16,7 +16,6 @@
 
 class AboutWnd : public CFrameWnd
 {
-    DECLARE_DYNCREATE(AboutWnd)
 private:
     static AboutWnd * ms_pSingleAboutWnd;
 protected:

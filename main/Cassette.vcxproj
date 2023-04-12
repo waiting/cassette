@@ -222,6 +222,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\res\about.html" />
+    <None Include="..\res\aboutV2.html" />
     <None Include="..\res\Cassette.rc2" />
     <None Include="..\res\db.key" />
     <None Include="..\res\dbschema.sql" />
@@ -232,6 +233,8 @@
     <Image Include="..\res\AccountMaster_01.png" />
     <Image Include="..\res\AccountMaster_02.ico" />
     <Image Include="..\res\AccountMaster_03.ico" />
+    <Image Include="..\res\donate_alipay.png" />
+    <Image Include="..\res\donate_wepay.png" />
     <Image Include="..\res\IntegratedBackground.bmp" />
     <Image Include="..\res\Toolbar.bmp" />
     <Image Include="..\res\Toolbar32.bmp" />

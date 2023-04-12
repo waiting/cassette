@@ -13,9 +13,7 @@ static char THIS_FILE[] = __FILE__;
 /////////////////////////////////////////////////////////////////////////////
 // AboutView
 
-IMPLEMENT_DYNCREATE(AboutView, CHtmlView)
-
-AboutView::AboutView()
+AboutView::AboutView( UINT uHtmlResId ) : _uHtmlResId(uHtmlResId)
 {
     //{{AFX_DATA_INIT(AboutView)
     // NOTE: the ClassWizard will add member initialization here
@@ -73,7 +71,7 @@ void AboutView::OnInitialUpdate()
 {
     CHtmlView::OnInitialUpdate();
 
-    this->LoadFromResource(IDR_HTML_ABOUT);
+    this->LoadFromResource(_uHtmlResId);
 }
 
 BOOL AboutView::PreTranslateMessage( MSG * pMsg ) 

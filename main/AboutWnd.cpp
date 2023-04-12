@@ -14,8 +14,6 @@ static char THIS_FILE[] = __FILE__;
 /////////////////////////////////////////////////////////////////////////////
 // AboutWnd
 
-IMPLEMENT_DYNCREATE(AboutWnd, CFrameWnd)
-
 AboutWnd * AboutWnd::ms_pSingleAboutWnd = NULL;
 
 AboutWnd * AboutWnd::GetSingleton( CWnd * parent )
@@ -30,13 +28,13 @@ AboutWnd * AboutWnd::GetSingleton( CWnd * parent )
 
 AboutWnd::AboutWnd( CWnd * parent )
 {
-    m_pAboutView = new AboutView();
+    m_pAboutView = new AboutView(IDR_HTML_ABOUT2);
 
     this->Create(
         NULL,
-        (_T("关于 - ") + winplus::LoadString(AFX_IDS_APP_TITLE)).c_str(),
+        (_T("关于 ") + winplus::LoadString(AFX_IDS_APP_TITLE)).c_str(),
         WS_OVERLAPPEDWINDOW,
-        CRect( 0, 0, 480, 340 ),
+        CRect( 0, 0, 520, 430 ),
         parent
     );
 }

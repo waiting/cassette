@@ -531,6 +531,8 @@ END
 
 IDR_HTML_ABOUT          HTML                    "..\\res\\about.html"
 
+IDR_HTML_ABOUT2         HTML                    "..\\res\\aboutV2.html"
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -542,6 +544,10 @@ IDR_PNG_ABOUT_IMAGE     PNG                     "..\\res\\AccountMaster_01.png"
 IDR_PNG_ACCOUNT_COMPREHENSIVE_WND PNG                     "..\\res\\AccountComprehensiveWnd.png"
 
 IDR_PNG_TOOLBAR32       PNG                     "..\\res\\Toolbar32.png"
+
+IDR_PNG_ALIPAY          PNG                     "..\\res\\donate_alipay.png"
+
+IDR_PNG_WEPAY           PNG                     "..\\res\\donate_wepay.png"
 
 
 /////////////////////////////////////////////////////////////////////////////

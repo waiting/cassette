@@ -16,11 +16,9 @@
 
 class AboutView : public CHtmlView
 {
-    DECLARE_DYNCREATE(AboutView)
-
 // html Data
 public:
-    AboutView();           // protected constructor used by dynamic creation
+    AboutView( UINT uHtmlResId );           // protected constructor used by dynamic creation
     virtual ~AboutView();
     
     //{{AFX_DATA(AboutView)
@@ -51,6 +49,7 @@ protected:
 #endif
 
 protected:
+    UINT _uHtmlResId;
 
     // Generated message map functions
     //{{AFX_MSG(AboutView)

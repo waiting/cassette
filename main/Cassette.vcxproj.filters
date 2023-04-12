@@ -177,6 +177,9 @@
     <None Include="..\res\db.key">
       <Filter>资源文件</Filter>
     </None>
+    <None Include="..\res\aboutV2.html">
+      <Filter>资源文件</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Image Include="..\res\AccountMaster_01.ico">
@@ -204,6 +207,12 @@
       <Filter>资源文件</Filter>
     </Image>
     <Image Include="..\res\Toolbar32.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="..\res\donate_alipay.png">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="..\res\donate_wepay.png">
       <Filter>资源文件</Filter>
     </Image>
   </ItemGroup>
