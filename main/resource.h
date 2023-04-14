@@ -3,6 +3,7 @@
 // π© Cassette.rc  π”√
 //
 #define IDD_FORGETPWD1                  100
+#define IDI_ICON1                       127
 #define IDR_MAINFRAME                   128
 #define IDI_ICON2                       129
 #define IDI_ICON3                       130

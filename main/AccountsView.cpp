@@ -127,7 +127,7 @@ int AccountsView::OnCreate( LPCREATESTRUCT lpCreateStruct )
     //lst.SetImageList();
     m_iconList.Create( 48, 48, ILC_COLOR32 | ILC_MASK, 0, 1 );
 
-    m_iconList.Add( winplus::Icon( IDI_ICON2 ) );
+    m_iconList.Add( winplus::Icon(IDI_ICON1) );
     // m_iconList.Add( winplus::Icon( IDI_ICON3 ) );
     // m_iconList.Add( winplus::Icon( IDR_MAINFRAME ) );
 

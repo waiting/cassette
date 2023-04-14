@@ -215,6 +215,9 @@
     <Image Include="..\res\donate_wepay.png">
       <Filter>资源文件</Filter>
     </Image>
+    <Image Include="..\res\secret.ico">
+      <Filter>资源文件</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <Media Include="..\res\se_selected.wav">

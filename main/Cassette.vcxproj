@@ -236,6 +236,7 @@
     <Image Include="..\res\donate_alipay.png" />
     <Image Include="..\res\donate_wepay.png" />
     <Image Include="..\res\IntegratedBackground.bmp" />
+    <Image Include="..\res\secret.ico" />
     <Image Include="..\res\Toolbar.bmp" />
     <Image Include="..\res\Toolbar32.bmp" />
     <Image Include="..\res\Toolbar32.png" />

@@ -70,6 +70,8 @@ IDI_ICON2               ICON                    "..\\res\\AccountMaster_02.ico"
 
 IDI_ICON3               ICON                    "..\\res\\AccountMaster_03.ico"
 
+IDI_ICON1               ICON                    "..\\res\\secret.ico"
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
