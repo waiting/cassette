@@ -44,8 +44,8 @@ END_MESSAGE_MAP()
 
 void AccountsView::UpdateList( int flag, long itemIndex )
 {
-    int count = 0;
     CListCtrl & lst = this->GetListCtrl();
+    int count = 0;
 
     if ( flag & UPDATE_LOAD_DATA )
     {
@@ -106,7 +106,6 @@ void AccountsView::UpdateList( int flag, long itemIndex )
 
 /////////////////////////////////////////////////////////////////////////////
 // AccountsView message handlers
-
 int AccountsView::OnCreate( LPCREATESTRUCT lpCreateStruct ) 
 {
     if ( CListView::OnCreate(lpCreateStruct) == -1 )
@@ -128,8 +127,6 @@ int AccountsView::OnCreate( LPCREATESTRUCT lpCreateStruct )
     m_iconList.Create( 48, 48, ILC_COLOR32 | ILC_MASK, 0, 1 );
 
     m_iconList.Add( winplus::Icon(IDI_ICON1) );
-    // m_iconList.Add( winplus::Icon( IDI_ICON3 ) );
-    // m_iconList.Add( winplus::Icon( IDR_MAINFRAME ) );
 
     lst.SetImageList( &m_iconList, LVSIL_NORMAL );
 
@@ -143,23 +140,33 @@ void AccountsView::OnSize( UINT nType, int cx, int cy )
     {
         return;
     }
-    // 自适应大小改变
-    CRect rc;
-    GetClientRect(&rc);
-    int widths[] = { 100, 100, 48, 48, 120, 160 };
-    double sumWidths = 0;
-    int i;
-    for ( i = 0; i < countof(widths); ++i )
-        sumWidths += widths[i];
-
     CListCtrl & lst = this->GetListCtrl();
-    for ( i = 0; i < countof(widths); ++i )
+
+    BOOL b = ( GetWindowLong( GetSafeHwnd(), GWL_STYLE ) & LVS_REPORT ) != FALSE;
+    if ( b )
     {
-        int newWidth = widths[i] / sumWidths * ( rc.Width() - GetSystemMetrics(SM_CXVSCROLL) );
-        newWidth = widths[i] > newWidth ? widths[i] : newWidth;
-        //不能用基于SendMessage的SetColumnWidth()实现,这会导致滚动条出错,改用PostMessage()就没问题
-        //lst.SetColumnWidth( i, widths[i] > newWidth ? widths[i] : newWidth );
-        lst.PostMessage( LVM_SETCOLUMNWIDTH, i, MAKELPARAM( newWidth, 0 ) );
+        // 自适应大小改变
+        CRect rc;
+        GetClientRect(&rc);
+        int widths[] = { 100, 100, 48, 48, 120, 160 };
+        double sumWidths = 0;
+        int i;
+        for ( i = 0; i < countof(widths); ++i )
+            sumWidths += widths[i];
+
+        for ( i = 0; i < countof(widths); ++i )
+        {
+            int newWidth = widths[i] / sumWidths * ( rc.Width() - GetSystemMetrics(SM_CXVSCROLL) );
+            newWidth = widths[i] > newWidth ? widths[i] : newWidth;
+            //不能用基于SendMessage的SetColumnWidth()实现,这会导致滚动条出错,改用PostMessage()就没问题
+            //lst.SetColumnWidth( i, widths[i] > newWidth ? widths[i] : newWidth );
+            lst.PostMessage( LVM_SETCOLUMNWIDTH, i, MAKELPARAM( newWidth, 0 ) );
+        }
+    }
+    else
+    {
+        this->OnListStyleReport();
+        this->OnListStyleIcon();
     }
 }
 
@@ -194,7 +201,7 @@ void AccountsView::OnListStyleReport()
     ModifyStyle( LVS_ICON, LVS_REPORT );
 }
 
-void AccountsView::OnUpdateListStyle(CCmdUI* pCmdUI) 
+void AccountsView::OnUpdateListStyle( CCmdUI * pCmdUI )
 {
     switch ( pCmdUI->m_nID )
     {

@@ -23,11 +23,15 @@ public:
 // Attributes
 public:
 // Operations
+    /** \brief Method UpdateList
+     *
+     *  \param flag 动作UPDATE_LOAD_DATA or UPDATE_LIST_ITEMS
+     *  \param itemIndex 索引，-1表示更新全部 */
     virtual void UpdateList( int flag = UPDATE_LOAD_DATA | UPDATE_LIST_ITEMS, long itemIndex = -1 );
 // Overrides
     // ClassWizard generated virtual function overrides
     //{{AFX_VIRTUAL(AccountsView)
-    protected:
+protected:
     virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
     //}}AFX_VIRTUAL
 
@@ -35,7 +39,7 @@ public:
 public:
 
 protected:
-
+    // 图标列表
     CImageList m_iconList;
     // 数组存储账户记录
     AccountArray m_accounts;

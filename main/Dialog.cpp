@@ -192,7 +192,7 @@ void Dialog::OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct)
 BOOL Dialog::OnEraseBkgnd( CDC * pDC )
 {
     using namespace Gdiplus;
-    Graphics g( pDC->GetSafeHdc() );
+    Gdiplus::Graphics g( pDC->GetSafeHdc() );
     Rect clientRect = winplus::RectGdiToGdiplus<Rect>( winplus::Window_GetClient( GetSafeHwnd() ) );
 
     LinearGradientBrush brush(

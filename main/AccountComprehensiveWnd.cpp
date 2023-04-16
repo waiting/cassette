@@ -74,13 +74,13 @@ void AccountComprehensiveWnd::RefreshUi()
 
     // 客户区
     _self->rectClient = RectF( _self->lBorder, _self->tBorder, _self->rectWindow.Width - _self->lBorder - _self->rBorder, _self->rectWindow.Height - _self->tBorder - _self->bBorder );
+
+    // 创建画布
+    _self->memCanvas.create( NULL, _self->rectWindow.Width, _self->rectWindow.Height );
 }
 
 void AccountComprehensiveWnd::Draw()
 {
-    // 创建画布
-    _self->memCanvas.create( NULL, _self->rectWindow.Width, _self->rectWindow.Height );
-
     Bitmap & imgBgFrame = *_self->imgBgFrame.get();
     winplus::Graphics g(_self->memCanvas);
 
@@ -89,6 +89,12 @@ void AccountComprehensiveWnd::Draw()
     int tBorder = _self->tBorder;
     int bBorder = _self->bBorder;
 
+    // 清空画布内容
+    g.SetCompositingMode(CompositingModeSourceCopy);
+    g.FillRectangle( &SolidBrush( Color( 0, 0, 0, 0 ) ), _self->rectWindow );
+    g.SetCompositingMode(CompositingModeSourceOver);
+
+    // 画客户区背景
     g.FillRectangle( &SolidBrush( Color( 96, 255, 255, 255 ) ), _self->rectClient );
 
     TextureBrush ltBrush{ &imgBgFrame, WrapModeTile, RectF( 0, 0, lBorder, tBorder ) };
@@ -156,10 +162,29 @@ void AccountComprehensiveWnd::Draw()
         pCloseBtnBrush.attachNew( new SolidBrush( Color( 255, 204, 0 ) ) );
     }
 
-    g.SetCompositingMode(CompositingModeSourceOver);
     g.SetSmoothingMode(SmoothingModeAntiAlias);
     g.FillPath( pCloseBtnBrush.get(), &_self->closeBtnPath );
     //g.FillPolygon( &closeBtnBrush, points, countof(points) );
+    g.SetSmoothingMode(SmoothingModeDefault);
+
+    // 标题
+    g.SetTextRenderingHint(TextRenderingHintAntiAliasGridFit);
+    RectF rectTitle( 8, 2, _self->rectWindow.Width - 16, _self->tBorder - 4 );
+    StringFormat sf( StringFormat::GenericTypographic() );
+    sf.SetTrimming(StringTrimming::StringTrimmingEllipsisCharacter);
+    //sf.SetLineAlignment(StringAlignment::StringAlignmentNear);
+
+    UnicodeString strTitle = StringToUnicode( Window_GetText(*this) );
+    g.DrawString( strTitle.c_str(), strTitle.length(), &Gdiplus::Font( L"微软雅黑", 10 ), rectTitle, &sf, &SolidBrush( Color( 255, 255, 255 ) ) );
+    g.SetTextRenderingHint(TextRenderingHintSystemDefault);
+
+    Pen pen( Color( 96, 96, 96 ) );
+    pen.SetDashStyle(DashStyle::DashStyleDot);
+    auto line = _self->rectClient.Height / 10;
+    for ( float off = line; off < _self->rectClient.Height-1; off += line )
+    {
+        g.DrawLine( &pen, _self->rectClient.GetLeft() + 4, _self->rectClient.GetTop() + off, _self->rectClient.GetRight() - 4, _self->rectClient.GetTop() + off );
+    }
 }
 
 void AccountComprehensiveWnd::Render()

@@ -189,7 +189,7 @@ int AccountIntegratedWnd::OnCreate( LPCREATESTRUCT lpCreateStruct )
 void AccountIntegratedWnd::OnPaint()
 {
     CPaintDC dc(this);
-    Graphics g(dc);
+    Gdiplus::Graphics g(dc);
     m_memCanvas.outputEntire( g, 0, 0 );
     //m_memCanvas.copyEntireTo( dc, 0, 0 );
 }

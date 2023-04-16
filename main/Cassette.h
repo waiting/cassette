@@ -37,7 +37,9 @@
 #include "winux.hpp"
 #include "eiendb.hpp"
 #include "winplus.hpp"
-
+using namespace eiendb;
+using namespace winplus;
+using namespace std;
 using namespace Gdiplus;
 
 // 调试日志支持

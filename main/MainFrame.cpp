@@ -592,25 +592,24 @@ void MainFrame::DoIntelligentHotkey()
     // 取得当前活动的前台窗口
     CWnd * pCurWnd = GetForegroundWindow();
     if ( pCurWnd == nullptr )
+    {
         return;
+    }
     else
     {
-        std::cout << "top window:" << std::boolalpha << winplus::Window_IsTopLevel(*pCurWnd) << std::endl;
+        //std::cout << "top window:" << std::boolalpha << winplus::Window_IsTopLevel(*pCurWnd) << std::endl;
         pCurWnd = pCurWnd->GetTopLevelParent();
+        // 如果是本程序窗口则退出
+        if ( pCurWnd == this )
+        {
+            return;
+        }
     }
-    //winplus::String w1=winplus::Window_GetText(*pCurWnd);
-    //std::cout <<"GetForegroundWindow():"<< w1 << std::endl;
-    //winplus::String w2=winplus::Window_GetText(*pCurWnd->GetTopLevelParent());
-    //std::cout <<"pCurWnd->GetTopLevelParent():"<< w2 << std::endl;
-    //winplus::String w4=winplus::Window_GetText(*pCurWnd->GetTopLevelOwner());
-    //std::cout <<"pCurWnd->GetTopLevelOwner():"<< w4 << std::endl;
-    //winplus::String w3=winplus::Window_GetText(*pCurWnd->GetTopWindow());
-    //std::cout <<"pCurWnd->GetTopWindow():"<< w3 << std::endl;
 
     // 通过HWND获取进程句柄,进而获取程序路径
     // 判断是浏览器还是软件
     winplus::String exeName, exePath;
-    exePath = winplus::GetAppPathFromHWND(*pCurWnd);
+    exePath = winplus::GetAppPathByHwnd(*pCurWnd);
     winplus::FilePath( exePath, &exeName );
     winplus::StrMakeLower(&exeName);
     CString browserTitle;
