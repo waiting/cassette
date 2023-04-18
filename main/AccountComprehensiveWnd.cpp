@@ -175,15 +175,18 @@ void AccountComprehensiveWnd::Draw()
     //sf.SetLineAlignment(StringAlignment::StringAlignmentNear);
 
     UnicodeString strTitle = StringToUnicode( Window_GetText(*this) );
-    g.DrawString( strTitle.c_str(), strTitle.length(), &Gdiplus::Font( L"Î¢ÈíÑÅºÚ", 10 ), rectTitle, &sf, &SolidBrush( Color( 255, 255, 255 ) ) );
+    Gdiplus::Font font( L"Î¢ÈíÑÅºÚ", 10 );
+    g.DrawString( strTitle.c_str(), strTitle.length(), &font, rectTitle, &sf, &SolidBrush( Color( 255, 255, 255 ) ) );
     g.SetTextRenderingHint(TextRenderingHintSystemDefault);
 
     Pen pen( Color( 96, 96, 96 ) );
     pen.SetDashStyle(DashStyle::DashStyleDot);
     auto line = _self->rectClient.Height / 10;
-    for ( float off = line; off < _self->rectClient.Height-1; off += line )
+    for ( float off = 0; off < _self->rectClient.Height; off += line )
     {
-        g.DrawLine( &pen, _self->rectClient.GetLeft() + 4, _self->rectClient.GetTop() + off, _self->rectClient.GetRight() - 4, _self->rectClient.GetTop() + off );
+        RectF rect( _self->rectClient.GetLeft() + 4, _self->rectClient.GetTop() + off, _self->rectClient.Width - 8, line );
+        g.FillRectangle( &SolidBrush( Color( 32, 0, 0, 0 ) ), rect );
+        g.DrawLine( &pen, _self->rectClient.GetLeft() + 4, _self->rectClient.GetTop() + off + line, _self->rectClient.GetRight() - 4, _self->rectClient.GetTop() + off + line );
     }
 }
 
