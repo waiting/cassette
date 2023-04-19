@@ -185,7 +185,16 @@ void AccountComprehensiveWnd::Draw()
     for ( float off = 0; off < _self->rectClient.Height; off += line )
     {
         RectF rect( _self->rectClient.GetLeft() + 4, _self->rectClient.GetTop() + off, _self->rectClient.Width - 8, line );
-        g.FillRectangle( &SolidBrush( Color( 32, 0, 0, 0 ) ), rect );
+        //g.FillRectangle( &SolidBrush( Color( 32, 0, 0, 0 ) ), rect );
+        RectF rect1 = rect;
+        rect1.Height = rect.Height / 2;
+        g.DrawRoundRectangle( &Pen( Color(192,192,0) ), rect1, 4 );
+        RectF rect2 = rect;
+        rect2.Height = rect.Height / 2;
+        rect2.Y = rect.Y + rect.Height / 2;
+        g.DrawRoundRectangle( &Pen( Color(0,255,0) ), rect2, 4 );
+
+
         g.DrawLine( &pen, _self->rectClient.GetLeft() + 4, _self->rectClient.GetTop() + off + line, _self->rectClient.GetRight() - 4, _self->rectClient.GetTop() + off + line );
     }
 }
