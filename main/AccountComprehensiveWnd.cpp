@@ -95,7 +95,7 @@ void AccountComprehensiveWnd::Draw()
     g.SetCompositingMode(CompositingModeSourceOver);
 
     // 画客户区背景
-    g.FillRectangle( &SolidBrush( Color( 96, 255, 255, 255 ) ), _self->rectClient );
+    g.FillRectangle( &SolidBrush( Color( 224, 255, 255, 255 ) ), _self->rectClient );
 
     TextureBrush ltBrush{ &imgBgFrame, WrapModeTile, RectF( 0, 0, lBorder, tBorder ) };
     RectF ltCornerRect( 0, 0, lBorder, tBorder );
@@ -179,6 +179,7 @@ void AccountComprehensiveWnd::Draw()
     g.DrawString( strTitle.c_str(), strTitle.length(), &font, rectTitle, &sf, &SolidBrush( Color( 255, 255, 255 ) ) );
     g.SetTextRenderingHint(TextRenderingHintSystemDefault);
 
+    sf.SetLineAlignment(StringAlignment::StringAlignmentFar);
     Pen pen( Color( 96, 96, 96 ) );
     pen.SetDashStyle(DashStyle::DashStyleDot);
     auto line = _self->rectClient.Height / 10;
@@ -188,13 +189,14 @@ void AccountComprehensiveWnd::Draw()
         //g.FillRectangle( &SolidBrush( Color( 32, 0, 0, 0 ) ), rect );
         RectF rect1 = rect;
         rect1.Height = rect.Height / 2;
-        g.DrawRoundRectangle( &Pen( Color(192,192,0) ), rect1, 4 );
+        //g.DrawRoundRectangle( &Pen( Color(192,192,0) ), rect1, 4 );
         RectF rect2 = rect;
         rect2.Height = rect.Height / 2;
         rect2.Y = rect.Y + rect.Height / 2;
-        g.DrawRoundRectangle( &Pen( Color(0,255,0) ), rect2, 4 );
+        //g.DrawRoundRectangle( &Pen( Color(0,255,0) ), rect2, 4 );
 
         g.DrawShadowString( "账户名称", font, &SolidBrush( Color(0,0,0) ), nullptr, rect1, &sf, nullptr );
+        g.DrawShadowString( "账号", font, &SolidBrush( Color(0,0,0) ), nullptr, rect2, &sf, nullptr );
 
 
         g.DrawLine( &pen, _self->rectClient.GetLeft() + 4, _self->rectClient.GetTop() + off + line, _self->rectClient.GetRight() - 4, _self->rectClient.GetTop() + off + line );
