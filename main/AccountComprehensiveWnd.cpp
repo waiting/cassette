@@ -211,6 +211,7 @@ void AccountComprehensiveWnd::Render()
     blend.AlphaFormat = AC_SRC_ALPHA;
     POINT ptPos = { 0, 0 };
     SIZE sizeWnd = { _self->memCanvas.width(), _self->memCanvas.height() };
+
     ::UpdateLayeredWindow( GetSafeHwnd(), NULL, NULL, &sizeWnd, _self->memCanvas, &ptPos, 0, &blend, ULW_ALPHA );
 }
 
@@ -264,7 +265,7 @@ void AccountComprehensiveWnd::OnPaint()
 
     //_memdc.alphaEntireTo( dc, 0, 0, _memdc.width(), _memdc.height() );
     //_memdc.copyEntireTo( dc, 0, 0 );
-
+    dc.Rectangle(0,0,100,100);
 }
 
 LRESULT AccountComprehensiveWnd::OnNcHitTest( CPoint point )
@@ -324,6 +325,7 @@ void AccountComprehensiveWnd::OnTimer( UINT_PTR nIDEvent )
 void AccountComprehensiveWnd::OnLButtonDown( UINT nFlags, CPoint point )
 {
     std::cout << "LButtonDown: nFlags=" << nFlags << ", " << point << "\n";
+
 }
 
 void AccountComprehensiveWnd::OnLButtonUp( UINT nFlags, CPoint point )
@@ -344,6 +346,7 @@ void AccountComprehensiveWnd::OnLButtonDblClk( UINT nFlags, CPoint point )
 void AccountComprehensiveWnd::OnRButtonDown( UINT nFlags, CPoint point )
 {
     std::cout << "RButtonDown: nFlags=" << nFlags << ", " << point << "\n";
+
 }
 
 void AccountComprehensiveWnd::OnRButtonUp( UINT nFlags, CPoint point )

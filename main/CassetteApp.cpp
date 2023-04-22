@@ -4,7 +4,6 @@
 #include "AccountsView.h"
 #include "MainFrame.h"
 #include "UserLoginDlg.h"
-#include "AccountComprehensiveWnd.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -138,13 +137,6 @@ BOOL CassetteApp::InitInstance()
         pFrame->UpdateWindow();
         pFrame->ShowWindow(this->m_nCmdShow);
 
-
-        // 测试新账户综合窗口
-        AccountComprehensiveWnd * pComprehensiveWnd = new AccountComprehensiveWnd( pFrame, "Comprehensive Window", CRect(0,0,300,412) );
-        pComprehensiveWnd->AutoDelete(TRUE);
-        pComprehensiveWnd->UpdateWindow();
-        winplus::Window_Center( *pComprehensiveWnd, *pFrame );
-        pComprehensiveWnd->ShowWindow(this->m_nCmdShow);
         return TRUE;
     }
     return FALSE;

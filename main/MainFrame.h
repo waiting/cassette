@@ -87,6 +87,8 @@ protected:
     afx_msg void OnSetFocus(CWnd *pOldWnd);
     afx_msg void OnAppExit();
     afx_msg void OnAppAbout();
+    afx_msg void OnAppHelp();
+    afx_msg void OnHelp();
     afx_msg void OnUpdateViaAutoLogin(CCmdUI* pCmdUI);
     afx_msg void OnViaAutoLogin();
     afx_msg void OnUpdateOpenUrl(CCmdUI* pCmdUI);

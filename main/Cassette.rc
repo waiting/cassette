@@ -153,7 +153,7 @@ BEGIN
     END
     POPUP "帮助(&H)"
     BEGIN
-        MENUITEM "帮助文档(&F)\tF1",                ID_HELP
+        MENUITEM "帮助文档(&F)\tF1",                ID_APP_HELP
         MENUITEM "关于 Cassette(&A)...",          ID_APP_ABOUT
     END
 END
@@ -211,12 +211,12 @@ END
 
 IDR_MAINFRAME ACCELERATORS
 BEGIN
+    "N",            ID_ADD_ACCOUNT,         VIRTKEY, CONTROL, NOINVERT
+    "X",            ID_APP_EXIT,            VIRTKEY, ALT, NOINVERT
+    VK_DELETE,      ID_DEL_ACCOUNT,         VIRTKEY, CONTROL, NOINVERT
+    VK_F1,          ID_APP_HELP,            VIRTKEY, NOINVERT
     "E",            ID_MODIFY_ACCOUNT,      VIRTKEY, CONTROL, NOINVERT
     "G",            ID_OPEN_URL,            VIRTKEY, CONTROL, NOINVERT
-    "N",            ID_ADD_ACCOUNT,         VIRTKEY, CONTROL, NOINVERT
-    VK_DELETE,      ID_DEL_ACCOUNT,         VIRTKEY, CONTROL, NOINVERT
-    VK_F1,          ID_HELP,                VIRTKEY, NOINVERT
-    "X",            ID_APP_EXIT,            VIRTKEY, ALT, NOINVERT
 END
 
 

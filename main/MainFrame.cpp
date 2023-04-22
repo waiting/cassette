@@ -9,6 +9,7 @@
 #include "AppSettingsDlg.h"
 #include "AccountEditingDlg.h"
 #include "AccountIntegratedWnd.h"
+#include "AccountComprehensiveWnd.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -49,6 +50,8 @@ BEGIN_MESSAGE_MAP(MainFrame, CFrameWnd)
     ON_WM_SETFOCUS()
     ON_COMMAND(ID_APP_EXIT, OnAppExit)
     ON_COMMAND(ID_APP_ABOUT, OnAppAbout)
+    ON_COMMAND(ID_APP_HELP, OnAppHelp)
+    ON_COMMAND(ID_HELP, OnHelp)
     ON_UPDATE_COMMAND_UI(ID_VIA_AUTOLOGIN, OnUpdateViaAutoLogin)
     ON_COMMAND(ID_VIA_AUTOLOGIN, OnViaAutoLogin)
     ON_UPDATE_COMMAND_UI(ID_OPEN_URL, OnUpdateOpenUrl)
@@ -273,6 +276,11 @@ BOOL MainFrame::OnCmdMsg( UINT nID, int nCode, void * pExtra, AFX_CMDHANDLERINFO
     return CFrameWnd::OnCmdMsg( nID, nCode, pExtra, pHandlerInfo );
 }
 
+void MainFrame::OnAppExit()
+{
+    __super::OnClose();
+}
+
 void MainFrame::OnAppAbout()
 {
     // 只能打开一个窗口
@@ -280,6 +288,21 @@ void MainFrame::OnAppAbout()
     pAbout->ShowWindow(SW_NORMAL);
     pAbout->SetForegroundWindow();
     pAbout->SetFocus();
+}
+
+void MainFrame::OnHelp()
+{
+    cout << "OnHelp()\n";
+}
+
+void MainFrame::OnAppHelp()
+{
+    // 测试新账户综合窗口
+    AccountComprehensiveWnd * pComprehensiveWnd = new AccountComprehensiveWnd( this, "Comprehensive Window", CRect(0,0,300,412) );
+    pComprehensiveWnd->AutoDelete(TRUE);
+    pComprehensiveWnd->UpdateWindow();
+    winplus::Window_Center( *pComprehensiveWnd, GetSafeHwnd() );
+    pComprehensiveWnd->ShowWindow(SW_NORMAL);
 }
 
 void MainFrame::OnUpdateViaAutoLogin( CCmdUI * pCmdUI ) 
@@ -752,11 +775,6 @@ void MainFrame::OnClose()
 {
     ShowWindow(SW_HIDE);
     //ShowWindow(SW_HIDE);
-}
-
-void MainFrame::OnAppExit()
-{
-    __super::OnClose();
 }
 
 void MainFrame::OnShowWindow(BOOL bShow, UINT nStatus)
