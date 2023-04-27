@@ -142,7 +142,7 @@ void AccountsView::OnSize( UINT nType, int cx, int cy )
     }
     CListCtrl & lst = this->GetListCtrl();
 
-    BOOL b = ( GetWindowLong( GetSafeHwnd(), GWL_STYLE ) & LVS_REPORT ) != FALSE;
+    BOOL b = ( GetWindowLong( GetSafeHwnd(), GWL_STYLE ) & LVS_REPORT ) != 0;
     if ( b )
     {
         // 自适应大小改变

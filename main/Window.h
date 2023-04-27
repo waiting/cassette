@@ -47,14 +47,28 @@ public:
     // 获取指定HWND窗口上的本类窗口
     static CWnd * GetWnd( HWND hWnd );
 
+    template < class _Ty >
+    static _Ty * GetWnd( HWND hWnd )
+    {
+        return static_cast<_Ty *>( GetWnd(hWnd) );
+    }
+
     // 设置指定HWND窗口上的本类窗口
     static void SetWnd( HWND hWnd, CWnd * pWnd );
 
     // 删除指定HWND窗口上的本类窗口
     static void DelWnd( CWnd * pWnd );
 
-    // Constructors
-    SpwWindow( CWnd * pWndParent );
+    template < class _Ty, typename ... _ArgType >
+    static _Ty * Create( HWND hwnd, _ArgType&& ... arg )
+    {
+        _Ty * p = new _Ty( std::forward<_ArgType>(arg)... );
+        // 加入维护表
+        SetWnd( hwnd, p );
+        return p;
+    }
+
+    // Destructors
     virtual ~SpwWindow();
 
 protected:

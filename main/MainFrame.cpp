@@ -298,7 +298,7 @@ void MainFrame::OnHelp()
 void MainFrame::OnAppHelp()
 {
     // 测试新账户综合窗口
-    AccountComprehensiveWnd * pComprehensiveWnd = new AccountComprehensiveWnd( this, "Comprehensive Window", CRect(0,0,300,412) );
+    AccountComprehensiveWnd * pComprehensiveWnd = AccountComprehensiveWnd::Create<AccountComprehensiveWnd>( GetSafeHwnd(), this, "Comprehensive Window", CRect(0,0,300,412) );
     pComprehensiveWnd->AutoDelete(TRUE);
     pComprehensiveWnd->UpdateWindow();
     winplus::Window_Center( *pComprehensiveWnd, GetSafeHwnd() );
@@ -705,7 +705,7 @@ void MainFrame::DoIntelligentHotkey()
             pCurWnd->ClientToScreen(&rcIntegratedWnd);
 
             // 显示账户信息窗口
-            auto pIntegratedWnd = (AccountIntegratedWnd *)AccountIntegratedWnd::GetWnd(*pCurWnd);
+            auto pIntegratedWnd = AccountIntegratedWnd::GetWnd<AccountIntegratedWnd>(*pCurWnd);
             if ( pIntegratedWnd )
             {
                 //pIntegratedWnd->SetAccountsInfo( m_catesDlg.m_cates[cateIndex], accounts );
@@ -714,7 +714,7 @@ void MainFrame::DoIntelligentHotkey()
             }
             else
             {
-                pIntegratedWnd = new AccountIntegratedWnd( pCurWnd, m_catesDlg.m_cates[cateIndex].m_cateName, rcIntegratedWnd );
+                pIntegratedWnd = AccountIntegratedWnd::Create<AccountIntegratedWnd>( *pCurWnd, pCurWnd, m_catesDlg.m_cates[cateIndex].m_cateName, rcIntegratedWnd );
                 pIntegratedWnd->AutoDelete(TRUE);
                 pIntegratedWnd->SetAccountsInfo( m_catesDlg.m_cates[cateIndex], accounts );
                 pCurWnd->SetWindowPos( &wndTop, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE );
@@ -774,7 +774,6 @@ void MainFrame::OnUpdateMainWndShowHide(CCmdUI *pCmdUI)
 void MainFrame::OnClose()
 {
     ShowWindow(SW_HIDE);
-    //ShowWindow(SW_HIDE);
 }
 
 void MainFrame::OnShowWindow(BOOL bShow, UINT nStatus)

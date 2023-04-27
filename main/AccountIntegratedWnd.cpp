@@ -8,7 +8,7 @@
 #include <playsoundapi.h>
 
 // AccountIntegratedWnd -------------------------------------------------------------------
-AccountIntegratedWnd::AccountIntegratedWnd( CWnd * pParentWnd, LPCTSTR lpszWindowName, const RECT& rect ) : SpwWindow(pParentWnd),
+AccountIntegratedWnd::AccountIntegratedWnd( CWnd * pParentWnd, LPCTSTR lpszWindowName, const RECT& rect ) :
     m_primaryFont( L"ËÎÌו", 24, 0, UnitPixel ),
     m_penBlack( Color( 0, 0, 0 ) ),
     m_penHalfWhite( Color( 128, 255, 255, 255 ), 0.5f ),

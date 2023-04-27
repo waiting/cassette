@@ -63,12 +63,6 @@ void SpwWindow::DelWnd( CWnd * pWnd )
     }
 }
 
-SpwWindow::SpwWindow( CWnd * pWndParent )
-{
-    // 加入维护表
-    SetWnd( pWndParent->GetSafeHwnd(), this );
-}
-
 SpwWindow::~SpwWindow()
 {
     DelWnd(this);
