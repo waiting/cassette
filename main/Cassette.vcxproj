@@ -185,7 +185,6 @@
     <ClCompile Include="Functional.cpp" />
     <ClCompile Include="Label.cpp" />
     <ClCompile Include="MainFrame.cpp" />
-    <ClCompile Include="RegOperate.cpp" />
     <ClCompile Include="UserLoginDlg.cpp" />
     <ClCompile Include="UserRegisterDlg.cpp" />
     <ClCompile Include="UserSettingsDlg.cpp" />
@@ -210,7 +209,6 @@
     <ClInclude Include="Functional.h" />
     <ClInclude Include="Label.h" />
     <ClInclude Include="MainFrame.h" />
-    <ClInclude Include="RegOperate.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="UserLoginDlg.h" />
     <ClInclude Include="UserRegisterDlg.h" />

@@ -30,7 +30,7 @@ struct AccountComprehensive_Data
     Point ptCurMouse;
 };
 
-AccountComprehensiveWnd::AccountComprehensiveWnd( CWnd * pParentWnd, winplus::String const & strWindowName, CRect const & rect )
+AccountComprehensiveWnd::AccountComprehensiveWnd( CWnd * pParentWnd, CRect const & rect, AccountCate const & cate, AccountArray const & accounts )
 {
     _self.create();
 
@@ -46,7 +46,7 @@ AccountComprehensiveWnd::AccountComprehensiveWnd( CWnd * pParentWnd, winplus::St
     __super::CreateEx(
         WS_EX_LAYERED,
         AfxRegisterWndClass( CS_HREDRAW | CS_VREDRAW, NULL, NULL ),
-        strWindowName.c_str(),
+        cate.m_cateName,
         WS_POPUP /*| WS_CAPTION | WS_SYSMENU*/,
         rect,
         pParentWnd,

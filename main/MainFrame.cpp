@@ -230,9 +230,9 @@ int MainFrame::OnCreate( LPCREATESTRUCT lpCreateStruct )
     // 把窗口句柄提交给共享内存,以便激活
     g_theApp.GetSharedMemory()->hMainWnd = GetSafeHwnd();
 
-    UpdateTitle();
+    this->UpdateTitle();
     // 注册热键
-    RefreshHotkey(g_theApp.m_loginedUser.m_hotkey);
+    this->RefreshHotkey(g_theApp.m_loginedUser.m_hotkey);
 
     // 创建非模态对话框, CatesDlg, TypesDlg
     m_catesDlg.Create(this);
@@ -297,8 +297,11 @@ void MainFrame::OnHelp()
 
 void MainFrame::OnAppHelp()
 {
+    AccountArray accounts;
+    int accountsCount = LoadAccounts( g_theApp.GetDatabase(), g_theApp.m_loginedUser.m_id, &accounts, m_catesDlg.m_cates[0].m_id );
+
     // 测试新账户综合窗口
-    AccountComprehensiveWnd * pComprehensiveWnd = AccountComprehensiveWnd::Create<AccountComprehensiveWnd>( GetSafeHwnd(), this, "Comprehensive Window", CRect(0,0,300,412) );
+    AccountComprehensiveWnd * pComprehensiveWnd = AccountComprehensiveWnd::Create<AccountComprehensiveWnd>( GetSafeHwnd(), this, CRect(0,0,300,412), m_catesDlg.m_cates[0], accounts );
     pComprehensiveWnd->AutoDelete(TRUE);
     pComprehensiveWnd->UpdateWindow();
     winplus::Window_Center( *pComprehensiveWnd, GetSafeHwnd() );

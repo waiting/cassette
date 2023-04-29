@@ -343,25 +343,27 @@ void CassetteApp::DoSettings( UINT flag )
 
 void CassetteApp::EnableAutoRun( bool isEnabled, bool isForce /*= false */ )
 {
-    LPCSTR keyNameAutoRun = "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run";
-    winplus::AnsiString appName = winplus::StringToLocal( winplus::LoadString(AFX_IDS_APP_TITLE) );
+    winplus::String keyNameAutoRun = "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run";
+    winplus::String appName = winplus::LoadString(AFX_IDS_APP_TITLE);
+
+    Registry regAutoRun(keyNameAutoRun);
     if ( isEnabled )
     {
-        if ( isForce || !reg_exists( keyNameAutoRun, appName.c_str() ) )
+        if ( isForce || !regAutoRun.hasValue(appName) )
         {
             winplus::String appFullPath;
             appFullPath = winplus::ModulePath( NULL, &appFullPath ) + winplus::dirSep + appFullPath;
             if ( appFullPath.find(' ') != winplus::String::npos )
                 appFullPath = TEXT("\"") + appFullPath + TEXT("\"");
 
-            reg_set_string( keyNameAutoRun, appName.c_str(), appFullPath.c_str() );
+            regAutoRun.setValue( appName, appFullPath );
         }
     }
     else
     {
-        if ( isForce || reg_exists( keyNameAutoRun, appName.c_str() ) )
+        if ( isForce || regAutoRun.hasValue(appName) )
         {
-            reg_delete( keyNameAutoRun, appName.c_str() );
+            regAutoRun.delValue(appName);
         }
     }
 }
@@ -376,25 +378,27 @@ void CassetteApp::EnableScheme( bool isEnabled )
     winplus::AnsiString keyNameScheme = "HKEY_CLASSES_ROOT\\account";
     if ( isEnabled )
     {
-        if ( !reg_exists( keyNameScheme.c_str(), NULL ) )
+        if ( !Registry::Exists(keyNameScheme) )
         {
-            reg_set_string( keyNameScheme.c_str(), NULL, "Account URL Protocol" );
-            reg_set_string( keyNameScheme.c_str(), "URL Protocol", "" );
+            Registry regNameScheme( keyNameScheme, true );
+            regNameScheme.setValue( "", "Account URL Protocol" );
+            regNameScheme.setValue( "URL Protocol", "" );
+
             winplus::String appFullPath;
             appFullPath = winplus::ModulePath( NULL, &appFullPath ) + winplus::dirSep + appFullPath;
-            reg_set_string( ( keyNameScheme + "\\DefaultIcon" ).c_str(), NULL, ( appFullPath + ",0" ).c_str() );
+            Registry( regNameScheme.key(), "DefaultIcon", true ).setValue( "", appFullPath + ",0" );
 
             if ( appFullPath.find(' ') != winplus::String::npos )
                 appFullPath = TEXT("\"") + appFullPath + TEXT("\"");
 
-            reg_set_string( ( keyNameScheme + "\\shell\\open\\command" ).c_str(), NULL, ( appFullPath + " -url \"%1\"" ).c_str() );
+            Registry( regNameScheme.key(), "shell\\open\\command", true ).setValue( "", appFullPath + " -url \"%1\"" );
         }
     }
     else
     {
-        if ( reg_exists( keyNameScheme.c_str(), NULL ) )
+        if ( Registry::Exists(keyNameScheme) )
         {
-            reg_force_delete( keyNameScheme.c_str() );
+            Registry::ForceDelete(keyNameScheme);
         }
     }
 }

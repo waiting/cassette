@@ -330,16 +330,16 @@ BEGIN
     EDITTEXT        IDC_EDIT_ICOPATH,45,102,145,14,ES_AUTOHSCROLL
 END
 
-IDD_APP_SETTINGS DIALOG 0, 0, 192, 169
+IDD_APP_SETTINGS DIALOGEX 0, 0, 192, 169
 STYLE DS_SETFONT | DS_MODALFRAME | WS_MINIMIZEBOX | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "程序设置"
-FONT 9, "宋体"
+FONT 9, "宋体", 0, 0, 0x0
 BEGIN
     GROUPBOX        "功能开关",IDC_STATIC,7,8,178,50
     CONTROL         "开机自动启动",IDC_CHECK_ENABLEAUTORUN,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,20,21,64,10
     CONTROL         "开启用户热键",IDC_CHECK_ENABLEHOTKEY,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,104,21,64,10
-    CONTROL         "开启内置HTTP服务",IDC_CHECK_ENABLEHTTPSRV,"Button",BS_AUTOCHECKBOX | WS_DISABLED | WS_TABSTOP,20,37,80,10
-    CONTROL         "开启Scheme功能",IDC_CHECK_ENABLESCHEME,"Button",BS_AUTOCHECKBOX | WS_DISABLED | WS_TABSTOP,104,37,72,10
+    CONTROL         "开启内置HTTP服务",IDC_CHECK_ENABLEHTTPSRV,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,20,37,80,10
+    CONTROL         "开启Scheme功能",IDC_CHECK_ENABLESCHEME,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,104,37,72,10
     GROUPBOX        "相关路径($ROOT$表示程序根目录)",IDC_STATIC,7,65,178,74
     LTEXT           "数据库路径",IDC_STATIC,28,82,41,8
     LTEXT           "备份存放路径",IDC_STATIC,20,101,49,8
@@ -580,6 +580,17 @@ IDR_KEY_DB              KEY                     "..\\res\\db.key"
 
 /////////////////////////////////////////////////////////////////////////////
 //
+// AFX_DIALOG_LAYOUT
+//
+
+IDD_APP_SETTINGS AFX_DIALOG_LAYOUT
+BEGIN
+    0
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
 // String Table
 //
 
@@ -690,7 +701,7 @@ BEGIN
     IDC_CHECK_ENABLEAUTORUN "使程序在开机时自动启动"
     IDC_CHECK_AUTOLOGIN     "利用存储的用户名和密码进行自动登录"
     IDC_CHECK_ENABLEHOTKEY  "当按下热键时如果当前窗口是网站或者软件，则自动弹出相关的账户信息。如果没有账户信息则弹出添加账户信息的界面。如果没有该账户的种类则弹出添加种类的界面。"
-    IDC_CHECK_ENABLEHTTPSRV "内部服务遵循HTTP协议，这项功能使您能够通过一些网站脚本(AJAX)调用本程序。"
+    IDC_CHECK_ENABLEHTTPSRV "开启内部HTTP服务，这项功能使您能够通过一些网站脚本(AJAX)调用本程序。"
     IDC_CHECK_ENABLESCHEME  "这个功能将注册一个URL Scheme(account://)使得外部通过URL与本程序交互。"
 END
 

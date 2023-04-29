@@ -30,9 +30,6 @@
 #undef StrTrim
 #endif
 
-//#include "sqlite3.h"
-
-#include "RegOperate.h"
 
 #include "winux.hpp"
 #include "eiendb.hpp"

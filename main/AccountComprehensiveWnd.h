@@ -1,5 +1,6 @@
 #pragma once
 #include "Window.h"
+#include "Functional.h"
 
 // AccountComprehensiveWnd
 class AccountComprehensiveWnd : public SpwWindow
@@ -7,7 +8,7 @@ class AccountComprehensiveWnd : public SpwWindow
     DECLARE_DYNAMIC(AccountComprehensiveWnd)
 
 public:
-    AccountComprehensiveWnd( CWnd * pParentWnd, winplus::String const & strWindowName, CRect const & rect );
+    AccountComprehensiveWnd( CWnd * pParentWnd, CRect const & rect, AccountCate const & cate, AccountArray const & accounts );
     virtual ~AccountComprehensiveWnd();
 
     // 重新创建一些东西

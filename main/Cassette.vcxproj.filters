@@ -66,9 +66,6 @@
     <ClCompile Include="MainFrame.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="RegOperate.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="UserLoginDlg.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -135,9 +132,6 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="MainFrame.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="RegOperate.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="resource.h">
