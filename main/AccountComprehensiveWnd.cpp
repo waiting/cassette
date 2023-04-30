@@ -10,6 +10,9 @@ IMPLEMENT_DYNAMIC(AccountComprehensiveWnd, CWnd)
 #define ID_TIMER_RENDER 1
 struct AccountComprehensive_Data
 {
+    AccountCate cate;
+    AccountArray accounts;
+
     // »­²¼
     winplus::MemDC memCanvas;
     // ±³¾°¿ò¼ÜÍ¼
@@ -33,7 +36,8 @@ struct AccountComprehensive_Data
 AccountComprehensiveWnd::AccountComprehensiveWnd( CWnd * pParentWnd, CRect const & rect, AccountCate const & cate, AccountArray const & accounts )
 {
     _self.create();
-
+    _self->cate = cate;
+    _self->accounts.Copy(accounts);
 #ifndef _WIN32_WCE
     EnableActiveAccessibility();
 #endif

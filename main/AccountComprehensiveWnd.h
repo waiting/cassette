@@ -17,14 +17,13 @@ public:
     void Draw();
     // äÖÈ¾µ½´°¿Ú
     void Render();
+
 protected:
     virtual BOOL PreCreateWindow( CREATESTRUCT & cs );
 
+protected:
     DECLARE_MESSAGE_MAP()
 
-private:
-    winplus::MembersWrapper<struct AccountComprehensive_Data> _self;
-public:
     afx_msg int OnCreate( LPCREATESTRUCT lpCreateStruct );
     afx_msg void OnPaint();
     afx_msg LRESULT OnNcHitTest( CPoint point );
@@ -36,4 +35,7 @@ public:
     afx_msg void OnRButtonDown( UINT nFlags, CPoint point );
     afx_msg void OnRButtonUp( UINT nFlags, CPoint point );
     afx_msg void OnRButtonDblClk( UINT nFlags, CPoint point );
+private:
+    winplus::MembersWrapper<struct AccountComprehensive_Data> _self;
+
 };
