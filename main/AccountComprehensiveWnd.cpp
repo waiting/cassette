@@ -180,14 +180,15 @@ void AccountComprehensiveWnd::Draw()
 
     UnicodeString strTitle = StringToUnicode( Window_GetText(*this) );
     Gdiplus::Font font( L"Î¢ÈíÑÅºÚ", 10 );
-    g.DrawString( strTitle.c_str(), strTitle.length(), &font, rectTitle, &sf, &SolidBrush( Color( 255, 255, 255 ) ) );
+    g.DrawString( strTitle.c_str(), (int)strTitle.length(), &font, rectTitle, &sf, &SolidBrush( Color( 255, 255, 255 ) ) );
     g.SetTextRenderingHint(TextRenderingHintSystemDefault);
 
     sf.SetLineAlignment(StringAlignment::StringAlignmentFar);
     Pen pen( Color( 96, 96, 96 ) );
     pen.SetDashStyle(DashStyle::DashStyleDot);
-    auto line = _self->rectClient.Height / 10;
-    for ( float off = 0; off < _self->rectClient.Height; off += line )
+    REAL line = _self->rectClient.Height / 10;
+    int i = 0;
+    for ( float off = 0; off < _self->rectClient.Height && i < _self->accounts.GetCount(); off += line, i++ )
     {
         RectF rect( _self->rectClient.GetLeft() + 4, _self->rectClient.GetTop() + off, _self->rectClient.Width - 8, line );
         //g.FillRectangle( &SolidBrush( Color( 32, 0, 0, 0 ) ), rect );
