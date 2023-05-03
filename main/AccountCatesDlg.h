@@ -39,6 +39,7 @@ public:
 // Implementation
 protected:
     AccountCateArray m_cates;// 存储种类信息的数组
+    int m_cateIndex;
 
     // Generated message map functions
     //{{AFX_MSG(AccountCatesDlg)
@@ -50,6 +51,9 @@ protected:
     afx_msg void OnDelete();
     //}}AFX_MSG
     afx_msg void OnUpdateModifyDeleteMenu( CCmdUI * pCmdUI );
+
+    afx_msg void OnItemChangedListCates( NMHDR *pNMHDR, LRESULT *pResult );
+
     DECLARE_MESSAGE_MAP()
     friend class MainFrame;
 };

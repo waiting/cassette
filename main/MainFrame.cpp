@@ -297,11 +297,16 @@ void MainFrame::OnHelp()
 
 void MainFrame::OnAppHelp()
 {
+    if ( m_catesDlg.m_cateIndex == -1 )
+    {
+        return;
+    }
+
     AccountArray accounts;
-    int accountsCount = LoadAccounts( g_theApp.GetDatabase(), g_theApp.m_loginedUser.m_id, &accounts, m_catesDlg.m_cates[0].m_id );
+    int accountsCount = LoadAccounts( g_theApp.GetDatabase(), g_theApp.m_loginedUser.m_id, &accounts, m_catesDlg.m_cates[m_catesDlg.m_cateIndex].m_id );
 
     // 测试新账户综合窗口
-    AccountComprehensiveWnd * pComprehensiveWnd = AccountComprehensiveWnd::Create<AccountComprehensiveWnd>( GetSafeHwnd(), this, CRect(0,0,300,412), m_catesDlg.m_cates[0], accounts );
+    AccountComprehensiveWnd * pComprehensiveWnd = AccountComprehensiveWnd::Create<AccountComprehensiveWnd>( GetSafeHwnd(), this, CRect(0,0,300,412), m_catesDlg.m_cates[m_catesDlg.m_cateIndex], accounts );
     pComprehensiveWnd->AutoDelete(TRUE);
     pComprehensiveWnd->UpdateWindow();
     winplus::Window_Center( *pComprehensiveWnd, GetSafeHwnd() );

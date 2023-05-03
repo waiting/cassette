@@ -181,7 +181,7 @@ void AccountComprehensiveWnd::Draw()
     UnicodeString strTitle = StringToUnicode( Window_GetText(*this) );
     Gdiplus::Font font( L"Î¢ÈíÑÅºÚ", 10 );
     g.DrawString( strTitle.c_str(), (int)strTitle.length(), &font, rectTitle, &sf, &SolidBrush( Color( 255, 255, 255 ) ) );
-    g.SetTextRenderingHint(TextRenderingHintSystemDefault);
+    //g.SetTextRenderingHint(TextRenderingHintSystemDefault);
 
     sf.SetLineAlignment(StringAlignment::StringAlignmentFar);
     Pen pen( Color( 96, 96, 96 ) );
@@ -200,8 +200,8 @@ void AccountComprehensiveWnd::Draw()
         rect2.Y = rect.Y + rect.Height / 2;
         //g.DrawRoundRectangle( &Pen( Color(0,255,0) ), rect2, 4 );
 
-        g.DrawShadowString( (LPCSTR)_self->accounts[i].m_myName, font, &SolidBrush( Color(200,0,0) ), nullptr, rect1, &sf, nullptr );
-        g.DrawShadowString( (LPCSTR)_self->accounts[i].m_accountName, font, &SolidBrush( Color(200,0,0) ), nullptr, rect2, &sf, nullptr );
+        g.DrawShadowString( (LPCSTR)_self->accounts[i].m_myName, font, &SolidBrush( Color(0,0,0) ), &SolidBrush( Color( 64, 0, 0, 0 ) ), rect1, &sf, nullptr );
+        g.DrawShadowString( (LPCSTR)_self->accounts[i].m_accountName, font, &SolidBrush( Color(225, 103, 195) ), &SolidBrush( Color( 64, 0, 0, 0 ) ), rect2, &sf, nullptr );
 
 
         g.DrawLine( &pen, _self->rectClient.GetLeft() + 4, _self->rectClient.GetTop() + off + line, _self->rectClient.GetRight() - 4, _self->rectClient.GetTop() + off + line );

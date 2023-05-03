@@ -14,11 +14,11 @@ static char THIS_FILE[] = __FILE__;
 /////////////////////////////////////////////////////////////////////////////
 // AccountCatesDlg dialog
 
-AccountCatesDlg::AccountCatesDlg( CWnd * parent /*=NULL*/)
-: Dialog(AccountCatesDlg::IDD, parent)
+AccountCatesDlg::AccountCatesDlg( CWnd * parent ) : Dialog(AccountCatesDlg::IDD, parent)
 {
     //{{AFX_DATA_INIT(AccountCatesDlg)
         // NOTE: the ClassWizard will add member initialization here
+    m_cateIndex = -1;
     //}}AFX_DATA_INIT
 }
 
@@ -28,6 +28,7 @@ void AccountCatesDlg::DoDataExchange(CDataExchange* pDX)
     //{{AFX_DATA_MAP(AccountCatesDlg)
         // NOTE: the ClassWizard will add DDX and DDV calls here
     //}}AFX_DATA_MAP
+
 }
 
 BEGIN_MESSAGE_MAP( AccountCatesDlg, Dialog )
@@ -40,9 +41,10 @@ BEGIN_MESSAGE_MAP( AccountCatesDlg, Dialog )
     ON_COMMAND(ID_CATE_DELETE, OnDelete)
     //}}AFX_MSG_MAP
     ON_UPDATE_COMMAND_UI_RANGE(ID_CATE_MODIFY, ID_CATE_DELETE, OnUpdateModifyDeleteMenu)
+    ON_NOTIFY( LVN_ITEMCHANGED, IDC_LIST_CATES, OnItemChangedListCates )
 END_MESSAGE_MAP()
 
-void AccountCatesDlg::UpdateList( int flag /*= UPDATE_LOAD_DATA | UPDATE_LIST_ITEMS*/, long itemIndex /*= -1 */ )
+void AccountCatesDlg::UpdateList( int flag, long itemIndex )
 {
     int count = 0;
     CListCtrl & lst = *(CListCtrl *)GetDlgItem(IDC_LIST_CATES);
@@ -332,4 +334,15 @@ void AccountCatesDlg::OnUpdateModifyDeleteMenu( CCmdUI * pCmdUI )
     CListCtrl & lst = *(CListCtrl *)GetDlgItem(IDC_LIST_CATES);
     int index = lst.GetNextItem( -1, LVNI_ALL | LVNI_SELECTED );
     pCmdUI->Enable( index != -1 );
+}
+
+
+void AccountCatesDlg::OnItemChangedListCates( NMHDR *pNMHDR, LRESULT *pResult )
+{
+    LPNMLISTVIEW pNMLV = reinterpret_cast<LPNMLISTVIEW>(pNMHDR);
+    // TODO: 在此添加控件通知处理程序代码
+    //cout << pNMLV->iItem << endl;
+    m_cateIndex = pNMLV->iItem;
+
+    *pResult = 0;
 }
