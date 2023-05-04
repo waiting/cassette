@@ -11,7 +11,38 @@ IMPLEMENT_DYNAMIC(AccountComprehensiveWnd, CWnd)
 struct AccountComprehensive_Data
 {
     AccountCate cate;
-    AccountArray accounts;
+    struct AccountContext
+    {
+        // 账户
+        Account account;
+        // 账户绘画区域
+        RectF accountRect;
+        // 账户字段显示区域
+        RectF accountField0Rect;
+        RectF accountField1Rect;
+        // 是否选中
+        //bool isSelected;
+        // 是否显示密码
+        bool isPwdShown;
+        AccountContext()
+        {
+            this->_zeroInit();
+        }
+        AccountContext( Account const & account ) : account(account)
+        {
+            this->_zeroInit();
+        }
+        void _zeroInit()
+        {
+            using MyRect = decltype(accountRect);
+            ZeroMemory( &accountRect, sizeof(MyRect) );
+            ZeroMemory( &accountField0Rect, sizeof(MyRect) );
+            ZeroMemory( &accountField1Rect, sizeof(MyRect) );
+            //isSelected = false;
+            isPwdShown = false;
+        }
+    };
+    CArray<AccountContext> accounts;
 
     // 画布
     winplus::MemDC memCanvas;
@@ -27,17 +58,43 @@ struct AccountComprehensive_Data
     RectF rectWindow;
     // 客户区大小矩形
     RectF rectClient;
-    // 右上角关闭按钮的路径区域
-    GraphicsPath closeBtnPath;
     // 当前鼠标位置
     Point ptCurMouse;
+    // 右上角关闭按钮的路径区域
+    GraphicsPath closeBtnPath;
+    // 关闭按钮画刷
+    SolidBrush closeBtnBrush0{ Color( 255, 204, 0 ) };
+    SolidBrush closeBtnBrush1{ Color( 255, 123, 215 ) };
+    void drawCloseButton( winplus::Graphics & g, RectF const & buttonRect, GraphicsPath * graphPath, Brush * brush0, Brush * brush1 )
+    {
+        PointF points[6] = {
+            PointF{ buttonRect.X + ( buttonRect.Width / 2 ), buttonRect.Y + 0 },
+            PointF{ buttonRect.X + ( buttonRect.Width / 2 ) + ( buttonRect.Width / 4 ) * (REAL)tan( 3.14159265 / 3 ), buttonRect.Y + ( buttonRect.Height / 4 ) },
+            PointF{ buttonRect.X + ( buttonRect.Width / 2 ) + ( buttonRect.Width / 4 ) * (REAL)tan( 3.14159265 / 3 ), buttonRect.Y + ( buttonRect.Height * 3 / 4 ) },
+            PointF{ buttonRect.X + ( buttonRect.Width / 2 ), buttonRect.Y + buttonRect.Height },
+            PointF{ buttonRect.X + ( buttonRect.Width / 2 ) - ( buttonRect.Width / 4 ) * (REAL)tan( 3.14159265 / 3 ), buttonRect.Y + ( buttonRect.Height * 3 / 4 ) },
+            PointF{ buttonRect.X + ( buttonRect.Width / 2 ) - ( buttonRect.Width / 4 ) * (REAL)tan( 3.14159265 / 3 ), buttonRect.Y + ( buttonRect.Height / 4 ) }
+        };
+
+        // 建立图形路径
+        graphPath->Reset();
+        graphPath->AddPolygon( points, countof(points) );
+        g.SetSmoothingMode(SmoothingModeAntiAlias);
+        g.FillPath( graphPath->IsVisible(this->ptCurMouse) ? brush1 : brush0, graphPath );
+        g.SetSmoothingMode(SmoothingModeDefault);
+    }
 };
 
 AccountComprehensiveWnd::AccountComprehensiveWnd( CWnd * pParentWnd, CRect const & rect, AccountCate const & cate, AccountArray const & accounts )
 {
     _self.create();
     _self->cate = cate;
-    _self->accounts.Copy(accounts);
+    //_self->accounts.Copy(accounts);
+    for ( int i = 0; i < accounts.GetCount(); i++ )
+    {
+        _self->accounts.Add( AccountComprehensive_Data::AccountContext(accounts[i]) );
+    }
+
 #ifndef _WIN32_WCE
     EnableActiveAccessibility();
 #endif
@@ -99,7 +156,7 @@ void AccountComprehensiveWnd::Draw()
     g.SetCompositingMode(CompositingModeSourceOver);
 
     // 画客户区背景
-    g.FillRectangle( &SolidBrush( Color( 224, 255, 255, 255 ) ), _self->rectClient );
+    g.FillRectangle( &SolidBrush( Color( 208, 255, 255, 255 ) ), _self->rectClient );
 
     TextureBrush ltBrush{ &imgBgFrame, WrapModeTile, RectF( 0, 0, lBorder, tBorder ) };
     RectF ltCornerRect( 0, 0, lBorder, tBorder );
@@ -141,35 +198,12 @@ void AccountComprehensiveWnd::Draw()
     bBrush.TranslateTransform( bEdgeRect.GetLeft(), bEdgeRect.GetTop() );
     g.FillRectangle( &bBrush, bEdgeRect );
 
-    RectF closeBtnRect( _self->memCanvas.width() - 8 - 16, 3.5, 16, 16 );
-    //g.FillRectangle( &closeBtnBrush, closeBtnRect );
-
-    PointF points[6] = {
-        PointF{ closeBtnRect.X + ( closeBtnRect.Width / 2 ), closeBtnRect.Y + 0 },
-        PointF{ closeBtnRect.X + ( closeBtnRect.Width / 2 ) + ( closeBtnRect.Width / 4 ) * (REAL)tan( 3.14159265 / 3 ), closeBtnRect.Y + ( closeBtnRect.Height / 4 ) },
-        PointF{ closeBtnRect.X + ( closeBtnRect.Width / 2 ) + ( closeBtnRect.Width / 4 ) * (REAL)tan( 3.14159265 / 3 ), closeBtnRect.Y + ( closeBtnRect.Height * 3 / 4 ) },
-        PointF{ closeBtnRect.X + ( closeBtnRect.Width / 2 ), closeBtnRect.Y + closeBtnRect.Height },
-        PointF{ closeBtnRect.X + ( closeBtnRect.Width / 2 ) - ( closeBtnRect.Width / 4 ) * (REAL)tan( 3.14159265 / 3 ), closeBtnRect.Y + ( closeBtnRect.Height * 3 / 4 ) },
-        PointF{ closeBtnRect.X + ( closeBtnRect.Width / 2 ) - ( closeBtnRect.Width / 4 ) * (REAL)tan( 3.14159265 / 3 ), closeBtnRect.Y + ( closeBtnRect.Height / 4 ) }
-    };
-
-    _self->closeBtnPath.Reset();
-    _self->closeBtnPath.AddPolygon( points, countof(points) );
-
-    winplus::SimplePointer<SolidBrush> pCloseBtnBrush;
-    if ( _self->closeBtnPath.IsVisible(_self->ptCurMouse) )
-    {
-        pCloseBtnBrush.attachNew( new SolidBrush( Color( 255, 123, 215 ) ) );
-    }
-    else
-    {
-        pCloseBtnBrush.attachNew( new SolidBrush( Color( 255, 204, 0 ) ) );
-    }
-
-    g.SetSmoothingMode(SmoothingModeAntiAlias);
-    g.FillPath( pCloseBtnBrush.get(), &_self->closeBtnPath );
-    //g.FillPolygon( &closeBtnBrush, points, countof(points) );
-    g.SetSmoothingMode(SmoothingModeDefault);
+    // 画关闭按钮
+    _self->drawCloseButton( g, RectF( _self->memCanvas.width() - 8 - 16, 3.5, 16, 16 ), &_self->closeBtnPath, &_self->closeBtnBrush0, &_self->closeBtnBrush1 );
+    // 画添加按钮
+    RectF addBtnRect( _self->memCanvas.width() - 8 - 32 - 4, 3.5, 16, 16 );
+    GraphicsPath addBtnPath;
+    _self->drawCloseButton( g, addBtnRect, &addBtnPath, &SolidBrush( Color( 0, 248, 0 ) ), &SolidBrush( Color( 0xaa, 0x98, 0xfe ) ) );
 
     // 标题
     g.SetTextRenderingHint(TextRenderingHintAntiAliasGridFit);
@@ -192,6 +226,8 @@ void AccountComprehensiveWnd::Draw()
     {
         RectF rect( _self->rectClient.GetLeft() + 4, _self->rectClient.GetTop() + off, _self->rectClient.Width - 8, line );
         //g.FillRectangle( &SolidBrush( Color( 32, 0, 0, 0 ) ), rect );
+        _self->accounts[i].accountRect = rect;
+
         RectF rect1 = rect;
         rect1.Height = rect.Height / 2;
         //g.DrawRoundRectangle( &Pen( Color(192,192,0) ), rect1, 4 );
@@ -200,8 +236,19 @@ void AccountComprehensiveWnd::Draw()
         rect2.Y = rect.Y + rect.Height / 2;
         //g.DrawRoundRectangle( &Pen( Color(0,255,0) ), rect2, 4 );
 
-        g.DrawShadowString( (LPCSTR)_self->accounts[i].m_myName, font, &SolidBrush( Color(0,0,0) ), &SolidBrush( Color( 64, 0, 0, 0 ) ), rect1, &sf, nullptr );
-        g.DrawShadowString( (LPCSTR)_self->accounts[i].m_accountName, font, &SolidBrush( Color(225, 103, 195) ), &SolidBrush( Color( 64, 0, 0, 0 ) ), rect2, &sf, nullptr );
+        _self->accounts[i].accountField0Rect = rect1;
+        _self->accounts[i].accountField1Rect = rect2;
+
+
+        g.DrawShadowString( (LPCSTR)_self->accounts[i].account.m_myName, font, &SolidBrush( Color(0,0,0) ), &SolidBrush( Color( 64, 0, 0, 0 ) ), rect1, &sf, nullptr );
+        if ( _self->accounts[i].isPwdShown )
+        {
+            g.DrawShadowString( (LPCSTR)_self->accounts[i].account.m_accountPwd, font, &SolidBrush( Color(10, 224, 5) ), &SolidBrush( Color( 64, 0, 0, 0 ) ), rect2, &sf, nullptr );
+        }
+        else
+        {
+            g.DrawShadowString( (LPCSTR)_self->accounts[i].account.m_accountName, font, &SolidBrush( Color(225, 103, 195) ), &SolidBrush( Color( 64, 0, 0, 0 ) ), rect2, &sf, nullptr );
+        }
 
 
         g.DrawLine( &pen, _self->rectClient.GetLeft() + 4, _self->rectClient.GetTop() + off + line, _self->rectClient.GetRight() - 4, _self->rectClient.GetTop() + off + line );
