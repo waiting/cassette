@@ -14,16 +14,22 @@ namespace winplus
 {
 
 // IStream 相关 -----------------------------------------------------------
-/** 创建一个新的内存IStream，自动增长 */
-WINPLUS_FUNC_DECL(IStreamPtr) CreateNewStream();
-/* 从磁盘载入文件到内存中,并得到IStream接口指针 */
-WINPLUS_FUNC_DECL(IStreamPtr) CreateStreamExistingFile( String const & fileName );
-/* 从指定缓冲区新建一个IStream */
-WINPLUS_FUNC_DECL(IStreamPtr) CreateStreamFromBuffer( LPCVOID buffer, DWORD size );
 
-/* 从资源创建一个IStream */
-WINPLUS_FUNC_DECL(IStreamPtr) CreateStreamFromResourceEx( HMODULE module, UINT resourceId, LPCTSTR type );
-WINPLUS_FUNC_DECL(IStreamPtr) CreateStreamFromResource( UINT resourceId, LPCTSTR type );
+/** \brief 创建一个新的内存IStream，自动增长 */
+WINPLUS_FUNC_DECL(IStreamPtr) CreateNewStream();
+/** \brief 从磁盘载入文件到内存中,并得到IStream接口指针 */
+WINPLUS_FUNC_DECL(IStreamPtr) CreateStreamExistingFile( String const & fileName );
+/** \brief 从指定缓冲区新建一个IStream */
+WINPLUS_FUNC_DECL(IStreamPtr) CreateStreamFromBuffer( LPCVOID lpBuffer, size_t size );
+
+/** \brief 从资源创建一个IStream */
+WINPLUS_FUNC_DECL(IStreamPtr) CreateStreamFromResourceEx( HMODULE hModule, LPCTSTR lpszName, LPCTSTR lpszType );
+/** \brief 从资源创建一个IStream */
+WINPLUS_FUNC_DECL(IStreamPtr) CreateStreamFromResource( LPCTSTR lpszName, LPCTSTR lpszType );
+/** \brief 从资源创建一个IStream */
+WINPLUS_FUNC_DECL(IStreamPtr) CreateStreamFromResourceEx( HMODULE hModule, UINT uResourceId, LPCTSTR lpszType );
+/** \brief 从资源创建一个IStream */
+WINPLUS_FUNC_DECL(IStreamPtr) CreateStreamFromResource( UINT uResourceId, LPCTSTR lpszType );
 
 } // namespace winplus
 

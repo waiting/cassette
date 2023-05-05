@@ -64,7 +64,7 @@ public:
     WordsLib( String const & filename ) throw(WordsLibException);
     ~WordsLib();
 
-    // 当str1等于substr(str2, 0, strlen(str1))时返回0，大于返回1，小于返回-1
+    // 当str1等于str2.substr(0, strlen(str1))时返回0，大于返回1，小于返回-1
     static int StrMatch( String const & str1, String const & str2 );
     // 搜索一个词(精确匹配), 返回其在词库中的索引, 否则返回-1
     int find( String const & word, int first, int last ) const;
@@ -78,8 +78,10 @@ public:
     {
         return this->findEx( word, 0, wordscount - 1, count );
     }
-    // 分词
+    // 分词1 把text拆分成词组。只会把词库有的词放入arrWords
     int splitWords( String const & text, StringArray * arrWords ) const;
+    // 分词2 把text拆分成词组。会把非词库内容合在一起作为一词放入arrWords
+    int splitWords2( String const & text, StringArray * arrWords ) const;
 
     String prev() const;
     String next() const;

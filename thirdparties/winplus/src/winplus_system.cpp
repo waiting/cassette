@@ -3,14 +3,16 @@
 #define _WIN32_IE 0x0501
 #endif
 
-#define _WIN32_WINNT 0x0501
+//#define _WIN32_WINNT 0x0501
 
 #include "winplus_definitions.hpp"
 #include "winplus_system.hpp"
+
 #include "strings.hpp"
 #include "smartptr.hpp"
 #include "filesys.hpp"
 #include "system.hpp"
+#include "time.hpp"
 #include <tchar.h>
 #include <direct.h>
 #include <algorithm>
@@ -208,11 +210,14 @@ WINPLUS_FUNC_IMPL(String) ExpandVars( String const & str )
 
 }
 
-WINPLUS_FUNC_IMPL(String) GetAppPathFromHWND( HWND hWnd, DWORD * processId )
+WINPLUS_FUNC_IMPL(String) GetAppPathByHwnd( HWND hwnd, DWORD * pProcessId, DWORD * pThreadId )
 {
-    DWORD dwProcessId;
-    GetWindowThreadProcessId( hWnd, &dwProcessId );
-    ASSIGN_PTR(processId) = dwProcessId;
+    DWORD dwProcessId, dwThreadId;
+    dwThreadId = GetWindowThreadProcessId( hwnd, &dwProcessId );
+    ASSIGN_PTR(pProcessId) = dwProcessId;
+    ASSIGN_PTR(pThreadId) = dwThreadId;
+
+    // 打开进程句柄
     HANDLE hProcess = OpenProcess( PROCESS_ALL_ACCESS, FALSE, dwProcessId );
     if ( !hProcess )
     {
@@ -230,7 +235,61 @@ WINPLUS_FUNC_IMPL(String) GetAppPathFromHWND( HWND hWnd, DWORD * processId )
         func && func.call( hProcess, 0, &fullName[0], &dw );
     }
     CloseHandle(hProcess);
-    return fullName.c_str();
+    return String( fullName.c_str(), dw );
+}
+
+WINPLUS_FUNC_IMPL(HWND) GetMainWindowByProcessId( DWORD dwProcessId )
+{
+    struct MyParam
+    {
+        HWND hwnd;
+        DWORD dwProcessId;
+    } param = { NULL, dwProcessId };
+
+    EnumWindows( [] ( HWND hwnd, LPARAM lParam ) -> BOOL {
+        LONG exStyle = GetWindowLong( hwnd, GWL_EXSTYLE );
+        BOOL bIsTopLevel = ( exStyle & WS_EX_TOPMOST ) || ( !( exStyle & WS_EX_APPWINDOW ) && ( GetWindow( hwnd, GW_OWNER ) == NULL ) );
+        if ( bIsTopLevel && !GetParent(hwnd) )
+        {
+            MyParam & param = *(MyParam *)lParam;
+            DWORD dwProcessId;
+            GetWindowThreadProcessId( hwnd, &dwProcessId );
+            if ( param.dwProcessId == dwProcessId )
+            {
+                param.hwnd = hwnd;
+                return FALSE;
+            }
+        }
+        return TRUE;
+    }, (LPARAM)&param );
+    return param.hwnd;
+}
+
+WINPLUS_FUNC_IMPL(HWND) GetMainWindowByThreadId( DWORD dwThreadId )
+{
+    struct MyParam
+    {
+        HWND hwnd;
+        DWORD dwThreadId;
+    } param = { NULL, dwThreadId };
+
+    EnumWindows( [] ( HWND hwnd, LPARAM lParam ) -> BOOL {
+        LONG exStyle = GetWindowLong( hwnd, GWL_EXSTYLE );
+        BOOL bIsTopLevel = ( exStyle & WS_EX_TOPMOST ) || ( !( exStyle & WS_EX_APPWINDOW ) && ( GetWindow( hwnd, GW_OWNER ) == NULL ) );
+        if ( bIsTopLevel && !GetParent(hwnd) )
+        {
+            MyParam & param = *(MyParam *)lParam;
+            DWORD dwProcessId, dwThreadId;
+            dwThreadId = GetWindowThreadProcessId( hwnd, &dwProcessId );
+            if ( param.dwThreadId == dwThreadId )
+            {
+                param.hwnd = hwnd;
+                return FALSE;
+            }
+        }
+        return TRUE;
+        }, (LPARAM)&param );
+    return param.hwnd;
 }
 
 WINPLUS_FUNC_IMPL(String) ModulePath( HMODULE mod, String * fileName )
@@ -247,18 +306,29 @@ WINPLUS_FUNC_IMPL(String) ModulePath( HMODULE mod, String * fileName )
     return FilePath( String( sz.c_str(), dwGet ), fileName );
 }
 
-WINPLUS_FUNC_IMPL(INT) CommandArguments( StringArray * arr )
+WINPLUS_FUNC_IMPL(UINT) CommandArgumentArray( StringArray * argArr )
 {
     // 命令行参数处理
     LPWSTR cmdLine = GetCommandLineW();
     INT numArgs, i;
-    LPWSTR * argsArr = CommandLineToArgvW( cmdLine, &numArgs );
+    LPWSTR * argsArr = ::CommandLineToArgvW( cmdLine, &numArgs );
     for ( i = 0; i < numArgs; ++i )
     {
-        arr->push_back( UnicodeToString(argsArr[i]) );
+        argArr->push_back( UnicodeToString(argsArr[i]) );
     }
     GlobalFree( (HGLOBAL)argsArr );
     return numArgs;
+}
+
+WINPLUS_FUNC_IMPL(std::vector<String::value_type const *>) CommandArgs( StringArray * argArr )
+{
+    std::vector<String::value_type const *> args;
+    for ( auto && arg : *argArr )
+    {
+        args.push_back( arg.c_str() );
+    }
+    args.push_back(nullptr);
+    return args;
 }
 
 WINPLUS_FUNC_IMPL(bool) ShutdownPrivilege( bool enable )
@@ -274,6 +344,69 @@ WINPLUS_FUNC_IMPL(bool) ShutdownPrivilege( bool enable )
     ret = ( GetLastError() == ERROR_SUCCESS );
     CloseHandle(token);
     return ret;
+}
+
+// 1970-01-01 00:00:00的ULARGE_INTEGER描述
+static ULARGE_INTEGER __Time1970( void )
+{
+    SYSTEMTIME st1970 = {0};
+    st1970.wYear = 1970;
+    st1970.wMonth = 1;
+    st1970.wDay = 1;
+    st1970.wHour = 0;
+    st1970.wMinute = 0;
+    st1970.wSecond = 0;
+
+    FILETIME ft1970;
+    ULARGE_INTEGER time1970;
+    SystemTimeToFileTime( &st1970, &ft1970 );
+    CopyMemory( &time1970, &ft1970, sizeof(time1970) );
+    return time1970;
+}
+
+WINUX_FUNC_IMPL(bool) SetFileTime( String const & filename, time_t ctime, time_t mtime, time_t atime )
+{
+    FILETIME cft = { 0 }, mft = { 0 }, aft = { 0 };
+    ULARGE_INTEGER uli;
+    if ( ctime )
+    {
+        uli.QuadPart = static_cast<ULONGLONG>( ctime == -1 ? GetUtcTime() : ctime ) * 10000000ULL;
+        uli.QuadPart += __Time1970().QuadPart;
+        cft.dwHighDateTime = uli.HighPart;
+        cft.dwLowDateTime = uli.LowPart;
+    }
+
+    if ( mtime )
+    {
+        uli.QuadPart = static_cast<ULONGLONG>( mtime == -1 ? GetUtcTime() : mtime ) * 10000000ULL;
+        uli.QuadPart += __Time1970().QuadPart;
+        mft.dwHighDateTime = uli.HighPart;
+        mft.dwLowDateTime = uli.LowPart;
+    }
+
+    if ( atime )
+    {
+        uli.QuadPart = static_cast<ULONGLONG>( atime == -1 ? GetUtcTime() : atime ) * 10000000ULL;
+        uli.QuadPart += __Time1970().QuadPart;
+        aft.dwHighDateTime = uli.HighPart;
+        aft.dwLowDateTime = uli.LowPart;
+    }
+
+    if ( ctime || mtime || atime )
+    {
+        HANDLE hFile = CreateFile( filename.c_str(), GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_BACKUP_SEMANTICS, NULL );
+        if ( hFile == INVALID_HANDLE_VALUE )
+        {
+            //std::cout << GetErrorStr( GetLastError() );
+            return false;
+        }
+
+        BOOL b = ::SetFileTime( hFile, &cft, &aft, &mft );
+        CloseHandle(hFile);
+        return b != FALSE;
+    }
+
+    return false;
 }
 
 WINPLUS_FUNC_IMPL(String) GetErrorStr( DWORD err )
@@ -621,6 +754,458 @@ WINPLUS_FUNC_IMPL(String) GetModuleVersion( String const & moduleFile )
     }
     
     return version;
+}
+
+// class Registry -------------------------------------------------------------------------
+// 预定义HKEY
+static HKEY __hkeyPredefined[] = {
+    HKEY_CLASSES_ROOT,
+    HKEY_CURRENT_USER,
+    HKEY_LOCAL_MACHINE,
+    HKEY_USERS,
+    HKEY_CURRENT_CONFIG,
+};
+
+// RegValue转换为Mixed
+static Mixed __RegValueToMixed( Buffer const & value, DWORD dwType, Mixed const & defval )
+{
+    Mixed v;
+    switch ( dwType )
+    {
+    case REG_SZ: // MT_ANSI or MT_UNICODE
+        {
+            v.createString();
+            size_t size = value.getSize();
+            if ( size > 0 )
+            {
+                if ( value[size - 1] == '\0' ) size--;
+                v._pStr->assign( value.get<char>(), size );
+                return v;
+            }
+        }
+        break;
+    case REG_EXPAND_SZ: // MT_COLLECTION { 2: "%VALUE%" }
+        {
+            v.createCollection();
+            String expandStr;
+            size_t size = value.getSize();
+            if ( size > 0 )
+            {
+                if ( value[size - 1] == '\0' ) size--;
+                expandStr.assign( value.get<char>(), size );
+                v[REG_EXPAND_SZ] = expandStr;
+                return v;
+            }
+        }
+        break;
+    case REG_BINARY: // MT_BINARY
+        {
+            v.assign(value);
+            return v;
+        }
+        break;
+    case REG_DWORD: //  MT_BOOLEAN, MT_BYTE, MT_SHORT, MT_USHORT, MT_INT, MT_UINT, MT_LONG, MT_ULONG
+        {
+            DWORD tmp;
+            if ( value.getSize() == sizeof(tmp) )
+                tmp = *value.get<decltype(tmp)>();
+            else
+                tmp = 0;
+            v.assign(tmp);
+            return v;
+        }
+        break;
+    case REG_MULTI_SZ: // MT_ARRAY
+        {
+            v.createArray();
+            TCHAR const * strlist = value.get<TCHAR>();
+            while ( *strlist )
+            {
+                size_t len = strlen(strlist);
+                v._pArr->push_back( String( strlist, len ) );
+                strlist += len + 1;
+            }
+            return v;
+        }
+        break;
+    case REG_QWORD: // MT_INT64 or MT_UINT64
+        {
+            uint64 tmp;
+            if ( value.getSize() == sizeof(tmp) )
+                tmp = *value.get<decltype(tmp)>();
+            else
+                tmp = 0;
+            v.assign(tmp);
+            return v;
+        }
+        break;
+    default: // maybe REG_NONE
+        return v;
+        break;
+    }
+    return defval;
+}
+
+// Mixed转换为RegValue
+static Buffer __RegValueFromMixed( Mixed const & v, DWORD * pdwType )
+{
+    Buffer value;
+    switch ( v.type() )
+    {
+    case Mixed::MT_NULL:
+        *pdwType = REG_NONE;
+        break;
+    case Mixed::MT_BOOLEAN:
+    case Mixed::MT_BYTE:
+    case Mixed::MT_SHORT:
+    case Mixed::MT_USHORT:
+    case Mixed::MT_INT:
+    case Mixed::MT_UINT:
+    case Mixed::MT_LONG:
+    case Mixed::MT_ULONG:
+        {
+            *pdwType = REG_DWORD;
+            value.alloc( sizeof(DWORD) );
+            *value.get<DWORD>() = v.toULong();
+        }
+        break;
+    case Mixed::MT_INT64:
+    case Mixed::MT_UINT64:
+        {
+            *pdwType = REG_QWORD;
+            value.alloc( sizeof(uint64) );
+            *value.get<uint64>() = v.toUInt64();
+        }
+        break;
+    case Mixed::MT_ANSI:
+        {
+            *pdwType = REG_SZ;
+            value.alloc( ( v._pStr->size() + 1 ) * sizeof(AnsiString::value_type) );
+            memcpy( value.get(), v._pStr->c_str(), value.size() );
+        }
+        break;
+    case Mixed::MT_UNICODE:
+        {
+            *pdwType = REG_SZ;
+            value.alloc( ( v._pWStr->size() + 1 ) * sizeof(UnicodeString::value_type) );
+            memcpy( value.get(), v._pWStr->c_str(), value.size() );
+        }
+        break;
+    case Mixed::MT_ARRAY:
+        {
+            *pdwType = REG_MULTI_SZ;
+            GrowBuffer multiStrings;
+            for ( auto it = v._pArr->begin(); it != v._pArr->end(); ++it )
+            {
+                String str = it->toAnsi();
+                multiStrings.append( str.c_str(), str.length() + 1 );
+            }
+            multiStrings.append('\0');
+            value = multiStrings;
+        }
+        break;
+    case Mixed::MT_COLLECTION:
+        {
+            auto && pr = v.getPair(0);
+            if ( v.getCount() > 0 && pr.first.toULong() == REG_EXPAND_SZ )
+            {
+                *pdwType = REG_EXPAND_SZ;
+                String str = pr.second;
+                value.alloc( ( str.size() + 1 ) * sizeof(String::value_type) );
+                memcpy( value.get(), str.c_str(), value.size() );
+                break;
+            }
+            *pdwType = REG_NONE;
+        }
+        break;
+    case Mixed::MT_BINARY:
+        {
+            *pdwType = REG_BINARY;
+            value.alloc( v._pBuf->size() );
+            memcpy( value.get(), v._pBuf->get(), value.size() );
+        }
+        break;
+    default:
+        *pdwType = REG_NONE;
+        break;
+    }
+    return value;
+}
+
+DWORD Registry::ValueType( Mixed const & v )
+{
+    switch ( v.type() )
+    {
+    case Mixed::MT_NULL:
+        return REG_NONE;
+        break;
+    case Mixed::MT_BOOLEAN:
+    case Mixed::MT_BYTE:
+    case Mixed::MT_SHORT:
+    case Mixed::MT_USHORT:
+    case Mixed::MT_INT:
+    case Mixed::MT_UINT:
+    case Mixed::MT_LONG:
+    case Mixed::MT_ULONG:
+        return REG_DWORD;
+        break;
+    case Mixed::MT_INT64:
+    case Mixed::MT_UINT64:
+        return REG_QWORD;
+        break;
+    case Mixed::MT_ANSI:
+    case Mixed::MT_UNICODE:
+        return REG_SZ;
+        break;
+    case Mixed::MT_ARRAY:
+        return REG_MULTI_SZ;
+        break;
+    case Mixed::MT_COLLECTION:
+        {
+            if ( v.getCount() > 0 && v.getPair(0).first.toULong() == REG_EXPAND_SZ )
+                return REG_EXPAND_SZ;
+            return REG_NONE;
+        }
+        break;
+    case Mixed::MT_BINARY:
+        return REG_BINARY;
+        break;
+    default:
+        return REG_NONE;
+        break;
+    }
+}
+
+Mixed const & Registry::Value( Mixed const & v )
+{
+    if ( v.isCollection() )
+    {
+        if ( v.getCount() > 0 )
+        {
+            auto && pr = v.getPair(0);
+            if ( pr.first.toULong() == REG_EXPAND_SZ )
+            {
+                return pr.second;
+            }
+        }
+    }
+    return v;
+}
+
+bool Registry::Exists( String const & key, LPCTSTR lpValueName )
+{
+    Registry reg(key);
+    if ( reg )
+    {
+        if ( lpValueName == nullptr ) return true;
+        return reg.hasValue(lpValueName);
+    }
+    return false;
+}
+
+bool Registry::Delete( String const & key, LPCTSTR lpValueName )
+{
+    if ( lpValueName )
+    {
+        Registry reg(key);
+        return reg.delValue(lpValueName);
+    }
+    else
+    {
+        auto p = strrchr( key.c_str(), '\\' );
+        if ( p && *( p + 1 ) ) // 不能是根键，eg: "HKLM", "HKLM\"
+        {
+            String parentKey( key.c_str(), p - key.c_str() );
+            p++; // skip '\\'
+
+            Registry reg(parentKey);
+            if ( reg )
+            {
+                if ( RegDeleteKey( reg.key(), p ) == ERROR_SUCCESS )
+                {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+bool Registry::ForceDelete( String const & key )
+{
+    {
+        String szKey;
+        szKey.resize(256);
+        Registry reg(key);
+        if ( !reg ) return false;
+        DWORD dw;
+        for ( DWORD i = 0; ( dw = RegEnumKey( reg.key(), i, &szKey[0], (DWORD)szKey.size() ) ) != ERROR_NO_MORE_ITEMS; )
+        {
+            bool b = ForceDelete( key + "\\" + szKey.c_str() );
+            if ( !b ) i++;
+        }
+    }
+    return Delete(key);
+}
+
+// Constructors
+Registry::Registry( HKEY hkey, String const & subKey, bool isCreateOnNotExists ) : _hkey(nullptr), _err(ERROR_SUCCESS), _indexEnumValues(0), _indexEnumKeys(0)
+{
+    if ( isCreateOnNotExists )
+    {
+        _err = RegCreateKey( hkey, subKey.c_str(), &_hkey );
+    }
+    else
+    {
+        _err = RegOpenKey( hkey, subKey.c_str(), &_hkey );
+    }
+}
+
+Registry::Registry( String const & key, bool isCreateOnNotExists ) : _hkey(nullptr), _err(ERROR_SUCCESS), _indexEnumValues(0), _indexEnumKeys(0)
+{
+    HKEY hkeyPredefined = nullptr;
+    String::const_pointer strKey = key.c_str();
+    String::const_pointer str = strchr( strKey, '\\' );
+    if ( !str ) // 没搜到 '\\'
+    {
+        str = strKey + key.length();
+    }
+
+    if ( !_strnicmp( strKey, "HKEY_CLASSES_ROOT", str - strKey ) || !_strnicmp( strKey, "HKCR", str - strKey ) )
+        hkeyPredefined = HKEY_CLASSES_ROOT;
+    else if ( !_strnicmp( strKey, "HKEY_CURRENT_CONFIG", str - strKey ) || !_strnicmp( strKey, "HKCC", str - strKey ) )
+        hkeyPredefined = HKEY_CURRENT_CONFIG;
+    else if ( !_strnicmp( strKey, "HKEY_CURRENT_USER", str - strKey ) || !_strnicmp( strKey, "HKCU", str - strKey ) )
+        hkeyPredefined = HKEY_CURRENT_USER;
+    else if ( !_strnicmp( strKey, "HKEY_LOCAL_MACHINE", str - strKey ) || !_strnicmp( strKey, "HKLM", str - strKey ) )
+        hkeyPredefined = HKEY_LOCAL_MACHINE;
+    else if ( !_strnicmp( strKey, "HKEY_USERS", str - strKey ) || !_strnicmp( strKey, "HKU", str - strKey ) )
+        hkeyPredefined = HKEY_USERS;
+    else
+    {
+        hkeyPredefined = nullptr;
+    }
+
+    if ( *str == '\\' ) str++; // skip '\\'
+
+    if ( hkeyPredefined != nullptr )
+    {
+        if ( isCreateOnNotExists )
+        {
+            _err = RegCreateKey( hkeyPredefined, str, &_hkey );
+        }
+        else
+        {
+            _err = RegOpenKey( hkeyPredefined, str, &_hkey );
+        }
+    }
+}
+
+Registry::~Registry()
+{
+    if ( _hkey != nullptr )
+    {
+        for ( int i = 0; i < countof(__hkeyPredefined); ++i )
+        {
+            if ( __hkeyPredefined[i] == _hkey )
+            {
+                goto RESET_NULL;
+            }
+        }
+        RegCloseKey(_hkey);
+    RESET_NULL:
+        _hkey = nullptr;
+        _err = ERROR_SUCCESS;
+    }
+}
+
+winux::Mixed Registry::getValue( String const & name, Mixed const & defval ) const
+{
+    DWORD dwType = 0, dwSize = 0;
+    Buffer value;
+
+    // 获取数据类型和大小
+    if ( ( _err = RegQueryValueEx( _hkey, name.c_str(), NULL, &dwType, NULL, &dwSize ) ) != ERROR_SUCCESS ) goto RETURN;
+
+    // 读取数据
+    value.alloc(dwSize);
+    if ( ( _err = RegQueryValueEx( _hkey, name.c_str(), NULL, &dwType, value.get<BYTE>(), &dwSize ) ) != ERROR_SUCCESS ) goto RETURN;
+
+    return __RegValueToMixed( value, dwType, defval );
+
+RETURN:
+    return defval;
+}
+
+bool Registry::setValue( String const & name, Mixed const & v, DWORD dwType )
+{
+    DWORD dw;
+    auto value = __RegValueFromMixed( v, &dw );
+    dwType = ( dwType == -1 ? dw : dwType );
+    _err = RegSetValueEx( _hkey, name.c_str(), 0, dwType, value.get<BYTE>(), (DWORD)value.size() );
+    return _err == ERROR_SUCCESS;
+}
+
+bool Registry::delValue( String const & name )
+{
+    _err = RegDeleteValue( _hkey, name.c_str() );
+    return _err == ERROR_SUCCESS;
+}
+
+bool Registry::enumValues( String * name, Mixed * pv ) const
+{
+    String szName;
+    DWORD cchName = 256;
+    szName.resize(cchName);
+    DWORD dwType = 0, dwSize = 0;
+    _err = RegEnumValue( _hkey, _indexEnumValues, &szName[0], &cchName, nullptr, &dwType, nullptr, &dwSize );
+    _indexEnumValues++;
+    if ( _err != ERROR_NO_MORE_ITEMS )
+    {
+        name->assign( szName.c_str(), cchName );
+        Buffer value;
+        value.alloc(dwSize);
+        _err = RegQueryValueEx( _hkey, name->c_str(), nullptr, &dwType, value.get<BYTE>(), &dwSize );
+        *pv = __RegValueToMixed( value, dwType, Mixed() );
+        return true;
+    }
+    else
+    {
+        _indexEnumValues = 0;
+    }
+    return false;
+}
+
+bool Registry::enumKeys( String * subKey ) const
+{
+    String szSubKey;
+    DWORD cch = 256;
+    szSubKey.resize(cch);
+    _err = RegEnumKey( _hkey, _indexEnumKeys, &szSubKey[0], cch );
+    _indexEnumKeys++;
+    if ( _err != ERROR_NO_MORE_ITEMS )
+    {
+        *subKey = szSubKey.c_str();
+        return true;
+    }
+    else
+    {
+        _indexEnumKeys = 0;
+    }
+    return false;
+}
+
+void Registry::enumReset()
+{
+    _indexEnumValues = 0;
+    _indexEnumKeys = 0;
+}
+
+bool Registry::hasValue( String const & name ) const
+{
+    if ( _hkey == nullptr ) return false;
+    _err = RegQueryValueEx( _hkey, name.c_str(), nullptr, nullptr, nullptr, nullptr );
+    return _err == ERROR_SUCCESS;
 }
 
 } // namespace winplus

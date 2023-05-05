@@ -301,20 +301,20 @@ int WordsLib::splitWords( String const & text, StringArray * arrWords ) const
     int first, last;
     int cch = 0, i = 0;
     first = 0;
-    last = wordscount - 1;
-    while ( p && *p )
+    last = this->wordscount - 1;
+    while ( *p )
     {
         TCHAR ch[4] = {0};
         ch[0] = *p;
         cch = 1;
-#ifndef UNICODE
+    #ifndef UNICODE
         if ( ch[0] & 0x80 )
         {
             p++;
             ch[1] = *p;
             cch = 2;
         }
-#endif
+    #endif
         str += ch;
 
         int pos = -1, count = 0;
@@ -353,7 +353,7 @@ int WordsLib::splitWords( String const & text, StringArray * arrWords ) const
                     arrWords->push_back(ansiStr);
             }
             first = 0;
-            last = wordscount - 1;
+            last = this->wordscount - 1;
             str = TEXT("");
         }
         i++;
@@ -371,11 +371,106 @@ int WordsLib::splitWords( String const & text, StringArray * arrWords ) const
     return (int)arrWords->size();
 }
 
+int WordsLib::splitWords2( String const & text, StringArray * arrWords ) const
+{
+    TCHAR const * p = text.c_str();
+    TCHAR const * q = p;
+    String str = TEXT("");
+    String strMat = TEXT("");
+    int haveMatch = -1;
+    int cch = 0;
+    int first = 0;
+    int last = this->wordscount - 1;
+    while ( *p )
+    {
+        TCHAR ch[4] = {0};
+        ch[0] = *p;
+        cch = 1;
+    #ifndef UNICODE
+        if ( ch[0] & 0x80 )
+        {
+            p++;
+            ch[1] = *p;
+            cch = 2;
+        }
+    #endif
+        str += ch;
+
+        int pos = -1, count = 0;
+        pos = this->findEx( str, first, last, &count );
+        if ( pos != -1 )
+        {
+            first = pos;
+            last = pos + count - 1;
+            haveMatch = pos;
+            strMat = str;
+            p++;
+        }
+        else // 搜不到
+        {
+            if ( haveMatch != -1 )
+            {
+                // 退回去
+                p -= cch - 1;
+                if ( this->at(haveMatch) == strMat )
+                {
+                    String s( q, p - strMat.length() );
+                    s = StrTrim(s);
+                    if ( !s.empty() ) arrWords->push_back(s);
+                    q = p;
+                    arrWords->push_back(strMat);
+                }
+                haveMatch = -1;
+            }
+            else
+            {
+                String ansiStr = TEXT("");
+                while ( *p && ( IsAlpha(*p) || IsDigit(*p) /*|| *p == '_' */|| *p == '.' ) )
+                {
+                    ansiStr += *p;
+                    p++;
+                }
+                if ( ansiStr.empty() )
+                {
+                    p++;
+                }
+                else
+                {
+                    String s( q, p - ansiStr.length() );
+                    s = StrTrim(s);
+                    if ( !s.empty() ) arrWords->push_back(s);
+                    q = p;
+                    arrWords->push_back(ansiStr);
+                }
+            }
+            first = 0;
+            last = this->wordscount - 1;
+            str = TEXT("");
+        }
+    }
+
+    // 结束循环再判断一次
+    if ( haveMatch != -1 )
+    {
+        if ( this->at(haveMatch) == strMat )
+        {
+            String s( q, p - strMat.length() );
+            s = StrTrim(s);
+            if ( !s.empty() ) arrWords->push_back(s);
+            q = p;
+            arrWords->push_back(strMat);
+        }
+        haveMatch = -1;
+    }
+
+    return (int)arrWords->size();
+}
+
 int WordsLib::StrMatch( String const & str1, String const & str2 )
 {
-    int len1 = (int)str1.length();
-    int len2 = (int)str2.length();
-    int i;
+    size_t len1 = str1.length();
+    size_t len2 = str2.length();
+    size_t i;
     for ( i = 0; i < len1 && i < len2; i++ )
     {
         if ( (BYTE)str1[i] > (BYTE)str2[i] )

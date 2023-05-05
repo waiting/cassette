@@ -22,8 +22,9 @@ StringArray StrSplitComma( String const & str );
 StringArray StrSplitSemicolon( String const & str );
 
 /* 载入字符串资源 */
-WINPLUS_FUNC_DECL(UnicodeString) LoadStringExW( HMODULE module, UINT id );
-WINPLUS_FUNC_DECL(String) LoadStringEx( HMODULE module, UINT id );
+WINPLUS_FUNC_DECL(UnicodeString) LoadStringExW( HMODULE hModule, UINT id );
+/* 载入字符串资源 */
+WINPLUS_FUNC_DECL(String) LoadStringEx( HMODULE hModule, UINT id );
 /* 采用GetModuleHandle(NULL)指定模块 */
 WINPLUS_FUNC_DECL(String) LoadString( UINT id );
 

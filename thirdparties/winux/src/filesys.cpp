@@ -344,8 +344,8 @@ WINUX_FUNC_IMPL(uint64) FileSize64( String const & filename )
 
 WINUX_FUNC_IMPL(bool) FileTime( String const & filename, time_t * ctime, time_t * mtime, time_t * atime )
 {
-    struct _stat st = { 0 };
-    bool r = 0 == _stat( filename.c_str(), &st );
+    struct _stat64 st = { 0 };
+    bool r = 0 == _stat64( filename.c_str(), &st );
     ASSIGN_PTR(ctime) = st.st_ctime;
     ASSIGN_PTR(mtime) = st.st_mtime;
     ASSIGN_PTR(atime) = st.st_atime;
@@ -354,22 +354,22 @@ WINUX_FUNC_IMPL(bool) FileTime( String const & filename, time_t * ctime, time_t 
 
 WINUX_FUNC_IMPL(time_t) FileCTime( String const & filename )
 {
-    struct _stat st = { 0 };
-    _stat( filename.c_str(), &st );
+    struct _stat64 st = { 0 };
+    _stat64( filename.c_str(), &st );
     return st.st_ctime;
 }
 
 WINUX_FUNC_IMPL(time_t) FileMTime( String const & filename )
 {
-    struct _stat st = { 0 };
-    _stat( filename.c_str(), &st );
+    struct _stat64 st = { 0 };
+    _stat64( filename.c_str(), &st );
     return st.st_mtime;
 }
 
 WINUX_FUNC_IMPL(time_t) FileATime( String const & filename )
 {
-    struct _stat st = { 0 };
-    _stat( filename.c_str(), &st );
+    struct _stat64 st = { 0 };
+    _stat64( filename.c_str(), &st );
     return st.st_atime;
 }
 

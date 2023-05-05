@@ -72,7 +72,13 @@ WINUX_FUNC_DECL(ulong) FileSize( String const & filename );
 /** \brief 获取文件大小（大于4GB的文件） */
 WINUX_FUNC_DECL(uint64) FileSize64( String const & filename );
 
-/** \brief 获取文件时间 */
+/** \brief 获取文件时间
+ *
+ *  \param filename String const &
+ *  \param ctime time_t * 可传递nullptr表示不获取create time
+ *  \param mtime time_t * 可传递nullptr表示不获取modify time
+ *  \param atime time_t * 可传递nullptr表示不获取access time
+ *  \return bool */
 WINUX_FUNC_DECL(bool) FileTime( String const & filename, time_t * ctime, time_t * mtime, time_t * atime );
 /** \brief 获取文件创建时间 */
 WINUX_FUNC_DECL(time_t) FileCTime( String const & filename );
@@ -98,8 +104,11 @@ WINUX_FUNC_DECL(void) FolderData( String const & path, StringArray * fileArr, St
 
 /** \brief 在指定路径下枚举指定扩展名的文件
  *
- *  ext可以是扩展名串，也可以是一个数组。
- *  当isRecursive=false时，arrFiles返回的结果不用区别目录，因此不包含目录部分的路径。 */
+ *  \param path 路径
+ *  \param ext 可以是扩展名串，也可以是一个数组。Mixed(MT_NULL)表示忽略
+ *  \param arrFiles 返回的结果。
+ *  \param isRecursive 是否递归。当为false时，arrFiles返回的结果不用区别目录，因此不包含目录部分的路径。
+ *  \return size_t 文件数 */
 WINUX_FUNC_DECL(size_t) EnumFiles( String const & path, Mixed const & ext, StringArray * arrFiles, bool isRecursive = false );
 
 /** \brief 通用删除,删除文件夹和文件,返回删除的文件夹和文件数 */

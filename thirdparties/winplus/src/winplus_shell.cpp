@@ -86,7 +86,7 @@ WINPLUS_FUNC_IMPL(HRESULT) ItemIdListFromPathCustom( LPWSTR path, WIN32_FIND_DAT
         pfsbd->Release();
         return hr;
     }
-    pBindCtx->RegisterObjectParam( STR_FILE_SYS_BIND_DATA, pfsbd );
+    pBindCtx->RegisterObjectParam( (LPOLESTR)STR_FILE_SYS_BIND_DATA, pfsbd );
     pfsbd->Release();
 
     // 得到桌面的目录

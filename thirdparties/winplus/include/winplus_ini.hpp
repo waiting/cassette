@@ -27,7 +27,7 @@ public:
     public:
 
         Section( Ini * i, LPCTSTR sectionName ) : _i(i), _sectionName(sectionName) {}
-        String get_name() const { return _sectionName; }
+        String getName() const { return _sectionName; }
 
         Section & set( String const & key, String const & value );
         Section & set( String const & key, int value );

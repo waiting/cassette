@@ -681,8 +681,8 @@ inline static void __ObtainFlagPrefixAndFlagNameList( StringArray const & desire
     for ( size_t i = 0; i < nameLists.getCount(); i++ )
     {
         auto && pr = nameLists.getPair(i);
-        *flagPrefix = pr.first;
-        *flagNameList = pr.second;
+        *flagPrefix = pr.first.toAnsi();
+        *flagNameList = pr.second.toAnsi();
         break;
     }
 

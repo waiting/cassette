@@ -74,7 +74,7 @@ String Ini::getValue( LPCTSTR szSection, LPCTSTR szKeyName, LPCTSTR szDefault )
             dwTmp = 2;
     }
     while ( nBufferSize - dwTmp == dwCopied );
-    return szBuffer.c_str();
+    return String( szBuffer.c_str(), dwCopied );
 }
 
 DOUBLE Ini::getValue( LPCTSTR szSection, LPCTSTR szKeyName, DOUBLE dblDefault )

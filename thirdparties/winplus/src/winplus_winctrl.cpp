@@ -51,63 +51,138 @@ void WindowTimer::destroy( void )
 }
 
 // 窗口相关 ---------------------------------------------------------------
-WINPLUS_FUNC_IMPL(int) MsgBox( String const & msg, String const & title )
+inline static LRESULT CALLBACK __MessageBoxCbtHookProc( HWND hwndParent, int nCode, WPARAM wParam, LPARAM lParam )
 {
-    return MessageBox( GetForegroundWindow(), msg.c_str(), title.c_str(), MB_ICONINFORMATION );
+    if ( nCode < 0 ) return CallNextHookEx( nullptr, nCode, wParam, lParam );
+
+    switch ( nCode )
+    {
+    case HCBT_CREATEWND:
+        {
+            HWND hWnd = (HWND)wParam;
+            if ( !GetParent(hWnd) )
+            {
+                RECT rc;
+                GetWindowRect( hwndParent, &rc );
+                CBT_CREATEWND & cw = *(CBT_CREATEWND*)lParam;
+                cw.lpcs->x = rc.left + ( ( rc.right - rc.left ) - cw.lpcs->cx ) / 2;
+                cw.lpcs->y = rc.top + ( ( rc.bottom - rc.top ) - cw.lpcs->cy ) / 2;
+            }
+        }
+        break;
+    }
+
+    return 0;
 }
 
-WINPLUS_FUNC_IMPL(int) ErrBox( String const & msg, String const & title )
+thread_local static HWND __tl_hMsgBoxParent;
+static LRESULT CALLBACK __MsgBoxCbtProc( int nCode, WPARAM wParam, LPARAM lParam )
 {
-    return MessageBox( GetForegroundWindow(), msg.c_str(), title.c_str(), MB_ICONERROR );
+    return __MessageBoxCbtHookProc( __tl_hMsgBoxParent, nCode, wParam, lParam );
 }
 
-WINPLUS_FUNC_IMPL(int) WarnBox( String const & msg, String const & title )
+thread_local static HWND __tl_hErrBoxParent;
+static LRESULT CALLBACK __ErrBoxCbtProc( int nCode, WPARAM wParam, LPARAM lParam )
 {
-    return MessageBox( GetForegroundWindow(), msg.c_str(), title.c_str(), MB_ICONEXCLAMATION );
+    return __MessageBoxCbtHookProc( __tl_hErrBoxParent, nCode, wParam, lParam );
 }
 
-WINPLUS_FUNC_IMPL(RECT) Window_GetClient( HWND window )
+thread_local static HWND __tl_hWarnBoxParent;
+static LRESULT CALLBACK __WarnBoxCbtProc( int nCode, WPARAM wParam, LPARAM lParam )
+{
+    return __MessageBoxCbtHookProc( __tl_hWarnBoxParent, nCode, wParam, lParam );
+}
+
+WINPLUS_FUNC_IMPL(int) MsgBox( String const & msg, String const & title, HWND hwndParent, UINT uType )
+{
+    if ( !hwndParent ) hwndParent = GetForegroundWindow();
+    __tl_hMsgBoxParent = hwndParent;
+    HHOOK hhk = SetWindowsHookEx( WH_CBT, __MsgBoxCbtProc, NULL, GetCurrentThreadId() );
+    int nRet = MessageBox( ( uType & MB_TASKMODAL ) ? NULL : hwndParent, msg.c_str(), title.c_str(), MB_ICONINFORMATION | uType );
+    UnhookWindowsHookEx(hhk);
+    return nRet;
+}
+
+WINPLUS_FUNC_IMPL(int) ErrBox( String const & msg, String const & title, HWND hwndParent, UINT uType )
+{
+    if ( !hwndParent ) hwndParent = GetForegroundWindow();
+    __tl_hErrBoxParent = hwndParent;
+    HHOOK hhk = SetWindowsHookEx( WH_CBT, __ErrBoxCbtProc, NULL, GetCurrentThreadId() );
+    int nRet = MessageBox( ( uType & MB_TASKMODAL ) ? NULL : hwndParent, msg.c_str(), title.c_str(), MB_ICONERROR | uType );
+    UnhookWindowsHookEx(hhk);
+    return nRet;
+}
+
+WINPLUS_FUNC_IMPL(int) WarnBox( String const & msg, String const & title, HWND hwndParent, UINT uType )
+{
+    if ( !hwndParent ) hwndParent = GetForegroundWindow();
+    __tl_hWarnBoxParent = hwndParent;
+    HHOOK hhk = SetWindowsHookEx( WH_CBT, __WarnBoxCbtProc, NULL, GetCurrentThreadId() );
+    int nRet = MessageBox( ( uType & MB_TASKMODAL ) ? NULL : hwndParent, msg.c_str(), title.c_str(), MB_ICONEXCLAMATION | uType );
+    UnhookWindowsHookEx(hhk);
+    return nRet;
+}
+
+WINPLUS_FUNC_IMPL(BOOL) ClientToScreen( HWND hWnd, LPRECT lpRect )
+{
+    LONG dx = lpRect->left, dy = lpRect->top;
+    BOOL b = ::ClientToScreen( hWnd, (LPPOINT)lpRect );
+    dx = lpRect->left - dx, dy = lpRect->top - dy;
+    lpRect->right += dx;
+    lpRect->bottom += dy;
+    return b;
+}
+
+WINPLUS_FUNC_IMPL(BOOL) ScreenToClient( HWND hWnd, LPRECT lpRect )
+{
+    LONG dx = lpRect->left, dy = lpRect->top;
+    BOOL b = ::ScreenToClient( hWnd, (LPPOINT)lpRect );
+    dx = lpRect->left - dx, dy = lpRect->top - dy;
+    lpRect->right += dx;
+    lpRect->bottom += dy;
+    return b;
+}
+
+WINPLUS_FUNC_IMPL(RECT) Window_GetClient( HWND hWnd )
 {
     RECT rc;
-    GetClientRect( window, &rc );
+    GetClientRect( hWnd, &rc );
     return rc;
 }
 
-WINPLUS_FUNC_IMPL(RECT) Window_GetRect( HWND window )
+WINPLUS_FUNC_IMPL(RECT) Window_GetRect( HWND hWnd )
 {
     RECT rc;
-    GetWindowRect( window, &rc );
-    HWND parent;
-    parent = GetParent(window);
-    if ( IsWindow(parent) ) // 判断父窗口是否存在，把屏幕坐标换为相对父窗口坐标
+    GetWindowRect( hWnd, &rc );
+    HWND hwndParent = GetParent(hWnd);
+    if ( IsWindow(hwndParent) ) // 判断父窗口是否存在，把屏幕坐标换为相对父窗口客户区坐标
     {
-        ScreenToClient( parent, (LPPOINT)&rc );
-        ScreenToClient( parent, (LPPOINT)&rc + 1 );
+        ScreenToClient( hwndParent, &rc );
     }
     return rc;
 }
 
-WINPLUS_FUNC_IMPL(void) Window_SetRect( HWND window, LPCRECT rect, bool is_redraw /*= true */ )
+WINPLUS_FUNC_IMPL(void) Window_SetRect( HWND hWnd, LPCRECT lpRect, bool isRedraw, bool isActivate )
 {
-    SetWindowPos( window, NULL, rect->left, rect->top, rect->right - rect->left, rect->bottom - rect->top, SWP_NOZORDER | ( is_redraw ? 0 : SWP_NOREDRAW ) );
+    SetWindowPos( hWnd, NULL, lpRect->left, lpRect->top, lpRect->right - lpRect->left, lpRect->bottom - lpRect->top, SWP_NOZORDER | ( isRedraw ? 0 : SWP_NOREDRAW ) | ( isActivate ? 0 : SWP_NOACTIVATE ) );
 }
 
-WINPLUS_FUNC_IMPL(void) Window_Inflate( HWND window, INT dx, INT dy )
+WINPLUS_FUNC_IMPL(void) Window_Inflate( HWND hWnd, int dx, int dy )
 {
-    RECT rc = Window_GetRect(window);
+    RECT rc = Window_GetRect(hWnd);
     InflateRect( &rc, dx, dy );
-    Window_SetRect( window, &rc );
+    Window_SetRect( hWnd, &rc );
 }
 
-WINPLUS_FUNC_IMPL(void) Window_Center( HWND window, HWND relative_wnd, bool is_in_relative /*= false*/, bool is_redraw /*= true */ )
+WINPLUS_FUNC_IMPL(void) Window_Center( HWND hWnd, HWND hwndRelative, bool isInRelative, bool isRedraw, bool isActivate )
 {
     INT cx, cy, offsetLeft, offsetTop;
-    if ( relative_wnd && IsWindow(relative_wnd) )
+    if ( hwndRelative && IsWindow(hwndRelative) )
     {
-        if ( is_in_relative )
+        if ( isInRelative )
         {
             RECT rcWnd;
-            GetClientRect( relative_wnd, &rcWnd );
+            GetClientRect( hwndRelative, &rcWnd );
             cx = rcWnd.right - rcWnd.left;
             cy = rcWnd.bottom - rcWnd.top;
             offsetLeft = 0;//rcWnd.left;
@@ -116,7 +191,7 @@ WINPLUS_FUNC_IMPL(void) Window_Center( HWND window, HWND relative_wnd, bool is_i
         else
         {
             RECT rcWnd;
-            GetWindowRect( relative_wnd, &rcWnd );
+            GetWindowRect( hwndRelative, &rcWnd );
             cx = rcWnd.right - rcWnd.left;
             cy = rcWnd.bottom - rcWnd.top;
             offsetLeft = rcWnd.left;
@@ -131,49 +206,54 @@ WINPLUS_FUNC_IMPL(void) Window_Center( HWND window, HWND relative_wnd, bool is_i
         offsetTop = 0;
     }
     RECT rc;
-    GetWindowRect( window, &rc );
+    GetWindowRect( hWnd, &rc );
     LONG nWidth = rc.right - rc.left;
     LONG nHeight = rc.bottom - rc.top;
     INT left, top;
     left = offsetLeft + ( cx - nWidth ) / 2;
     top = offsetTop + ( cy - nHeight ) / 2;
-    SetWindowPos( window, NULL, left, top, 0, 0, SWP_NOSIZE | SWP_NOZORDER | ( is_redraw ? 0 : SWP_NOREDRAW ) );
+    SetWindowPos( hWnd, NULL, left, top, 0, 0, SWP_NOSIZE | SWP_NOZORDER | ( isRedraw ? 0 : SWP_NOREDRAW ) | ( isActivate ? 0 : SWP_NOACTIVATE ) );
 }
 
-WINPLUS_FUNC_IMPL(String) Window_GetText( HWND window )
+WINPLUS_FUNC_IMPL(String) Window_GetText( HWND hWnd )
 {
     String res;
-    INT len = GetWindowTextLength(window);
-    res.resize(len);
-    GetWindowText( window, &res[0], len + 1 );
-    return res.c_str();
+    INT len = GetWindowTextLength(hWnd);
+    res.resize( len + 1 );
+    int n = GetWindowText( hWnd, &res[0], len + 1 );
+    return String( res.c_str(), n );
 }
 
-WINPLUS_FUNC_IMPL(void) Window_SetText( HWND window, String const & text )
+WINPLUS_FUNC_IMPL(void) Window_SetText( HWND hWnd, String const & text )
 {
-    SetWindowText( window, text.c_str() );
+    SetWindowText( hWnd, text.c_str() );
 }
 
-WINPLUS_FUNC_IMPL(bool) Window_IsShow( HWND window )
+WINPLUS_FUNC_IMPL(bool) Window_IsShow( HWND hWnd )
 {
-    return ( GetWindowLong( window, GWL_STYLE ) & WS_VISIBLE ) != 0;
+    return ( GetWindowLong( hWnd, GWL_STYLE ) & WS_VISIBLE ) != 0;
 }
 
-WINPLUS_FUNC_IMPL(void) Window_Show( HWND window, bool show )
+WINPLUS_FUNC_IMPL(void) Window_Show( HWND hWnd, bool wantShow )
 {
-    LONG style = GetWindowLong( window, GWL_STYLE );
-    if ( show )
+    LONG style = GetWindowLong( hWnd, GWL_STYLE );
+    if ( wantShow )
     {
         //SetWindowLong( window, GWL_STYLE, style | WS_VISIBLE );
-        ShowWindow( window, SW_NORMAL );
+        ShowWindow( hWnd, SW_NORMAL );
     }
     else
     {
         //SetWindowLong( window, GWL_STYLE, style & ~WS_VISIBLE );
-        ShowWindow( window, SW_HIDE );
+        ShowWindow( hWnd, SW_HIDE );
     }
 }
 
+WINPLUS_FUNC_IMPL(bool) Window_IsTopLevel( HWND hWnd )
+{
+    LONG exStyle = GetWindowLong( hWnd, GWL_EXSTYLE );
+    return ( exStyle & WS_EX_TOPMOST ) || ( !( exStyle & WS_EX_APPWINDOW ) && ( GetWindow( hWnd, GW_OWNER ) == NULL ) );
+}
 
 // ListCtrl - Report操作---------------------------------------------------
 WINPLUS_FUNC_IMPL(INT) Report_AddStrings( HWND report, StringArray const & cols )
@@ -273,8 +353,8 @@ WINPLUS_FUNC_IMPL(int) ImageList_AddAlphaImage( HIMAGELIST hImageList, Gdiplus::
     bmi.bmiHeader.biBitCount = 32;
     bmi.bmiHeader.biPlanes = 1;
     bmi.bmiHeader.biWidth = bm.GetWidth();
-    bmi.bmiHeader.biHeight = bm.GetHeight();
-    bm.RotateFlip( RotateNoneFlipY );
+    bmi.bmiHeader.biHeight = -(LONG)bm.GetHeight();
+    //bm.RotateFlip( RotateNoneFlipY );
     hBitmap = CreateDIBSection( NULL, &bmi, DIB_RGB_COLORS, &pvBits, NULL, 0 );
     BitmapData bitmapData;
     bm.LockBits( &Rect( 0, 0, bm.GetWidth(), bm.GetHeight() ), ImageLockModeRead, PixelFormat32bppARGB, &bitmapData );

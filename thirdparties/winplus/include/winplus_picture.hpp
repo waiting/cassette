@@ -16,12 +16,12 @@ namespace winplus
 // 图片相关 -----------------------------------------------------------
 
 /* 保存位图到指定文件 */
-WINPLUS_FUNC_DECL(bool) Bitmap_SaveFile( HBITMAP bitmap, String const & filename );
+WINPLUS_FUNC_DECL(bool) Bitmap_SaveFile( HBITMAP hBitmap, String const & filename );
 
 // IPicturePtr
 
 /* 从文件加载图片(bmp,gif,jpg,png),获得IPicture接口 */
-WINPLUS_FUNC_DECL(IPicturePtr) Picture_Load( String const & pic_file );
+WINPLUS_FUNC_DECL(IPicturePtr) Picture_Load( String const & picFile );
 /* IPicturePtr to HBITMAP */
 inline HBITMAP Picture_GetBitmap( IPicturePtr pic )
 {
@@ -35,12 +35,12 @@ WINPLUS_FUNC_DECL(SIZE) Picture_GetDimensions( IPicturePtr pic );
 // 与mem_dc相关
 class MemDC;
 /* 从文件加载图片(bmp,gif,jpg,png),并获得mem_dc对象 */
-WINPLUS_FUNC_DECL(bool) Picture_Load( String const & pic_file, MemDC * memdc );
+WINPLUS_FUNC_DECL(bool) Picture_Load( String const & picFile, MemDC * memdc );
 
 // 与mem_image相关
 class MemImage;
 /* 从文件加载图片(bmp,gif,jpg,png),并获得MemImage对象 */
-WINPLUS_FUNC_DECL(bool) Picture_Load( String const & pic_file, MemImage * mem_img );
+WINPLUS_FUNC_DECL(bool) Picture_Load( String const & picFile, MemImage * memImg );
 
 
 #define HIMETRIC_INCH   2540    // HIMETRIC units per inch

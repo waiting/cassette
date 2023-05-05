@@ -49,6 +49,7 @@ public:
         dbeConfigParamsError, //!< 配置参数错误
         dbeMysqlError, //!< MySQL数据库错误
         dbeSqliteError, //!< SQLite数据库错误
+        dbePgsqlError, //!< PgSQL数据库错误
     };
 
     DbError( int errType, winux::AnsiString const & s ) throw() : winux::Error( errType, s ) { }

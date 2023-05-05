@@ -19,26 +19,25 @@ WINUX_FUNC_DECL(bool) JsonParse( String const & json, Mixed * val );
 /** \brief Json解析成Mixed */
 WINUX_FUNC_DECL(Mixed) Json( String const & json );
 
-/** \brief Mixed输出成Json */
 WINUX_FUNC_DECL(AnsiString) MixedToJsonA( Mixed const & v, bool autoKeyQuotes );
-/** \brief Mixed输出成Json */
 WINUX_FUNC_DECL(UnicodeString) MixedToJsonW( Mixed const & v, bool autoKeyQuotes );
-
-/** \brief Mixed输出成Json，支持结构化。
- *
- *  \param spacer 缩进留白，默认空串表示不缩进留白
- *  \param newline 换行符，默认空串表示不换行 */
-WINUX_FUNC_DECL(AnsiString) MixedToJsonExA( Mixed const & v, bool autoKeyQuotes, AnsiString const & spacer = "", AnsiString const & newline = "" );
-/** \brief Mixed输出成Json，支持结构化。
- *
- *  \param spacer 缩进留白，默认空串表示不缩进留白
- *  \param newline 换行符，默认空串表示不换行 */
-WINUX_FUNC_DECL(UnicodeString) MixedToJsonExW( Mixed const & v, bool autoKeyQuotes, UnicodeString const & spacer = L"", UnicodeString const & newline = L"" );
-
+/** \brief Mixed输出成Json */
 #if defined(_UNICODE) || defined(UNICODE)
-    #define MixedToJson MixedToJsonW
+inline UnicodeString MixedToJson( Mixed const & v, bool autoKeyQuotes ) { return MixedToJsonW( v, autoKeyQuotes ); }
 #else
-    #define MixedToJson MixedToJsonA
+inline AnsiString MixedToJson( Mixed const & v, bool autoKeyQuotes ) { return MixedToJsonA( v, autoKeyQuotes ); }
+#endif
+
+WINUX_FUNC_DECL(AnsiString) MixedToJsonExA( Mixed const & v, bool autoKeyQuotes, AnsiString const & spacer = "", AnsiString const & newline = "" );
+WINUX_FUNC_DECL(UnicodeString) MixedToJsonExW( Mixed const & v, bool autoKeyQuotes, UnicodeString const & spacer = L"", UnicodeString const & newline = L"" );
+/** \brief Mixed输出成Json，支持结构化。
+ *
+ *  \param spacer 缩进留白，默认空串表示不缩进留白
+ *  \param newline 换行符，默认空串表示不换行 */
+#if defined(_UNICODE) || defined(UNICODE)
+inline UnicodeString MixedToJsonEx( Mixed const & v, bool autoKeyQuotes, UnicodeString const & spacer = L"", UnicodeString const & newline = L"" ) { return MixedToJsonExW( v, autoKeyQuotes, spacer, newline ); }
+#else
+inline AnsiString MixedToJsonEx( Mixed const & v, bool autoKeyQuotes, AnsiString const & spacer = "", AnsiString const & newline = "" ) { return MixedToJsonExA( v, autoKeyQuotes, spacer, newline ); }
 #endif
 
 }

@@ -1,5 +1,8 @@
-﻿#include "winplus_definitions.hpp"
+﻿
+#include "winplus_definitions.hpp"
+#include "smartptr.hpp"
 #include "winplus_graphics.hpp"
+#include "strings.hpp"
 
 #ifdef __GNUC__
 #define WINVER 0x0501
@@ -14,16 +17,165 @@
 namespace winplus
 {
 
-// gdi+ init
-GdiplusInit::GdiplusInit()
+// GDI+ Init ------------------------------------------------------------------------------
+GdiplusInit::GdiplusInit() : _gdiplusToken(0), _canShutdown(true)
 {
     // Initialize GDI+.
-    Gdiplus::GdiplusStartup( &_gdiplusToken, &_gdiplusStartupInput, NULL);
+    Gdiplus::GdiplusStartup( &_gdiplusToken, &_gdiplusStartupInput, &_gdiplusStartupOutput );
 }
 
 GdiplusInit::~GdiplusInit()
 {
-    Gdiplus::GdiplusShutdown(_gdiplusToken);
+    if ( _canShutdown )
+    {
+        Gdiplus::GdiplusShutdown(_gdiplusToken);
+    }
+}
+
+// class Graphics -------------------------------------------------------------------------
+void Graphics::DrawRoundRectangle( Gdiplus::Pen const * pen, Gdiplus::RectF const & rect, Gdiplus::REAL round )
+{
+    Gdiplus::GraphicsPath path;
+    path.StartFigure();
+
+    Gdiplus::REAL width = rect.Width/* - 1.5*/;
+    Gdiplus::REAL height = rect.Height/* - 1.0*/;
+    Gdiplus::RectF r ( rect.X, rect.Y, width, height );
+    Gdiplus::REAL dia = round;
+    // diameter can't exceed width or height
+    if ( dia > r.Width ) dia = r.Width;
+    if ( dia > r.Height ) dia = r.Height;
+
+    // define a corner 
+    Gdiplus::RectF Corner( r.X, r.Y, dia, dia );
+    // top left
+    path.AddArc( Corner, 180, 90 );
+    // tweak needed for radius of 10 (dia of 20)
+    if ( dia == 20 )
+    {
+        Corner.Width += 1; 
+        Corner.Height += 1; 
+        r.Width -=1;
+        r.Height -= 1;
+    }
+
+    // top right
+    Corner.X += (r.Width - dia - 1);
+    path.AddArc(Corner, 270, 90);    
+
+    // bottom right
+    Corner.Y += (r.Height - dia - 1);
+    path.AddArc(Corner,   0, 90);    
+
+    // bottom left
+    Corner.X -= (r.Width - dia - 1);
+    path.AddArc(Corner, 90, 90);
+
+    path.CloseFigure();
+
+    // 绘制边线
+    if ( pen ) this->DrawPath( pen, &path );
+}
+
+void Graphics::FillRoundRectangle( Gdiplus::Brush const * brush, Gdiplus::RectF const & rect, Gdiplus::REAL round )
+{
+    Gdiplus::GraphicsPath path;
+    path.StartFigure();
+
+    Gdiplus::REAL width = rect.Width;
+    Gdiplus::REAL height = rect.Height;
+    Gdiplus::RectF r ( rect.X, rect.Y, width, height );
+    Gdiplus::REAL dia = round;
+    // diameter can't exceed width or height
+    if ( dia > r.Width ) dia = r.Width;
+    if ( dia > r.Height ) dia = r.Height;
+
+    // define a corner 
+    Gdiplus::RectF Corner( r.X, r.Y, dia, dia );
+    // top left
+    path.AddArc( Corner, 180, 90 );
+    // tweak needed for radius of 10 (dia of 20)
+    if ( dia == 20 )
+    {
+        Corner.Width += 1; 
+        Corner.Height += 1; 
+        r.Width -=1;
+        r.Height -= 1;
+    }
+
+    // top right
+    Corner.X += (r.Width - dia - 1);
+    path.AddArc(Corner, 270, 90);    
+
+    // bottom right
+    Corner.Y += (r.Height - dia - 1);
+    path.AddArc(Corner,   0, 90);    
+
+    // bottom left
+    Corner.X -= (r.Width - dia - 1);
+    path.AddArc(Corner, 90, 90);
+
+    path.CloseFigure();
+
+    if ( brush ) this->FillPath( brush, &path );
+}
+
+void Graphics::FillRectangle( Gdiplus::Brush const * brush, Gdiplus::RectF const & rect )
+{
+    Gdiplus::PointF points[5] = {
+        { rect.GetLeft(), rect.GetTop() },
+        { rect.GetLeft(), rect.GetTop() },
+        { rect.GetRight(), rect.GetTop() },
+        { rect.GetRight(), rect.GetBottom() },
+        { rect.GetLeft(), rect.GetBottom() },
+    };
+    this->FillPolygon( brush, points, 5 );
+}
+
+void Graphics::DrawShadowString( winplus::String const & str, Gdiplus::Font const & font, Gdiplus::Brush const * brushLight, Gdiplus::Brush const * brushDark, Gdiplus::RectF const & layoutRect, Gdiplus::StringFormat const & fmt, Gdiplus::RectF * boundingRect )
+{
+    winplus::UnicodeString sU = winplus::StringToUnicode(str);
+    if ( boundingRect )
+    {
+        this->MeasureString(
+            sU.c_str(),
+            (INT)sU.length(),
+            &font,
+            layoutRect,
+            &fmt,
+            boundingRect
+        );
+    }
+
+    if ( brushDark )
+    {
+        this->DrawString(
+            sU.c_str(),
+            (INT)sU.length(),
+            &font,
+            Gdiplus::RectF( layoutRect.X + 1, layoutRect.Y + 1, layoutRect.Width, layoutRect.Height ),
+            &fmt,
+            brushDark
+        );
+    }
+
+    if ( brushLight )
+    {
+        this->DrawString(
+            sU.c_str(),
+            (INT)sU.length(),
+            &font,
+            layoutRect,
+            &fmt,
+            brushLight
+        );
+    }
+}
+
+void Graphics::DrawShadowFrame( Gdiplus::RectF const & rect, Gdiplus::Pen const * penLight, Gdiplus::Pen const * penDark, float round )
+{
+    if ( penDark ) this->DrawRoundRectangle( penDark, Gdiplus::RectF( rect.X + 1, rect.Y + 1, rect.Width, rect.Height ), round );
+    if ( penLight ) this->DrawRoundRectangle( penLight, rect, round );
 }
 
 WINPLUS_FUNC_IMPL(void) DrawRoundRectangle( Gdiplus::Graphics & g, Gdiplus::Pen const & pen, Gdiplus::RectF const & rect, Gdiplus::REAL round )
@@ -63,7 +215,7 @@ WINPLUS_FUNC_IMPL(void) DrawRoundRectangle( Gdiplus::Graphics & g, Gdiplus::Pen 
     Corner.X -= (r.Width - dia - 1);
     path.AddArc(Corner, 90, 90);
     
-    path.CloseFigure();                
+    path.CloseFigure();
 
     //绘制边线
     g.DrawPath( &pen, &path );
@@ -106,51 +258,113 @@ WINPLUS_FUNC_IMPL(void) FillRoundRectangle( Gdiplus::Graphics & g, Gdiplus::Brus
     Corner.X -= (r.Width - dia - 1);
     path.AddArc(Corner, 90, 90);
     
-    path.CloseFigure();                
+    path.CloseFigure();
 
     //g.FillRectangle( &brush, r );
     g.FillPath( &brush, &path );
-
 }
 
-//////////////////////////////////////////////////////////////////////
+WINPLUS_FUNC_IMPL(SIZE) GetHdcWindowSize( HDC hDC )
+{
+    HWND hWnd = WindowFromDC(hDC);
+    RECT rc;
+    GetWindowRect( hWnd, &rc );
+    return { rc.right - rc.left, rc.bottom - rc.top };
+}
+
+WINPLUS_FUNC_IMPL(SIZE) GetHdcBitmapSize( HDC hDC )
+{
+    HBITMAP hBitmap = (HBITMAP)GetCurrentObject( hDC, OBJ_BITMAP );
+    BITMAP bm;
+    GetObject( hBitmap, sizeof( bm ), &bm );
+    return { bm.bmWidth, bm.bmHeight };
+}
+
+// class MemDC ----------------------------------------------------------------------------
 MemDC::MemDC( void )
 {
-    _construct();
+    this->_zeroInit();
 }
 
 MemDC::MemDC( HDC hDC )
 {
-    _construct();
-    create(hDC);
+    this->_zeroInit();
+
+    this->create(hDC);
 }
 
 MemDC::MemDC( HDC hDC, INT nWidth, INT nHeight, COLORREF clrBackground )
 {
-    _construct();
-    create( hDC, nWidth, nHeight, clrBackground );
+    this->_zeroInit();
+
+    this->create( hDC, nWidth, nHeight, clrBackground );
 }
 
-MemDC::MemDC( MemDC & other )
+MemDC::MemDC( MemDC const & other )
 {
-    _construct();
-    this->operator = (other);
-}
+    this->_zeroInit();
 
-MemDC::~MemDC( void )
-{
-    destroy();
+    this->create( other, other.width(), other.height() );
+    _isTransparent = other._isTransparent;
+    _background = other._background;
+    _transparent = other._transparent;
+    other.copyEntireTo( _hMemDC, 0, 0 );
 }
 
 MemDC & MemDC::operator = ( MemDC const & other )
 {
-    copy(other);
+    if ( this != &other && (BOOL)other )
+    {
+        this->create( other, other.width(), other.height() );
+        _isTransparent = other._isTransparent;
+        _background = other._background;
+        _transparent = other._transparent;
+        other.copyEntireTo( _hMemDC, 0, 0 );
+    }
     return *this;
+}
+
+MemDC::~MemDC( void )
+{
+    this->destroy();
+}
+
+BOOL MemDC::passTo( MemDC & other )
+{
+    if ( &other != this )
+    {
+        other.destroy();
+        other._isTransparent = _isTransparent;
+        other._transparent = _transparent;
+        other._background = _background;
+        other._hOldBitmap = _hOldBitmap;
+        other._hBitmap = _hBitmap;
+        other._hMemBitmap = _hMemBitmap;
+        other._hMemDC = _hMemDC;
+        other._height = _height;
+        other._width = _width;
+        this->_zeroInit();
+    }
+    return FALSE;
+}
+
+void MemDC::_zeroInit()
+{
+    _width = 0;                     // 宽度
+    _height = 0;                    // 高度
+    _hMemDC = NULL;                 // 内存DC
+    _hMemBitmap = NULL;             // 内存位图
+    _hBitmap = NULL;                // 图片位图
+    _hOldBitmap = NULL;             // 从DC中选出的位图
+    _background = RGB( 0, 0, 0 );   // 背景色
+    _transparent = RGB( 0, 0, 0 );  // 透明色
+    _isTransparent = FALSE;         // 是否透明
 }
 
 BOOL MemDC::create( HDC hDC )
 {
-    destroy();
+    this->destroy();
+
     if ( hDC == NULL )
     {
         hDC = GetDC(HWND_DESKTOP);
@@ -166,45 +380,54 @@ BOOL MemDC::create( HDC hDC )
 
 BOOL MemDC::create( HDC hDC, INT nWidth, INT nHeight )
 {
-    if ( !create(hDC) )
+    if ( !this->create(hDC) )
     {
         return FALSE;
     }
-    HBITMAP hBitmap;
+
+    HBITMAP hMemBitmap;
     if ( hDC == NULL )
     {
         hDC = GetDC(HWND_DESKTOP);
-        hBitmap = CreateCompatibleBitmap( hDC, nWidth, nHeight );
+        hMemBitmap = CreateCompatibleBitmap( hDC, nWidth, nHeight );
         ReleaseDC( HWND_DESKTOP, hDC );
     }
     else
     {
-        hBitmap = CreateCompatibleBitmap( hDC, nWidth, nHeight );
+        hMemBitmap = CreateCompatibleBitmap( hDC, nWidth, nHeight );
     }
-
-    if ( hBitmap == NULL )// 位图创建失败
+    if ( hMemBitmap == NULL ) // 位图创建失败
     {
         DWORD dwError = GetLastError();
         return FALSE;
     }
 
-    attachBitmap(hBitmap);
+    // 选入内存位图
+    _hMemBitmap = hMemBitmap;
+    if ( _hMemDC && hMemBitmap )
+    {
+        _hOldBitmap = (HBITMAP)SelectObject( _hMemDC, hMemBitmap );
+        BITMAP bm;
+        GetObject( hMemBitmap, sizeof(BITMAP), &bm );
+        _width = bm.bmWidth;
+        _height = bm.bmHeight;
+    }
     return TRUE;
 }
 
 BOOL MemDC::create( HDC hDC, INT nWidth, INT nHeight, COLORREF clrBackground )
 {
-    if ( !create( hDC, nWidth, nHeight ) )
+    if ( !this->create( hDC, nWidth, nHeight ) )
     {
         return FALSE;
     }
-    setBackground( clrBackground, TRUE );
+    this->setBackground( clrBackground, TRUE );
     return TRUE;
 }
 
 BOOL MemDC::create( HDC hDC, INT nWidth, INT nHeight, COLORREF clrBackground, COLORREF clrTransparent )
 {
-    if ( !create( hDC, nWidth, nHeight, clrBackground ) )
+    if ( !this->create( hDC, nWidth, nHeight, clrBackground ) )
     {
         return FALSE;
     }
@@ -214,22 +437,16 @@ BOOL MemDC::create( HDC hDC, INT nWidth, INT nHeight, COLORREF clrBackground, CO
     return TRUE;
 }
 
-BOOL MemDC::copy( MemDC const & other )
-{
-    if ( this != &other && (BOOL)other )
-    {
-        create( other, other.width(), other.height() );
-        _isTransparent = other._isTransparent;
-        _background = other._background;
-        _transparent = other._transparent;
-        other.copyToDC( _hMemDC, 0, 0 );
-        return TRUE;
-    }
-    return FALSE;
-}
-
 void MemDC::destroy( void )
 {
+    if ( _hOldBitmap )
+    {
+        SelectObject( _hMemDC, _hOldBitmap );
+    }
+    if ( _hMemBitmap )
+    {
+        DeleteObject(_hMemBitmap);
+    }
     if ( _hBitmap )
     {
         DeleteObject(_hBitmap);
@@ -238,10 +455,10 @@ void MemDC::destroy( void )
     {
         DeleteDC(_hMemDC);
     }
-    ZeroMemory( this, sizeof(MemDC) );
+    this->_zeroInit();
 }
 
-void MemDC::enableTransparent( BOOL bIsTransparent, COLORREF clrTransparent /*= 0 */ )
+void MemDC::enableTransparent( BOOL bIsTransparent, COLORREF clrTransparent )
 {
     _isTransparent = bIsTransparent;
     _transparent = clrTransparent;
@@ -259,19 +476,27 @@ void MemDC::setBackground( COLORREF clrBackground, BOOL bFill )
     }
 
 }
+
 HBITMAP MemDC::attachBitmap( HBITMAP hBitmap )
 {
-    HBITMAP hOld = detachBitmap();
+    HBITMAP hPrev = this->detachBitmap();
+
     _hBitmap = hBitmap;
-    if ( _hMemDC && _hBitmap )
+    if ( _hMemDC && hBitmap )
     {
-        SelectObject( _hMemDC, _hBitmap );
+        // 如果没有选入内存位图，则保留下内存DC内的原始位图
+        if ( _hMemBitmap == NULL )
+            _hOldBitmap = (HBITMAP)SelectObject( _hMemDC, hBitmap );
+        else
+            SelectObject( _hMemDC, hBitmap );
+
         BITMAP bm;
-        GetObject( _hBitmap, sizeof(BITMAP), &bm );
+        GetObject( hBitmap, sizeof(BITMAP), &bm );
         _width = bm.bmWidth;
         _height = bm.bmHeight;
     }
-    return hOld;
+
+    return hPrev;
 }
 
 HBITMAP MemDC::detachBitmap( void )
@@ -281,28 +506,11 @@ HBITMAP MemDC::detachBitmap( void )
     return h;
 }
 
-BOOL MemDC::passTo( MemDC & other )
-{
-    if ( &other != this )
-    {
-        other.destroy();
-        other._isTransparent = _isTransparent;
-        other._background = _background;
-        other._transparent = _transparent;
-        other._hBitmap = _hBitmap;
-        other._hMemDC = _hMemDC;
-        other._height = _height;
-        other._width = _width;
-        ZeroMemory( this, sizeof(MemDC) );
-    }
-    return FALSE;
-}
-
 #if defined(_GDIPLUS_H)
 BOOL MemDC::rotate( DOUBLE angle, MemDC * pMemDC )
 {
     using namespace Gdiplus;
-    Bitmap bmp( _hBitmap, NULL );
+    Bitmap bmp( _hMemBitmap, NULL );
     REAL fImageWidth = bmp.GetWidth(), fImageHeight = bmp.GetHeight();
     Matrix mat;
     mat.Translate( fImageWidth / 2, fImageHeight / 2 );
@@ -349,46 +557,57 @@ BOOL MemDC::rotate( DOUBLE angle, MemDC * pMemDC )
 }
 #endif //defined(_GDIPLUS_H)
 
-BOOL MemDC::stretchBlt( HDC hDestDC, INT xDest, INT yDest, INT nDestWidth, INT nDestHeight, INT x, INT y, INT width, INT height, INT nMode /*= HALFTONE */ ) const
+BOOL MemDC::stretchTo( HDC hDestDC, INT xDest, INT yDest, INT nDestWidth, INT nDestHeight, INT x, INT y, INT width, INT height, INT nMode ) const
 {
-    if ( _hMemDC == NULL )
-    {
-        return FALSE;
-    }
+    if ( _hMemDC == NULL ) return FALSE;
+
     nMode = SetStretchBltMode( hDestDC, nMode );
     BOOL b = ::StretchBlt( hDestDC, xDest, yDest, nDestWidth, nDestHeight, _hMemDC, x, y, width, height, SRCCOPY );
     SetStretchBltMode( hDestDC, nMode );
     return b;
 }
 
-BOOL MemDC::stretchToDC( HDC hDestDC, INT xDest, INT yDest, INT nDestWidth, INT nDestHeight, INT nMode ) const
+BOOL MemDC::stretchEntireTo( HDC hDestDC, INT xDest, INT yDest, INT nDestWidth, INT nDestHeight, INT nMode ) const
 {
-    return stretchBlt( hDestDC, xDest, yDest, nDestWidth, nDestHeight, 0, 0, _width, _height, nMode );
+    return this->stretchTo( hDestDC, xDest, yDest, nDestWidth, nDestHeight, 0, 0, _width, _height, nMode );
 }
 
-BOOL MemDC::bitBlt( HDC hDestDC, INT xDest, INT yDest, INT nDestWidth, INT nDestHeight, INT x, INT y ) const
+BOOL MemDC::stretchFrom( HDC hSrcDC, INT xSrc, INT ySrc, INT nSrcWidth, INT nSrcHeight, INT x, INT y, INT width, INT height, INT nMode ) const
 {
-    if ( _hMemDC == NULL )
-    {
-        return FALSE;
-    }
-    return ::BitBlt( hDestDC, xDest, yDest, nDestWidth, nDestHeight, _hMemDC, x, y, SRCCOPY );
+    if ( _hMemDC == NULL ) return FALSE;
+
+    nMode = SetStretchBltMode( _hMemDC, nMode );
+    BOOL b = ::StretchBlt( _hMemDC, x, y, width, height, hSrcDC, xSrc, ySrc, nSrcWidth, nSrcHeight, SRCCOPY );
+    SetStretchBltMode( _hMemDC, nMode );
+    return b;
 }
 
-BOOL MemDC::copyToDC( HDC hDestDC, INT xDest, INT yDest ) const
+BOOL MemDC::copyTo( HDC hDestDC, INT xDest, INT yDest, INT nWidth, INT nHeight, INT x, INT y ) const
 {
-    return bitBlt( hDestDC, xDest, yDest, _width, _height, 0, 0 );
+    if ( _hMemDC == NULL ) return FALSE;
+
+    return ::BitBlt( hDestDC, xDest, yDest, nWidth, nHeight, _hMemDC, x, y, SRCCOPY );
 }
 
-BOOL MemDC::transparentBlt( HDC hDestDC, INT xDest, INT yDest, INT nDestWidth, INT nDestHeight, INT x, INT y, INT width, INT height, INT nMode /*= HALFTONE */ ) const
+BOOL MemDC::copyEntireTo( HDC hDestDC, INT xDest, INT yDest ) const
 {
-    if ( _hMemDC == NULL )
-    {
-        return FALSE;
-    }
+    return this->copyTo( hDestDC, xDest, yDest, _width, _height, 0, 0 );
+}
+
+BOOL MemDC::copyFrom( HDC hSrcDC, INT xSrc, INT ySrc, INT nWidth, INT nHeight, INT x, INT y ) const
+{
+    if ( _hMemDC == NULL ) return FALSE;
+
+    return ::BitBlt( _hMemDC, x, y, nWidth, nHeight, hSrcDC, xSrc, ySrc, SRCCOPY );
+}
+
+BOOL MemDC::transparentTo( HDC hDestDC, INT xDest, INT yDest, INT nDestWidth, INT nDestHeight, INT x, INT y, INT width, INT height, INT nMode ) const
+{
+    if ( _hMemDC == NULL ) return FALSE;
+
     nMode = SetStretchBltMode( hDestDC, nMode );
     BOOL b;
-    if ( isTransparent() )
+    if ( this->isTransparent() )
     {
         b = ::TransparentBlt( hDestDC, xDest, yDest, nDestWidth, nDestHeight, _hMemDC, x, y, width, height, (UINT)_transparent );
     }
@@ -400,57 +619,136 @@ BOOL MemDC::transparentBlt( HDC hDestDC, INT xDest, INT yDest, INT nDestWidth, I
     return b;
 }
 
-BOOL MemDC::transparentToDC( HDC hDestDC, INT xDest, INT yDest, INT nDestWidth, INT nDestHeight, INT nMode /*= HALFTONE */ ) const
+BOOL MemDC::transparentEntireTo( HDC hDestDC, INT xDest, INT yDest, INT nDestWidth, INT nDestHeight, INT nMode ) const
 {
-    return transparentBlt( hDestDC, xDest, yDest, nDestWidth, nDestHeight, 0, 0, _width, _height, nMode );
+    return this->transparentTo( hDestDC, xDest, yDest, nDestWidth, nDestHeight, 0, 0, _width, _height, nMode );
 }
 
-void MemDC::_construct()
+BOOL MemDC::transparentFrom( HDC hSrcDC, INT xSrc, INT ySrc, INT nSrcWidth, INT nSrcHeight, INT x, INT y, INT width, INT height, INT nMode ) const
 {
-    _hMemDC = NULL;
-    _hBitmap = NULL;
-    _width = 0;
-    _height = 0;
-    _background = 0;
-    _transparent = 0;
-    _isTransparent = FALSE;
+    if ( _hMemDC == NULL ) return FALSE;
+
+    nMode = SetStretchBltMode( _hMemDC, nMode );
+    BOOL b;
+    if ( this->isTransparent() )
+    {
+        b = ::TransparentBlt( _hMemDC, x, y, width, height, hSrcDC, xSrc, ySrc, nSrcWidth, nSrcHeight, (UINT)_transparent );
+    }
+    else
+    {
+        b = ::StretchBlt( _hMemDC, x, y, width, height, hSrcDC, xSrc, ySrc, nSrcWidth, nSrcHeight, SRCCOPY );
+    }
+    SetStretchBltMode( _hMemDC, nMode );
+    return b;
 }
 
-///////////////////////////////////////////////////////////////////////////
+BOOL MemDC::alphaTo( HDC hDestDC, INT xDest, INT yDest, INT nDestWidth, INT nDestHeight, INT x, INT y, INT width, INT height, INT alpha ) const
+{
+    BLENDFUNCTION blend = { 0 };
+    blend.BlendOp = AC_SRC_OVER;
+    blend.BlendFlags = 0;
+    blend.SourceConstantAlpha = alpha;
+    blend.AlphaFormat = AC_SRC_ALPHA;
+    return AlphaBlend( hDestDC, xDest, yDest, nDestWidth, nDestHeight, _hMemDC, x, y, width, height, blend );
+}
+
+BOOL MemDC::alphaEntireTo( HDC hDestDC, INT xDest, INT yDest, INT nDestWidth, INT nDestHeight, INT alpha ) const
+{
+    return this->alphaTo( hDestDC, xDest, yDest, nDestWidth, nDestHeight, 0, 0, _width, _height, alpha );
+}
+
+BOOL MemDC::alphaFrom( HDC hSrcDC, INT xSrc, INT ySrc, INT nSrcWidth, INT nSrcHeight, INT x, INT y, INT width, INT height, INT alpha ) const
+{
+    BLENDFUNCTION blend = { 0 };
+    blend.BlendOp = AC_SRC_OVER;
+    blend.BlendFlags = 0;
+    blend.SourceConstantAlpha = alpha;
+    blend.AlphaFormat = AC_SRC_ALPHA;
+    return AlphaBlend( _hMemDC, x, y, width, height, hSrcDC, xSrc, ySrc, nSrcWidth, nSrcHeight, blend );
+}
+
+SimplePointer<Gdiplus::Bitmap> MemDC::obtainGdiplusBitmap( void ) const
+{
+    HBITMAP hBitmap = this->getBitmap();
+    BITMAP bm = { 0 };
+    GetObject( hBitmap, sizeof(BITMAP), &bm );
+
+    if ( bm.bmBitsPixel != 32 )
+    {
+        return MakeSimple( new Gdiplus::Bitmap( hBitmap, NULL ) );
+    }
+    else
+    {
+        BITMAPINFO bmi = { 0 };
+        bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+        bmi.bmiHeader.biWidth = bm.bmWidth;
+        bmi.bmiHeader.biHeight = -bm.bmHeight;
+        bmi.bmiHeader.biPlanes = bm.bmPlanes;
+        bmi.bmiHeader.biBitCount = bm.bmBitsPixel;
+        bmi.bmiHeader.biCompression = BI_RGB;
+        bmi.bmiHeader.biSizeImage = 0;
+
+        _bmBitsData.alloc( bm.bmWidthBytes * bm.bmHeight );
+        int nLines = GetDIBits( _hMemDC, hBitmap, 0, bm.bmHeight, _bmBitsData.get(), &bmi, DIB_RGB_COLORS );
+
+        return MakeSimple( new Gdiplus::Bitmap( bm.bmWidth, bm.bmHeight, bm.bmWidthBytes, PixelFormat32bppPARGB, _bmBitsData.get<BYTE>() ) );
+    }
+}
+
 #if defined(_GDIPLUS_H)
-
+// class MemImage -------------------------------------------------------------------------
 MemImage::MemImage( void )
 {
-    _construct();
+    this->_zeroInit();
 }
 
 MemImage::MemImage( int nWidth, int nHeight )
 {
-    _construct();
-    create( nWidth, nHeight );
+    this->_zeroInit();
+    this->create( nWidth, nHeight );
+}
+
+MemImage::MemImage( String const & imgFile )
+{
+    this->_zeroInit();
+    this->create(imgFile);
 }
 
 MemImage::MemImage( MemImage & other )
 {
-    _construct();
+    this->_zeroInit();
     this->operator = (other);
 }
 
 MemImage::~MemImage( void )
 {
-    destroy();
+    this->destroy();
 }
 
 MemImage & MemImage::operator = ( MemImage const & other )
 {
-    clone(other);
+    this->clone(other);
     return *this;
 }
 
 BOOL MemImage::create( int nWidth, int nHeight )
 {
-    destroy();
-    _pBmpImage = new Gdiplus::Bitmap( nWidth, nHeight, PixelFormat32bppARGB );
+    this->destroy();
+    _pBmpImage = new Gdiplus::Bitmap( nWidth, nHeight, PixelFormat32bppPARGB );
+    return _pBmpImage != NULL;
+}
+
+BOOL MemImage::create( String const & imgFile )
+{
+    this->destroy();
+    _pBmpImage = new Gdiplus::Bitmap( StringToUnicode(imgFile).c_str(), FALSE );
+    return _pBmpImage != NULL;
+}
+
+BOOL MemImage::create( IStreamPtr streamPtr )
+{
+    this->destroy();
+    _pBmpImage = new Gdiplus::Bitmap( streamPtr, FALSE );
     return _pBmpImage != NULL;
 }
 
@@ -458,14 +756,14 @@ BOOL MemImage::clone( MemImage const & other )
 {
     if ( this != &other )
     {
-        destroy();
+        this->destroy();
         _pBmpImage = (Gdiplus::Bitmap *)other._pBmpImage->Clone( 0, 0, other.width(), other.height(), other._pBmpImage->GetPixelFormat() );
         return TRUE;
     }
     return FALSE;
 }
 
-BOOL MemImage::copy( Gdiplus::Image * pImage )
+BOOL MemImage::copyFrom( Gdiplus::Image * pImage )
 {
     if ( _pBmpImage != pImage )
     {
@@ -475,6 +773,7 @@ BOOL MemImage::copy( Gdiplus::Image * pImage )
     }
     return FALSE;
 }
+
 void MemImage::destroy( void )
 {
     if ( _pBmpImage )
@@ -567,7 +866,31 @@ BOOL MemImage::output( Gdiplus::Graphics & gDest, int xDest, int yDest, int xSrc
     return Gdiplus::Ok == gDest.DrawImage( _pBmpImage, Gdiplus::Rect(xDest, yDest, nSrcWidth, nSrcHeight), xSrc, ySrc, nSrcWidth, nSrcHeight, Gdiplus::UnitPixel );
 }
 
-void MemImage::_construct()
+SimpleHandle<HBITMAP> MemImage::obtainHBITMAP() const
+{
+    Gdiplus::Rect imgRect( 0, 0, this->width(), this->height() );
+    HBITMAP hNewBitmap = NULL;
+    LPVOID lpBmpBits = NULL;
+    BITMAPINFO bmi = { 0 };
+    bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+    bmi.bmiHeader.biWidth = imgRect.Width;
+    bmi.bmiHeader.biHeight = -imgRect.Height;
+    bmi.bmiHeader.biPlanes = 1;
+    bmi.bmiHeader.biBitCount = 32;
+    bmi.bmiHeader.biCompression = BI_RGB;
+    //bmi.bmiHeader.biSizeImage = imgRect.Width * imgRect.Height * ( bmi.bmiHeader.biBitCount / 8 );
+    DWORD dwImageSizeBytes = ( ( imgRect.Width * bmi.bmiHeader.biBitCount + 31 ) / 32 ) * imgRect.Height * ( bmi.bmiHeader.biBitCount / 8 );
+
+    hNewBitmap = CreateDIBSection( NULL, &bmi, DIB_RGB_COLORS, &lpBmpBits, NULL, 0 );
+    Gdiplus::BitmapData bmpData;
+    this->_pBmpImage->LockBits( &imgRect, Gdiplus::ImageLockModeRead, _pBmpImage->GetPixelFormat(), &bmpData );
+    memcpy( lpBmpBits, bmpData.Scan0, dwImageSizeBytes );
+    this->_pBmpImage->UnlockBits(&bmpData);
+
+    return SimpleHandle<HBITMAP>( hNewBitmap, NULL, DeleteObject );
+}
+
+void MemImage::_zeroInit()
 {
     _pBmpImage = NULL;
 }
@@ -575,3 +898,48 @@ void MemImage::_construct()
 #endif
 
 } // namespace winplus
+
+std::ostream & operator << ( std::ostream & out, RECT const & rc )
+{
+    return out << "RECT( LT(" << rc.left << ", " << rc.top << "), RB(" << rc.right << ", " << rc.bottom << "), SIZE(" << winplus::RectWidth(rc) << ", " << winplus::RectHeight(rc) << ") )";
+}
+
+std::ostream & operator << ( std::ostream & out, Gdiplus::Rect const & rc )
+{
+    return out << "Rect( LT(" << rc.GetLeft() << ", " << rc.GetTop() << "), RB(" << rc.GetRight() << ", " << rc.GetBottom() << "), SIZE(" << rc.Width << ", " << rc.Height << ") )";
+}
+
+std::ostream & operator << ( std::ostream & out, Gdiplus::RectF const & rc )
+{
+    return out << "RectF( LT(" << rc.GetLeft() << ", " << rc.GetTop() << "), RB(" << rc.GetRight() << ", " << rc.GetBottom() << "), SIZE(" << rc.Width << ", " << rc.Height << ") )";
+}
+
+std::ostream & operator << ( std::ostream & out, POINT const & pt )
+{
+    return out << "POINT(" << pt.x << ", " << pt.y << ")";
+}
+
+std::ostream & operator << ( std::ostream & out, Gdiplus::Point const & pt )
+{
+    return out << "Point(" << pt.X << ", " << pt.Y << ")";
+}
+
+std::ostream & operator << ( std::ostream & out, Gdiplus::PointF const & pt )
+{
+    return out << "PointF(" << pt.X << ", " << pt.Y << ")";
+}
+
+std::ostream & operator << ( std::ostream & out, SIZE const & si )
+{
+    return out << "SIZE(" << si.cx << ", " << si.cy << ")";
+}
+
+std::ostream & operator << ( std::ostream & out, Gdiplus::Size const & si )
+{
+    return out << "Size(" << si.Width << ", " << si.Height << ")";
+}
+
+std::ostream & operator << ( std::ostream & out, Gdiplus::SizeF const & si )
+{
+    return out << "SizeF(" << si.Width << ", " << si.Height << ")";
+}

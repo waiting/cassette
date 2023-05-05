@@ -1893,16 +1893,16 @@ AnsiString FormatA( char const * fmt, ... )
     va_list args;
     va_start( args, fmt );
 
-#if defined(_MSC_VER) || defined(WIN32)
+    #if defined(_MSC_VER) || defined(WIN32)
     int c = _vscprintf( fmt, args );
     return FormatExVA( c, fmt, args );
-#else
+    #else
     char * buf = NULL;
     vasprintf( &buf, fmt, args );
     AnsiString s = buf;
     free(buf);
     return s;
-#endif
+    #endif
 }
 
 UnicodeString FormatW( wchar const * fmt, ... )
@@ -1910,14 +1910,59 @@ UnicodeString FormatW( wchar const * fmt, ... )
     va_list args;
     va_start( args, fmt );
 
-#if defined(_MSC_VER) || defined(WIN32)
+    #if defined(_MSC_VER) || defined(WIN32)
     int c = _vscwprintf( fmt, args );
     return FormatExVW( c, fmt, args );
-#else
+    #else
     int c = 4096;
     return FormatExVW( c, fmt, args );
-#endif
+    #endif
 }
+
+// 兼容版实现
+#if defined(_UNICODE) || defined(UNICODE)
+UnicodeString FormatEx( size_t cch, wchar const * fmt, ... )
+{
+    va_list args;
+    va_start( args, fmt );
+    return FormatExV( cch, fmt, args );
+}
+
+UnicodeString Format( wchar const * fmt, ... )
+{
+    #if defined(_MSC_VER) || defined(WIN32)
+    int c = _vscwprintf( fmt, args );
+    return FormatExV( c, fmt, args );
+    #else
+    int c = 4096;
+    return FormatExV( c, fmt, args );
+    #endif
+}
+#else
+AnsiString FormatEx( size_t cch, char const * fmt, ... )
+{
+    va_list args;
+    va_start( args, fmt );
+    return FormatExV( cch, fmt, args );
+}
+
+AnsiString Format( char const * fmt, ... )
+{
+    va_list args;
+    va_start( args, fmt );
+
+    #if defined(_MSC_VER) || defined(WIN32)
+    int c = _vscprintf( fmt, args );
+    return FormatExV( c, fmt, args );
+    #else
+    char * buf = NULL;
+    vasprintf( &buf, fmt, args );
+    AnsiString s = buf;
+    free(buf);
+    return s;
+    #endif
+}
+#endif
 
 // class SZInput ------------------------------------------------------------------------------------
 SZInput & SZInput::operator = ( char const * pstr )
