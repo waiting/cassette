@@ -4,6 +4,7 @@
 #include "AccountCatesDlg.h"
 #include "AccountCateEditingDlg.h"
 #include "MainFrame.h"
+#include "AccountComprehensiveWnd.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -18,7 +19,6 @@ AccountCatesDlg::AccountCatesDlg( CWnd * parent ) : Dialog(AccountCatesDlg::IDD,
 {
     //{{AFX_DATA_INIT(AccountCatesDlg)
         // NOTE: the ClassWizard will add member initialization here
-    m_cateIndex = -1;
     //}}AFX_DATA_INIT
 }
 
@@ -36,12 +36,12 @@ BEGIN_MESSAGE_MAP( AccountCatesDlg, Dialog )
     ON_NOTIFY(NM_DBLCLK, IDC_LIST_CATES, OnListActivated)
     ON_NOTIFY(NM_RETURN, IDC_LIST_CATES, OnListActivated)
     ON_NOTIFY(NM_RCLICK, IDC_LIST_CATES, OnListRClick)
-    ON_COMMAND(ID_CATE_ADD, OnAdd)
-    ON_COMMAND(ID_CATE_MODIFY, OnModify)
-    ON_COMMAND(ID_CATE_DELETE, OnDelete)
+    ON_COMMAND(ID_CATE_ADD, OnCateAdd)
+    ON_COMMAND(ID_CATE_MODIFY, OnCateModify)
+    ON_COMMAND(ID_CATE_DELETE, OnCateDelete)
+    ON_COMMAND(ID_CATE_SHOW_ACCOUNTS, OnCateShowAccounts)
     //}}AFX_MSG_MAP
-    ON_UPDATE_COMMAND_UI_RANGE(ID_CATE_MODIFY, ID_CATE_DELETE, OnUpdateModifyDeleteMenu)
-    ON_NOTIFY( LVN_ITEMCHANGED, IDC_LIST_CATES, OnItemChangedListCates )
+    ON_UPDATE_COMMAND_UI_RANGE(ID_CATE_MODIFY, ID_CATE_SHOW_ACCOUNTS, OnUpdateCateMenu)
 END_MESSAGE_MAP()
 
 void AccountCatesDlg::UpdateList( int flag, long itemIndex )
@@ -271,14 +271,14 @@ void AccountCatesDlg::OnListRClick( NMHDR* pNMHDR, LRESULT* pResult )
     *pResult = 0;
 }
 
-void AccountCatesDlg::OnAdd()
+void AccountCatesDlg::OnCateAdd()
 {
     winplus::Mixed cate;
     cate.createCollection();
     DoAdd( GetOwner(), &cate );
 }
 
-void AccountCatesDlg::OnModify()
+void AccountCatesDlg::OnCateModify()
 {
     VERIFY_ONCE_DIALOG(onceEditingDlg);
 
@@ -309,7 +309,7 @@ void AccountCatesDlg::OnModify()
     }
 }
 
-void AccountCatesDlg::OnDelete()
+void AccountCatesDlg::OnCateDelete()
 {
     if ( IDYES == GetOwner()->MessageBox( _T("此操作不可恢复，确定要删除？"), _T("确认"), MB_YESNO ) )
     {
@@ -329,20 +329,30 @@ void AccountCatesDlg::OnDelete()
     }
 }
 
-void AccountCatesDlg::OnUpdateModifyDeleteMenu( CCmdUI * pCmdUI )
+void AccountCatesDlg::OnCateShowAccounts()
+{
+    CListCtrl & lst = *(CListCtrl *)GetDlgItem(IDC_LIST_CATES);
+    int index = lst.GetNextItem( -1, LVNI_ALL | LVNI_SELECTED );
+
+    AccountArray accounts;
+    int accountsCount = LoadAccounts( g_theApp.GetDatabase(), g_theApp.m_loginedUser.m_id, &accounts, m_cates[index].m_id );
+    // 测试新账户综合窗口
+    AccountComprehensiveWnd * pComprehensiveWnd = AccountComprehensiveWnd::Create<AccountComprehensiveWnd>(
+        AfxGetMainWnd()->GetSafeHwnd(),
+        AfxGetMainWnd(),
+        CRect( 0, 0, 300, 412 ),
+        m_cates[index],
+        accounts
+    );
+    pComprehensiveWnd->AutoDelete(TRUE);
+    pComprehensiveWnd->UpdateWindow();
+    winplus::Window_Center( *pComprehensiveWnd, AfxGetMainWnd()->GetSafeHwnd() );
+    pComprehensiveWnd->ShowWindow(SW_NORMAL);
+}
+
+void AccountCatesDlg::OnUpdateCateMenu( CCmdUI * pCmdUI )
 {
     CListCtrl & lst = *(CListCtrl *)GetDlgItem(IDC_LIST_CATES);
     int index = lst.GetNextItem( -1, LVNI_ALL | LVNI_SELECTED );
     pCmdUI->Enable( index != -1 );
-}
-
-
-void AccountCatesDlg::OnItemChangedListCates( NMHDR *pNMHDR, LRESULT *pResult )
-{
-    LPNMLISTVIEW pNMLV = reinterpret_cast<LPNMLISTVIEW>(pNMHDR);
-    // TODO: 在此添加控件通知处理程序代码
-    //cout << pNMLV->iItem << endl;
-    m_cateIndex = pNMLV->iItem;
-
-    *pResult = 0;
 }

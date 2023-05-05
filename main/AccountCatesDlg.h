@@ -38,21 +38,19 @@ public:
 
 // Implementation
 protected:
-    AccountCateArray m_cates;// 存储种类信息的数组
-    int m_cateIndex;
+    AccountCateArray m_cates; // 存储种类信息的数组
 
     // Generated message map functions
     //{{AFX_MSG(AccountCatesDlg)
     virtual BOOL OnInitDialog();
     afx_msg void OnListActivated(NMHDR* pNMHDR, LRESULT* pResult);
     afx_msg void OnListRClick(NMHDR* pNMHDR, LRESULT* pResult);
-    afx_msg void OnAdd();
-    afx_msg void OnModify();
-    afx_msg void OnDelete();
+    afx_msg void OnCateAdd();
+    afx_msg void OnCateModify();
+    afx_msg void OnCateDelete();
+    afx_msg void OnCateShowAccounts();
     //}}AFX_MSG
-    afx_msg void OnUpdateModifyDeleteMenu( CCmdUI * pCmdUI );
-
-    afx_msg void OnItemChangedListCates( NMHDR *pNMHDR, LRESULT *pResult );
+    afx_msg void OnUpdateCateMenu( CCmdUI * pCmdUI );
 
     DECLARE_MESSAGE_MAP()
     friend class MainFrame;

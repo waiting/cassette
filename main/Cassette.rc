@@ -162,6 +162,8 @@ IDM_OPERATE_CATES MENU
 BEGIN
     POPUP "种类操作菜单"
     BEGIN
+        MENUITEM "显示账户...",                     ID_CATE_SHOW_ACCOUNTS
+        MENUITEM SEPARATOR
         MENUITEM "添加种类...",                     ID_CATE_ADD
         MENUITEM "修改种类...",                     ID_CATE_MODIFY
         MENUITEM "删除种类",                        ID_CATE_DELETE

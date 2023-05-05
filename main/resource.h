@@ -89,11 +89,13 @@
 #define ID_CATE_ADD                     32787
 #define ID_CATE_MODIFY                  32788
 #define ID_CATE_DELETE                  32789
-#define ID_LIST_STYLE_REPORT            32790
-#define ID_LIST_STYLE_ICON              32791
-#define ID_MAINWND_SHOWHIDE             32792
+#define ID_CATE_SHOW_ACCOUNTS           32790
+#define ID_LIST_STYLE_REPORT            32791
+#define ID_LIST_STYLE_ICON              32792
+#define ID_MAINWND_SHOWHIDE             32793
 #define ID_MAIN                         32806
 #define ID_APP_HELP                     32807
+#define ID_32808                        32808
 #define IDS_SHAREDMEM_NAME              61204
 
 // Next default values for new objects
@@ -102,7 +104,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        165
-#define _APS_NEXT_COMMAND_VALUE         32808
+#define _APS_NEXT_COMMAND_VALUE         32809
 #define _APS_NEXT_CONTROL_VALUE         1038
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

@@ -60,12 +60,21 @@ struct AccountComprehensive_Data
     RectF rectClient;
     // 当前鼠标位置
     Point ptCurMouse;
-    // 右上角关闭按钮的路径区域
+
+    // 主字体
+    Gdiplus::Font primaryFont{ L"微软雅黑", 10 };
+
+    // 关闭按钮相关
     GraphicsPath closeBtnPath;
-    // 关闭按钮画刷
     SolidBrush closeBtnBrush0{ Color( 255, 204, 0 ) };
     SolidBrush closeBtnBrush1{ Color( 255, 123, 215 ) };
-    void drawCloseButton( winplus::Graphics & g, RectF const & buttonRect, GraphicsPath * graphPath, Brush * brush0, Brush * brush1 )
+
+    // 添加账户按钮
+    GraphicsPath addBtnPath;
+    SolidBrush addBtnBrush0{ Color( 0, 248, 0 ) };
+    SolidBrush addBtnBrush1{ Color( 0xaa, 0x98, 0xfe ) };
+
+    void drawButton( winplus::Graphics & g, RectF const & buttonRect, GraphicsPath * graphPath, Brush * brush0, Brush * brush1 )
     {
         PointF points[6] = {
             PointF{ buttonRect.X + ( buttonRect.Width / 2 ), buttonRect.Y + 0 },
@@ -199,22 +208,21 @@ void AccountComprehensiveWnd::Draw()
     g.FillRectangle( &bBrush, bEdgeRect );
 
     // 画关闭按钮
-    _self->drawCloseButton( g, RectF( _self->memCanvas.width() - 8 - 16, 3.5, 16, 16 ), &_self->closeBtnPath, &_self->closeBtnBrush0, &_self->closeBtnBrush1 );
+    RectF closeBtnRect( _self->memCanvas.width() - 8 - 16, 3.5, 16, 16 );
+    _self->drawButton( g, closeBtnRect, &_self->closeBtnPath, &_self->closeBtnBrush0, &_self->closeBtnBrush1 );
     // 画添加按钮
     RectF addBtnRect( _self->memCanvas.width() - 8 - 32 - 4, 3.5, 16, 16 );
-    GraphicsPath addBtnPath;
-    _self->drawCloseButton( g, addBtnRect, &addBtnPath, &SolidBrush( Color( 0, 248, 0 ) ), &SolidBrush( Color( 0xaa, 0x98, 0xfe ) ) );
+    _self->drawButton( g, addBtnRect, &_self->addBtnPath, &_self->addBtnBrush0, &_self->addBtnBrush1 );
 
     // 标题
     g.SetTextRenderingHint(TextRenderingHintAntiAliasGridFit);
-    RectF rectTitle( 8, 2, _self->rectWindow.Width - 16, _self->tBorder - 4 );
+    RectF rectTitle( 8, 2, _self->rectWindow.Width - 16 - 32 - 8, _self->tBorder - 4 );
     StringFormat sf( StringFormat::GenericTypographic() );
     sf.SetTrimming(StringTrimming::StringTrimmingEllipsisCharacter);
     //sf.SetLineAlignment(StringAlignment::StringAlignmentNear);
 
     UnicodeString strTitle = StringToUnicode( Window_GetText(*this) );
-    Gdiplus::Font font( L"微软雅黑", 10 );
-    g.DrawString( strTitle.c_str(), (int)strTitle.length(), &font, rectTitle, &sf, &SolidBrush( Color( 255, 255, 255 ) ) );
+    g.DrawString( strTitle.c_str(), (int)strTitle.length(), &_self->primaryFont, rectTitle, &sf, &SolidBrush( Color( 255, 255, 255 ) ) );
     //g.SetTextRenderingHint(TextRenderingHintSystemDefault);
 
     sf.SetLineAlignment(StringAlignment::StringAlignmentFar);
@@ -240,14 +248,14 @@ void AccountComprehensiveWnd::Draw()
         _self->accounts[i].accountField1Rect = rect2;
 
 
-        g.DrawShadowString( (LPCSTR)_self->accounts[i].account.m_myName, font, &SolidBrush( Color(0,0,0) ), &SolidBrush( Color( 64, 0, 0, 0 ) ), rect1, &sf, nullptr );
+        g.DrawShadowString( (LPCSTR)_self->accounts[i].account.m_myName, _self->primaryFont, &SolidBrush( Color(0,0,0) ), &SolidBrush( Color( 64, 0, 0, 0 ) ), rect1, &sf, nullptr );
         if ( _self->accounts[i].isPwdShown )
         {
-            g.DrawShadowString( (LPCSTR)_self->accounts[i].account.m_accountPwd, font, &SolidBrush( Color(10, 224, 5) ), &SolidBrush( Color( 64, 0, 0, 0 ) ), rect2, &sf, nullptr );
+            g.DrawShadowString( (LPCSTR)_self->accounts[i].account.m_accountPwd, _self->primaryFont, &SolidBrush( Color(10, 224, 5) ), &SolidBrush( Color( 64, 0, 0, 0 ) ), rect2, &sf, nullptr );
         }
         else
         {
-            g.DrawShadowString( (LPCSTR)_self->accounts[i].account.m_accountName, font, &SolidBrush( Color(225, 103, 195) ), &SolidBrush( Color( 64, 0, 0, 0 ) ), rect2, &sf, nullptr );
+            g.DrawShadowString( (LPCSTR)_self->accounts[i].account.m_accountName, _self->primaryFont, &SolidBrush( Color(225, 103, 195) ), &SolidBrush( Color( 64, 0, 0, 0 ) ), rect2, &sf, nullptr );
         }
 
 

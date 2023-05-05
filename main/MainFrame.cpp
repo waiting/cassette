@@ -50,8 +50,8 @@ BEGIN_MESSAGE_MAP(MainFrame, CFrameWnd)
     ON_WM_SETFOCUS()
     ON_COMMAND(ID_APP_EXIT, OnAppExit)
     ON_COMMAND(ID_APP_ABOUT, OnAppAbout)
-    ON_COMMAND(ID_APP_HELP, OnAppHelp)
-    ON_COMMAND(ID_HELP, OnHelp)
+    //ON_COMMAND(ID_APP_HELP, OnAppHelp)
+    //ON_COMMAND(ID_HELP, OnHelp)
     ON_UPDATE_COMMAND_UI(ID_VIA_AUTOLOGIN, OnUpdateViaAutoLogin)
     ON_COMMAND(ID_VIA_AUTOLOGIN, OnViaAutoLogin)
     ON_UPDATE_COMMAND_UI(ID_OPEN_URL, OnUpdateOpenUrl)
@@ -297,26 +297,7 @@ void MainFrame::OnHelp()
 
 void MainFrame::OnAppHelp()
 {
-    if ( m_catesDlg.m_cateIndex == -1 )
-    {
-        return;
-    }
 
-    AccountArray accounts;
-    int accountsCount = LoadAccounts( g_theApp.GetDatabase(), g_theApp.m_loginedUser.m_id, &accounts, m_catesDlg.m_cates[m_catesDlg.m_cateIndex].m_id );
-
-    // 测试新账户综合窗口
-    AccountComprehensiveWnd * pComprehensiveWnd = AccountComprehensiveWnd::Create<AccountComprehensiveWnd>(
-        GetSafeHwnd(),
-        this,
-        CRect( 0, 0, 300, 412 ),
-        m_catesDlg.m_cates[m_catesDlg.m_cateIndex],
-        accounts
-    );
-    pComprehensiveWnd->AutoDelete(TRUE);
-    pComprehensiveWnd->UpdateWindow();
-    winplus::Window_Center( *pComprehensiveWnd, GetSafeHwnd() );
-    pComprehensiveWnd->ShowWindow(SW_NORMAL);
 }
 
 void MainFrame::OnUpdateViaAutoLogin( CCmdUI * pCmdUI ) 
