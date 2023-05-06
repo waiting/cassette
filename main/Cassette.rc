@@ -405,8 +405,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 0,1,2,0
- PRODUCTVERSION 0,1,2,0
+ FILEVERSION 0,2,0
+ PRODUCTVERSION 0,2,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -422,13 +422,13 @@ BEGIN
         BLOCK "080404b0"
         BEGIN
             VALUE "CompanyName", "X86PRO.COM"
-            VALUE "FileDescription", "Cassette 账户管理系统 v0.1.2"
-            VALUE "FileVersion", "0.1.2"
+            VALUE "FileDescription", "Cassette 账户管理系统 v0.2.0"
+            VALUE "FileVersion", "0.2.0"
             VALUE "InternalName", "Cassette"
             VALUE "LegalCopyright", "(C) X86PRO.COM 版权所有 2013-2023."
             VALUE "OriginalFilename", "Cassette.exe"
             VALUE "ProductName", "Cassette 账户管理系统"
-            VALUE "ProductVersion", "0.1.2"
+            VALUE "ProductVersion", "0.2.0"
         END
     END
     BLOCK "VarFileInfo"
@@ -553,6 +553,8 @@ IDR_PNG_ALIPAY          PNG                     "..\\res\\donate_alipay.png"
 
 IDR_PNG_WEPAY           PNG                     "..\\res\\donate_wepay.png"
 
+IDR_PNG_LOCK            PNG                     "..\\res\\lock.png"
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -671,7 +673,7 @@ STRINGTABLE
 BEGIN
     AFX_IDS_SCRESTORE       "把窗口恢复到正常大小"
     AFX_IDS_SCTASKLIST      "激活任务表"
-    IDS_SHAREDMEM_NAME      "Cassette 0.1.2 - Shared Memory"
+    IDS_SHAREDMEM_NAME      "Cassette 0.2.0 - Shared Memory"
 END
 
 STRINGTABLE

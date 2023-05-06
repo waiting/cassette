@@ -8,7 +8,7 @@
 #include "UserSettingsDlg.h"
 #include "AppSettingsDlg.h"
 #include "AccountEditingDlg.h"
-#include "AccountIntegratedWnd.h"
+//#include "AccountIntegratedWnd.h"
 #include "AccountComprehensiveWnd.h"
 
 #ifdef _DEBUG
@@ -692,30 +692,33 @@ void MainFrame::DoIntelligentHotkey()
             CRect rcCurWnd;
             pCurWnd->GetClientRect(&rcCurWnd);
             // 计算账户信息窗口的位置
-            CSize siIntegratedWnd( 240, 300 );
-            CRect rcIntegratedWnd(
-                CPoint( rcCurWnd.Width() - siIntegratedWnd.cx, rcCurWnd.Height() - siIntegratedWnd.cy ),
-                siIntegratedWnd
-            );
-            pCurWnd->ClientToScreen(&rcIntegratedWnd);
+            CSize siAccountsWnd( 300, 412 );
+            CPoint ptAccountsWnd( rcCurWnd.Width() - siAccountsWnd.cx, rcCurWnd.Height() - siAccountsWnd.cy );
+            pCurWnd->ClientToScreen(&ptAccountsWnd);
 
             // 显示账户信息窗口
-            auto pIntegratedWnd = AccountIntegratedWnd::GetWnd<AccountIntegratedWnd>(*pCurWnd);
-            if ( pIntegratedWnd )
+            auto pAccountsWnd = AccountComprehensiveWnd::GetWnd<AccountComprehensiveWnd>(*pCurWnd);
+            if ( pAccountsWnd )
             {
                 //pIntegratedWnd->SetAccountsInfo( m_catesDlg.m_cates[cateIndex], accounts );
-                pIntegratedWnd->SetWindowPos( NULL, rcIntegratedWnd.left, rcIntegratedWnd.top, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE );
+                pAccountsWnd->SetWindowPos( NULL, ptAccountsWnd.x, ptAccountsWnd.y, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE );
                 pCurWnd->SetWindowPos( &wndTop, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE );
             }
             else
             {
-                pIntegratedWnd = AccountIntegratedWnd::Create<AccountIntegratedWnd>( *pCurWnd, pCurWnd, m_catesDlg.m_cates[cateIndex].m_cateName, rcIntegratedWnd );
-                pIntegratedWnd->AutoDelete(TRUE);
-                pIntegratedWnd->SetAccountsInfo( m_catesDlg.m_cates[cateIndex], accounts );
-                pCurWnd->SetWindowPos( &wndTop, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE );
+                pAccountsWnd = AccountComprehensiveWnd::Create<AccountComprehensiveWnd>(
+                    *pCurWnd,
+                    pCurWnd,
+                    CRect( 0, 0, siAccountsWnd.cx, siAccountsWnd.cy ),
+                    m_catesDlg.m_cates[cateIndex],
+                    accounts
+                );
+                pAccountsWnd->AutoDelete(TRUE);
+                pAccountsWnd->UpdateWindow();
+                pAccountsWnd->ShowWindow(SW_NORMAL);
 
-                //pIntegratedWnd->UpdateWindow();
-                pIntegratedWnd->ShowWindow(SW_NORMAL);
+                pAccountsWnd->SetWindowPos( NULL, ptAccountsWnd.x, ptAccountsWnd.y, 0, 0, SWP_NOSIZE | SWP_NOZORDER );
+                pCurWnd->SetWindowPos( &wndTop, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE );
             }
         }
     }

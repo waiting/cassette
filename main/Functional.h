@@ -26,6 +26,8 @@ if ( dlg != NULL )\
     dlg->SetFocus();\
     return;\
 }
+
+// Verify runable only other process Or parent window is MainFrame
 #define VERIFY_RUNONLY_OTHER_HPROCESS( parent ) {\
 DWORD dwProcessId;\
 GetWindowThreadProcessId( *parent, &dwProcessId );\

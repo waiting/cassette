@@ -33,6 +33,7 @@
 #define IDR_PNG_ALIPAY                  161
 #define IDR_PNG_WEPAY                   162
 #define IDR_HTML_ABOUT2                 164
+#define IDR_PNG_LOCK                    163
 #define IDR_KEY_DB                      200
 #define IDC_REGISTERED_HOTKEY           998
 #define IDC_SYSLINK_WEBSITE             1000
@@ -103,7 +104,7 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        165
+#define _APS_NEXT_RESOURCE_VALUE        166
 #define _APS_NEXT_COMMAND_VALUE         32809
 #define _APS_NEXT_CONTROL_VALUE         1038
 #define _APS_NEXT_SYMED_VALUE           101
