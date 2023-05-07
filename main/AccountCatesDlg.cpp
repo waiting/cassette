@@ -98,8 +98,8 @@ void AccountCatesDlg::UpdateList( int flag, long itemIndex )
 
 void AccountCatesDlg::DoAdd( CWnd * parent, winplus::Mixed * cate )
 {
-    VERIFY_RUNONLY_OTHER_HPROCESS(parent);
     VERIFY_ONCE_DIALOG(onceEditingDlg);
+    VERIFY_RUNONLY_OTHER_HPROCESS(parent);
 
     AccountCateEditingDlg editingDlg( parent, true, cate );
 
@@ -294,7 +294,7 @@ void AccountCatesDlg::OnCateModify()
     {
         if ( ModifyAccountCate( g_theApp.GetDatabase(), id, newCate ) )
         {
-            m_cates[index].assign(newCate);
+            m_cates[index] = newCate;
 
             UpdateList( UPDATE_LIST_ITEMS, index );
             CString strId;

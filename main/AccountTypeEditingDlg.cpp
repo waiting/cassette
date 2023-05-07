@@ -27,7 +27,7 @@ void AccountTypeEditingDlg::DoDataExchange(CDataExchange* pDX)
     //}}AFX_DATA_MAP
 
     AccountType type;
-    type.assign(*m_type);
+    type = *m_type;
 
     DDX_Text(pDX, IDC_EDIT_TYPENAME, type.m_typeName);
     DDX_Text(pDX, IDC_EDIT_SAFERANK, type.m_safeRank);

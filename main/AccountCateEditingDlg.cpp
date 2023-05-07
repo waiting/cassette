@@ -12,8 +12,11 @@ static char THIS_FILE[] = __FILE__;
 /////////////////////////////////////////////////////////////////////////////
 // AccountCateEditingDlg dialog
 
-AccountCateEditingDlg::AccountCateEditingDlg( CWnd * parent, bool isAdd, winplus::Mixed * cateFields )
-: Dialog(AccountCateEditingDlg::IDD, parent), m_isAdd(isAdd), m_cate(cateFields)
+AccountCateEditingDlg::AccountCateEditingDlg( CWnd * parent, bool isAdd, winplus::Mixed * cateFields ) :
+    Dialog( AccountCateEditingDlg::IDD, GetDesktopWindow() ),
+    m_pWndParent(parent),
+    m_isAdd(isAdd),
+    m_cate(cateFields)
 {
     //{{AFX_DATA_INIT(AccountCateEditingDlg)
     //}}AFX_DATA_INIT
@@ -27,7 +30,7 @@ void AccountCateEditingDlg::DoDataExchange(CDataExchange* pDX)
     //{{AFX_DATA_MAP(AccountCateEditingDlg)
     //}}AFX_DATA_MAP
     AccountCate cate;
-    cate.assign(*m_cate);
+    cate = *m_cate;
 
     DDX_Text(pDX, IDC_EDIT_CATENAME, cate.m_cateName);
     DDX_Text(pDX, IDC_EDIT_CATEDESC, cate.m_cateDesc);
@@ -39,12 +42,13 @@ void AccountCateEditingDlg::DoDataExchange(CDataExchange* pDX)
     DDX_Text(pDX, IDC_COMBO_STARTUP, cate.m_startup);
     DDX_Text(pDX, IDC_EDIT_KEYWORDS, cate.m_keywords);
 
-    cate.assignTo( m_cate,"name,desc,type,url,icon,startup,keywords" );
+    cate.assignTo( m_cate, "name,desc,type,url,icon,startup,keywords" );
 }
 
 BEGIN_MESSAGE_MAP(AccountCateEditingDlg, Dialog)
     //{{AFX_MSG_MAP(AccountCateEditingDlg)
     //}}AFX_MSG_MAP
+    ON_WM_SHOWWINDOW()
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
@@ -93,6 +97,10 @@ BOOL AccountCateEditingDlg::OnInitDialog()
 
     UpdateData(FALSE);
 
+    // ¾ÓÖÐ
+    Window_Center( *this, *m_pWndParent );
+    this->SetForegroundWindow();
+
     return TRUE;  // return TRUE unless you set the focus to a control
                   // EXCEPTION: OCX Property Pages should return FALSE
 }
@@ -111,4 +119,12 @@ void AccountCateEditingDlg::OnOK()
         return;
     }
     EndDialog(IDOK);
+}
+
+
+void AccountCateEditingDlg::OnShowWindow( BOOL bShow, UINT nStatus )
+{
+    // ÖÃ¶¥
+    this->SetWindowPos( &wndTopMost, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE );
+
 }

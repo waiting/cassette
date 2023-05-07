@@ -152,7 +152,7 @@ void AccountTypesDlg::OnAdd()
             itemIndex = lst.GetItemCount();
 
             AccountType type;
-            type.assign(newType);
+            type = newType;
 
             lst.InsertItem( itemIndex, type.m_typeName );
 
@@ -183,7 +183,7 @@ void AccountTypesDlg::OnModify()
     {
         if ( ModifyAccountType( g_theApp.GetDatabase(), typeName, newType ) )
         {
-            m_types[index].assign(newType);
+            m_types[index] = newType;
 
             UpdateList( UPDATE_LIST_ITEMS, index );
             LVFINDINFO fi;

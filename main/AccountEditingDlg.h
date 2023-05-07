@@ -31,6 +31,7 @@ public:
 
 // Implementation
 protected:
+    CWnd * m_pWndParent;
     bool m_isAdd;
     winplus::Mixed & m_accountFields;
 
@@ -44,6 +45,7 @@ protected:
     virtual BOOL OnInitDialog();
     virtual void OnOK();
     afx_msg void OnSelChangeComboCates();
+    afx_msg void OnShowWindow( BOOL bShow, UINT nStatus );
     //}}AFX_MSG
     DECLARE_MESSAGE_MAP()
 };

@@ -27,19 +27,22 @@ public:
     //{{AFX_VIRTUAL(AccountCateEditingDlg)
     protected:
     virtual void DoDataExchange( CDataExchange * pDX );    // DDX/DDV support
+    virtual BOOL OnInitDialog();
+    virtual void OnOK();
     //}}AFX_VIRTUAL
 
 // Implementation
 protected:
-    int     m_typeIndex;
-    int     m_startupIndex;
+    int m_typeIndex;
+    int m_startupIndex;
 
+    CWnd * m_pWndParent;
     bool m_isAdd;
     winplus::Mixed * m_cate;
+
     // Generated message map functions
     //{{AFX_MSG(AccountCateEditingDlg)
-    virtual BOOL OnInitDialog();
-    virtual void OnOK();
+    afx_msg void OnShowWindow( BOOL bShow, UINT nStatus );
     //}}AFX_MSG
     DECLARE_MESSAGE_MAP()
 };

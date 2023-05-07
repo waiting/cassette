@@ -11,8 +11,11 @@ static char THIS_FILE[] = __FILE__;
 
 /////////////////////////////////////////////////////////////////////////////
 // AccountEditingDlg dialog
-AccountEditingDlg::AccountEditingDlg( CWnd * parent, bool isAdd, winplus::Mixed * accountFields )
-: Dialog( AccountEditingDlg::IDD, parent ), m_isAdd(isAdd), m_accountFields(*accountFields)
+AccountEditingDlg::AccountEditingDlg( CWnd * parent, bool isAdd, winplus::Mixed * accountFields ) :
+    Dialog( AccountEditingDlg::IDD, GetDesktopWindow() ),
+    m_pWndParent(parent),
+    m_isAdd(isAdd),
+    m_accountFields(*accountFields)
 {
     //{{AFX_DATA_INIT(AccountEditingDlg)
     //}}AFX_DATA_INIT
@@ -28,7 +31,7 @@ void AccountEditingDlg::DoDataExchange( CDataExchange * pDX )
     DDX_CBIndex(pDX, IDC_COMBO_CATES, m_cateIndex);
 
     Account account;
-    account.assign(m_accountFields);
+    account = m_accountFields;
 
     DDX_Text(pDX, IDC_EDIT_MYNAME, account.m_myName);
     DDX_Text(pDX, IDC_EDIT_ACCOUNTNAME, account.m_accountName);
@@ -43,6 +46,7 @@ BEGIN_MESSAGE_MAP(AccountEditingDlg, Dialog)
     //{{AFX_MSG_MAP(AccountEditingDlg)
     ON_CBN_SELCHANGE(IDC_COMBO_CATES, OnSelChangeComboCates)
     //}}AFX_MSG_MAP
+    ON_WM_SHOWWINDOW()
 END_MESSAGE_MAP()
 
 int AccountEditingDlg::GetSafeRankByCateId( int cateId ) const
@@ -71,11 +75,9 @@ BOOL AccountEditingDlg::OnInitDialog()
     SetWindowText( m_isAdd ? _T("添加账户...") : _T("修改账户...") );
 
     // 载入种类信息
-    int catesCount;
-    catesCount = LoadAccountCates( g_theApp.GetDatabase(), &m_cates );
+    int catesCount = LoadAccountCates( g_theApp.GetDatabase(), &m_cates );
     LoadAccountCatesSafeRank( g_theApp.GetDatabase(), &m_cateIds2, &m_typeSafeRanks );
-    // 内部的选择框是通过索引来确定选择项的，因此外部传递的CateID需要转换为索引
-    // 这样才能选中相应的Cate
+    // 内部的选择框是通过索引来确定选择项的，因此外部传递的Cate ID需要转换为索引，这样才能选中相应的Cate
     m_cateIndex = -1;
     int i;
     // ID to Index
@@ -98,6 +100,10 @@ BOOL AccountEditingDlg::OnInitDialog()
 
     if ( m_isAdd && m_cateIndex != -1 ) // 如果选择了种类,触发组合框选择改变事件
         SendMessage( WM_COMMAND, MAKEWPARAM( IDC_COMBO_CATES, CBN_SELCHANGE ), (LPARAM)pCboCates->GetSafeHwnd() );
+
+    // 居中
+    Window_Center( *this, *m_pWndParent );
+    this->SetForegroundWindow();
 
     return TRUE;  // return TRUE unless you set the focus to a control
                   // EXCEPTION: OCX Property Pages should return FALSE
@@ -136,4 +142,11 @@ void AccountEditingDlg::OnSelChangeComboCates()
     tmpMyName = _T("我的") + tmpMyName + _T("账户");
     m_accountFields["myname"] = (LPCTSTR)GetCorrectAccountMyName( g_theApp.GetDatabase(), g_theApp.m_loginedUser.m_id, tmpMyName );
     UpdateData(FALSE);
+}
+
+
+void AccountEditingDlg::OnShowWindow( BOOL bShow, UINT nStatus )
+{
+    // 置顶
+    this->SetWindowPos( &wndTopMost, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE );
 }

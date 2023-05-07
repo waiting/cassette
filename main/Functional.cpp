@@ -227,44 +227,6 @@ bool ModifyUserEx( eiendb::Database & db, CString const & username, winplus::Mix
     return false;
 }
 
-// struct AccountType ---------------------------------------------------------------------
-void AccountType::assignTo( winplus::Mixed * accountTypeMixed, CString const & fieldNames )
-{
-    winplus::StringArray fnames;
-    winplus::StrSplit( (LPCTSTR)fieldNames, ",", &fnames );
-    if ( !accountTypeMixed->isCollection() )
-        accountTypeMixed->createCollection();
-    for ( auto it = fnames.begin(); it != fnames.end(); ++it )
-    {
-        if ( *it == "name" )
-        {
-            (*accountTypeMixed)[*it] = (LPCTSTR)m_typeName;
-        }
-        else if ( *it == "rank" )
-        {
-            (*accountTypeMixed)[*it] = m_safeRank;
-        }
-    }
-}
-
-void AccountType::assign( winplus::Mixed const & accountTypeMixed )
-{
-    int n = (int)accountTypeMixed.getCount();
-    for ( int i = 0; i < n; ++i )
-    {
-        auto & pr = accountTypeMixed.getPair(i);
-        winplus::String const & keyname = pr.first.refAnsi();
-        if ( keyname == "name" )
-        {
-            m_typeName = pr.second.refAnsi().c_str();
-        }
-        else if ( keyname == "rank" )
-        {
-            m_safeRank = pr.second;
-        }
-    }
-}
-
 int LoadAccountTypes( eiendb::Database & db, AccountTypeArray * types )
 {
     int count = 0;
@@ -367,100 +329,6 @@ bool DeleteAccountType( eiendb::Database & db, CString const & typeName )
         AfxGetMainWnd()->FatalError( e.what(), _T("Êý¾Ý¿â´íÎó") ); //*/
     }
     return false;
-}
-
-// struct AccountCate ---------------------------------------------------------------------
-void AccountCate::assignTo( winplus::Mixed * accountCateMixed, CString const & fieldNames )
-{
-    winplus::StringArray fnames;
-    winplus::StrSplit( (LPCTSTR)fieldNames, ",", &fnames );
-    if ( !accountCateMixed->isCollection() )
-        accountCateMixed->createCollection();
-    for ( auto it = fnames.begin(); it != fnames.end(); ++it )
-    {
-        if ( *it == "id" )
-        {
-            (*accountCateMixed)[*it] = m_id;
-        }
-        else if ( *it == "name" )
-        {
-            (*accountCateMixed)[*it] = (LPCTSTR)m_cateName;
-        }
-        else if ( *it == "desc" )
-        {
-            (*accountCateMixed)[*it] = (LPCTSTR)m_cateDesc;
-        }
-        else if ( *it == "type" )
-        {
-            (*accountCateMixed)[*it] = (LPCTSTR)m_typeName;
-        }
-        else if ( *it == "url" )
-        {
-            (*accountCateMixed)[*it] = (LPCTSTR)m_url;
-        }
-        else if ( *it == "icon" )
-        {
-            (*accountCateMixed)[*it] = (LPCTSTR)m_icoPath;
-        }
-        else if ( *it == "startup" )
-        {
-            (*accountCateMixed)[*it] = (LPCTSTR)m_startup;
-        }
-        else if ( *it == "keywords" )
-        {
-            (*accountCateMixed)[*it] = (LPCTSTR)m_keywords;
-        }
-        else if ( *it == "time" )
-        {
-            (*accountCateMixed)[*it] = m_timeWriten;
-        }
-    }
-}
-
-void AccountCate::assign( winplus::Mixed const & accountCateMixed )
-{
-    int n = (int)accountCateMixed.getCount();
-    for ( int i = 0; i < n; ++i )
-    {
-        auto & pr = accountCateMixed.getPair(i);
-        winplus::String const & keyname = pr.first.refAnsi();
-        if ( keyname == "id" )
-        {
-            m_id = pr.second;
-        }
-        else if ( keyname == "name" )
-        {
-            m_cateName = pr.second.refAnsi().c_str();
-        }
-        else if ( keyname == "desc" )
-        {
-            m_cateDesc = pr.second.refAnsi().c_str();
-        }
-        else if ( keyname == "type" )
-        {
-            m_typeName = pr.second.refAnsi().c_str();
-        }
-        else if ( keyname == "url" )
-        {
-            m_url = pr.second.refAnsi().c_str();
-        }
-        else if ( keyname == "icon" )
-        {
-            m_icoPath = pr.second.refAnsi().c_str();
-        }
-        else if ( keyname == "startup" )
-        {
-            m_startup = pr.second.refAnsi().c_str();
-        }
-        else if ( keyname == "keywords" )
-        {
-            m_keywords = pr.second.refAnsi().c_str();
-        }
-        else if ( keyname == "time" )
-        {
-            m_timeWriten = pr.second;
-        }
-    }
 }
 
 int LoadAccountCates( eiendb::Database & db, AccountCateArray * cates )
@@ -634,94 +502,6 @@ bool GetTypeByCateId( eiendb::Database & db, int cateId, AccountType * type )
     return ret;
 }
 
-// struct Account -------------------------------------------------------------------------
-void Account::assignTo( winplus::Mixed * accountMixed, CString const & fieldNames )
-{
-    winplus::StringArray fnames;
-    winplus::StrSplit( (LPCTSTR)fieldNames, ",", &fnames );
-
-    if ( !accountMixed->isCollection() )
-        accountMixed->createCollection();
-    for ( auto it = fnames.begin(); it != fnames.end(); ++it )
-    {
-        if ( *it == "myname" )
-        {
-            (*accountMixed)[*it] = (LPCTSTR)m_myName;
-        }
-        else if ( *it == "account_name" )
-        {
-            (*accountMixed)[*it] = winplus::EncryptContent( winplus::Buffer( winplus::StringToUtf8( (LPCTSTR)m_accountName ) ) );
-        }
-        else if ( *it == "account_pwd" )
-        {
-            (*accountMixed)[*it] = winplus::EncryptContent( winplus::Buffer( winplus::StringToUtf8( (LPCTSTR)m_accountPwd ) ) );
-        }
-        else if ( *it == "cate" )
-        {
-            (*accountMixed)[*it] = m_cateId;
-        }
-        else if ( *it == "user" )
-        {
-            (*accountMixed)[*it] = m_userId;
-        }
-        else if ( *it == "safe_rank" )
-        {
-            (*accountMixed)[*it] = m_safeRank;
-        }
-        else if ( *it == "comment" )
-        {
-            (*accountMixed)[*it] = (LPCTSTR)m_comment;
-        }
-        else if ( *it == "time" )
-        {
-            (*accountMixed)[*it] = m_time;
-        }
-    }
-}
-
-void Account::assign( winplus::Mixed const & accountMixed )
-{
-    int n = (int)accountMixed.getCount();
-    for ( int i = 0; i < n; ++i )
-    {
-        auto & pr = accountMixed.getPair(i);
-        winplus::String const & keyname = pr.first.refAnsi();
-        if ( keyname == "myname" )
-        {
-            m_myName = pr.second.refAnsi().c_str();
-        }
-        else if ( keyname == "account_name" )
-        {
-            m_accountName = winplus::Utf8ToString( winplus::DecryptContent( pr.second.toAnsi() ) ).c_str();
-        }
-        else if ( keyname == "account_pwd" )
-        {
-            m_accountPwd = winplus::Utf8ToString( winplus::DecryptContent( pr.second.toAnsi() ) ).c_str();
-        }
-        else if ( keyname == "cate" )
-        {
-            m_cateId = pr.second;
-        }
-        else if ( keyname == "user" )
-        {
-            m_userId = pr.second;
-        }
-        else if ( keyname == "safe_rank" )
-        {
-            m_safeRank = pr.second;
-        }
-        else if ( keyname == "comment" )
-        {
-            m_comment = pr.second.refAnsi().c_str();
-        }
-        else if ( keyname == "time" )
-        {
-            m_time = pr.second;
-        }
-    }
-
-}
-
 int LoadAccounts( eiendb::Database & db, int userId, AccountArray * accounts, int cateId )
 {
     int count = 0;
@@ -742,7 +522,7 @@ int LoadAccounts( eiendb::Database & db, int userId, AccountArray * accounts, in
         while ( resAccounts->fetchRow(&f) )
         {
             Account account;
-            account.assign(f);
+            account = f;
             IF_PTR(accounts)->Add(account);
             count++;
         }

@@ -401,7 +401,6 @@ LRESULT AccountComprehensiveWnd::OnNcHitTest( CPoint point )
 
     this->Draw();
     this->Render();
-    //PostMessage( WM_TIMER, ID_TIMER_RENDER );
 
     return lResult;
 }

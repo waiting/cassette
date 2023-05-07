@@ -67,7 +67,7 @@ inline CString StringToCString( winplus::String const & str )
 // 解释文本中的$xxx$程序自定变量
 winplus::String ExplainCustomVars( winplus::String const & str );
 
-// 获取可执行文件所在路径, 末尾含目录分割符
+// 获取可执行文件所在目录路径, 末尾含目录分割符
 CString GetExecutablePath();
 
 //////////////////////////////////////////////////////////////////////////
@@ -76,27 +76,7 @@ CString GetExecutablePath();
 
 // Users -----------------------------------------------------------------
 // 代表一个用户的相关数据
-
-/*enum FieldBits__am_users
-{
-    am_users__id          = winplus::Bin0<0000000001>::val,
-    am_users__name        = winplus::Bin0<0000000010>::val,
-    am_users__pwd         = winplus::Bin0<0000000100>::val,
-    am_users__protect     = winplus::Bin0<0000001000>::val,
-    am_users__condone     = winplus::Bin0<0000010000>::val,
-    am_users__cur_condone = winplus::Bin0<0000100000>::val,
-    am_users__unlock_time = winplus::Bin0<0001000000>::val,
-    am_users__hotkey      = winplus::Bin0<0010000000>::val,
-    am_users__time        = winplus::Bin0<0100000000>::val,
-};*/
-
-// 当查询全部字段时才可用这个函数确定字段索引
-inline int FieldIndex( UINT fieldBitFlag )
-{
-    return (int)( log((double)fieldBitFlag) / log(2.0) + 0.0000005 );
-}
-
-struct User/* : Fields*/
+struct User
 {
     int m_id;
     CString m_username;
@@ -155,7 +135,7 @@ bool ModifyUserEx( eiendb::Database & db, CString const & username, winplus::Mix
 // Types -----------------------------------------------------------------
 
 //一条账户类型相关数据
-struct AccountType/* : public Fields*/
+struct AccountType
 {
     CString m_typeName;
     int m_safeRank;
@@ -170,13 +150,47 @@ struct AccountType/* : public Fields*/
         return *this;
     }
 
+    AccountType & operator = ( winplus::Mixed const & accountTypeMixed )
+    {
+        size_t n = accountTypeMixed.getCount();
+        for ( size_t i = 0; i < n; ++i )
+        {
+            auto && pr = accountTypeMixed.getPair(i);
+            winplus::String const & keyname = pr.first.refAnsi();
+            if ( keyname == "name" )
+            {
+                m_typeName = pr.second.refAnsi().c_str();
+            }
+            else if ( keyname == "rank" )
+            {
+                m_safeRank = pr.second;
+            }
+        }
+        return *this;
+    }
+
     AccountType()
     {
         m_safeRank = 0;
     }
 
-    void assignTo( winplus::Mixed * accountTypeMixed, CString const & fieldNames = "name,rank" );
-    void assign( winplus::Mixed const & accountTypeMixed );
+    void assignTo( winplus::Mixed * accountTypeMixed, CString const & fieldNames = "name,rank" )
+    {
+        winplus::StringArray fnames;
+        winplus::StrSplit( (LPCTSTR)fieldNames, ",", &fnames );
+        if ( !accountTypeMixed->isCollection() ) accountTypeMixed->createCollection();
+        for ( auto it = fnames.begin(); it != fnames.end(); ++it )
+        {
+            if ( *it == "name" )
+            {
+                (*accountTypeMixed)[*it] = (LPCTSTR)m_typeName;
+            }
+            else if ( *it == "rank" )
+            {
+                (*accountTypeMixed)[*it] = m_safeRank;
+            }
+        }
+    }
 };
 
 typedef CArray<AccountType, AccountType const &> AccountTypeArray;
@@ -227,14 +241,104 @@ struct AccountCate
         return *this;
     }
 
+    AccountCate & operator = ( winplus::Mixed const & accountCateMixed )
+    {
+        size_t n = accountCateMixed.getCount();
+        for ( size_t i = 0; i < n; ++i )
+        {
+            auto && pr = accountCateMixed.getPair(i);
+            winplus::String const & keyname = pr.first.refAnsi();
+            if ( keyname == "id" )
+            {
+                m_id = pr.second;
+            }
+            else if ( keyname == "name" )
+            {
+                m_cateName = pr.second.refAnsi().c_str();
+            }
+            else if ( keyname == "desc" )
+            {
+                m_cateDesc = pr.second.refAnsi().c_str();
+            }
+            else if ( keyname == "type" )
+            {
+                m_typeName = pr.second.refAnsi().c_str();
+            }
+            else if ( keyname == "url" )
+            {
+                m_url = pr.second.refAnsi().c_str();
+            }
+            else if ( keyname == "icon" )
+            {
+                m_icoPath = pr.second.refAnsi().c_str();
+            }
+            else if ( keyname == "startup" )
+            {
+                m_startup = pr.second.refAnsi().c_str();
+            }
+            else if ( keyname == "keywords" )
+            {
+                m_keywords = pr.second.refAnsi().c_str();
+            }
+            else if ( keyname == "time" )
+            {
+                m_timeWriten = pr.second;
+            }
+        }
+        return *this;
+    }
+
     AccountCate()
     {
         m_id = 0;
         m_timeWriten = 0;
     }
 
-    void assignTo( winplus::Mixed * accountCateMixed, CString const & fieldNames = "id,name,desc,type,url,icon,startup,keywords,time" );
-    void assign( winplus::Mixed const & accountCateMixed );
+    void assignTo( winplus::Mixed * accountCateMixed, CString const & fieldNames = "id,name,desc,type,url,icon,startup,keywords,time" )
+    {
+        winplus::StringArray fnames;
+        winplus::StrSplit( (LPCTSTR)fieldNames, ",", &fnames );
+        if ( !accountCateMixed->isCollection() ) accountCateMixed->createCollection();
+        for ( auto it = fnames.begin(); it != fnames.end(); ++it )
+        {
+            if ( *it == "id" )
+            {
+                (*accountCateMixed)[*it] = m_id;
+            }
+            else if ( *it == "name" )
+            {
+                (*accountCateMixed)[*it] = (LPCTSTR)m_cateName;
+            }
+            else if ( *it == "desc" )
+            {
+                (*accountCateMixed)[*it] = (LPCTSTR)m_cateDesc;
+            }
+            else if ( *it == "type" )
+            {
+                (*accountCateMixed)[*it] = (LPCTSTR)m_typeName;
+            }
+            else if ( *it == "url" )
+            {
+                (*accountCateMixed)[*it] = (LPCTSTR)m_url;
+            }
+            else if ( *it == "icon" )
+            {
+                (*accountCateMixed)[*it] = (LPCTSTR)m_icoPath;
+            }
+            else if ( *it == "startup" )
+            {
+                (*accountCateMixed)[*it] = (LPCTSTR)m_startup;
+            }
+            else if ( *it == "keywords" )
+            {
+                (*accountCateMixed)[*it] = (LPCTSTR)m_keywords;
+            }
+            else if ( *it == "time" )
+            {
+                (*accountCateMixed)[*it] = m_timeWriten;
+            }
+        }
+    }
 };
 
 typedef CArray<AccountCate, AccountCate const &> AccountCateArray;
@@ -263,7 +367,7 @@ int LoadAccountCatesSafeRank( eiendb::Database & db, CUIntArray * cateIds, CUInt
 bool GetTypeByCateId( eiendb::Database & db, int cateId, AccountType * type );
 
 // Accounts --------------------------------------------------------------
-struct Account/* : public Fields*/
+struct Account
 {
     CString m_myName;
     CString m_accountName;
@@ -290,6 +394,49 @@ struct Account/* : public Fields*/
         return *this;
     }
 
+    Account & operator = ( winplus::Mixed const & accountMixed )
+    {
+        size_t n = accountMixed.getCount();
+        for ( size_t i = 0; i < n; ++i )
+        {
+            auto && pr = accountMixed.getPair(i);
+            winplus::String const & keyname = pr.first.refAnsi();
+            if ( keyname == "myname" )
+            {
+                m_myName = pr.second.refAnsi().c_str();
+            }
+            else if ( keyname == "account_name" )
+            {
+                m_accountName = winplus::Utf8ToString( winplus::DecryptContent( pr.second.toAnsi() ) ).c_str();
+            }
+            else if ( keyname == "account_pwd" )
+            {
+                m_accountPwd = winplus::Utf8ToString( winplus::DecryptContent( pr.second.toAnsi() ) ).c_str();
+            }
+            else if ( keyname == "cate" )
+            {
+                m_cateId = pr.second;
+            }
+            else if ( keyname == "user" )
+            {
+                m_userId = pr.second;
+            }
+            else if ( keyname == "safe_rank" )
+            {
+                m_safeRank = pr.second;
+            }
+            else if ( keyname == "comment" )
+            {
+                m_comment = pr.second.refAnsi().c_str();
+            }
+            else if ( keyname == "time" )
+            {
+                m_time = pr.second;
+            }
+        }
+        return *this;
+    }
+
     Account()
     {
         m_cateId = 0;
@@ -298,8 +445,47 @@ struct Account/* : public Fields*/
         m_time = 0;
     }
 
-    void assignTo( winplus::Mixed * accountMixed, CString const & fieldNames = "myname,account_name,account_pwd,cate,user,safe_rank,comment,time" );
-    void assign( winplus::Mixed const & accountMixed );
+    void assignTo( winplus::Mixed * accountMixed, CString const & fieldNames = "myname,account_name,account_pwd,cate,user,safe_rank,comment,time" )
+    {
+        winplus::StringArray fnames;
+        winplus::StrSplit( (LPCTSTR)fieldNames, ",", &fnames );
+        if ( !accountMixed->isCollection() ) accountMixed->createCollection();
+        for ( auto it = fnames.begin(); it != fnames.end(); ++it )
+        {
+            if ( *it == "myname" )
+            {
+                (*accountMixed)[*it] = (LPCTSTR)m_myName;
+            }
+            else if ( *it == "account_name" )
+            {
+                (*accountMixed)[*it] = winplus::EncryptContent( winplus::Buffer( winplus::StringToUtf8( (LPCTSTR)m_accountName ) ) );
+            }
+            else if ( *it == "account_pwd" )
+            {
+                (*accountMixed)[*it] = winplus::EncryptContent( winplus::Buffer( winplus::StringToUtf8( (LPCTSTR)m_accountPwd ) ) );
+            }
+            else if ( *it == "cate" )
+            {
+                (*accountMixed)[*it] = m_cateId;
+            }
+            else if ( *it == "user" )
+            {
+                (*accountMixed)[*it] = m_userId;
+            }
+            else if ( *it == "safe_rank" )
+            {
+                (*accountMixed)[*it] = m_safeRank;
+            }
+            else if ( *it == "comment" )
+            {
+                (*accountMixed)[*it] = (LPCTSTR)m_comment;
+            }
+            else if ( *it == "time" )
+            {
+                (*accountMixed)[*it] = m_time;
+            }
+        }
+    }
 };
 
 typedef CArray<Account, Account const &> AccountArray;
@@ -359,7 +545,6 @@ interface IUpdateListView
     // UPDATE_LOAD_DATA 从数据库加载数据到数组中储存
     // UPDATE_LIST_ITEMS 把数组中的数据更新到列表项
     virtual void UpdateList( int flag = UPDATE_LOAD_DATA | UPDATE_LIST_ITEMS, long itemIndex = -1 ) PURE;
-
 };
 
 //////////////////////////////////////////////////////////////////////////

@@ -110,8 +110,8 @@ void MainFrame::UpdateList( int flag, long itemIndex )
 
 void MainFrame::DoAddAccount( CWnd * parent, winplus::Mixed & newAccount )
 {
-    VERIFY_RUNONLY_OTHER_HPROCESS(parent);
     VERIFY_ONCE_DIALOG(onceEditingDlg);
+    VERIFY_RUNONLY_OTHER_HPROCESS(parent);
 
     AccountEditingDlg editingDlg( parent, true, &newAccount );
 
@@ -122,7 +122,7 @@ void MainFrame::DoAddAccount( CWnd * parent, winplus::Mixed & newAccount )
         if ( AddAccount( g_theApp.GetDatabase(), newAccount ) )
         {
             Account account;
-            account.assign(newAccount);
+            account = newAccount;
 
             CListCtrl & lst = m_pAccountsView->GetListCtrl();
             // 向list加入一项
@@ -133,7 +133,7 @@ void MainFrame::DoAddAccount( CWnd * parent, winplus::Mixed & newAccount )
             // 向数组添加一项
             m_pAccountsView->m_accounts.Add(account);
 
-            UpdateList( UPDATE_LOAD_DATA | UPDATE_LIST_ITEMS, itemIndex );
+            this->UpdateList( UPDATE_LOAD_DATA | UPDATE_LIST_ITEMS, itemIndex );
             lst.SetItemState( itemIndex, LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED );
         }
     }
@@ -459,22 +459,21 @@ void MainFrame::OnModifyAccount()
 
     CListCtrl & lst = this->m_pAccountsView->GetListCtrl();
     int index = lst.GetNextItem( -1, LVNI_ALL | LVNI_SELECTED );
+
     CString myName = m_pAccountsView->m_accounts[index].m_myName;
 
     winplus::Mixed accountFields;
     m_pAccountsView->m_accounts[index].assignTo( &accountFields, "myname,account_name,account_pwd,cate,user,safe_rank,comment,time" );
 
     AccountEditingDlg editingDlg( this, false, &accountFields );
-
     SetNullScopeOut setNullScopeOut( onceEditingDlg = &editingDlg );
-
     if ( IDOK == editingDlg.DoModal() )
     {
         if ( ModifyAccount( g_theApp.GetDatabase(), g_theApp.m_loginedUser.m_id, myName, accountFields ) )
         {
-            m_pAccountsView->m_accounts[index].assign(accountFields);
+            m_pAccountsView->m_accounts[index] = accountFields;
 
-            UpdateList( UPDATE_LIST_ITEMS, index );
+            this->UpdateList( UPDATE_LIST_ITEMS, index );
             LVFINDINFO fi;
             fi.flags = LVFI_PARTIAL | LVFI_STRING;
             myName = accountFields["myname"].refAnsi().c_str();
