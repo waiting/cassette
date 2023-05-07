@@ -38,7 +38,8 @@ public:
 
 // Implementation
 protected:
-    AccountCateArray m_cates; // 存储种类信息的数组
+    // 存储种类信息的数组
+    AccountCateArray m_cates;
 
     // Generated message map functions
     //{{AFX_MSG(AccountCatesDlg)

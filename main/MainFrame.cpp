@@ -610,15 +610,27 @@ void MainFrame::DoIntelligentHotkey()
     CWnd * pCurWnd = GetForegroundWindow();
     if ( pCurWnd == nullptr )
     {
+        ColorOutputLine( fgRed, "Is nullptr" );
         return;
     }
     else
     {
-        //std::cout << "top window:" << std::boolalpha << winplus::Window_IsTopLevel(*pCurWnd) << std::endl;
-        pCurWnd = pCurWnd->GetTopLevelParent();
+        std::cout << *pCurWnd << ", " << "top window:" << std::boolalpha << winplus::Window_IsTopLevel(*pCurWnd) << ", "
+            << winplus::Window_GetRect(*pCurWnd) << ", "
+            << "title:" << winplus::Window_GetText(*pCurWnd) << std::endl;
+
+        // 不是顶层窗口则查找父顶层窗口
+        if ( !Window_IsTopLevel(*pCurWnd) )
+        {
+            pCurWnd = pCurWnd->GetTopLevelParent();
+            std::cout << *pCurWnd << ", " << "top window:" << std::boolalpha << winplus::Window_IsTopLevel(*pCurWnd) << ", "
+                << winplus::Window_GetRect(*pCurWnd) << ", "
+                << "title:" << winplus::Window_GetText(*pCurWnd) << std::endl;
+        }
         // 如果是本程序窗口则退出
         if ( pCurWnd == this )
         {
+            ColorOutputLine( fgRed, "Is Mainframe" );
             return;
         }
     }

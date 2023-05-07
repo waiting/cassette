@@ -102,9 +102,7 @@ void AccountCatesDlg::DoAdd( CWnd * parent, winplus::Mixed * cate )
     VERIFY_RUNONLY_OTHER_HPROCESS(parent);
 
     AccountCateEditingDlg editingDlg( parent, true, cate );
-
     SetNullScopeOut setNullScopeOut( onceEditingDlg = &editingDlg );
-
     if ( IDOK == editingDlg.DoModal() )
     {
         int id;

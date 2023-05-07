@@ -98,7 +98,13 @@ BOOL AccountCateEditingDlg::OnInitDialog()
     UpdateData(FALSE);
 
     // ¾ÓÖÐ
-    Window_Center( *this, *m_pWndParent );
+    CRect rc1, rc2;
+    CPoint pt;
+    if ( Window_CalcCenter( *this, *m_pWndParent, false, &rc1, &rc2, &pt ) )
+        Window_Center( *this, *m_pWndParent );
+    else
+        Window_Center( *this, NULL );
+
     this->SetForegroundWindow();
 
     return TRUE;  // return TRUE unless you set the focus to a control
@@ -126,5 +132,4 @@ void AccountCateEditingDlg::OnShowWindow( BOOL bShow, UINT nStatus )
 {
     // ÖÃ¶¥
     this->SetWindowPos( &wndTopMost, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE );
-
 }

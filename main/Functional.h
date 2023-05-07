@@ -22,6 +22,7 @@
 if ( dlg != NULL )\
 {\
     dlg->SetWindowPos( &wndTop, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE );\
+    dlg->ShowWindow(SW_NORMAL);\
     dlg->SetForegroundWindow();\
     dlg->SetFocus();\
     return;\

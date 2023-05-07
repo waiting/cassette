@@ -33,7 +33,7 @@ public:
 protected:
     CWnd * m_pWndParent;
     bool m_isAdd;
-    winplus::Mixed & m_accountFields;
+    winplus::Mixed * m_accountFields;
 
     AccountCateArray m_cates; // 存储种类信息
     CUIntArray m_cateIds2;
