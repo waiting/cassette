@@ -14,8 +14,7 @@ static char THIS_FILE[] = __FILE__;
 /////////////////////////////////////////////////////////////////////////////
 // AccountTypesDlg dialog
 
-AccountTypesDlg::AccountTypesDlg( CWnd * parent )
-: Dialog(AccountTypesDlg::IDD, parent)
+AccountTypesDlg::AccountTypesDlg( CWnd * parent ) : Dialog(AccountTypesDlg::IDD, parent)
 {
     //{{AFX_DATA_INIT(AccountTypesDlg)
         // NOTE: the ClassWizard will add member initialization here
@@ -189,9 +188,10 @@ void AccountTypesDlg::OnModify()
             LVFINDINFO fi;
             fi.flags = LVFI_PARTIAL | LVFI_STRING;
             typeName = newType["name"].refAnsi().c_str();
+            fi.psz = typeName;
             int itemIndex = lst.FindItem(&fi);
             lst.SetItemState( itemIndex, LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED );
-            GetOwner()->PostMessage( WM_UPDATELIST_ALL, MainFrame::UpdateList_Main | MainFrame::UpdateList_CatesDlg );
+            GetOwner()->PostMessage( WM_UPDATELIST_ALL, UPDATELIST_MAIN | UPDATELIST_CATESDLG );
         }
     }
 }

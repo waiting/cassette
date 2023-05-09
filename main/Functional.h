@@ -14,9 +14,6 @@
 #define countof(arr) ( sizeof(arr) / sizeof(arr[0]) )
 #endif
 
-// bind blob data
-#define BlobBind( i, v ) Bind( i, (unsigned char const *)v.c_str(), v.size() )
-
 // verify unique dialog
 #define VERIFY_ONCE_DIALOG(dlg) static CDialog * dlg = NULL;\
 if ( dlg != NULL )\
@@ -35,9 +32,6 @@ GetWindowThreadProcessId( *parent, &dwProcessId );\
 if ( GetCurrentProcessId() == dwProcessId && parent != AfxGetMainWnd() )\
     return;\
 }
-
-// get `bool` value
-#define Bool(v) ((v) != FALSE)
 
 //////////////////////////////////////////////////////////////////////////
 // 模板支持
@@ -68,9 +62,6 @@ inline CString StringToCString( winplus::String const & str )
 // 解释文本中的$xxx$程序自定变量
 winplus::String ExplainCustomVars( winplus::String const & str );
 
-// 获取可执行文件所在目录路径, 末尾含目录分割符
-CString GetExecutablePath();
-
 //////////////////////////////////////////////////////////////////////////
 // 数据库相关操作
 //////////////////////////////////////////////////////////////////////////
@@ -89,23 +80,6 @@ struct User
     int m_hotkey;
     int m_regTime;
 
-    User & operator = ( User const & other )
-    {
-        if ( this != &other )
-        {
-            m_id = other.m_id;
-            m_username = other.m_username;
-            m_password = other.m_password;
-            m_protectLevel = other.m_protectLevel;
-            m_condone = other.m_condone;
-            m_curCondone = other.m_curCondone;
-            m_unlockTime = other.m_unlockTime;
-            m_hotkey = other.m_hotkey;
-            m_regTime = other.m_regTime;
-        }
-        return *this;
-    }
-
     User()
     {
         m_id = 0;
@@ -116,6 +90,23 @@ struct User
         m_hotkey = 0;
         m_regTime = 0;
     }
+
+    //User & operator = ( User const & other )
+    //{
+    //    if ( this != &other )
+    //    {
+    //        m_id = other.m_id;
+    //        m_username = other.m_username;
+    //        m_password = other.m_password;
+    //        m_protectLevel = other.m_protectLevel;
+    //        m_condone = other.m_condone;
+    //        m_curCondone = other.m_curCondone;
+    //        m_unlockTime = other.m_unlockTime;
+    //        m_hotkey = other.m_hotkey;
+    //        m_regTime = other.m_regTime;
+    //    }
+    //    return *this;
+    //}
 };
 
 // 注册用户, 注册成功返回true, 否则false
@@ -141,15 +132,20 @@ struct AccountType
     CString m_typeName;
     int m_safeRank;
 
-    AccountType & operator = ( AccountType const & other )
+    AccountType()
     {
-        if ( this != &other )
-        {
-            m_typeName = other.m_typeName;
-            m_safeRank = other.m_safeRank;
-        }
-        return *this;
+        m_safeRank = 0;
     }
+
+    //AccountType & operator = ( AccountType const & other )
+    //{
+    //    if ( this != &other )
+    //    {
+    //        m_typeName = other.m_typeName;
+    //        m_safeRank = other.m_safeRank;
+    //    }
+    //    return *this;
+    //}
 
     AccountType & operator = ( winplus::Mixed const & accountTypeMixed )
     {
@@ -170,15 +166,10 @@ struct AccountType
         return *this;
     }
 
-    AccountType()
-    {
-        m_safeRank = 0;
-    }
-
-    void assignTo( winplus::Mixed * accountTypeMixed, CString const & fieldNames = "name,rank" )
+    void assignTo( winplus::Mixed * accountTypeMixed, String const & fieldNames = "name,rank" )
     {
         winplus::StringArray fnames;
-        winplus::StrSplit( (LPCTSTR)fieldNames, ",", &fnames );
+        winplus::StrSplit( fieldNames, ",", &fnames );
         if ( !accountTypeMixed->isCollection() ) accountTypeMixed->createCollection();
         for ( auto it = fnames.begin(); it != fnames.end(); ++it )
         {
@@ -225,22 +216,28 @@ struct AccountCate
     CString m_keywords;
     int m_timeWriten;
 
-    AccountCate & operator = ( AccountCate const & other )
+    AccountCate()
     {
-        if ( this != &other )
-        {
-            m_id = other.m_id;
-            m_cateName = other.m_cateName;
-            m_cateDesc = other.m_cateDesc;
-            m_typeName = other.m_typeName;
-            m_url = other.m_url;
-            m_icoPath = other.m_icoPath;
-            m_startup = other.m_startup;
-            m_keywords = other.m_keywords;
-            m_timeWriten = other.m_timeWriten;
-        }
-        return *this;
+        m_id = 0;
+        m_timeWriten = 0;
     }
+
+    //AccountCate & operator = ( AccountCate const & other )
+    //{
+    //    if ( this != &other )
+    //    {
+    //        m_id = other.m_id;
+    //        m_cateName = other.m_cateName;
+    //        m_cateDesc = other.m_cateDesc;
+    //        m_typeName = other.m_typeName;
+    //        m_url = other.m_url;
+    //        m_icoPath = other.m_icoPath;
+    //        m_startup = other.m_startup;
+    //        m_keywords = other.m_keywords;
+    //        m_timeWriten = other.m_timeWriten;
+    //    }
+    //    return *this;
+    //}
 
     AccountCate & operator = ( winplus::Mixed const & accountCateMixed )
     {
@@ -289,16 +286,10 @@ struct AccountCate
         return *this;
     }
 
-    AccountCate()
-    {
-        m_id = 0;
-        m_timeWriten = 0;
-    }
-
-    void assignTo( winplus::Mixed * accountCateMixed, CString const & fieldNames = "id,name,desc,type,url,icon,startup,keywords,time" )
+    void assignTo( winplus::Mixed * accountCateMixed, String const & fieldNames = "id,name,desc,type,url,icon,startup,keywords,time" )
     {
         winplus::StringArray fnames;
-        winplus::StrSplit( (LPCTSTR)fieldNames, ",", &fnames );
+        winplus::StrSplit( fieldNames, ",", &fnames );
         if ( !accountCateMixed->isCollection() ) accountCateMixed->createCollection();
         for ( auto it = fnames.begin(); it != fnames.end(); ++it )
         {
@@ -379,21 +370,29 @@ struct Account
     CString m_comment;
     int m_time;
 
-    Account & operator = ( Account const & other )
+    Account()
     {
-        if ( this != &other )
-        {
-            m_myName = other.m_myName;
-            m_accountName = other.m_accountName;
-            m_accountPwd = other.m_accountPwd;
-            m_cateId = other.m_cateId;
-            m_userId = other.m_userId;
-            m_safeRank = other.m_safeRank;
-            m_comment = other.m_comment;
-            m_time = other.m_time;
-        }
-        return *this;
+        m_cateId = 0;
+        m_userId = 0;
+        m_safeRank = 0;
+        m_time = 0;
     }
+
+    //Account & operator = ( Account const & other )
+    //{
+    //    if ( this != &other )
+    //    {
+    //        m_myName = other.m_myName;
+    //        m_accountName = other.m_accountName;
+    //        m_accountPwd = other.m_accountPwd;
+    //        m_cateId = other.m_cateId;
+    //        m_userId = other.m_userId;
+    //        m_safeRank = other.m_safeRank;
+    //        m_comment = other.m_comment;
+    //        m_time = other.m_time;
+    //    }
+    //    return *this;
+    //}
 
     Account & operator = ( winplus::Mixed const & accountMixed )
     {
@@ -438,18 +437,10 @@ struct Account
         return *this;
     }
 
-    Account()
-    {
-        m_cateId = 0;
-        m_userId = 0;
-        m_safeRank = 0;
-        m_time = 0;
-    }
-
-    void assignTo( winplus::Mixed * accountMixed, CString const & fieldNames = "myname,account_name,account_pwd,cate,user,safe_rank,comment,time" )
+    void assignTo( winplus::Mixed * accountMixed, String const & fieldNames = "myname,account_name,account_pwd,cate,user,safe_rank,comment,time" )
     {
         winplus::StringArray fnames;
-        winplus::StrSplit( (LPCTSTR)fieldNames, ",", &fnames );
+        winplus::StrSplit( fieldNames, ",", &fnames );
         if ( !accountMixed->isCollection() ) accountMixed->createCollection();
         for ( auto it = fnames.begin(); it != fnames.end(); ++it )
         {
@@ -523,8 +514,80 @@ int LoadTableNames( eiendb::Database & db, winplus::StringArray * tableNames, wi
 // 获取数据库的DDL,返回SQL语句条数
 int DumpDDL( eiendb::Database & db, winplus::String * ddl, winplus::String const & like = _T("am\\_%") );
 
+// 浏览器识别记录 --------------------------------------------------------------------------------
+struct Browser
+{
+    int m_id;
+    CString m_browserName;
+    CString m_browserTitle;
+    CString m_exeName;
+
+    Browser()
+    {
+        m_id = 0;
+    }
+
+    Browser & operator = ( Mixed const & browserMixed )
+    {
+        size_t n = browserMixed.getCount();
+        for ( size_t i = 0; i < n; ++i )
+        {
+            auto && pr = browserMixed.getPair(i);
+            winplus::String const & keyname = pr.first.refAnsi();
+            if ( keyname == "id" )
+            {
+                m_id = pr.second;
+            }
+            else if ( keyname == "name" )
+            {
+                m_browserName = pr.second.refAnsi().c_str();
+            }
+            else if ( keyname == "title" )
+            {
+                m_browserTitle = pr.second.refAnsi().c_str();
+            }
+            else if ( keyname == "exe_name" )
+            {
+                m_exeName = pr.second.refAnsi().c_str();
+            }
+        }
+        return *this;
+    }
+
+    void assignTo( winplus::Mixed * browserMixed, String const & fieldNames = "id,name,title,exe_name" )
+    {
+        winplus::StringArray fnames;
+        winplus::StrSplit( fieldNames, ",", &fnames );
+        if ( !browserMixed->isCollection() ) browserMixed->createCollection();
+        for ( auto && fname : fnames )
+        {
+            if ( fname == "id" )
+            {
+                (*browserMixed)[fname] = m_id;
+            }
+            else if ( fname == "name" )
+            {
+                (*browserMixed)[fname] = (LPCTSTR)m_browserName;
+            }
+            else if ( fname == "title" )
+            {
+                (*browserMixed)[fname] = (LPCTSTR)m_browserTitle;
+            }
+            else if ( fname == "exe_name" )
+            {
+                (*browserMixed)[fname] = (LPCTSTR)m_exeName;
+            }
+        }
+    }
+};
+
+typedef CArray< Browser, Browser const & > BrowserArray;
+
 // 判断ExeName是否为一个浏览器
 bool IsBrowserExeName( eiendb::Database & db, CString const & exeName, CString * browserTitle );
+
+// 加载可识别的浏览器记录
+int LoadBrowsers( eiendb::Database & db, BrowserArray * browsers );
 
 
 //////////////////////////////////////////////////////////////////////////

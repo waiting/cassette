@@ -228,8 +228,8 @@ BOOL AccountCatesDlg::OnInitDialog()
     CListCtrl & lst = *(CListCtrl *)GetDlgItem(IDC_LIST_CATES);
 
     // 设置ListView中ListCtrl的扩展风格
-    lst.SetExtendedStyle( LVS_EX_FULLROWSELECT );
-    
+    lst.SetExtendedStyle(LVS_EX_FULLROWSELECT);
+
     // 初始化列表头
     lst.InsertColumn( 0, _T("编号"), LVCFMT_LEFT, 48 );
     lst.InsertColumn( 1, _T("名称"), LVCFMT_LEFT, 96 );
@@ -238,7 +238,7 @@ BOOL AccountCatesDlg::OnInitDialog()
     lst.InsertColumn( 4, _T("启动"), LVCFMT_LEFT, 48 );
     lst.InsertColumn( 5, _T("关键字"), LVCFMT_LEFT, 120 );
 
-    UpdateList();
+    this->UpdateList();
 
     return TRUE;  // return TRUE unless you set the focus to a control
                   // EXCEPTION: OCX Property Pages should return FALSE
@@ -302,7 +302,7 @@ void AccountCatesDlg::OnCateModify()
             fi.psz = strId;
             int itemIndex = lst.FindItem(&fi);
             lst.SetItemState( itemIndex, LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED );
-            GetOwner()->PostMessage( WM_UPDATELIST_ALL, MainFrame::UpdateList_Main );
+            GetOwner()->PostMessage( WM_UPDATELIST_ALL, UPDATELIST_MAIN );
         }
     }
 }

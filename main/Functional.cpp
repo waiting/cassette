@@ -20,13 +20,7 @@ winplus::String ExplainCustomVars( winplus::String const & str )
     return mm.replace(str);
 }
 
-CString GetExecutablePath()
-{
-    return ( winplus::ModulePath() + winplus::DirSep ).c_str();
-}
-
-//Database//////////////////////////////////////////////////////////////////////////
-
+// Database -------------------------------------------------------------------------------
 bool RegisterUser( eiendb::Database & db, User const & newUser )
 {
     winplus::Buffer encPassword = winplus::EncryptContent( winplus::Buffer( (LPCTSTR)newUser.m_password, newUser.m_password.GetLength(), true ) );
@@ -358,7 +352,7 @@ int LoadAccountCates( eiendb::Database & db, AccountCateArray * cates )
     }
     catch ( winplus::Error const & e )
     {
-        AfxGetMainWnd()->FatalError( e.what(), _T("数据库错误") ); //*/
+        AfxGetMainWnd()->FatalError( e.what(), _T("数据库错误") );
     }
     return count;
 }
@@ -699,4 +693,27 @@ bool IsBrowserExeName( eiendb::Database & db, CString const & exeName, CString *
         AfxGetMainWnd()->FatalError( e.what(), _T("数据库错误") );
     }
     return ret;
+}
+
+int LoadBrowsers( eiendb::Database & db, BrowserArray * browsers )
+{
+    int count = 0;
+    IF_PTR(browsers)->RemoveAll();
+    try
+    {
+        auto rs = db->query("SELECT * FROM am_browsers ORDER BY id;");
+        Mixed fields;
+        while ( rs->fetchRow(&fields) )
+        {
+            Browser browser;
+            browser = fields;
+            IF_PTR(browsers)->Add(browser);
+            count++;
+        }
+    }
+    catch ( winux::Error const & e )
+    {
+        AfxGetMainWnd()->FatalError( e.what(), _T("数据库错误") );
+    }
+    return count;
 }

@@ -54,7 +54,7 @@ END_MESSAGE_MAP()
 /////////////////////////////////////////////////////////////////////////////
 // AccountCateEditingDlg message handlers
 
-BOOL AccountCateEditingDlg::OnInitDialog() 
+BOOL AccountCateEditingDlg::OnInitDialog()
 {
     Dialog::OnInitDialog();
 
@@ -126,7 +126,6 @@ void AccountCateEditingDlg::OnOK()
     }
     EndDialog(IDOK);
 }
-
 
 void AccountCateEditingDlg::OnShowWindow( BOOL bShow, UINT nStatus )
 {

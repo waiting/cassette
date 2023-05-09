@@ -32,8 +32,10 @@
 #define IDR_PNG_ACCOUNT_COMPREHENSIVE_WND 160
 #define IDR_PNG_ALIPAY                  161
 #define IDR_PNG_WEPAY                   162
-#define IDR_HTML_ABOUT2                 164
 #define IDR_PNG_LOCK                    163
+#define IDR_HTML_ABOUT2                 164
+#define IDD_BROWSERS                    166
+#define IDM_OPERATE_BROWSERS            169
 #define IDR_KEY_DB                      200
 #define IDC_REGISTERED_HOTKEY           998
 #define IDC_SYSLINK_WEBSITE             1000
@@ -73,6 +75,9 @@
 #define IDC_EDIT_ACCOUNTPWD             1033
 #define IDC_COMBO_CATES                 1034
 #define IDC_EDIT_ICOPATH                1035
+#define IDC_LIST_BROWSERS               1036
+#define IDC_SYSLINK1                    1039
+#define IDC_SYSLINK_THIS_WEBSITE        1039
 #define ID_ADD_ACCOUNT                  32772
 #define ID_MODIFY_ACCOUNT               32773
 #define ID_DEL_ACCOUNT                  32774
@@ -96,7 +101,11 @@
 #define ID_MAINWND_SHOWHIDE             32793
 #define ID_MAIN                         32806
 #define ID_APP_HELP                     32807
-#define ID_32808                        32808
+#define ID_Menu                         32809
+#define ID_BROWSERS                     32810
+#define ID_BROWSER_ADD                  32812
+#define ID_BROWSER_MODIFY               32813
+#define ID_BROWSER_DELETE               32814
 #define IDS_SHAREDMEM_NAME              61204
 
 // Next default values for new objects
@@ -104,9 +113,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        166
-#define _APS_NEXT_COMMAND_VALUE         32809
-#define _APS_NEXT_CONTROL_VALUE         1038
+#define _APS_NEXT_RESOURCE_VALUE        171
+#define _APS_NEXT_COMMAND_VALUE         32815
+#define _APS_NEXT_CONTROL_VALUE         1040
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
