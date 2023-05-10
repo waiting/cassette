@@ -12,7 +12,7 @@ public:
 // 对话框数据
     enum { IDD = IDD_BROWSERS };
 
-
+    // 更新列表
     virtual void UpdateList( int flag = UPDATE_LOAD_DATA | UPDATE_LIST_ITEMS, long itemIndex = -1 ) override;
 
 protected:
@@ -22,8 +22,9 @@ protected:
     BrowserArray m_browsers;
 
     DECLARE_MESSAGE_MAP()
-
+    friend class MainFrame;
 public:
     afx_msg void OnListRClick( NMHDR *pNMHDR, LRESULT *pResult );
     afx_msg void OnBrowserAdd();
+    afx_msg void OnListActivated( NMHDR *pNMHDR, LRESULT *pResult );
 };

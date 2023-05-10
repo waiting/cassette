@@ -9,7 +9,6 @@
 #include "AppSettingsDlg.h"
 #include "AccountEditingDlg.h"
 #include "AccountComprehensiveWnd.h"
-#include "BrowsersDlg.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -123,8 +122,8 @@ void MainFrame::DoIntelligentHotkey()
     exePath = winplus::GetAppPathByHwnd(*pCurWnd);
     winplus::FilePath( exePath, &exeName );
     winplus::StrMakeLower(&exeName);
-    CString browserTitle;
-    bool isBrowser = IsBrowserExeName( g_theApp.GetDatabase(), exeName.c_str(), &browserTitle );
+    String browserTitle;
+    bool isBrowser = IsBrowserExeName( g_theApp.GetDatabase(), exeName, &browserTitle );
     winplus::String curWndTitle = winplus::Window_GetText( pCurWnd->GetSafeHwnd() ); // 当前窗口标题
     
     AccountCate newCate;
@@ -287,6 +286,7 @@ BEGIN_MESSAGE_MAP(MainFrame, CFrameWnd)
     ON_UPDATE_COMMAND_UI(ID_MAINWND_SHOWHIDE, OnUpdateMainWndShowHide)
     ON_UPDATE_COMMAND_UI(ID_ACCOUNT_CATES, OnUpdateAccountCates)
     ON_UPDATE_COMMAND_UI(ID_ACCOUNT_TYPES, OnUpdateAccountTypes)
+    ON_UPDATE_COMMAND_UI(ID_BROWSERS, OnUpdateBrowsers)
     //}}AFX_MSG_MAP
     ON_MESSAGE( WM_HOTKEY, OnHotkey )
     ON_UPDATE_COMMAND_UI_RANGE(ID_MODIFY_ACCOUNT, ID_DEL_ACCOUNT, OnUpdateOperateAccount)
@@ -379,6 +379,8 @@ int MainFrame::OnCreate( LPCREATESTRUCT lpCreateStruct )
     m_catesDlg.UpdateWindow();
     m_typesDlg.Create(this);
     m_typesDlg.UpdateWindow();
+    m_browsersDlg.Create(this);
+    m_browsersDlg.UpdateWindow();
 
     // 创建托盘通知
     //static HICON hTrayIcon;
@@ -644,6 +646,11 @@ void MainFrame::OnUpdateAccountTypes( CCmdUI * pCmdUI )
     pCmdUI->SetCheck( winplus::Window_IsShow( m_typesDlg.GetSafeHwnd() ) );
 }
 
+void MainFrame::OnUpdateBrowsers( CCmdUI * pCmdUI )
+{
+    pCmdUI->SetCheck( winplus::Window_IsShow( m_browsersDlg.GetSafeHwnd() ) );
+}
+
 void MainFrame::OnAccountCates()
 {
     if ( winplus::Window_IsShow( m_catesDlg.GetSafeHwnd() ) )
@@ -678,13 +685,17 @@ void MainFrame::OnAccountTypes()
 
 void MainFrame::OnBrowsers()
 {
-    BrowsersDlg browsersDlg(this);
-    switch ( browsersDlg.DoModal() )
+    if ( winplus::Window_IsShow( m_browsersDlg.GetSafeHwnd() ) )
     {
-    case IDOK:
-        break;
-    default:
-        break;
+        m_browsersDlg.ShowWindow(SW_HIDE);
+    }
+    else
+    {
+        CRect rcView, rcBrowsersDlg;
+        m_pAccountsView->GetWindowRect(&rcView);
+        m_browsersDlg.GetWindowRect(&rcBrowsersDlg);
+        m_browsersDlg.SetWindowPos( NULL, rcView.left + ( rcView.Width() - rcBrowsersDlg.Width() ) / 2, rcView.top + ( rcView.Height() - rcBrowsersDlg.Height() ) / 2, 0, 0, SWP_NOSIZE | SWP_NOZORDER );
+        m_browsersDlg.ShowWindow(SW_NORMAL);
     }
 }
 
@@ -806,3 +817,4 @@ LRESULT MainFrame::OnTrayNotification( WPARAM wParam, LPARAM lParam )
     }
     return 0;
 }
+

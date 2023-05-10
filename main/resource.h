@@ -80,7 +80,9 @@
 #define IDC_LIST_BROWSERS               1036
 #define IDC_SYSLINK1                    1039
 #define IDC_SYSLINK_THIS_WEBSITE        1039
-#define IDC_EDIT1                       1040
+#define IDC_EDIT_BROWSERNAME            1040
+#define IDC_EDIT_BROWSERTITLE           1041
+#define IDC_EDIT_BROWSEREXE             1042
 #define ID_ADD_ACCOUNT                  32772
 #define ID_MODIFY_ACCOUNT               32773
 #define ID_DEL_ACCOUNT                  32774

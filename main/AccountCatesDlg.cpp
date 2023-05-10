@@ -247,10 +247,8 @@ void AccountCatesDlg::OnListActivated( NMHDR* pNMHDR, LRESULT* pResult )
 {
     CListCtrl & lst = *(CListCtrl *)GetDlgItem(IDC_LIST_CATES);
     int index = lst.GetNextItem( -1, LVNI_ALL | LVNI_SELECTED );
-    if ( index == -1 )
-    {
-        return;
-    }
+    if ( index == -1 ) return;
+
     // Ä£Äâµã»÷²Ëµ¥ÃüÁî
     PostMessage( WM_COMMAND, MAKEWPARAM( ID_CATE_MODIFY, 0 ), 0 );
 
@@ -281,6 +279,7 @@ void AccountCatesDlg::OnCateModify()
 
     CListCtrl & lst = *(CListCtrl *)GetDlgItem(IDC_LIST_CATES);
     int index = lst.GetNextItem( -1, LVNI_ALL | LVNI_SELECTED );
+
     winplus::Mixed newCate;
     int id = m_cates[index].m_id;
     m_cates[index].assignTo(&newCate);

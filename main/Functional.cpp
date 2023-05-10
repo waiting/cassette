@@ -676,16 +676,16 @@ int DumpDDL( eiendb::Database & db, winplus::String * ddl, winplus::String const
     return count;
 }
 
-bool IsBrowserExeName( eiendb::Database & db, CString const & exeName, CString * browserTitle )
+bool IsBrowserExeName( eiendb::Database & db, String const & exeName, String * browserTitle )
 {
     bool ret = false;
     try
     {
-        auto resIsBrowser = db->query( db->buildStmt( "SELECT title FROM am_browsers WHERE exe_name = ?;", (LPCTSTR)exeName ) );
+        auto resIsBrowser = db->query( db->buildStmt( "SELECT title FROM am_browsers WHERE exe_name = ?;", exeName ) );
         winplus::MixedArray f;
         if ( resIsBrowser->fetchRow(&f) )
         {
-            ASSIGN_PTR(browserTitle) = f[0].toAnsi().c_str();
+            ASSIGN_PTR(browserTitle) = f[0].toAnsi();
             ret = true;
         }
     }

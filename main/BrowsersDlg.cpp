@@ -95,15 +95,14 @@ BOOL BrowsersDlg::OnInitDialog()
                   // 异常: OCX 属性页应返回 FALSE
 }
 
-
 BEGIN_MESSAGE_MAP(BrowsersDlg, Dialog)
-    ON_NOTIFY( NM_RCLICK, IDC_LIST_BROWSERS, &BrowsersDlg::OnListRClick )
-    ON_COMMAND( ID_BROWSER_ADD, &BrowsersDlg::OnBrowserAdd )
+    ON_NOTIFY( NM_DBLCLK, IDC_LIST_BROWSERS, OnListActivated )
+    ON_NOTIFY( NM_RETURN, IDC_LIST_BROWSERS, OnListActivated )
+    ON_NOTIFY( NM_RCLICK, IDC_LIST_BROWSERS, OnListRClick )
+    ON_COMMAND( ID_BROWSER_ADD, OnBrowserAdd )
 END_MESSAGE_MAP()
 
-
 // BrowsersDlg 消息处理程序
-
 
 void BrowsersDlg::OnListRClick( NMHDR *pNMHDR, LRESULT *pResult )
 {
@@ -115,7 +114,6 @@ void BrowsersDlg::OnListRClick( NMHDR *pNMHDR, LRESULT *pResult )
     GetCursorPos(&pt);
     menu.GetSubMenu(0)->TrackPopupMenu( 0, pt.x, pt.y, this );
 
-    // TODO: 在此添加控件通知处理程序代码
     *pResult = 0;
 }
 
@@ -123,4 +121,15 @@ void BrowsersDlg::OnBrowserAdd()
 {
     BrowserEditingDlg editingDlg(this);
     editingDlg.DoModal();
+}
+
+
+void BrowsersDlg::OnListActivated( NMHDR *pNMHDR, LRESULT *pResult )
+{
+    LPNMITEMACTIVATE pNMItemActivate = reinterpret_cast<LPNMITEMACTIVATE>( pNMHDR );
+    if ( pNMItemActivate->iItem == -1 ) goto RETURN;
+    cout << pNMItemActivate->iItem << endl;
+
+RETURN:
+    *pResult = 0;
 }

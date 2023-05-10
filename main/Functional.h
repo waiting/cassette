@@ -582,7 +582,7 @@ struct Browser
 typedef CArray< Browser, Browser const & > BrowserArray;
 
 // 判断ExeName是否为一个浏览器
-bool IsBrowserExeName( eiendb::Database & db, CString const & exeName, CString * browserTitle );
+bool IsBrowserExeName( eiendb::Database & db, String const & exeName, String * browserTitle );
 
 // 加载可识别的浏览器记录
 int LoadBrowsers( eiendb::Database & db, BrowserArray * browsers );

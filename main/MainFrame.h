@@ -11,6 +11,7 @@
 
 #include "AccountCatesDlg.h"
 #include "AccountTypesDlg.h"
+#include "BrowsersDlg.h"
 
 // 更新所有列表，wParam指示要更新的列表
 #define WM_UPDATELIST_ALL ( WM_USER + 1 )
@@ -40,11 +41,11 @@ public:
     void UpdateTitle();
     /*
         注册热键的功能
-            当settings为开启热键时:
-                传递的hotkey不为0时,清空先前注册的热键,然后注册hotkey指定的热键
-                传递的hotkey为0时,清空先前注册的热键
-            当settings为关闭热键时:
-                清空先前注册的热键, hotkey忽略
+        当settings为开启热键时:
+            传递的hotkey不为0时,清空先前注册的热键,然后注册hotkey指定的热键
+            传递的hotkey为0时,清空先前注册的热键
+        当settings为关闭热键时:
+            清空先前注册的热键, hotkey忽略
      */
     void RefreshHotkey( int hotkey );
 
@@ -75,7 +76,7 @@ protected:
     class AccountsView * m_pAccountsView;
     AccountCatesDlg m_catesDlg;
     AccountTypesDlg m_typesDlg;
-    //BrowsersDlg m_browsersDlg;
+    BrowsersDlg m_browsersDlg;
     winplus::Notification m_noti;
 
     BOOL m_TestFlag;
@@ -101,6 +102,7 @@ protected:
     afx_msg void OnDelAccount();
     afx_msg void OnUpdateAccountCates(CCmdUI* pCmdUI);
     afx_msg void OnUpdateAccountTypes(CCmdUI* pCmdUI);
+    afx_msg void OnUpdateBrowsers(CCmdUI *pCmdUI);
     afx_msg void OnAccountCates();
     afx_msg void OnAccountTypes();
     afx_msg void OnBrowsers();
