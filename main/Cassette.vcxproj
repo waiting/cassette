@@ -178,6 +178,7 @@
     <ClCompile Include="AccountTypeEditingDlg.cpp" />
     <ClCompile Include="AccountTypesDlg.cpp" />
     <ClCompile Include="AppSettingsDlg.cpp" />
+    <ClCompile Include="BrowserEditingDlg.cpp" />
     <ClCompile Include="BrowsersDlg.cpp" />
     <ClCompile Include="Cassette.cpp" />
     <ClCompile Include="CassetteApp.cpp" />
@@ -203,6 +204,7 @@
     <ClInclude Include="AccountTypeEditingDlg.h" />
     <ClInclude Include="AccountTypesDlg.h" />
     <ClInclude Include="AppSettingsDlg.h" />
+    <ClInclude Include="BrowserEditingDlg.h" />
     <ClInclude Include="BrowsersDlg.h" />
     <ClInclude Include="Cassette.h" />
     <ClInclude Include="CassetteApp.h" />

@@ -93,7 +93,6 @@ void AccountCatesDlg::UpdateList( int flag, long itemIndex )
             lst.SetItem( itemIndex, 5, LVIF_TEXT, m_cates[itemIndex].m_keywords, 0, 0, 0, 0 );
         }
     }
-
 }
 
 void AccountCatesDlg::DoAdd( CWnd * parent, winplus::Mixed * cate )
@@ -127,7 +126,7 @@ void AccountCatesDlg::DoAdd( CWnd * parent, winplus::Mixed * cate )
 }
 
 // 搜索关键字，输出匹配的关键字，返回个数
-size_t SearchKeywords( CString const & text, winplus::StringArray * pArrKeywords )
+size_t __SearchKeywords( CString const & text, winplus::StringArray * pArrKeywords )
 {
     if ( pArrKeywords->size() < 1 ) return 0;
     winplus::StringArray matchedKeywords;
@@ -188,7 +187,7 @@ int AccountCatesDlg::GetCateIndexMatchWndTitle( CString const & wndTitle, bool i
     for ( j = 0; j < checkCateIndexs.size(); )
     {
         winplus::StringArray & keywords = keywordsArr[checkCateIndexs[j]];
-        if ( SearchKeywords( wndTitle, &keywords ) == 0 )
+        if ( __SearchKeywords( wndTitle, &keywords ) == 0 )
         {
             checkCateIndexs.erase( checkCateIndexs.begin() + j );
             continue;

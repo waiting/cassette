@@ -84,6 +84,9 @@
     <ClCompile Include="BrowsersDlg.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="BrowserEditingDlg.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AboutView.h">
@@ -156,6 +159,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="BrowsersDlg.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="BrowserEditingDlg.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

@@ -61,6 +61,7 @@ BOOL AccountCateEditingDlg::OnInitDialog()
     m_ToolTips.SetTipTextColor( RGB( 255, 96, 0 ) ); // 设置提示文本颜色
     // 设置标题
     SetWindowText( m_isAdd ? _T("添加账户种类...") : _T("修改账户种类...") );
+    // 加载类型
     int i, n;
     AccountTypeArray types;
     n = LoadAccountTypes( g_theApp.GetDatabase(), &types );
@@ -69,7 +70,7 @@ BOOL AccountCateEditingDlg::OnInitDialog()
     {
         pCboTypes->AddString(types[i].m_typeName);
     }
-
+    // 加载启动类型
     CComboBox * pCboStartups = (CComboBox *)GetDlgItem(IDC_COMBO_STARTUP);
     CString startups[] = { _T("网站"), _T("软件"), _T("其他") };
     ComboBoxLoadDataFromCArray( pCboStartups, startups );
@@ -116,12 +117,12 @@ void AccountCateEditingDlg::OnOK()
     UpdateData(TRUE);
     if ( (*m_cate)["name"].refAnsi().empty() )
     {
-        WarningError( _T("名称不能为空"), _T("错误") );
+        WarnBox( _T("名称不能为空"), _T("错误") );
         return;
     }
     if ( (*m_cate)["keywords"].refAnsi().empty() )
     {
-        WarningError( _T("关键字不能为空"), _T("错误") );
+        WarnBox( _T("关键字不能为空"), _T("错误") );
         return;
     }
     EndDialog(IDOK);

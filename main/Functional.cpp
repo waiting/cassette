@@ -388,9 +388,10 @@ bool GetAccountCate( eiendb::Database & db, int id, AccountCate * cate )
 int AddAccountCate( eiendb::Database & db, winplus::Mixed const & newCate )
 {
     winplus::Mixed newAccountCate = newCate;
+    newAccountCate.del("id");
     newAccountCate.addPair()
         ( "time", (int)winplus::GetUtcTime() )
-        ;
+    ;
 
     try
     {
@@ -690,7 +691,7 @@ bool IsBrowserExeName( eiendb::Database & db, CString const & exeName, CString *
     }
     catch ( winplus::Error const & e )
     {
-        AfxGetMainWnd()->FatalError( e.what(), _T("数据库错误") );
+        ErrBox( e.what(), _T("数据库错误"), *AfxGetMainWnd() );
     }
     return ret;
 }
@@ -713,7 +714,80 @@ int LoadBrowsers( eiendb::Database & db, BrowserArray * browsers )
     }
     catch ( winux::Error const & e )
     {
-        AfxGetMainWnd()->FatalError( e.what(), _T("数据库错误") );
+        ErrBox( e.what(), _T("数据库错误"), *AfxGetMainWnd() );
     }
     return count;
+}
+
+bool GetBrowser( eiendb::Database & db, int id, Browser * browser )
+{
+    bool ret = false;
+    try
+    {
+        auto res = db->query( db->buildStmt( "SELECT * FROM am_browsers WHERE id = ?;", id ) );
+        Mixed f;
+        if ( res->fetchRow(&f) )
+        {
+            ASSIGN_PTR(browser) = f;
+
+            ret = true;
+        }
+    }
+    catch ( winplus::Error const & e )
+    {
+        ErrBox( e.what(), _T("数据库错误"), *AfxGetMainWnd() );
+    }
+    return ret;
+}
+
+int AddBrowser( eiendb::Database & db, winplus::Mixed const & newBrowser )
+{
+    winplus::Mixed browserMixed = newBrowser;
+    browserMixed.del("id");
+    try
+    {
+        auto mdf = db.mdf("am_browsers");
+        if ( mdf->addNew(browserMixed) )
+        {
+            return (int)db->insertId();
+        }
+        else
+        {
+            ErrBox( browserMixed.myJson(), db->error(), *AfxGetMainWnd() );
+            return 0;
+        }
+    }
+    catch ( winplus::Error const & e )
+    {
+        ErrBox( e.what(), _T("数据库错误"), *AfxGetMainWnd() );
+    }
+    return 0;
+}
+
+bool ModifyBrowser( eiendb::Database & db, int id, winplus::Mixed const & modifiedFields )
+{
+    try
+    {
+        auto mdf = db.mdf("am_browsers");
+        return mdf->modify( modifiedFields, id );
+    }
+    catch ( winplus::Error const & e )
+    {
+        ErrBox( e.what(), _T("数据库错误"), *AfxGetMainWnd() );
+    }
+    return false;
+}
+
+bool DeleteBrowser( eiendb::Database & db, int id )
+{
+    try
+    {
+        auto mdf = db.mdf("am_browsers");
+        return mdf->deleteOne(id);
+    }
+    catch ( winplus::Error const & e )
+    {
+        ErrBox( e.what(), _T("数据库错误"), *AfxGetMainWnd() );
+    }
+    return false;
 }

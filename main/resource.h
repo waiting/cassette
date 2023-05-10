@@ -36,6 +36,8 @@
 #define IDR_HTML_ABOUT2                 164
 #define IDD_BROWSERS                    166
 #define IDM_OPERATE_BROWSERS            169
+#define IDD_DIALOG1                     171
+#define IDD_BROWSER_EDITING             171
 #define IDR_KEY_DB                      200
 #define IDC_REGISTERED_HOTKEY           998
 #define IDC_SYSLINK_WEBSITE             1000
@@ -78,6 +80,7 @@
 #define IDC_LIST_BROWSERS               1036
 #define IDC_SYSLINK1                    1039
 #define IDC_SYSLINK_THIS_WEBSITE        1039
+#define IDC_EDIT1                       1040
 #define ID_ADD_ACCOUNT                  32772
 #define ID_MODIFY_ACCOUNT               32773
 #define ID_DEL_ACCOUNT                  32774
@@ -113,9 +116,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        171
+#define _APS_NEXT_RESOURCE_VALUE        173
 #define _APS_NEXT_COMMAND_VALUE         32815
-#define _APS_NEXT_CONTROL_VALUE         1040
+#define _APS_NEXT_CONTROL_VALUE         1041
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

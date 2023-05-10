@@ -341,12 +341,10 @@ int LoadAccountCates( eiendb::Database & db, AccountCateArray * cates );
 // 载入一条账户种类信息
 bool GetAccountCate( eiendb::Database & db, int id, AccountCate * cate );
 
-// 添加账户种类信息，成功返回ID，失败返回0
-// newCate忽略m_id,m_timeWriten
+// 添加账户种类信息，成功返回ID，失败返回0。 newCate忽略id,time
 int AddAccountCate( eiendb::Database & db, winplus::Mixed const & newCate );
 
-// 修改账户种类信息
-// id,name,desc,type,url,icon,startup,keywords,time
+// 修改账户种类信息 id,name,desc,type,url,icon,startup,keywords,time
 bool ModifyAccountCate( eiendb::Database & db, int id, winplus::Mixed const & newCateFields );
 
 // 删除账户种类信息
@@ -589,6 +587,17 @@ bool IsBrowserExeName( eiendb::Database & db, CString const & exeName, CString *
 // 加载可识别的浏览器记录
 int LoadBrowsers( eiendb::Database & db, BrowserArray * browsers );
 
+// 载入一条浏览器识别记录
+bool GetBrowser( eiendb::Database & db, int id, Browser * browser );
+
+// 添加浏览器识别记录，成功返回ID，失败返回0。 忽略id
+int AddBrowser( eiendb::Database & db, winplus::Mixed const & newBrowser );
+
+// 修改浏览器识别记录
+bool ModifyBrowser( eiendb::Database & db, int id, winplus::Mixed const & modifiedFields );
+
+// 删除浏览器识别记录
+bool DeleteBrowser( eiendb::Database & db, int id );
 
 //////////////////////////////////////////////////////////////////////////
 // 接口
