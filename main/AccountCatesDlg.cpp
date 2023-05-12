@@ -104,14 +104,12 @@ void AccountCatesDlg::DoAdd( CWnd * parent, winplus::Mixed * cate )
     SetNullScopeOut setNullScopeOut( onceEditingDlg = &editingDlg );
     if ( IDOK == editingDlg.DoModal() )
     {
-        int id;
-        id = AddAccountCate( g_theApp.GetDatabase(), *cate );
+        int id = AddAccountCate( g_theApp.GetDatabase(), *cate );
         if ( id != 0 )
         {
             CListCtrl & lst = *(CListCtrl *)GetDlgItem(IDC_LIST_CATES);
             // 向list加入一项
-            int itemIndex;
-            itemIndex = lst.GetItemCount();
+            int itemIndex = lst.GetItemCount();
             lst.InsertItem( itemIndex, winplus::Format( _T("%d"), id ).c_str() );
 
             // 向数组添加一项
@@ -269,7 +267,6 @@ void AccountCatesDlg::OnListRClick( NMHDR* pNMHDR, LRESULT* pResult )
 void AccountCatesDlg::OnCateAdd()
 {
     winplus::Mixed cate;
-    cate.createCollection();
     DoAdd( GetOwner(), &cate );
 }
 
@@ -280,17 +277,17 @@ void AccountCatesDlg::OnCateModify()
     CListCtrl & lst = *(CListCtrl *)GetDlgItem(IDC_LIST_CATES);
     int index = lst.GetNextItem( -1, LVNI_ALL | LVNI_SELECTED );
 
-    winplus::Mixed newCate;
+    winplus::Mixed curCate;
     int id = m_cates[index].m_id;
-    m_cates[index].assignTo(&newCate);
+    m_cates[index].assignTo(&curCate);
 
-    AccountCateEditingDlg editingDlg( GetOwner(), false, &newCate );
+    AccountCateEditingDlg editingDlg( GetOwner(), false, &curCate );
     SetNullScopeOut setNullScopeOut( onceEditingDlg = &editingDlg );
     if ( IDOK == editingDlg.DoModal() )
     {
-        if ( ModifyAccountCate( g_theApp.GetDatabase(), id, newCate ) )
+        if ( ModifyAccountCate( g_theApp.GetDatabase(), id, curCate ) )
         {
-            m_cates[index] = newCate;
+            m_cates[index] = curCate;
 
             UpdateList( UPDATE_LIST_ITEMS, index );
             CString strId;

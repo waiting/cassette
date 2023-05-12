@@ -21,10 +21,13 @@ protected:
 
     BrowserArray m_browsers;
 
-    DECLARE_MESSAGE_MAP()
-    friend class MainFrame;
-public:
+    afx_msg void OnListActivated( NMHDR *pNMHDR, LRESULT *pResult );
     afx_msg void OnListRClick( NMHDR *pNMHDR, LRESULT *pResult );
     afx_msg void OnBrowserAdd();
-    afx_msg void OnListActivated( NMHDR *pNMHDR, LRESULT *pResult );
+    afx_msg void OnBrowserModify();
+    afx_msg void OnBrowserDelete();
+    afx_msg void OnUpdateBrowserMenu( CCmdUI * pCmdUI );
+
+    DECLARE_MESSAGE_MAP()
+    friend class MainFrame;
 };

@@ -100,9 +100,24 @@ BEGIN_MESSAGE_MAP(BrowsersDlg, Dialog)
     ON_NOTIFY( NM_RETURN, IDC_LIST_BROWSERS, OnListActivated )
     ON_NOTIFY( NM_RCLICK, IDC_LIST_BROWSERS, OnListRClick )
     ON_COMMAND( ID_BROWSER_ADD, OnBrowserAdd )
+    ON_COMMAND( ID_BROWSER_MODIFY, OnBrowserModify )
+    ON_COMMAND( ID_BROWSER_DELETE, OnBrowserDelete )
+    ON_UPDATE_COMMAND_UI_RANGE( ID_BROWSER_MODIFY, ID_BROWSER_DELETE, OnUpdateBrowserMenu )
 END_MESSAGE_MAP()
 
 // BrowsersDlg 消息处理程序
+
+void BrowsersDlg::OnListActivated( NMHDR *pNMHDR, LRESULT *pResult )
+{
+    LPNMITEMACTIVATE pNMItemActivate = reinterpret_cast<LPNMITEMACTIVATE>( pNMHDR );
+    if ( pNMItemActivate->iItem == -1 ) goto RETURN;
+
+    // 模拟点击菜单命令
+    PostMessage( WM_COMMAND, MAKEWPARAM( ID_BROWSER_MODIFY, 0 ), 0 );
+
+RETURN:
+    *pResult = 0;
+}
 
 void BrowsersDlg::OnListRClick( NMHDR *pNMHDR, LRESULT *pResult )
 {
@@ -119,17 +134,86 @@ void BrowsersDlg::OnListRClick( NMHDR *pNMHDR, LRESULT *pResult )
 
 void BrowsersDlg::OnBrowserAdd()
 {
-    BrowserEditingDlg editingDlg(this);
-    editingDlg.DoModal();
+    VERIFY_ONCE_DIALOG(onceEditingDlg);
+
+    Mixed browserFields;
+    BrowserEditingDlg editingDlg( GetOwner(), true, &browserFields );
+    SetNullScopeOut setNullScopeOut( onceEditingDlg = &editingDlg );
+    if ( IDOK == editingDlg.DoModal() )
+    {
+        int id = AddBrowser( g_theApp.GetDatabase(), browserFields );
+        if ( id != 0 )
+        {
+            CListCtrl & lst = *(CListCtrl *)GetDlgItem(IDC_LIST_BROWSERS);
+            // 向list加入一项
+            int itemIndex = lst.GetItemCount();
+            lst.InsertItem( itemIndex, winplus::Format( _T("%d"), id ).c_str() );
+
+            // 向数组添加一项
+            Browser tmp;
+            tmp.m_id = id;
+            m_browsers.Add(tmp);
+
+            UpdateList( UPDATE_LOAD_DATA | UPDATE_LIST_ITEMS, itemIndex );
+            lst.SetItemState( itemIndex, LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED );
+        }
+    }
 }
 
-
-void BrowsersDlg::OnListActivated( NMHDR *pNMHDR, LRESULT *pResult )
+void BrowsersDlg::OnBrowserModify()
 {
-    LPNMITEMACTIVATE pNMItemActivate = reinterpret_cast<LPNMITEMACTIVATE>( pNMHDR );
-    if ( pNMItemActivate->iItem == -1 ) goto RETURN;
-    cout << pNMItemActivate->iItem << endl;
+    VERIFY_ONCE_DIALOG(onceEditingDlg);
 
-RETURN:
-    *pResult = 0;
+    CListCtrl & lst = *(CListCtrl *)GetDlgItem(IDC_LIST_BROWSERS);
+    int index = lst.GetNextItem( -1, LVNI_ALL | LVNI_SELECTED );
+
+    Mixed browserFields;
+    int id = m_browsers[index].m_id;
+    m_browsers[index].assignTo(&browserFields);
+
+    BrowserEditingDlg editingDlg( GetOwner(), false, &browserFields );
+    SetNullScopeOut setNullScopeOut( onceEditingDlg = &editingDlg );
+    if ( IDOK == editingDlg.DoModal() )
+    {
+        if ( ModifyBrowser( g_theApp.GetDatabase(), id, browserFields ) )
+        {
+            m_browsers[index] = browserFields;
+
+            UpdateList( UPDATE_LIST_ITEMS, index );
+            CString strId;
+            strId.Format( _T("%d"), id );
+            LVFINDINFO fi;
+            fi.flags = LVFI_PARTIAL | LVFI_STRING;
+            fi.psz = strId;
+            int itemIndex = lst.FindItem(&fi);
+            lst.SetItemState( itemIndex, LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED );
+        }
+    }
+}
+
+void BrowsersDlg::OnBrowserDelete()
+{
+    if ( IDYES == GetOwner()->MessageBox( _T("此操作不可恢复，确定要删除？"), _T("确认"), MB_YESNO ) )
+    {
+        CListCtrl & lst = *(CListCtrl *)GetDlgItem(IDC_LIST_BROWSERS);
+        int index = lst.GetNextItem( -1, LVNI_ALL | LVNI_SELECTED );
+        CString strId;
+        strId = lst.GetItemText( index, 0 );
+        if ( DeleteBrowser( g_theApp.GetDatabase(), winplus::Mixed( (LPCTSTR)strId ) ) )
+        {
+            lst.DeleteItem(index);
+
+            m_browsers.RemoveAt(index);
+
+            index = index < lst.GetItemCount() ? index : lst.GetItemCount() - 1;
+            lst.SetItemState( index, LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED );
+        }
+    }
+}
+
+void BrowsersDlg::OnUpdateBrowserMenu( CCmdUI * pCmdUI )
+{
+    CListCtrl & lst = *(CListCtrl *)GetDlgItem(IDC_LIST_BROWSERS);
+    int index = lst.GetNextItem( -1, LVNI_ALL | LVNI_SELECTED );
+    pCmdUI->Enable( index != -1 );
 }
