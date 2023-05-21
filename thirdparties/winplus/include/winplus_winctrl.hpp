@@ -78,6 +78,8 @@ WINPLUS_FUNC_DECL(void) Window_SetRect( HWND hWnd, LPCRECT lpRect, bool isRedraw
 WINPLUS_FUNC_DECL(void) Window_Inflate( HWND hWnd, int dx, int dy );
 /** \brief 以相对窗口为准居中窗口 */
 WINPLUS_FUNC_DECL(void) Window_Center( HWND hWnd, HWND hwndRelative, bool isInRelative = false, bool isRedraw = true, bool isActivate = true );
+/** \brief 计算窗口居中是否显示完全 */
+WINPLUS_FUNC_DECL(bool) Window_CalcCenter( HWND hWnd, HWND hwndRelative, bool isInRelative, RECT* rectWnd, RECT* rectRelative, POINT* ptOffset );
 /** \brief 获取窗口文本 */
 WINPLUS_FUNC_DECL(String) Window_GetText( HWND hWnd );
 /** \brief 设置窗口文本 */

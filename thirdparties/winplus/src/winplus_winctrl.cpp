@@ -209,10 +209,50 @@ WINPLUS_FUNC_IMPL(void) Window_Center( HWND hWnd, HWND hwndRelative, bool isInRe
     GetWindowRect( hWnd, &rc );
     LONG nWidth = rc.right - rc.left;
     LONG nHeight = rc.bottom - rc.top;
-    INT left, top;
+    LONG left, top;
     left = offsetLeft + ( cx - nWidth ) / 2;
     top = offsetTop + ( cy - nHeight ) / 2;
     SetWindowPos( hWnd, NULL, left, top, 0, 0, SWP_NOSIZE | SWP_NOZORDER | ( isRedraw ? 0 : SWP_NOREDRAW ) | ( isActivate ? 0 : SWP_NOACTIVATE ) );
+}
+
+WINPLUS_FUNC_IMPL(bool) Window_CalcCenter( HWND hWnd, HWND hwndRelative, bool isInRelative, RECT* rectWnd, RECT* rectRelative, POINT* ptOffset )
+{
+    INT cx, cy;
+    if ( hwndRelative && IsWindow(hwndRelative) )
+    {
+        if ( isInRelative )
+        {
+            GetClientRect( hwndRelative, rectRelative );
+            cx = rectRelative->right - rectRelative->left;
+            cy = rectRelative->bottom - rectRelative->top;
+            ptOffset->x = 0;
+            ptOffset->y = 0;
+        }
+        else
+        {
+            GetClientRect( hwndRelative, rectRelative );
+            cx = rectRelative->right - rectRelative->left;
+            cy = rectRelative->bottom - rectRelative->top;
+            ptOffset->x = rectRelative->left;
+            ptOffset->y = rectRelative->top;
+        }
+    }
+    else // use screen coord
+    {
+        cx = GetSystemMetrics(SM_CXSCREEN);
+        cy = GetSystemMetrics(SM_CYSCREEN);
+        ptOffset->x = 0;
+        ptOffset->y = 0;
+    }
+
+    GetWindowRect( hWnd, rectWnd );
+    LONG nWidth = rectWnd->right - rectWnd->left;
+    LONG nHeight = rectWnd->bottom - rectWnd->top;
+    LONG left, top;
+    left = ptOffset->x + ( cx - nWidth ) / 2;
+    top = ptOffset->y + ( cy - nHeight ) / 2;
+
+    return left > 0 && top > 0;
 }
 
 WINPLUS_FUNC_IMPL(String) Window_GetText( HWND hWnd )

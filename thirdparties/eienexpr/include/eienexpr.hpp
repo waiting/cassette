@@ -312,7 +312,10 @@ public:
     /** \brief 取得外部数据对象指针 */
     void * getDataPtr() const;
 
-    /** \brief 取得变量 */
+    /** \brief 取得变量
+     *
+     *  如果当前表达式的变量场景里没有则向父表达式的变量场景里查找，如果最终都没有，返回false。\n
+     *  如果找到则返回变量的指针和变量场景对象的指针 */
     bool getVar( winux::String const & name, winux::Mixed * * outVarPtr, VarContext * * outVarCtx = nullptr ) const;
     /** \brief 取得变量值 */
     winux::Mixed const & getVar( winux::String const & name, VarContext * * outVarCtx = nullptr ) const;

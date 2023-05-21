@@ -66,10 +66,16 @@ public:
     StringStringMap const & getAll() const { return _rawParams; }
 };
 
-/** \brief 配置设置类 */
+/** \brief 更强大的配置文件类
+ *
+ *  支持表达式 */
 class WINUX_DLL ConfigureSettings
 {
 public:
+    /** \brief 构造函数1
+     *
+     *  如果需要设置配置文件的外部变量，必须先调用set()，然后才load()配置文件。
+     *  \param settingsFile 配置文件路径 */
     ConfigureSettings( String const & settingsFile = "" );
     ~ConfigureSettings();
     ConfigureSettings( ConfigureSettings const & other );
@@ -82,12 +88,13 @@ public:
 
     /** \brief 更新表达式并计算结果。（当你修改表达式后应该执行这个函数一次）
      *
-     *  \param multiname 此参数不是表达式，而是一系列键名。可以用任何表达式可以识别的符号隔开（例如 > , . ），如果键名含空格应该用引号包起来。 */
+     *  \param multiname 此参数不是表达式，而是一系列键名。可以用任何表达式可以识别的符号隔开（例如 > , . ），如果键名含空格应该用引号包起来。
+     *  \param updateExprStr 更新的表达式，为空表示不更改表达式，只重新计算更新值 */
     Mixed & update( String const & multiname, String const & updateExprStr = "" );
 
-    /** \brief 以Root变量场景执行表达式并返回引用，如果不能执行则返回内部一个引用 */
+    /** \brief 以根变量场景执行表达式并返回引用，如果不能执行则返回内部一个引用 */
     Mixed & execRef( String const & exprStr ) const;
-    /** \brief 以Root变量场景执行表达式并返回值，如果不能执行则返回默认值 */
+    /** \brief 以根变量场景执行表达式并返回值，如果不能执行则返回默认值 */
     Mixed execVal( String const & exprStr, Mixed const & defval = Mixed() ) const;
 
     /** \brief 获取此名字的设置（只读） */
@@ -100,6 +107,7 @@ public:
 
     /** \brief 获取此名字的设置（只读） */
     Mixed const & get( String const & name ) const;
+
     /** \brief 设置此名字的设置 */
     ConfigureSettings & set( String const & name, Mixed const & value );
 

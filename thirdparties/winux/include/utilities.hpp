@@ -480,6 +480,7 @@ public:
     {
         return _data;
     }
+
     operator _TargetCls & ()
     {
         return *_data;
@@ -488,6 +489,7 @@ public:
     {
         return *_data;
     }
+
     operator bool() const
     {
         return _data != nullptr;
@@ -495,6 +497,7 @@ public:
 };
 
 // ----------------------------------------------------------------------------------------
+
 /** \brief 错误类 */
 class WINUX_DLL Error : public std::exception
 {

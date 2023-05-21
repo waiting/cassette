@@ -256,7 +256,7 @@ struct ConfigureSettings_Data
     Mixed collectionVal; // 存储值
     Mixed collectionExpr; // 存储表达式串
     ExprPackage package; // 表达式语言包，包含自定义函数和算符
-    VarContext rootCtx; // Root变量场景
+    VarContext rootCtx; // 根变量场景
 
     ConfigureSettings_Data()
     {
@@ -883,7 +883,7 @@ size_t ConfigureSettings::load( String const & settingsFile )
 {
     _self->settingsFile = settingsFile;
     StringArray loadFileChains;
-    return this->_load(settingsFile, &_self->collectionVal, &_self->collectionExpr, &loadFileChains );
+    return this->_load( settingsFile, &_self->collectionVal, &_self->collectionExpr, &loadFileChains );
 }
 
 static void _Update( struct ConfigureSettings_Data & sd, Expression * parent, Mixed & collVal, Mixed & collExpr, StringArray const & names, String const & updateExprStr, Mixed * * v )
@@ -974,8 +974,6 @@ Mixed & ConfigureSettings::execRef( String const & exprStr ) const
         {
             return *v;
         }
-        inner.free();
-        return inner;
     }
     catch ( winux::ExprError const & /*e*/ )
     {
