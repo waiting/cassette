@@ -11,12 +11,13 @@ Cassette不会访问网络，打消您的顾虑。采用成熟的AES256算法加
 本软件采用LGPL-3协议开放源码，您可以亲自编译并使用这个软件。希望大家都能摆脱忘记密码的困扰。
 
 ## 构建要求
-> 运行平台：Win7/Win8.1/Win10/Win11<br/>
+ 运行平台：Win7/Win8.1/Win10/Win11<br/>
 编写语言：C++ MFC<br/>
-构建工具：Visual Studio 2017+<br/>
+构建工具：Visual Studio 2017+
 
+安装Visual Studio时请选上C++和MFC相关组件。
 ## 编译构建
-> 下载仓库后直接使用`Visual Studio 2017+`打开`Cassette.sln`进行编译构建。
+下载仓库后直接使用`Visual Studio 2017+`打开`Cassette.sln`进行编译构建。
 
 注意：如果您要亲自构建，强烈建议您打开`res/db.key`文件，修改您自己的数据库密钥。这个密钥会对数据库进行加密，保护您的数据安全。
 
