@@ -405,13 +405,34 @@ void CassetteApp::EnableScheme( bool isEnabled )
 
 BOOL CassetteApp::DoSingletonRunning()
 {
-    winplus::String sharedMemName = winplus::LoadString(IDS_SHAREDMEM_NAME);
-    if ( m_sharedMem.open(sharedMemName) )
-    {
-        HWND hwndMain = m_sharedMem->hMainWnd;
+    //winplus::String sharedMemName = winplus::LoadString(IDS_SHAREDMEM_NAME);
+    //if ( m_sharedMem.open(sharedMemName) )
+    //{
+    //    HWND hwndMain = m_sharedMem->hMainWnd;
 
+    //    if ( winplus::Window_IsShow(hwndMain) )
+    //        SetForegroundWindow(hwndMain);
+    //    else
+    //    {
+    //        winplus::Window_Show(hwndMain);
+    //        SetForegroundWindow(hwndMain);
+    //    }
+    //    return FALSE;
+    //}
+    //else
+    //{
+    //    m_sharedMem.create(sharedMemName);
+    //}
+
+    if ( !m_sharedMem.create(IDS_SHAREDMEM_NAME) ) return FALSE;
+
+    HWND hwndMain = m_sharedMem->hMainWnd;
+    if ( hwndMain != NULL )
+    {
         if ( winplus::Window_IsShow(hwndMain) )
+        {
             SetForegroundWindow(hwndMain);
+        }
         else
         {
             winplus::Window_Show(hwndMain);
@@ -419,9 +440,6 @@ BOOL CassetteApp::DoSingletonRunning()
         }
         return FALSE;
     }
-    else
-    {
-        m_sharedMem.create(sharedMemName);
-    }
+
     return TRUE;
 }

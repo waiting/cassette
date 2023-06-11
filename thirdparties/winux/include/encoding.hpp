@@ -1,5 +1,8 @@
 ﻿#ifndef __ENCODING_HPP__
 #define __ENCODING_HPP__
+//
+// encoding 提供编码与解码相关的功能
+//
 
 namespace winux
 {

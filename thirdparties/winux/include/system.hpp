@@ -1,8 +1,23 @@
 ﻿#ifndef __SYSTEM_HPP__
 #define __SYSTEM_HPP__
+//
+// system 提供一些系统平台相关的功能
+//
 
 namespace winux
 {
+/** \brief 系统相关错误 */
+class SystemError : public Error
+{
+public:
+    enum {
+        sysNoError,    //!< 无错误
+    };
+
+    SystemError( int errType, AnsiString const & errStr ) throw() : Error( errType, errStr ) { }
+};
+
+
 #if defined(OS_WIN)
     typedef HANDLE HPipe;
     typedef HANDLE HProcess;
@@ -11,24 +26,19 @@ namespace winux
     typedef pid_t HProcess;
 #endif
 
-#if defined(_UNICODE) || defined(UNICODE)
-    #define CommandLineToArgv CommandLineToArgvW
-#else
-    #define CommandLineToArgv CommandLineToArgvA
-#endif
 
-/** \brief 把命令行解析成Argv数组。不支持命令行& && | ||
- *
- *  \param cmd 命令行，不支持命令行& && | ||
- *  \param argv 输出解析到的参数
- *  \return 解析到的参数个数 */
 WINUX_FUNC_DECL(size_t) CommandLineToArgvA( AnsiString const & cmd, AnsiStringArray * argv );
+WINUX_FUNC_DECL(size_t) CommandLineToArgvW( UnicodeString const & cmd, UnicodeStringArray * argv );
 /** \brief 把命令行解析成Argv数组。不支持命令行& && | ||
  *
  *  \param cmd 命令行，不支持命令行& && | ||
  *  \param argv 输出解析到的参数
  *  \return 解析到的参数个数 */
-WINUX_FUNC_DECL(size_t) CommandLineToArgvW( UnicodeString const & cmd, UnicodeStringArray * argv );
+#if defined(_UNICODE) || defined(UNICODE)
+inline size_t CommandLineToArgv( UnicodeString const & cmd, UnicodeStringArray * argv ) { return CommandLineToArgvW( cmd, argv ); }
+#else
+inline size_t CommandLineToArgv( AnsiString const & cmd, AnsiStringArray * argv ) { return CommandLineToArgvA( cmd, argv ); }
+#endif
 
 /** \brief 新建子进程执行指定命令，并用管道重定向了标准设备
  *
@@ -69,7 +79,6 @@ WINUX_FUNC_DECL(String) GetExec(
     String * stderrStr = NULL,
     bool closeStdinIfStdinStrEmpty = true
 );
-
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -218,9 +227,9 @@ class WINUX_DLL MutexLockObj : public ILockObj
 public:
     MutexLockObj();
     virtual ~MutexLockObj();
-    virtual bool tryLock();
-    virtual bool lock();
-    virtual bool unlock();
+    virtual bool tryLock() override;
+    virtual bool lock() override;
+    virtual bool unlock() override;
 private:
     MembersWrapper<struct MutexLockObj_Data> _self;
 
@@ -228,15 +237,15 @@ private:
 };
 
 /** \brief Dll加载器错误 */
-class DllLoaderError : public Error
+class DllLoaderError : public SystemError
 {
 public:
     enum {
-        DllLoader_FuncNotFound = 0x00000100,    //!< 函数未找到
-        DllLoader_ModuleNoLoaded                //!< 模块没加载
+        dllFuncNotFound = 0x00000100,    //!< 函数未找到
+        dllModuleNoLoaded                //!< 模块没加载
     };
 
-    DllLoaderError( int errType, AnsiString const & errStr ) throw() : Error( errType, errStr ) { }
+    DllLoaderError( int errType, AnsiString const & errStr ) throw() : SystemError( errType, errStr ) { }
 };
 
 /** \brief DLL动态载入器 */
@@ -290,7 +299,7 @@ public:
         template < typename... _ArgType >
         typename FuncTraits<PfnType>::ReturnType call( _ArgType&& ... arg )
         {
-            if ( !_pfn ) throw DllLoaderError( DllLoaderError::DllLoader_FuncNotFound, _funcName + " is not found" );
+            if ( !_pfn ) throw DllLoaderError( DllLoaderError::dllFuncNotFound, _funcName + " is not found" );
             return (*_pfn)( std::forward<_ArgType>(arg)... );
         }
     };
@@ -314,6 +323,87 @@ private:
     DISABLE_OBJECT_COPY(DllLoader)
 };
 
+/** \brief 共享内存，可以跨进程访问。常用于进程间通讯
+ *
+ *  Windows基于FileMapping\n
+ *  Linux基于shm**() */
+class WINUX_DLL SharedMemory
+{
+public:
+    /** \brief 构造函数0 */
+    SharedMemory();
+
+    /** \brief 构造函数1
+     *
+     *  \param shmKey 共享内存的KEY，请指定一个数字
+     *  \param size 共享内存的大小 */
+    SharedMemory( int shmKey, size_t size );
+
+    virtual ~SharedMemory();
+
+    /** \brief 创建共享内存
+     *
+     *  \param shmKey 共享内存的KEY，请指定一个数字
+     *  \param size 共享内存的大小
+     *  \return bool */
+    bool create( int shmKey, size_t size );
+
+    /** \brief 销毁共享内存 */
+    void destroy();
+
+    /** \brief 锁定内存获取内存地址 */
+    void * lock();
+
+    /** \brief 解锁回收内存地址 */
+    void unlock();
+
+    /** \brief 获取数据指针（自动lock()） */
+    void * get();
+
+private:
+#if defined(OS_WIN)
+    HANDLE _shm;
+#else
+    int _shm;
+#endif
+    void * _data;
+    size_t _size;
+
+    DISABLE_OBJECT_COPY(SharedMemory)
+};
+
+/** \brief 共享内存（POD类型数据）类模板 */
+template < typename _PodType >
+class SharedMemoryT : public SharedMemory
+{
+public:
+    /** \brief 构造函数0 */
+    SharedMemoryT() { }
+
+    /** \brief 构造函数1
+     *
+     *  \param shmKey 共享内存的KEY，请指定一个数字
+     *  \param size 共享内存的大小，如果是-1则取_PodType的大小 */
+    SharedMemoryT( int shmKey, size_t size = -1 )
+    {
+        this->create( shmKey, size );
+    }
+
+    /** \brief 创建共享内存
+     *
+     *  \param shmKey 共享内存的KEY，请指定一个数字
+     *  \param size 共享内存的大小，如果是-1则取_PodType的大小
+     *  \return bool */
+    bool create( int shmKey, size_t size = -1 )
+    {
+        return SharedMemory::create( shmKey, size == -1 ? sizeof(_PodType) : size );
+    }
+
+    _PodType * operator -> ()
+    {
+        return reinterpret_cast<_PodType *>( this->get() );
+    }
+};
 
 } // namespace winux
 

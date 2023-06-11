@@ -1,7 +1,9 @@
 ﻿#ifndef __FILESYS_HPP__
 #define __FILESYS_HPP__
+//
+// filesys 文件系统相关的功能
+//
 
-/** 文件系统相关封装 */
 #if defined(_MSC_VER) || defined(WIN32)
 
 #else
@@ -50,7 +52,7 @@ WINUX_FUNC_DECL(String) RealPath( String const & path );
 
 /** \brief 根据指定工作目录计算绝对路径，不会检查存在性
  *
- *  \param workDirAbsPath 绝对路径指定工作目录，如果为空则调用RealPath() */
+ *  \param workDirAbsPath 绝对路径指定工作目录，如果为空则效果同RealPath() */
 WINUX_FUNC_DECL(String) RealPathEx( String const & path, String const & workDirAbsPath );
 
 /** \brief 返回当前工作目录(末尾不含目录分隔符) */
@@ -155,14 +157,16 @@ WINUX_FUNC_DECL(void) WriteBinLog( void const * data, size_t size );
 #endif
 
 /** \brief 文件系统错误类 */
-class WINUX_DLL FileSysError : public Error
+class FileSysError : public Error
 {
 public:
     enum
     {
         fseNone, //!< 没有错误
         fseNotImplemented, //!< 方法未实现
-        fseFsSelfError, //!< 文件系统自身的错误
+        fseNotFound, //!< 文件系统错误：文件或目录不存在
+        fsePermissionDenied, //!< 文件系统错误：无权限拒绝访问
+        fseInvalidArgument, //!< 文件系统错误：无效参数
     };
     FileSysError( int errType, AnsiString const & s ) throw() : Error( errType, s ) { }
 };
@@ -178,7 +182,7 @@ private:
     SimpleHandle<HANDLE> _findFile;
     bool _first;
 #else
-    SimpleHandle< DIR*> _findFile;
+    SimpleHandle<DIR*> _findFile;
 #endif
 public:
     DirIterator( String const & path );

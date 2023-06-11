@@ -1,5 +1,8 @@
 ﻿#ifndef __JSON_HPP__
 #define __JSON_HPP__
+//
+// json 提供JSON相关的功能
+//
 
 namespace winux
 {

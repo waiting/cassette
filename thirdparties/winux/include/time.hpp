@@ -1,5 +1,8 @@
 ﻿#ifndef __TIME_HPP__
 #define __TIME_HPP__
+//
+// time 提供日期与时间相关的功能
+//
 
 namespace winux
 {

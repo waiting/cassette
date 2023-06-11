@@ -1,5 +1,8 @@
 ﻿#ifndef __SMARTPTR_HPP__
 #define __SMARTPTR_HPP__
+//
+// smartptr 提供智能指针相关的功能
+//
 
 namespace winux
 {

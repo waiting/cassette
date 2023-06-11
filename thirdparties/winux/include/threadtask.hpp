@@ -1,6 +1,7 @@
 ﻿#pragma once
-
-// 任务和线程池相关
+//
+// threadtask 提供任务和线程池相关功能
+//
 
 namespace winux
 {

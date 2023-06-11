@@ -1,5 +1,8 @@
 ﻿#ifndef __THREADS_HPP__
 #define __THREADS_HPP__
+//
+// threads 提供线程相关的功能
+//
 
 namespace winux
 {

@@ -1522,7 +1522,7 @@ MultiMatch::MatchResult MultiMatch::search( String const & str, ssize_t offset )
     MatchResult res = { -1, -1 };
     ssize_t count = (ssize_t)_matchItems.size();
     std::vector<MatchState> states(count);
-    for ( auto && state : states )
+    for ( auto & state : states )
     {
         state.j = 0;
         state.markpos = 0;
@@ -1537,11 +1537,11 @@ MultiMatch::MatchResult MultiMatch::search( String const & str, ssize_t offset )
     {
         for ( ssize_t curr = 0; curr < count; curr++ ) // 各个匹配项进行匹配
         {
-            auto && state = states[curr];
+            auto & state = states[curr];
 
             if ( i < state.markpos ) continue;
 
-            auto && currItem = _matchItems[curr];
+            auto & currItem = _matchItems[curr];
             auto currItemLen = (ssize_t)currItem.length();
 
             if ( state.j < currItemLen )
@@ -1594,7 +1594,7 @@ MultiMatch::MatchResult MultiMatch::greedSearch( String const & str, ssize_t off
     MatchResult res = { -1, -1 };
     ssize_t count = (ssize_t)_matchItems.size();
     std::vector<MatchState> states(count);
-    for ( auto && state : states )
+    for ( auto & state : states )
     {
         state.j = 0;
         state.markpos = 0;
@@ -1610,9 +1610,9 @@ MultiMatch::MatchResult MultiMatch::greedSearch( String const & str, ssize_t off
     {
         for ( ssize_t curr = 0; curr < count; curr++ ) // 各个匹配项进行匹配
         {
-            auto && currItem = _matchItems[curr];
+            auto & currItem = _matchItems[curr];
             auto currItemLen = (ssize_t)currItem.length();
-            auto && state = states[curr];
+            auto & state = states[curr];
 
             if ( state.matched || i < state.markpos ) continue;
 
@@ -1658,7 +1658,7 @@ MultiMatch::MatchResult MultiMatch::greedSearch( String const & str, ssize_t off
             // 有匹配，并且其余prevCharMatch都是false，才可终止
             size_t cPrevCharMatches = 0;
             size_t matchMaxLen = 0;
-            for ( auto && state : states )
+            for ( auto & state : states )
             {
                 if ( state.matched )
                 {
@@ -1702,7 +1702,7 @@ MultiMatch::MatchResult MultiMatch::commonSearch( String const & str, ssize_t of
         size_t matchItemCount = _matchItems.size();
         for ( size_t curr = 0; curr < matchItemCount; ++curr )
         {
-            auto && matchItem = _matchItems[curr];
+            auto & matchItem = _matchItems[curr];
 
             if ( (ssize_t)str.length() - (ssize_t)i < (ssize_t)matchItem.length() )
                 continue;

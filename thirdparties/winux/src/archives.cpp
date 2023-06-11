@@ -134,6 +134,7 @@ int Configure::_load( String const & configFile, StringStringMap * rawParams, St
     try
     {
         File fin( configFile, "r", false );
+        if ( !fin ) return varsCount;
         String line;
         while ( __GetLine( &fin, &line ) )
         {

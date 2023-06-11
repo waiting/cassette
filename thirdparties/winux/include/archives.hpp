@@ -1,7 +1,7 @@
 ﻿#ifndef __ARCHIVES_HPP__
 #define __ARCHIVES_HPP__
 //
-// winux提供一些文档的读写功能
+// archives 提供一些文档的读写功能
 //
 
 namespace winux
@@ -175,16 +175,22 @@ private:
 };
 
 
-/** \brief 文本文档。可载入文本文件自动识别BOM，转换编码为指定编码
+/** \brief 文本文档类。可载入文本文件自动识别BOM文件编码，转换为指定编码。\n
 
-    [00 00 FE FF] UTF32BE
-    [FF FE 00 00] UTF32LE
-    [FE FF] UTF16BE
-    [FF FE] UTF16LE
+    核心参数有三个：\n
+    文件编码（如果是直接写文档则需要指定一个文件编码）\n
+    内容编码（当给文本文档写入内容时，内容的编码）\n
+    多字节编码（当文件编码为多字节时，这个参数指示是哪一个多字节编码）\n
+    BOM字节序：\n
+    [00 00 FE FF] UTF32BE\n
+    [FF FE 00 00] UTF32LE\n
+    [FE FF] UTF16BE\n
+    [FF FE] UTF16LE\n
     [EF BB BF] UTF8BOM */
 class WINUX_DLL TextArchive
 {
 public:
+    /** \brief 文件编码 */
     enum FileEncoding
     {
         MultiByte,
@@ -201,48 +207,66 @@ public:
 
     /** \brief 构造函数1
      *
-     *  \param fileEncoding 文件编码
-     *  \param contentEncoding 内容编码
-     *  \param mbsEncoding 多字节字符串编码 */
+     *  \param fileEncoding 文件编码，如果是直接写文档则需要指定一个文件编码
+     *  \param contentEncoding 内容编码，当给文本文档写入内容时，内容的编码
+     *  \param mbsEncoding 多字节字符串编码，当文件编码为多字节时，这个参数指示是哪一个多字节编码 */
     TextArchive( FileEncoding fileEncoding = MultiByte, winux::AnsiString const & contentEncoding = "", winux::AnsiString const & mbsEncoding = "" ) : _fileEncoding(fileEncoding), _contentEncoding(contentEncoding), _mbsEncoding(mbsEncoding)
     {
     }
 
+    /** \brief 设置文件编码。文件编码当载入文本文件时会自动设置。但如果一开始就只是写文本文档，还是需要手动设置文件编码。 */
     void setFileEncoding( FileEncoding fileEncoding )
     {
         this->_fileEncoding = fileEncoding;
     }
 
+    /** \brief 获取文件编码 */
     FileEncoding const & getFileEncoding() const
     {
         return this->_fileEncoding;
     }
 
+    /** \brief 设置内容编码。当给文本文档写入内容时，内容默认是什么编码，用这个函数指定。 */
     void setContentEncoding( winux::AnsiString const & contentEncoding )
     {
         this->_contentEncoding = contentEncoding;
     }
 
+    /** \brief 获取内容编码 */
     winux::AnsiString const & getContentEncoding() const
     {
         return this->_contentEncoding;
     }
 
+    /** \brief 设置多字节编码。当文件编码为多字节时，这个参数指示是哪一个多字节编码。 */
     void setMultiByteEncoding( winux::AnsiString const & mbsEncoding )
     {
         this->_mbsEncoding = mbsEncoding;
     }
 
+    /** \brief 获取多字节编码 */
     winux::AnsiString const & getMultiByteEncoding() const
     {
         return this->_mbsEncoding;
     }
 
+    /** \brief 载入文本文件
+     *
+     *  \param filePath 文件路径
+     *  \param isConvert 是否转换编码
+     *  \param targetEncoding 转换到此编码
+     *  \param mbsEncoding 多字节编码 */
     void load( winux::String const & filePath, bool isConvert, winux::AnsiString const & targetEncoding = "", winux::AnsiString const & mbsEncoding = "" )
     {
         this->load( winux::FileGetContentsEx( filePath, false ), isConvert, targetEncoding, mbsEncoding );
     }
 
+    /** \brief 载入文本文件
+     *
+     *  \param f 文件对象
+     *  \param isConvert 是否转换编码
+     *  \param targetEncoding 转换到此编码
+     *  \param mbsEncoding 多字节编码 */
     void load( winux::IFile * f, bool isConvert, winux::AnsiString const & targetEncoding = "", winux::AnsiString const & mbsEncoding = "" )
     {
         size_t n;
@@ -250,6 +274,12 @@ public:
         this->load( winux::Buffer( buf, n, true ), isConvert, targetEncoding, mbsEncoding );
     }
 
+    /** \brief 载入指定内容
+     *
+     *  \param content 载入的内容
+     *  \param isConvert 是否转换编码
+     *  \param targetEncoding 转换到此编码
+     *  \param mbsEncoding 多字节编码 */
     void load( winux::Buffer const & content, bool isConvert, winux::AnsiString const & targetEncoding = "", winux::AnsiString const & mbsEncoding = "" )
     {
         this->setMultiByteEncoding(mbsEncoding);
@@ -259,61 +289,98 @@ public:
         this->_processContent( winux::Buffer( content.getBuf<winux::byte>() + i, content.getSize() - i, true ), isConvert, targetEncoding );
     }
 
+    /** \brief 写入字符串内容 */
     template < typename _ChTy >
     void write( winux::XString<_ChTy> const & content )
     {
         this->write( winux::Buffer( (void *)content.c_str(), content.length() * sizeof(_ChTy), true ) );
     }
 
+    /** \brief 写入字符串内容
+     *
+     *  \param content 字符串内容
+     *  \param encoding 字符串内容的编码 */
     template < typename _ChTy >
     void write( winux::XString<_ChTy> const & content, winux::AnsiString const & encoding )
     {
         this->write( winux::Buffer( (void *)content.c_str(), content.length() * sizeof(_ChTy), true ), encoding );
     }
 
+    /** \brief 写入内容 */
     void write( winux::Buffer const & content )
     {
         this->_pureContent.append(content);
     }
 
+    /** \brief 写入内容
+     *
+     *  \param content 内容
+     *  \param encoding 内容的编码 */
     void write( winux::Buffer const & content, winux::AnsiString const & encoding )
     {
         this->setContentEncoding(encoding);
         this->_pureContent.append(content);
     }
 
+    /** \brief 保存本对象的内容到缓冲区 */
     void save( winux::GrowBuffer * output )
     {
         this->save( output, this->_fileEncoding );
     }
 
+    /** \brief 保存本对象的内容到文件 */
     void save( winux::IFile * f )
     {
         this->save( f, this->_fileEncoding );
     }
 
+    /** \brief 保存本对象的内容到文件 */
     void save( winux::String const & filePath )
     {
         this->save( filePath, this->_fileEncoding );
     }
 
+    /** \brief 保存本对象的内容到缓冲区
+     *
+     *  \param output 缓冲区
+     *  \param fileEncoding 文件编码 */
     void save( winux::GrowBuffer * output, FileEncoding fileEncoding )
     {
         this->saveEx( this->_pureContent, this->_contentEncoding, output, fileEncoding );
     }
 
+    /** \brief 保存本对象的内容到文件
+     *
+     *  \param f 文件对象
+     *  \param fileEncoding 文件编码 */
     void save( winux::IFile * f, FileEncoding fileEncoding )
     {
         this->saveEx( this->_pureContent, this->_contentEncoding, f, fileEncoding );
     }
 
+    /** \brief 保存本对象的内容到文件
+     *
+     *  \param filePath 文件路径
+     *  \param fileEncoding 文件编码 */
     void save( winux::String const & filePath, FileEncoding fileEncoding )
     {
         this->saveEx( this->_pureContent, this->_contentEncoding, filePath, fileEncoding );
     }
 
+    /** \brief 保存内容到缓冲区
+     *
+     *  \param content 内容
+     *  \param encoding 内容的编码
+     *  \param output 输出的缓冲区
+     *  \param fileEncoding 文件编码 */
     void saveEx( winux::Buffer const & content, winux::AnsiString const & encoding, winux::GrowBuffer * output, FileEncoding fileEncoding );
 
+    /** \brief 保存内容到文件对象
+     *
+     *  \param content 内容
+     *  \param encoding 内容的编码
+     *  \param f 输出的文件对象
+     *  \param fileEncoding 文件编码 */
     void saveEx( winux::Buffer const & content, winux::AnsiString const & encoding, winux::IFile * f, FileEncoding fileEncoding )
     {
         winux::GrowBuffer buf;
@@ -321,32 +388,41 @@ public:
         f->write(buf);
     }
 
+    /** \brief 保存内容到文件
+     *
+     *  \param content 内容
+     *  \param encoding 内容的编码
+     *  \param filePath 输出的文件路径
+     *  \param fileEncoding 文件编码 */
     void saveEx( winux::Buffer const & content, winux::AnsiString const & encoding, winux::String const & filePath, FileEncoding fileEncoding )
     {
         winux::File file( filePath, "wb" );
         this->saveEx( content, encoding, &file, fileEncoding );
     }
 
+    /** \brief 转成指定字符的字符串 */
     template < typename _ChTy >
     winux::XString<_ChTy> toString() const
     {
         return this->_pureContent.toString<_ChTy>();
     }
 
+    /** \brief 清空文本文档的内容 */
     void clear()
     {
         this->_pureContent.free();
     }
 
 private:
+    // 处理内容成pure content
     void _processContent( winux::Buffer const & content, bool isConvert, winux::AnsiString const & encoding = "" );
-
+    // 识别BOM文件编码，*pI返回跳过BOM真正文本开始的位置
     void _recognizeEncode( winux::Buffer const & content, size_t * pI );
 
-    FileEncoding _fileEncoding;
+    FileEncoding _fileEncoding; // 文件编码
     winux::GrowBuffer _pureContent; // 纯内容
     mutable winux::AnsiString _contentEncoding; // 内容编码
-    mutable winux::AnsiString _mbsEncoding; // 多字节字符编码
+    mutable winux::AnsiString _mbsEncoding; // 多字节编码，当文件编码是MultiByte时，此成员指定是哪个多字节编码
 };
 
 } // namespace winux

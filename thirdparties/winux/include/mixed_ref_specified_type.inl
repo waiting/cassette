@@ -1,21 +1,9 @@
 ﻿#pragma once
 
 // Mixed 引用指定的类型
-//template < MixedType _mt > struct RefSpecifiedType { };
-/*
-template <> struct RefSpecifiedType<mt> {\
-    Mixed * _mx;\
-    RefSpecifiedType( Mixed const * mx ) : _mx(const_cast<Mixed*>(mx))\
-    { if ( _mx->_type != mt ) throw MixedError( MixedError::meUnexpectedType, TypeString(_mx->_type) + " can't reference " #mt ); }\
-    operator ty & () { return _mx->##memb; }\
-    operator ty const & () const { return _mx->##memb; }\
-};
-*/
-
 #define REF_SPECIFIED_TYPE(mt,ty,memb,funcname)\
     ty&ref##funcname(){if(this->_type!=mt)throw MixedError(MixedError::meUnexpectedType,"ref"#funcname"(): "+TypeString(this->_type)+" can not be referenced as a "#mt);return memb;}\
     ty const&ref##funcname()const{if(this->_type!=mt)throw MixedError(MixedError::meUnexpectedType,"ref"#funcname"(): "+TypeString(this->_type)+" can not be referenced as a "#mt);return memb;}
-
 
 REF_SPECIFIED_TYPE(MT_BOOLEAN, bool, _boolVal, Bool)
 REF_SPECIFIED_TYPE(MT_BYTE, byte, _btVal, Byte)

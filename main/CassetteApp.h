@@ -70,7 +70,7 @@ public:
         HWND hMainWnd; // 主窗口句柄
     };
 protected:
-    winplus::SharedMemory<CassetteSharedData> m_sharedMem;//共享内存
+    winplus::SharedMemoryT<CassetteSharedData> m_sharedMem;//共享内存
     eiendb::Database * m_db;
     winplus::WordsLib * m_wordslib;//词库
 
@@ -92,7 +92,7 @@ public:
     SettingsParameters m_settings; // 程序设置的参数
 
     // 获取共享内存引用
-    winplus::SharedMemory<CassetteSharedData> & GetSharedMemory() { return m_sharedMem; }
+    winplus::SharedMemoryT<CassetteSharedData> & GetSharedMemory() { return m_sharedMem; }
     // 初始化数据表和数据
     void InitDatabaseSchema();
     // 打开数据库资源

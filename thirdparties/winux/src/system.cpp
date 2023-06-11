@@ -9,14 +9,17 @@
 #include <pthread.h>
 #endif
 
-#if !defined(OS_WIN)
+#if defined(OS_WIN)
+
+#else
 #include <unistd.h>
 #include <sys/types.h>
 #include <string.h>
 #include <errno.h>
 #include <sys/wait.h>
-
 #include <dlfcn.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
 #endif
 
 namespace winux
@@ -658,7 +661,7 @@ inline static void __ObtainFlagPrefixAndFlagNameList( StringArray const & desire
 {
     Mixed nameLists;
     nameLists.createCollection();
-    for ( auto && desiredFlag : desiredFlags )
+    for ( auto & desiredFlag : desiredFlags )
     {
         String prefix, name;
         __ObtainPrefixAndName( desiredFlag, &prefix, &name );
@@ -680,7 +683,7 @@ inline static void __ObtainFlagPrefixAndFlagNameList( StringArray const & desire
 
     for ( size_t i = 0; i < nameLists.getCount(); i++ )
     {
-        auto && pr = nameLists.getPair(i);
+        auto & pr = nameLists.getPair(i);
         *flagPrefix = pr.first.toAnsi();
         *flagNameList = pr.second.toAnsi();
         break;
@@ -688,7 +691,7 @@ inline static void __ObtainFlagPrefixAndFlagNameList( StringArray const & desire
 
     //String nameList;
     //String prefix;
-    //for ( auto && pr : nameLists )
+    //for ( auto & pr : nameLists )
     //{
     //    if ( pr.second.length() > nameList.length() )
     //    {
@@ -808,7 +811,7 @@ CommandLineVars::CommandLineVars( int argc, char const ** argv, Mixed const & de
 
                 if ( argPrefix == flagPrefix ) // 参数前缀和旗标前缀一样
                 {
-                    for ( auto && ch : argText )
+                    for ( auto & ch : argText )
                     {
                         if ( flagNameList.find(ch) != npos )
                         {
@@ -1008,7 +1011,7 @@ void (* DllLoader::funcAddr( AnsiString const & funcName ) )()
 {
     if ( !_hDllModule )
     {
-        throw DllLoaderError( DllLoaderError::DllLoader_ModuleNoLoaded, "`" + dllModuleFile + "` module is not loaded" );
+        throw DllLoaderError( DllLoaderError::dllModuleNoLoaded, "`" + dllModuleFile + "` module is not loaded" );
     }
 
 #if defined(OS_WIN)
@@ -1016,7 +1019,121 @@ void (* DllLoader::funcAddr( AnsiString const & funcName ) )()
 #else
     return (void(*)())dlsym( _hDllModule, funcName.c_str() );
 #endif
+}
+
+// class SharedMemory ---------------------------------------------------------------------
+SharedMemory::SharedMemory() :
+#if defined(OS_WIN)
+    _shm(NULL),
+#else
+    _shm(-1),
+#endif
+    _data(NULL),
+    _size(0)
+{
 
 }
+
+SharedMemory::SharedMemory( int shmKey, size_t size ) :
+#if defined(OS_WIN)
+    _shm(NULL),
+#else
+    _shm(-1),
+#endif
+    _data(NULL),
+    _size(0)
+{
+    this->create( shmKey, size );
+}
+
+SharedMemory::~SharedMemory()
+{
+    this->destroy();
+}
+
+bool SharedMemory::create( int shmKey, size_t size )
+{
+    this->destroy();
+
+    _size = size;
+
+#if defined(OS_WIN)
+    union
+    {
+        struct
+        {
+            DWORD dwLow;
+            DWORD dwHigh;
+        };
+        size_t size;
+    } unSize;
+    memset( &unSize, 0, sizeof(unSize) );
+    unSize.size = _size;
+
+    // 创建内核对象
+    String strShmKey = Format( "shm_%u", shmKey );
+    _shm = CreateFileMapping( INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, unSize.dwHigh, unSize.dwLow, strShmKey.c_str() );
+    return _shm != NULL;
+#else
+    // 创建内核对象
+    _shm = shmget( (key_t)shmKey, _size, IPC_CREAT | 0666 );
+    if ( _shm < 0 ) return false;
+    return true;
+#endif
+}
+
+void SharedMemory::destroy()
+{
+    this->unlock();
+
+#if defined(OS_WIN)
+    if ( _shm != NULL )
+    {
+        CloseHandle(_shm);
+        _shm = NULL;
+        _size = 0;
+    }
+#else
+    if ( _shm > -1 )
+    {
+        shmid_ds ds = { 0 };
+        shmctl( _shm, IPC_STAT, &ds );
+        if ( ds.shm_nattch < 1 ) shmctl( _shm, IPC_RMID, nullptr );
+
+        _shm = -1;
+        _size = 0;
+    }
+#endif
+}
+
+void * SharedMemory::lock()
+{
+    this->unlock();
+
+#if defined(OS_WIN)
+    return _data = MapViewOfFile( _shm, FILE_MAP_ALL_ACCESS, 0, 0, 0 );
+#else
+    return _data = shmat( _shm, nullptr, 0 );
+#endif
+}
+
+void SharedMemory::unlock()
+{
+    if ( _data != NULL )
+    {
+    #if defined(OS_WIN)
+        UnmapViewOfFile(_data);
+    #else
+        shmdt(_data);
+    #endif
+        _data = NULL;
+    }
+}
+
+void * SharedMemory::get()
+{
+    return _data ? _data : this->lock();
+}
+
 
 } // namespace winux

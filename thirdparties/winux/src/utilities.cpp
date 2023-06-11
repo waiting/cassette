@@ -2217,8 +2217,9 @@ bool Mixed::operator < ( Mixed const & other ) const
     }
 }
 
-// create functions -----------------------------------------------------------------------
-Mixed & Mixed::createString()
+// create functions -------------------------------------------------------------------------
+
+Mixed & Mixed::createAnsi()
 {
     this->assign( "", 0 );
     return *this;

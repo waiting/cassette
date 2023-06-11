@@ -1,5 +1,8 @@
 ﻿#ifndef __STRINGS_HPP__
 #define __STRINGS_HPP__
+//
+// strings 提供字符串相关的功能
+//
 
 #include <stdarg.h>
 

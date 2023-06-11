@@ -2019,7 +2019,7 @@ static bool __FuncWhile( Expression * e, std::vector<Expression *> & params, win
         ExprLiteral * ret = new ExprLiteral();
 
         winux::Mixed & retMx = ret->getValue();
-        retMx.createString();
+        retMx.createString<char>();
 
         while ( (bool)params[0]->val() )
         {

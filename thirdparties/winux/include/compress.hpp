@@ -1,7 +1,7 @@
 ﻿#ifndef __COMPRESS_HPP__
 #define __COMPRESS_HPP__
 //
-// winux提供压缩功能
+// compress 提供压缩功能
 //
 
 namespace winux

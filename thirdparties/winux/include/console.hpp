@@ -1,5 +1,8 @@
 ﻿#ifndef __CONSOLE_HPP__
 #define __CONSOLE_HPP__
+//
+// console 提供控制台相关的功能，例如彩色文字输出
+//
 
 #include <iostream>
 

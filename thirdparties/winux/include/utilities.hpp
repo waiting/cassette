@@ -1,5 +1,8 @@
 ﻿#ifndef __UTILITIES_HPP__
 #define __UTILITIES_HPP__
+//
+// utilities 提供基础的宏，模板，类，函数
+//
 
 // 各平台条件编译宏检测
 #include "system_detection.inl"
@@ -213,7 +216,7 @@ typedef XString<char32> UnicodeString32, Utf32String;
 typedef XString<tchar> String;
 
 template < typename _ChTy >
-using XStringArray = std::vector< std::basic_string<_ChTy> >;
+using XStringArray = std::vector< XString<_ChTy> >;
 
 typedef XStringArray<char> AnsiStringArray, Utf8StringArray;
 typedef XStringArray<wchar> UnicodeStringArray;
@@ -499,7 +502,7 @@ public:
 // ----------------------------------------------------------------------------------------
 
 /** \brief 错误类 */
-class WINUX_DLL Error : public std::exception
+class Error : public std::exception
 {
 private:
     int _errType;
@@ -626,13 +629,15 @@ public:
 
     /** \brief 转换到字符串 */
     template < typename _ChTy >
-    std::basic_string<_ChTy> toString() const
+    XString<_ChTy> toString() const
     {
-        typedef typename std::basic_string<_ChTy>::value_type CharType;
-        return std::basic_string<_ChTy>( (CharType*)_buf, _dataSize / sizeof(CharType) );
+        typedef typename XString<_ChTy>::value_type CharType;
+        return XString<_ChTy>( (CharType*)_buf, _dataSize / sizeof(CharType) );
     }
+
     /** \brief 转换到AnsiString */
     AnsiString toAnsi() const { return this->toString<AnsiString::value_type>(); }
+
     /** \brief 转换到UnicodeString */
     UnicodeString toUnicode() const { return this->toString<UnicodeString::value_type>(); }
 
@@ -642,10 +647,10 @@ public:
     static void _Free( void * p );
 
 protected:
-    void * _buf; ///< 缓冲区
-    size_t _dataSize; ///< 数据的大小
-    size_t _capacity; ///< 容量
-    bool _isPeek; ///< 是否为窥视模式
+    void * _buf; //!< 缓冲区
+    size_t _dataSize; //!< 数据的大小
+    size_t _capacity; //!< 容量
+    bool _isPeek; //!< 是否为窥视模式
 
     friend class GrowBuffer;
 };
@@ -708,7 +713,7 @@ protected:
 
 // 混合体相关 ------------------------------------------------------------------------------
 /** \brief 混合体错误 */
-class WINUX_DLL MixedError : public Error
+class MixedError : public Error
 {
 public:
     enum
@@ -933,6 +938,10 @@ public:
     String const & typeString() const { return TypeString(this->_type); }
 
     // 取得相关类型的引用 --------------------------------------------------------------------
+    template < typename _ChTy >
+    XString<_ChTy> & refString();
+    template < typename _ChTy >
+    XString<_ChTy> const & refString() const;
     #include "mixed_ref_specified_type.inl"
 
     // 类型转换 ----------------------------------------------------------------------------
@@ -952,6 +961,8 @@ public:
     operator uint64() const;
     operator double() const;
 
+    template < typename _ChTy >
+    XString<_ChTy> toString() const ; // { throw MixedError( MixedError::meCantConverted, AnsiString("Can't convert to ") + typeid(XString<_ChTy>).name() ); }
     AnsiString toAnsi() const { return this->operator AnsiString(); }
     UnicodeString toUnicode() const { return this->operator UnicodeString(); }
     Buffer toBuffer() const { return this->operator Buffer(); }
@@ -989,15 +1000,18 @@ public:
     bool isString() const { return this->_type == MT_ANSI || this->_type == MT_UNICODE; }
 
     // 创建相关类型 -------------------------------------------------------------------------
-    /** \brief 创建一个Ansi字符串,并设置type为MT_STRING */
+    /** \brief 创建一个字符串，根据_ChTy设置type为MT_ANSI或MT_UNICODE */
+    template < typename _ChTy >
     Mixed & createString();
-    /** \brief 创建一个Unicode字符串,并设置type为MT_UNICODE */
+    /** \brief 创建一个Ansi字符串，并设置type为MT_ANSI */
+    Mixed & createAnsi();
+    /** \brief 创建一个Unicode字符串，并设置type为MT_UNICODE */
     Mixed & createUnicode();
-    /** \brief 创建一个数组,自动把先前的数据清空,并设置type为MT_ARRAY */
+    /** \brief 创建一个数组，自动把先前的数据清空，并设置type为MT_ARRAY */
     Mixed & createArray( size_t count = 0 );
-    /** \brief 创建一个集合,自动把先前的数据清空,并设置type为MT_COLLECTION */
+    /** \brief 创建一个集合，自动把先前的数据清空，并设置type为MT_COLLECTION */
     Mixed & createCollection();
-    /** \brief 创建一个缓冲区,自动把先前的数据清空,并设置type为MT_BINARY */
+    /** \brief 创建一个缓冲区，自动把先前的数据清空，并设置type为MT_BINARY */
     Mixed & createBuffer( size_t size = 0 );
 
     // Array/Collection有关的操作 ----------------------------------------------------------
@@ -1318,6 +1332,58 @@ private:
             this->_pArr->push_back(k);
     }
 };
+
+template <>
+inline XString<char> & Mixed::refString<char>()
+{
+    return this->refAnsi();
+}
+
+template <>
+inline XString<char> const & Mixed::refString<char>() const
+{
+    return this->refAnsi();
+}
+
+template <>
+inline XString<wchar> & Mixed::refString<wchar>()
+{
+    return this->refUnicode();
+}
+
+template <>
+inline XString<wchar> const & Mixed::refString<wchar>() const
+{
+    return this->refUnicode();
+}
+
+/** \brief Mixed to AnsiString */
+template <>
+inline XString<char> Mixed::toString<char>() const
+{
+    return this->toAnsi();
+}
+
+/** \brief Mixed to UnicodeString */
+template <>
+inline XString<wchar> Mixed::toString<wchar>() const
+{
+    return this->toUnicode();
+}
+
+/** \brief 创建一个ANSI字符串，并设置type为MT_ANSI */
+template <>
+inline Mixed & Mixed::createString<char>()
+{
+    return this->createAnsi();
+}
+
+/** \brief 创建一个UNICODE字符串，并设置type为MT_UNICODE */
+template <>
+inline Mixed & Mixed::createString<wchar>()
+{
+    return this->createUnicode();
+}
 
 /** \brief 扩展iostream的<< */
 WINUX_FUNC_DECL(std::ostream &) operator << ( std::ostream & o, Mixed const & m );
