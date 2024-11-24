@@ -15,9 +15,10 @@
 #include <string.h>
 
 #if defined(OS_WIN)
+    #include <mbstring.h>
+    #include <tchar.h>
 
 #else // OS_LINUX
-
     #include <unistd.h>
     #include <errno.h>
 
@@ -29,17 +30,120 @@
     #define _read read
     #define _write write
 
+    #ifdef UNICODE
+        #define _vsntprintf vswprintf
+        #define _tcsstr wcsstr
+        #define _tcsicmp wcscasecmp
+        #define _tcscmp wcscmp
+    #else
+        #define _vsntprintf vsnprintf
+        #define _tcsstr strstr
+        #define _tcsicmp strcasecmp
+        #define _tcscmp strcmp
+    #endif
+
 #endif
 
 
 namespace winux
 {
+WINUX_FUNC_IMPL(void) InvertByteOrder( void * buf, size_t size )
+{
+    byte * p1 = (byte *)buf;
+    byte * p2 = (byte *)buf + size - 1;
+    while ( p1 < p2 )
+    {
+        byte bt = *p1;
+        *p1 = *p2;
+        *p2 = bt;
+
+        p1++;
+        p2--;
+    }
+}
+
+WINUX_FUNC_IMPL(int) MemoryCompare( void const * buf1, size_t n1, void const * buf2, size_t n2 )
+{
+    size_t n = n1 < n2 ? n1 : n2;
+    int diff = memcmp( buf1, buf2, n );
+    if ( diff != 0 ) return diff;
+    return (int)( n1 - n2 );
+}
+
+WINUX_FUNC_IMPL(int) MemoryCompareI( void const * buf1, size_t n1, void const * buf2, size_t n2 )
+{
+#if defined(OS_WIN)
+    size_t n = n1 < n2 ? n1 : n2;
+    int diff = memicmp( buf1, buf2, n );
+    if ( diff != 0 ) return diff;
+    return (int)( n1 - n2 );
+#else
+    auto p1 = (winux::byte const *)buf1;
+    auto p2 = (winux::byte const *)buf2;
+    size_t n = n1 < n2 ? n1 : n2;
+    for ( size_t i = 0; i < n; ++i )
+    {
+        int diff = tolower(p1[i]) - tolower(p2[i]);
+        if ( diff != 0 ) return diff;
+    }
+    return (int)( n1 - n2 );
+#endif
+}
+
+WINUX_FUNC_IMPL(bool) CollectionLess( Collection const & coll1, Collection const & coll2 )
+{
+    size_t count1 = coll1.getCount(), count2 = coll2.getCount();
+    size_t n = count1 < count2 ? count1 : count2;
+    size_t i;
+    for ( i = 0; i < n; ++i )
+    {
+        if ( coll1.getPair(i).second != coll2.getPair(i).second ) break;
+    }
+    if ( i < n )
+    {
+        return coll1.getPair(i).second < coll2.getPair(i).second;
+    }
+    else // i == n
+    {
+        return count1 < count2;
+    }
+}
+
+WINUX_FUNC_IMPL(bool) CollectionGreater( Collection const & coll1, Collection const & coll2 )
+{
+    size_t count1 = coll1.getCount(), count2 = coll2.getCount();
+    size_t n = count1 < count2 ? count1 : count2;
+    size_t i;
+    for ( i = 0; i < n; ++i )
+    {
+        if ( coll1.getPair(i).second != coll2.getPair(i).second ) break;
+    }
+    if ( i < n )
+    {
+        return coll1.getPair(i).second > coll2.getPair(i).second;
+    }
+    else // i == n
+    {
+        return count1 > count2;
+    }
+}
+
+WINUX_FUNC_IMPL(bool) CollectionEqual( Collection const & coll1, Collection const & coll2 )
+{
+    size_t count1 = coll1.getCount(), count2 = coll2.getCount();
+    size_t n = count1 < count2 ? count1 : count2;
+    size_t i;
+    for ( i = 0; i < n; ++i )
+    {
+        if ( coll1.getPair(i).second != coll2.getPair(i).second ) return false;
+    }
+    return count1 == count2;
+}
 
 WINUX_FUNC_IMPL(bool) ValueIsInArray( StringArray const & arr, String const & val, bool caseInsensitive )
 {
-    int (*pStrCmp)( char const *, char const * ) = caseInsensitive ? &_stricmp: &strcmp;
-    StringArray::const_iterator it;
-    for ( it = arr.begin(); it != arr.end(); ++it )
+    int (*pStrCmp)( tchar const *, tchar const * ) = caseInsensitive ? &_tcsicmp: &_tcscmp;
+    for ( auto it = arr.begin(); it != arr.end(); ++it )
     {
         if ( (*pStrCmp)( (*it).c_str(), val.c_str() ) == 0 )
         {
@@ -56,153 +160,220 @@ WINUX_FUNC_IMPL(int) Random( int n1, int n2 )
     return abs( rand() * rand() ) % ( abs( n2 - n1 ) + 1 ) + ( n1 < n2 ? 1 : -1 ) * n1;
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////
+// 类型解析功能 ---------------------------------------------------------------------------------
+template < typename _ChTy >
+inline static bool Impl_ParseBoolean( XString<_ChTy> const & str, bool * boolVal )
+{
+    if (
+        StringCompareI<_ChTy>( str, Literal<_ChTy>::boolTrueStr ) == 0 ||
+        StringCompareI<_ChTy>( str, Literal<_ChTy>::tStr ) == 0 ||
+        StringCompareI<_ChTy>( str, Literal<_ChTy>::boolYesStr ) == 0 ||
+        StringCompareI<_ChTy>( str, Literal<_ChTy>::boolOnStr ) == 0
+    )
+    {
+        *boolVal = true;
+    }
+    else if (
+        StringCompareI<_ChTy>( str, Literal<_ChTy>::boolFalseStr ) == 0 ||
+        StringCompareI<_ChTy>( str, Literal<_ChTy>::fStr ) == 0 ||
+        StringCompareI<_ChTy>( str, Literal<_ChTy>::boolNoStr ) == 0 ||
+        StringCompareI<_ChTy>( str, Literal<_ChTy>::boolOffStr ) == 0
+    )
+    {
+        *boolVal = false;
+    }
+    else
+    {
+        ulong ul;
+        ParseULong( str, &ul );
+        *boolVal = ul != 0;
+    }
+    return true;
+}
 
-// -------------------------------------------------------------------------------------------------
-/* flag values */
-#define FL_UNSIGNED   1       /* strtouq called */
-#define FL_NEG        2       /* negative sign found */
-#define FL_OVERFLOW   4       /* overflow occured */
-#define FL_READDIGIT  8       /* we've read at least one correct digit */
+WINUX_FUNC_IMPL(bool) ParseBool( AnsiString const & str, bool * boolVal )
+{
+    return Impl_ParseBoolean( str, boolVal );
+}
 
-#if defined(__GNUC__) /*&& !defined(WIN32)*/
-#define _UI64_MAX 0xffffffffffffffffull
-#define _I64_MAX 9223372036854775807ll
-#define _I64_MIN (-9223372036854775807ll - 1ll)
-#endif
+WINUX_FUNC_IMPL(bool) ParseBool( UnicodeString const & str, bool * boolVal )
+{
+    return Impl_ParseBoolean( str, boolVal );
+}
 
-//inline static uint64 __StrToXQ( char const * nptr, char const * * endptr, int ibase, int flags )
-//{
-//    char const * p;
-//    char c;
-//    uint64 number;
-//    uint digval;
-//    uint64 maxval;
-//
-//    p = nptr;            /* p is our scanning pointer */
-//    number = 0;            /* start with zero */
-//
-//    c = *p++;            /* read char */
-//
-//    while ( isspace((int)(unsigned char)c) )
-//        c = *p++;        /* skip whitespace */
-//
-//    if (c == '-') {
-//        flags |= FL_NEG;    /* remember minus sign */
-//        c = *p++;
-//    }
-//    else if (c == '+')
-//        c = *p++;        /* skip sign */
-//
-//    if (ibase < 0 || ibase == 1 || ibase > 36) {
-//        /* bad base! */
-//        if (endptr)
-//            /* store beginning of string in endptr */
-//            *endptr = nptr;
-//        return 0L;        /* return 0 */
-//    }
-//    else if (ibase == 0) {
-//        /* determine base free-lance, based on first two chars of
-//           string */
-//        if (c != '0')
-//            ibase = 10;
-//        else if (*p == 'x' || *p == 'X')
-//            ibase = 16;
-//        else
-//            ibase = 8;
-//    }
-//
-//    if (ibase == 16) {
-//        /* we might have 0x in front of number; remove if there */
-//        if (c == '0' && (*p == 'x' || *p == 'X')) {
-//            ++p;
-//            c = *p++;    /* advance past prefix */
-//        }
-//    }
-//
-//    /* if our number exceeds this, we will overflow on multiply */
-//    maxval = _UI64_MAX / ibase;
-//
-//
-//    for (;;) {    /* exit in middle of loop */
-//        /* convert c to value */
-//        if ( isdigit((int)(unsigned char)c) )
-//            digval = c - '0';
-//        else if ( isalpha((int)(unsigned char)c) )
-//            digval = toupper(c) - 'A' + 10;
-//        else
-//            break;
-//        if (digval >= (unsigned)ibase)
-//            break;        /* exit loop if bad digit found */
-//
-//        /* record the fact we have read one digit */
-//        flags |= FL_READDIGIT;
-//
-//        /* we now need to compute number = number * base + digval,
-//           but we need to know if overflow occured.  This requires
-//           a tricky pre-check. */
-//
-//        if (number < maxval || (number == maxval && (uint64)digval <= _UI64_MAX % ibase)) {
-//            /* we won't overflow, go ahead and multiply */
-//            number = number * ibase + digval;
-//        }
-//        else {
-//            /* we would have overflowed -- set the overflow flag */
-//            flags |= FL_OVERFLOW;
-//        }
-//
-//        c = *p++;        /* read next digit */
-//    }
-//
-//    --p;                /* point to place that stopped scan */
-//
-//    if (!(flags & FL_READDIGIT)) {
-//        /* no number there; return 0 and point to beginning of
-//           string */
-//        if (endptr)
-//            /* store beginning of string in endptr later on */
-//            p = nptr;
-//        number = 0L;        /* return 0 */
-//    }
-//    else if ( (flags & FL_OVERFLOW) ||
-//              ( !(flags & FL_UNSIGNED) &&
-//                ( ( (flags & FL_NEG) && (number > -_I64_MIN) ) ||
-//                  ( !(flags & FL_NEG) && (number > _I64_MAX) ) ) ) )
-//    {
-//        /* overflow or signed overflow occurred */
-//        errno = ERANGE;
-//        if ( flags & FL_UNSIGNED )
-//            number = _UI64_MAX;
-//        else if ( flags & FL_NEG )
-//            number = _I64_MIN;
-//        else
-//            number = _I64_MAX;
-//    }
-//    if (endptr != NULL)
-//        /* store pointer to char that stopped the scan */
-//        *endptr = p;
-//
-//    if (flags & FL_NEG)
-//        /* negate result if there was a neg sign */
-//        number = (uint64)(-(int64)number);
-//
-//    return number;            /* done. */
-//}
-//*/
+template < typename _ChTy, typename _ToFx, typename _Ty >
+inline static bool Impl_ParseInteger( XString<_ChTy> const & str, _ToFx && tofn, _Ty * val )
+{
+    if ( str.length() > 1 && str[0] == Literal<_ChTy>::zeroChar && ( str[1] | 0x20 ) == Literal<_ChTy>::xChar ) // 16进制数
+    {
+        *val = tofn( str.c_str() + 2, 16 );
+    }
+    else if ( str.length() > 1 && str[0] == Literal<_ChTy>::zeroChar ) // 8进制数
+    {
+        *val = tofn( str.c_str() + 1, 8 );
+    }
+    else
+    {
+        *val = tofn( str.c_str(), 10 );
+    }
+    return true;
+}
+
+WINUX_FUNC_IMPL(bool) ParseInt( AnsiString const & str, int * iVal )
+{
+    return Impl_ParseInteger(
+        str,
+        [] ( AnsiString::value_type const * str, int radix ) { return (int)strtol( str, nullptr, radix ); },
+        iVal
+    );
+}
+
+WINUX_FUNC_IMPL(bool) ParseInt( UnicodeString const & str, int * iVal )
+{
+    return Impl_ParseInteger(
+        str,
+        [] ( UnicodeString::value_type const * str, int radix ) { return (int)wcstol( str, nullptr, radix ); },
+        iVal
+    );
+}
+
+WINUX_FUNC_IMPL(bool) ParseUInt( AnsiString const & str, uint * uiVal )
+{
+    return Impl_ParseInteger(
+        str,
+        [] ( AnsiString::value_type const * str, int radix ) { return (uint)strtoul( str, nullptr, radix ); },
+        uiVal
+    );
+}
+
+WINUX_FUNC_IMPL(bool) ParseUInt( UnicodeString const & str, uint * uiVal )
+{
+    return Impl_ParseInteger(
+        str,
+        [] ( UnicodeString::value_type const * str, int radix ) { return (uint)wcstoul( str, nullptr, radix ); },
+        uiVal
+    );
+}
+
+WINUX_FUNC_IMPL(bool) ParseLong( AnsiString const & str, long * lVal )
+{
+    return Impl_ParseInteger(
+        str,
+        [] ( AnsiString::value_type const * str, int radix ) { return strtol( str, nullptr, radix ); },
+        lVal
+    );
+}
+
+WINUX_FUNC_IMPL(bool) ParseLong( UnicodeString const & str, long * lVal )
+{
+    return Impl_ParseInteger(
+        str,
+        [] ( UnicodeString::value_type const * str, int radix ) { return wcstol( str, nullptr, radix ); },
+        lVal
+    );
+}
+
+WINUX_FUNC_IMPL(bool) ParseULong( AnsiString const & str, ulong * ulVal )
+{
+    return Impl_ParseInteger(
+        str,
+        [] ( AnsiString::value_type const * str, int radix ) { return strtoul( str, nullptr, radix ); },
+        ulVal
+    );
+}
+
+WINUX_FUNC_IMPL(bool) ParseULong( UnicodeString const & str, ulong * ulVal )
+{
+    return Impl_ParseInteger(
+        str,
+        [] ( UnicodeString::value_type const * str, int radix ) { return wcstoul( str, nullptr, radix ); },
+        ulVal
+    );
+}
+
+WINUX_FUNC_IMPL(bool) ParseInt64( AnsiString const & str, int64 * i64Val )
+{
+    return Impl_ParseInteger( str, StrToInt64<char>, i64Val );
+}
+
+WINUX_FUNC_IMPL(bool) ParseInt64( UnicodeString const & str, int64 * i64Val )
+{
+    return Impl_ParseInteger( str, StrToInt64<wchar>, i64Val );
+}
+
+WINUX_FUNC_IMPL(bool) ParseUInt64( AnsiString const & str, uint64 * ui64Val )
+{
+    return Impl_ParseInteger( str, StrToUInt64<char>, ui64Val );
+}
+
+WINUX_FUNC_IMPL(bool) ParseUInt64( UnicodeString const & str, uint64 * ui64Val )
+{
+    return Impl_ParseInteger( str, StrToUInt64<wchar>, ui64Val );
+}
+
+template < typename _ChTy, typename _ToIntFx, typename _ToFx, typename _Ty >
+inline static bool Impl_ParseFloat( XString<_ChTy> const & str, _ToIntFx && tofnInt, _ToFx && tofn, _Ty * val )
+{
+    if ( str.length() > 1 && str[0] == Literal<_ChTy>::zeroChar && ( str[1] | 0x20 ) == Literal<_ChTy>::xChar )
+    {
+        *val = (_Ty)tofnInt( str.c_str() + 2, 16 );
+    }
+    else if ( str.length() > 1 && str[0] == Literal<_ChTy>::zeroChar && str[1] != Literal<_ChTy>::periodChar && ( str[1] | 0x20 ) != Literal<_ChTy>::eChar )
+    {
+        *val = (_Ty)tofnInt( str.c_str() + 1, 8 );
+    }
+    else
+    {
+        *val = tofn( str.c_str(), nullptr );
+    }
+    return true;
+}
+
+WINUX_FUNC_IMPL(bool) ParseFloat( AnsiString const & str, float * fltVal )
+{
+    return Impl_ParseFloat( str, StrToInt64<char>, strtof, fltVal );
+}
+
+WINUX_FUNC_IMPL(bool) ParseFloat( UnicodeString const & str, float * fltVal )
+{
+    return Impl_ParseFloat( str, StrToInt64<wchar>, wcstof, fltVal );
+}
+
+WINUX_FUNC_IMPL(bool) ParseDouble( AnsiString const & str, double * dblVal )
+{
+    return Impl_ParseFloat( str, StrToInt64<char>, strtod, dblVal );
+}
+
+WINUX_FUNC_IMPL(bool) ParseDouble( UnicodeString const & str, double * dblVal )
+{
+    return Impl_ParseFloat( str, StrToInt64<wchar>, wcstod, dblVal );
+}
 
 // class Buffer ----------------------------------------------------------------------
-Buffer::Buffer() : _buf(NULL), _dataSize(0U), _capacity(0U), _isPeek(false)
+void * Buffer::Alloc( size_t size )
 {
+    return ::malloc(size);
 }
 
-Buffer::Buffer( void const * buf, size_t size, bool isPeek ) : _buf(NULL), _dataSize(0U), _capacity(0U), _isPeek(false)
+void * Buffer::Realloc( void * p, size_t newSize )
 {
-    this->setBuf( buf, size, isPeek );
+    return ::realloc( p, newSize );
 }
 
-Buffer::Buffer( AnsiString const & data, bool isPeek ) : _buf(NULL), _dataSize(0U), _capacity(0U), _isPeek(false)
+void Buffer::Free( void * p )
 {
-    this->setBuf( data.c_str(), data.size(), isPeek );
+    ::free(p);
+}
+
+// Constructors
+Buffer::Buffer()
+{
+    this->_zeroInit();
+}
+
+Buffer::Buffer( void const * buf, size_t size, bool isPeek )
+{
+    this->_copyConstruct( buf, size, isPeek );
 }
 
 Buffer::~Buffer()
@@ -210,9 +381,9 @@ Buffer::~Buffer()
     this->free();
 }
 
-Buffer::Buffer( Buffer const & other ) : _buf(NULL), _dataSize(0U), _capacity(0U), _isPeek(false)
+Buffer::Buffer( Buffer const & other )
 {
-    this->setBuf( other._buf, other._dataSize, other._isPeek );
+    this->_copyConstruct( other._buf, other._dataSize, other._isPeek );
 }
 
 Buffer & Buffer::operator = ( Buffer const & other )
@@ -232,10 +403,7 @@ Buffer::Buffer( Buffer && other ) :
     _capacity( std::move(other._capacity) ),
     _isPeek( std::move(other._isPeek) )
 {
-    other._buf = NULL;
-    other._dataSize = 0U;
-    other._capacity = 0U;
-    other._isPeek = false;
+    other._zeroInit();
 }
 
 Buffer & Buffer::operator = ( Buffer && other )
@@ -249,10 +417,7 @@ Buffer & Buffer::operator = ( Buffer && other )
         this->_capacity = std::move(other._capacity);
         this->_isPeek = std::move(other._isPeek);
 
-        other._buf = NULL;
-        other._dataSize = 0U;
-        other._capacity = 0U;
-        other._isPeek = false;
+        other._zeroInit();
     }
     return *this;
 }
@@ -263,10 +428,7 @@ Buffer::Buffer( GrowBuffer && other ) :
     _capacity( std::move(other._capacity) ),
     _isPeek( std::move(other._isPeek) )
 {
-    other._buf = NULL;
-    other._dataSize = 0U;
-    other._capacity = 0U;
-    other._isPeek = false;
+    other._zeroInit();
 }
 
 Buffer & Buffer::operator = ( GrowBuffer && other )
@@ -280,10 +442,7 @@ Buffer & Buffer::operator = ( GrowBuffer && other )
         this->_capacity = std::move(other._capacity);
         this->_isPeek = std::move(other._isPeek);
 
-        other._buf = NULL;
-        other._dataSize = 0U;
-        other._capacity = 0U;
-        other._isPeek = false;
+        other._zeroInit();
     }
     return *this;
 }
@@ -297,10 +456,13 @@ void Buffer::setBuf( void const * buf, size_t size, size_t capacity, bool isPeek
     this->_dataSize = size;
     this->_capacity = capacity;
     this->_isPeek = isPeek;
-    if ( !this->_isPeek && buf != NULL ) // 如果不是窥探模式，则需要拷贝数据
+    if ( !this->_isPeek ) // 如果不是窥探模式，则需要拷贝数据
     {
-        this->_buf = _Alloc(this->_capacity);
-        memcpy( this->_buf, buf, capacity );
+        this->_buf = Alloc(this->_capacity);
+        if ( buf != NULL )
+            memcpy( this->_buf, buf, capacity );
+        else
+            memset( this->_buf, 0, capacity );
     }
 }
 
@@ -310,7 +472,7 @@ void Buffer::alloc( size_t capacity, bool setDataSize )
     if ( setDataSize ) this->_dataSize = capacity;
     this->_capacity = capacity;
     this->_isPeek = false;
-    this->_buf = _Alloc(capacity); // 分配空间
+    this->_buf = Alloc(capacity); // 分配空间
     memset( this->_buf, 0, capacity );
 }
 
@@ -320,7 +482,7 @@ void Buffer::realloc( size_t newCapacity )
     {
         this->peekCopy(true);
     }
-    this->_buf = _Realloc( this->_buf, newCapacity );
+    this->_buf = Realloc( this->_buf, newCapacity );
     if ( newCapacity > this->_capacity ) // 当新容量大于当前容量，则初始化大于的部分为0
     {
         memset( ((byte *)this->_buf) + this->_capacity, 0, newCapacity - this->_capacity );
@@ -342,12 +504,12 @@ bool Buffer::peekCopy( bool copyCapacity )
             void * buf = this->_buf;
             if ( copyCapacity )
             {
-                this->_buf = _Alloc(this->_capacity);
+                this->_buf = Alloc(this->_capacity);
                 memcpy( this->_buf, buf, this->_capacity );
             }
             else
             {
-                this->_buf = _Alloc(this->_dataSize);
+                this->_buf = Alloc(this->_dataSize);
                 memcpy( this->_buf, buf, this->_dataSize );
                 this->_capacity = this->_dataSize;
             }
@@ -364,10 +526,7 @@ void * Buffer::detachBuf( size_t * size )
     ASSIGN_PTR(size) = this->_dataSize;
     if ( this->_buf != NULL && !this->_isPeek )
     {
-        this->_buf = NULL;
-        this->_dataSize = 0U;
-        this->_capacity = 0U;
-        this->_isPeek = false;
+        this->_zeroInit();
     }
     return buf;
 }
@@ -376,27 +535,33 @@ void Buffer::free()
 {
     if ( this->_buf != NULL && !this->_isPeek )
     {
-        _Free(this->_buf);
-        this->_buf = NULL;
-        this->_dataSize = 0U;
-        this->_capacity = 0U;
-        this->_isPeek = false;
+        Free(this->_buf);
+        this->_zeroInit();
     }
 }
 
-void * Buffer::_Alloc( size_t size )
+void Buffer::_zeroInit()
 {
-    return ::malloc(size);
+    this->_buf = nullptr;
+    this->_dataSize = 0U;
+    this->_capacity = 0U;
+    this->_isPeek = false;
 }
 
-void * Buffer::_Realloc( void * p, size_t newSize )
+void Buffer::_copyConstruct( void const * buf, size_t size, bool isPeek )
 {
-    return ::realloc( p, newSize );
-}
-
-void Buffer::_Free( void * p )
-{
-    ::free(p);
+    this->_buf = const_cast<void *>(buf);
+    this->_dataSize = size;
+    this->_capacity = size;
+    this->_isPeek = isPeek;
+    if ( !this->_isPeek ) // 如果不是窥探模式，则需要拷贝数据
+    {
+        this->_buf = Alloc(this->_capacity);
+        if ( buf != NULL )
+            memcpy( this->_buf, buf, size );
+        else
+            memset( this->_buf, 0, size );
+    }
 }
 
 // class GrowBuffer -----------------------------------------------------------------------
@@ -473,7 +638,7 @@ void GrowBuffer::append( void const * data, size_t size )
     {
         this->realloc( __AutoIncrement( this->_dataSize + size ) );
     }
-    memcpy( (winux::byte *)this->_buf + this->_dataSize, data, size );
+    if ( data != nullptr ) memcpy( (winux::byte *)this->_buf + this->_dataSize, data, size );
     this->_dataSize += size;
 }
 
@@ -483,7 +648,7 @@ void GrowBuffer::erase( size_t start, size_t count )
 {
     if ( (offset_t)start >= 0 && start < _dataSize )
     {
-        if ( count == (size_t)-1 || count >= _dataSize - start ) // 如果count=-1或者count>=数据可删除量,就全部删除
+        if ( count == (size_t)-1 || count >= _dataSize - start ) // 如果count=-1或者count>=数据可删除量，就全部删除
         {
             _dataSize = start;
         }
@@ -510,65 +675,27 @@ void GrowBuffer::erase( size_t start, size_t count )
     }
 }
 
-// class Mixed ----------------------------------------------------------------------------
+// class MixedLess ------------------------------------------------------------------------
+bool MixedLess::operator () ( Mixed const & v1, Mixed const & v2 ) const
+{
+    return v1 < v2;
+}
 
-// class Mixed::MixedLess -----------------------------------------------------------------
-bool Mixed::MixedLess::operator () ( Mixed const & v1, Mixed const & v2 ) const
+// class MixedLessI -----------------------------------------------------------------------
+bool MixedLessI::operator () ( Mixed const & v1, Mixed const & v2 ) const
 {
     if ( v1._type == v2._type )
     {
         switch ( v1._type )
         {
-        case MT_NULL:
-            return false;
+        case Mixed::MT_ANSI:
+            return StringCompareI( *v1._pStr, *v2._pStr ) < 0;
             break;
-        case MT_BOOLEAN:
-            return v1._boolVal < v2._boolVal;
+        case Mixed::MT_UNICODE:
+            return StringCompareI( *v1._pWStr, *v2._pWStr ) < 0;
             break;
-        case MT_BYTE:
-            return v1._btVal < v2._btVal;
-            break;
-        case MT_SHORT:
-            return v1._shVal < v2._shVal;
-            break;
-        case MT_USHORT:
-            return v1._ushVal < v2._ushVal;
-            break;
-        case MT_INT:
-            return v1._iVal < v2._iVal;
-            break;
-        case MT_UINT:
-            return v1._uiVal < v2._uiVal;
-            break;
-        case MT_LONG:
-            return v1._lVal < v2._lVal;
-            break;
-        case MT_ULONG:
-            return v1._ulVal < v2._ulVal;
-            break;
-        case MT_INT64:
-            return v1._i64Val < v2._i64Val;
-            break;
-        case MT_UINT64:
-            return v1._ui64Val < v2._ui64Val;
-            break;
-        case MT_FLOAT:
-            return v1._fltVal < v2._fltVal;
-            break;
-        case MT_DOUBLE:
-            return v1._dblVal < v2._dblVal;
-            break;
-        case MT_ANSI:
-            return *v1._pStr < *v2._pStr;
-            break;
-        case MT_UNICODE:
-            return *v1._pWStr < *v2._pWStr;
-            break;
-        case MT_ARRAY:
-            break;
-        case MT_COLLECTION:
-            break;
-        case MT_BINARY:
+        case Mixed::MT_BINARY:
+            return BufferCompareI( *v1._pBuf, *v2._pBuf ) < 0;
             break;
         }
     }
@@ -576,56 +703,14 @@ bool Mixed::MixedLess::operator () ( Mixed const & v1, Mixed const & v2 ) const
     {
         switch ( v1._type )
         {
-        case MT_NULL:
-            return false;
+        case Mixed::MT_ANSI:
+            return StringCompareI( *v1._pStr, v2.operator AnsiString() ) < 0;
             break;
-        case MT_BOOLEAN:
-            return v1._boolVal < (bool)v2;
+        case Mixed::MT_UNICODE:
+            return StringCompareI( *v1._pWStr, v2.operator UnicodeString() ) < 0;
             break;
-        case MT_BYTE:
-            return v1._btVal < (byte)v2;
-            break;
-        case MT_SHORT:
-            return v1._shVal < (short)v2;
-            break;
-        case MT_USHORT:
-            return v1._ushVal < (ushort)v2;
-            break;
-        case MT_INT:
-            return v1._iVal < (int)v2;
-            break;
-        case MT_UINT:
-            return v1._uiVal < (uint)v2;
-            break;
-        case MT_LONG:
-            return v1._lVal < (long)v2;
-            break;
-        case MT_ULONG:
-            return v1._ulVal < (ulong)v2;
-            break;
-        case MT_INT64:
-            return v1._i64Val < (int64)v2;
-            break;
-        case MT_UINT64:
-            return v1._ui64Val < (uint64)v2;
-            break;
-        case MT_FLOAT:
-            return v1._fltVal < (float)v2;
-            break;
-        case MT_DOUBLE:
-            return v1._dblVal < (double)v2;
-            break;
-        case MT_ANSI:
-            return *v1._pStr < (AnsiString)v2;
-            break;
-        case MT_UNICODE:
-            return *v1._pWStr < (UnicodeString)v2;
-            break;
-        case MT_ARRAY:
-            break;
-        case MT_COLLECTION:
-            break;
-        case MT_BINARY:
+        case Mixed::MT_BINARY:
+            return BufferCompareI( *v1._pBuf, v2.operator Buffer() ) < 0;
             break;
         }
     }
@@ -633,108 +718,397 @@ bool Mixed::MixedLess::operator () ( Mixed const & v1, Mixed const & v2 ) const
     {
         switch ( v2._type )
         {
-        case MT_NULL:
-            return false;
+        case Mixed::MT_ANSI:
+            return StringCompareI( v1.operator AnsiString(), *v2._pStr ) < 0;
             break;
-        case MT_BOOLEAN:
-            return (bool)v1 < v2._boolVal;
+        case Mixed::MT_UNICODE:
+            return StringCompareI( v1.operator UnicodeString(), *v2._pWStr ) < 0;
             break;
-        case MT_BYTE:
-            return (byte)v1 < v2._btVal;
-            break;
-        case MT_SHORT:
-            return (short)v1 < v2._shVal;
-            break;
-        case MT_USHORT:
-            return (ushort)v1 < v2._ushVal;
-            break;
-        case MT_INT:
-            return (int)v1 < v2._iVal;
-            break;
-        case MT_UINT:
-            return (uint)v1 < v2._uiVal;
-            break;
-        case MT_LONG:
-            return (long)v1 < v2._lVal;
-            break;
-        case MT_ULONG:
-            return (ulong)v1 < v2._ulVal;
-            break;
-        case MT_INT64:
-            return (int64)v1 < v2._i64Val;
-            break;
-        case MT_UINT64:
-            return (uint64)v1 < v2._ui64Val;
-            break;
-        case MT_FLOAT:
-            return (float)v1 < v2._fltVal;
-            break;
-        case MT_DOUBLE:
-            return (double)v1 < v2._dblVal;
-            break;
-        case MT_ANSI:
-            return (AnsiString)v1 < *v2._pStr;
-            break;
-        case MT_UNICODE:
-            return (UnicodeString)v1 < *v2._pWStr;
-            break;
-        case MT_ARRAY:
-            break;
-        case MT_COLLECTION:
-            break;
-        case MT_BINARY:
+        case Mixed::MT_BINARY:
+            return BufferCompareI( v1.operator Buffer(), *v2._pBuf ) < 0;
             break;
         }
     }
 
-    return ((String)v1) < ((String)v2);
+    return v1 < v2;
 }
 
-// enum Mixed::MixedType strings ----------------------------------------------------------
-static String __MixedTypeStrings[] = {
-    MixedType_ENUM_ITEMLIST(MixedType_ENUM_ITEMSTRING)
+// class Collection -----------------------------------------------------------------------
+Collection::Collection( bool caseInsensitive )
+{
+    this->_zeroInit();
+    this->create(caseInsensitive);
+}
+
+Collection::~Collection()
+{
+    this->destroy();
+}
+
+Collection::Collection( Collection const & other )
+{
+    this->_copyConstruct(other);
+}
+
+Collection & Collection::operator = ( Collection const & other )
+{
+    if ( this == &other ) return *this;
+    if ( this->_pKeysArr && ( this->_pMap || this->_pMapI ) ) // 当前已经存在分配的数组和映射表
+    {
+        if ( other._pKeysArr )
+            *this->_pKeysArr = *other._pKeysArr;
+        else
+            this->_pKeysArr->clear();
+
+        if ( this->_caseInsensitive )
+        {
+            // 当前是大小写无关的，但是目标是大小写相关的，删除当前的创建全新的
+            if ( other._caseInsensitive == false )
+            {
+                this->_caseInsensitive = other._caseInsensitive;
+                delete this->_pMapI;
+                this->_pMapI = nullptr;
+                this->_pMap = other._pMap ? new MixedMixedMap(*other._pMap) : new MixedMixedMap();
+            }
+            else
+            {
+                if ( other._pMapI )
+                    *this->_pMapI = *other._pMapI;
+                else
+                    this->_pMapI->clear();
+            }
+        }
+        else
+        {
+            // 当前是大小写相关的，但是目标是大小写无关的，删除当前的创建全新的
+            if ( other._caseInsensitive )
+            {
+                this->_caseInsensitive = other._caseInsensitive;
+                delete this->_pMap;
+                this->_pMap = nullptr;
+                this->_pMapI = other._pMapI ?  new MixedMixedMapI(*other._pMapI) : new MixedMixedMapI();
+            }
+            else
+            {
+                if ( other._pMap )
+                    *this->_pMap = *other._pMap;
+                else
+                    this->_pMap->clear();
+            }
+        }
+    }
+    else
+    {
+        this->destroy();
+        this->_copyConstruct(other);
+    }
+    return *this;
+}
+
+Collection::Collection( Collection && other )
+{
+    memcpy( this, &other, sizeof(*this) );
+    other._zeroInit();
+}
+
+Collection & Collection::operator = ( Collection && other )
+{
+    if ( this == &other ) return *this;
+    if ( this->_pKeysArr && ( this->_pMap || this->_pMapI ) ) // 当前已经存在分配的数组和映射表
+    {
+        if ( other._pKeysArr )
+            *this->_pKeysArr = std::move(*other._pKeysArr);
+        else
+            this->_pKeysArr->clear();
+
+        if ( this->_caseInsensitive )
+        {
+            // 当前是大小写无关的，但是目标是大小写相关的，删除当前的创建全新的
+            if ( other._caseInsensitive == false )
+            {
+                this->_caseInsensitive = other._caseInsensitive;
+                delete this->_pMapI;
+                this->_pMapI = nullptr;
+                this->_pMap = other._pMap ? new MixedMixedMap( std::move(*other._pMap) ) : new MixedMixedMap();
+            }
+            else
+            {
+                if ( other._pMapI )
+                    *this->_pMapI = std::move(*other._pMapI);
+                else
+                    this->_pMapI->clear();
+            }
+        }
+        else
+        {
+            // 当前是大小写相关的，但是目标是大小写无关的，删除当前的创建全新的
+            if ( other._caseInsensitive )
+            {
+                this->_caseInsensitive = other._caseInsensitive;
+                delete this->_pMap;
+                this->_pMap = nullptr;
+                this->_pMapI = other._pMapI ?  new MixedMixedMapI( std::move(*other._pMapI) ) : new MixedMixedMapI();
+            }
+            else
+            {
+                if ( other._pMap )
+                    *this->_pMap = std::move(*other._pMap);
+                else
+                    this->_pMap->clear();
+            }
+        }
+    }
+    else
+    {
+        this->destroy();
+        memcpy( this, &other, sizeof(*this) );
+        other._zeroInit();
+    }
+    return *this;
+}
+
+Collection::Collection( $c && coll, bool caseInsensitive )
+{
+    this->_zeroInit();
+    this->assign( std::move(coll), caseInsensitive );
+}
+
+Collection::Collection( Mixed const & coll, bool caseInsensitive )
+{
+    this->_zeroInit();
+    this->create(caseInsensitive);
+
+    if ( coll._type == Mixed::MT_COLLECTION )
+    {
+        size_t n = coll._pColl->getCount();
+        for ( size_t i = 0; i < n; ++i )
+        {
+            auto & pr = coll._pColl->getPair(i);
+            this->addPair( pr.first, pr.second );
+        }
+    }
+    else
+    {
+        Collection tmpColl = coll.operator Collection();
+        size_t n = tmpColl.getCount();
+        for ( size_t i = 0; i < n; ++i )
+        {
+            auto & pr = tmpColl.getPair(i);
+            this->addPair( pr.first, pr.second );
+        }
+    }
+}
+
+void Collection::create( bool caseInsensitive )
+{
+    this->destroy();
+    this->_caseInsensitive = caseInsensitive;
+    this->_pKeysArr = new MixedArray();
+    if ( this->_caseInsensitive )
+        this->_pMapI = new MixedMixedMapI();
+    else
+        this->_pMap = new MixedMixedMap();
+}
+
+void Collection::destroy()
+{
+    if ( this->_pKeysArr ) delete this->_pKeysArr;
+    if ( this->_caseInsensitive )
+    {
+        if ( this->_pMapI ) delete this->_pMapI;
+    }
+    else
+    {
+        if ( this->_pMap ) delete this->_pMap;
+    }
+    this->_zeroInit();
+}
+
+void Collection::clear()
+{
+    if ( this->_pKeysArr ) this->_pKeysArr->clear();
+    if ( this->_caseInsensitive )
+    {
+        if ( this->_pMapI ) this->_pMapI->clear();
+    }
+    else
+    {
+        if ( this->_pMap ) this->_pMap->clear();
+    }
+}
+
+Mixed & Collection::operator [] ( Mixed const & k )
+{
+    this->_addUniqueKey(k);
+    if ( this->_caseInsensitive )
+        return this->_pMapI->operator [] (k);
+    else
+        return this->_pMap->operator [] (k);
+}
+
+Mixed & Collection::at( Mixed const & k )
+{
+    if ( this->_caseInsensitive )
+        return this->_pMapI->at(k);
+    else
+        return this->_pMap->at(k);
+}
+
+Mixed const & Collection::at( Mixed const & k ) const
+{
+    if ( this->_caseInsensitive )
+        return this->_pMapI->at(k);
+    else
+        return this->_pMap->at(k);
+}
+
+MixedMixedPair & Collection::getPair( size_t i )
+{
+    if ( this->_caseInsensitive )
+        return *_pMapI->find( _pKeysArr->at(i) );
+    else
+        return *_pMap->find( _pKeysArr->at(i) );
+}
+
+MixedMixedPair const & Collection::getPair( size_t i ) const
+{
+    if ( this->_caseInsensitive )
+        return *_pMapI->find( _pKeysArr->at(i) );
+    else
+        return *_pMap->find( _pKeysArr->at(i) );
+}
+
+void Collection::setPair( size_t i, Mixed const & k, Mixed const & v )
+{
+    if ( this->_caseInsensitive )
+    {
+        this->_pMapI->erase( this->_pKeysArr->at(i) );
+        (*this->_pMapI)[k] = v;
+    }
+    else
+    {
+        this->_pMap->erase( this->_pKeysArr->at(i) );
+        (*this->_pMap)[k] = v;
+    }
+
+    this->_pKeysArr->at(i) = k;
+}
+
+void Collection::addPair( Mixed const & k, Mixed const & v )
+{
+    this->_addUniqueKey(k);
+    if ( this->_caseInsensitive )
+        this->_pMapI->operator [] (k) = v;
+    else
+        this->_pMap->operator [] (k) = v;
+}
+
+void Collection::addPair( Mixed const & k, Mixed && v )
+{
+    this->_addUniqueKey(k);
+    if ( this->_caseInsensitive )
+        this->_pMapI->operator [] (k) = std::move(v);
+    else
+        this->_pMap->operator [] (k) = std::move(v);
+}
+
+void Collection::del( Mixed const & k )
+{
+    auto it = std::find( this->_pKeysArr->begin(), this->_pKeysArr->end(), k );
+    if ( it != this->_pKeysArr->end() ) this->_pKeysArr->erase(it);
+    if ( this->_caseInsensitive )
+        this->_pMapI->erase(k);
+    else
+        this->_pMap->erase(k);
+}
+
+void Collection::reverse()
+{
+    offset_t j = (offset_t)_pKeysArr->size() - 1;
+    offset_t i = 0;
+    while ( i < j )
+    {
+        Mixed t = std::move( _pKeysArr->at(i) );
+        _pKeysArr->at(i) = std::move( _pKeysArr->at(j) );
+        _pKeysArr->at(j) = std::move(t);
+
+        i++;
+        j--;
+    }
+}
+
+void Collection::_copyConstruct( Collection const & other )
+{
+    this->_caseInsensitive = other._caseInsensitive;
+    this->_pKeysArr = other._pKeysArr ? new MixedArray(*other._pKeysArr) : new MixedArray();
+    if ( this->_caseInsensitive )
+        this->_pMapI = other._pMapI ? new MixedMixedMapI(*other._pMapI) : new MixedMixedMapI();
+    else
+        this->_pMap = other._pMap ? new MixedMixedMap(*other._pMap) : new MixedMixedMap();
+}
+
+// class Mixed ----------------------------------------------------------------------------
+// union _LongUlongUnion
+union _LongUlongUnion
+{
+    long l;
+    ulong ul;
+    _LongUlongUnion( long v ) : l(v) { }
+    _LongUlongUnion( ulong v ) : ul(v) { }
 };
 
-String const & Mixed::TypeString( MixedType type )
+// union _Int64Uint64Union
+union _Int64Uint64Union
 {
-    return __MixedTypeStrings[type];
+    int64 i64;
+    uint64 ui64;
+    _Int64Uint64Union( int64 v ) : i64(v) { }
+    _Int64Uint64Union( uint64 v ) : ui64(v) { }
+};
+
+// enum Mixed::MixedType strings ------------------------------------------------------------
+static AnsiString __MixedTypeStringsA[] = {
+    "MT_NULL",
+    MIXED_TYPE_LIST(MIXED_TYPE_ENUM_ITEMSTRINGA)
+};
+
+static UnicodeString __MixedTypeStringsW[] = {
+    L"MT_NULL",
+    MIXED_TYPE_LIST(MIXED_TYPE_ENUM_ITEMSTRINGW)
+};
+
+WINUX_FUNC_IMPL(AnsiString const &) TypeStringA( Mixed const & v )
+{
+    return __MixedTypeStringsA[v._type];
 }
 
-// ----------------------------------------------------------------------------------------
+WINUX_FUNC_IMPL(UnicodeString const &) TypeStringW( Mixed const & v )
+{
+    return __MixedTypeStringsW[v._type];
+}
 
+// Constructors -------------------------------------------------------------------------------
 Mixed::Mixed()
 {
     _zeroInit();
 }
 
-Mixed::Mixed( AnsiString const & str )
+Mixed::Mixed( std::nullptr_t )
 {
     _zeroInit();
-    this->assign( str.c_str(), str.length() );
 }
 
-Mixed::Mixed( UnicodeString const & str )
-{
-    _zeroInit();
-    this->assign( str.c_str(), str.length() );
-}
-
-Mixed::Mixed( char const * str, size_t len ) // 多字节字符串
-{
-    _zeroInit();
-    this->assign( str, len );
-}
-
-Mixed::Mixed( wchar const * str, size_t len ) // Unicode字符串
-{
-    _zeroInit();
-    this->assign( str, len );
-}
-
+// 基本类型构造函数 -----------------------------------------------------------------------------
 Mixed::Mixed( bool boolVal )
 {
     _zeroInit();
     this->assign(boolVal);
+}
+
+Mixed::Mixed( char chVal )
+{
+    _zeroInit();
+    this->assign(chVal);
 }
 
 Mixed::Mixed( byte btVal )
@@ -803,6 +1177,44 @@ Mixed::Mixed( double dblVal )
     this->assign(dblVal);
 }
 
+// 字符串构造函数 -------------------------------------------------------------------------------
+Mixed::Mixed( AnsiString const & str )
+{
+    _zeroInit();
+    this->assign(str);
+}
+
+Mixed::Mixed( UnicodeString const & str )
+{
+    _zeroInit();
+    this->assign(str);
+}
+
+Mixed::Mixed( AnsiString && str )
+{
+    _zeroInit();
+    this->assign( std::move(str) );
+}
+
+Mixed::Mixed( UnicodeString && str )
+{
+    _zeroInit();
+    this->assign( std::move(str) );
+}
+
+Mixed::Mixed( char const * str, size_t len )
+{
+    _zeroInit();
+    this->assign( str, len );
+}
+
+Mixed::Mixed( wchar const * str, size_t len )
+{
+    _zeroInit();
+    this->assign( str, len );
+}
+
+// Buffer构造函数 ------------------------------------------------------------------------------
 Mixed::Mixed( Buffer const & buf )
 {
     _zeroInit();
@@ -815,86 +1227,62 @@ Mixed::Mixed( void const * binaryData, size_t size, bool isPeek )
     this->assign( binaryData, size, isPeek );
 }
 
+Mixed::Mixed( Buffer && buf )
+{
+    _zeroInit();
+    this->assign( std::move(buf) );
+}
+
+Mixed::Mixed( GrowBuffer && buf )
+{
+    _zeroInit();
+    this->assign( std::move(buf) );
+}
+
+// Array构造函数 -------------------------------------------------------------------------------
 Mixed::Mixed( Mixed * arr, size_t count )
 {
     _zeroInit();
     this->assign( arr, count );
 }
 
-Mixed::Mixed( std::initializer_list<Mixed> list )
+Mixed::Mixed( std::initializer_list<Mixed> && list )
 {
     _zeroInit();
-    this->_type = MT_ARRAY;
-    this->_pArr = new MixedArray( std::move(list) );
+    this->assign( std::move(list) );
 }
 
-Mixed::Mixed( $a arr )
+Mixed::Mixed( $a && arr )
 {
     _zeroInit();
-    this->_type = MT_ARRAY;
-    this->_pArr = new MixedArray( std::move(arr._list) );
+    this->assign( std::move(arr) );
 }
 
-Mixed::Mixed( $c coll )
+// Collection构造函数 --------------------------------------------------------------------------
+Mixed::Mixed( $c && coll, bool caseInsensitive )
 {
     _zeroInit();
-    this->_type = MT_COLLECTION;
-    this->_pArr = new MixedArray(); // 存放keys
-    this->_pMap = new MixedMixedMap();
-    for ( auto & pr : coll._list )
-    {
-        this->_addUniqueKey(pr.first);
-        ( *this->_pMap )[pr.first] = pr.second;
-    }
+    this->assign( std::move(coll), caseInsensitive );
 }
 
-Mixed::~Mixed()
+Mixed::Mixed( Collection const & coll, bool caseInsensitive )
 {
-    this->free();
+    _zeroInit();
+    this->assign( coll, caseInsensitive );
 }
 
+// 拷贝和移动 ----------------------------------------------------------------------------------
 Mixed::Mixed( Mixed const & other )
 {
-    _zeroInit();
-    this->operator = (other);
+    this->_copyConstruct(other);
 }
 
 Mixed & Mixed::operator = ( Mixed const & other )
 {
-    if ( this == &other ) goto RETURN;
-    this->free(); // 先释放清空自己
-    switch ( other._type )
-    {
-    case MT_ANSI:
-        this->_type = other._type;
-        this->_pStr = new AnsiString(*other._pStr);
-        break;
-    case MT_UNICODE:
-        this->_type = other._type;
-        this->_pWStr = new UnicodeString(*other._pWStr);
-        break;
-    case MT_ARRAY:
-        this->_type = other._type;
-        this->_pArr = new MixedArray(*other._pArr);
-        break;
-    case MT_COLLECTION:
-        this->_type = other._type;
-        this->_pArr = new MixedArray(*other._pArr);
-        this->_pMap = new MixedMixedMap(*other._pMap);
-        break;
-    case MT_BINARY:
-        this->_type = other._type;
-        this->_pBuf = new Buffer(*other._pBuf);
-        break;
-    default: // 是其他的话，直接copy就好
-        memcpy( this, &other, sizeof(Mixed) );
-        break;
-    }
-RETURN:
+    if ( this == &other ) return *this;
+    this->_copyAssignment(other);
     return *this;
 }
-
-#ifndef MOVE_SEMANTICS_DISABLED
 
 Mixed::Mixed( Mixed && other )
 {
@@ -914,33 +1302,10 @@ Mixed & Mixed::operator = ( Mixed && other )
     return *this;
 }
 
-Mixed::Mixed( Buffer && buf )
-{
-    this->_type = MT_BINARY;
-    this->_pBuf = new Buffer( std::move(buf) );
-}
-
-void Mixed::assign( Buffer && buf )
+Mixed::~Mixed()
 {
     this->free();
-    this->_type = MT_BINARY;
-    this->_pBuf = new Buffer( std::move(buf) );
 }
-
-Mixed::Mixed( GrowBuffer && buf )
-{
-    this->_type = MT_BINARY;
-    this->_pBuf = new Buffer( std::move(buf) );
-}
-
-void Mixed::assign( GrowBuffer && buf )
-{
-    this->free();
-    this->_type = MT_BINARY;
-    this->_pBuf = new Buffer( std::move(buf) );
-}
-
-#endif
 
 void Mixed::free()
 {
@@ -958,6 +1323,12 @@ void Mixed::free()
             delete this->_pWStr;
         }
         break;
+    case MT_BINARY:
+        if ( this->_pBuf != NULL )
+        {
+            delete this->_pBuf;
+        }
+        break;
     case MT_ARRAY:
         if ( this->_pArr != NULL )
         {
@@ -965,25 +1336,673 @@ void Mixed::free()
         }
         break;
     case MT_COLLECTION:
-        if ( this->_pArr != NULL )
+        if ( this->_pColl != NULL )
         {
-            delete this->_pArr;
+            delete this->_pColl;
         }
-        if ( this->_pMap != NULL )
-        {
-            delete this->_pMap;
-        }
-        break;
-    case MT_BINARY:
-        if ( this->_pBuf != NULL )
-        {
-            delete this->_pBuf;
-        }
-        break;
-    default:
         break;
     }
     this->_zeroInit();
+}
+
+// ------------------------------------------------------------------------------------------
+Mixed::operator bool() const
+{
+    bool b = false;
+    switch ( this->_type )
+    {
+    case MT_BOOLEAN:
+        b = this->_boolVal;
+        break;
+    case MT_CHAR:
+        b = this->_chVal != 0;
+        break;
+    case MT_BYTE:
+        b = this->_btVal != 0;
+        break;
+    case MT_SHORT:
+        b = this->_shVal != 0;
+        break;
+    case MT_USHORT:
+        b = this->_ushVal != 0;
+        break;
+    case MT_INT:
+        b = this->_iVal != 0;
+        break;
+    case MT_UINT:
+        b = this->_uiVal != 0;
+        break;
+    case MT_LONG:
+        b = this->_lVal != 0;
+        break;
+    case MT_ULONG:
+        b = this->_ulVal != 0;
+        break;
+    case MT_INT64:
+        b = this->_i64Val != 0;
+        break;
+    case MT_UINT64:
+        b = this->_ui64Val != 0;
+        break;
+    case MT_FLOAT:
+        b = this->_fltVal != 0;
+        break;
+    case MT_DOUBLE:
+        b = this->_dblVal != 0;
+        break;
+    case MT_ANSI: // 字符串转成bool型，空串为false，否则为true
+        b = !this->_pStr->empty();
+        break;
+    case MT_UNICODE:
+        b = !this->_pWStr->empty();
+        break;
+    case MT_BINARY:
+        b = this->_pBuf->getSize() > 0;
+        break;
+    case MT_ARRAY:
+        b = !this->_pArr->empty();
+        break;
+    case MT_COLLECTION:
+        b = this->_pColl->getCount() > 0;
+        break;
+    }
+    return b;
+}
+
+template < typename _Ty >
+inline static _Ty __MixedBaseTypeConv( Mixed const * v )
+{
+    switch ( v->_type )
+    {
+    case Mixed::MT_NULL:
+        return 0;
+    case Mixed::MT_BOOLEAN:
+        return v->_boolVal ? (_Ty)1 : (_Ty)0;
+    case Mixed::MT_CHAR:
+        return (_Ty)v->_chVal;
+    case Mixed::MT_BYTE:
+        return (_Ty)v->_btVal;
+    case Mixed::MT_SHORT:
+        return (_Ty)v->_shVal;
+    case Mixed::MT_USHORT:
+        return (_Ty)v->_ushVal;
+    case Mixed::MT_INT:
+        return (_Ty)v->_iVal;
+    case Mixed::MT_UINT:
+        return (_Ty)v->_uiVal;
+    case Mixed::MT_LONG:
+        return (_Ty)v->_lVal;
+    case Mixed::MT_ULONG:
+        return (_Ty)v->_ulVal;
+    case Mixed::MT_INT64:
+        return (_Ty)v->_i64Val;
+    case Mixed::MT_UINT64:
+        return (_Ty)v->_ui64Val;
+    case Mixed::MT_FLOAT:
+        return (_Ty)v->_fltVal;
+    case Mixed::MT_DOUBLE:
+        return (_Ty)v->_dblVal;
+    case Mixed::MT_ANSI:
+    case Mixed::MT_UNICODE:
+    case Mixed::MT_BINARY:
+    case Mixed::MT_ARRAY:
+    case Mixed::MT_COLLECTION:
+    default:
+        throw MixedError( MixedError::meCantConverted, TypeStringA(*v) + " is not base type, can't convert to numeric" );
+        break;
+    }
+}
+
+char Mixed::toChar() const
+{
+    char chVal = 0;
+    switch ( this->_type )
+    {
+    case MT_CHAR:
+        chVal = this->_chVal;
+        break;
+    case MT_ANSI:
+        chVal = (char)this->operator int();
+        break;
+    case MT_UNICODE:
+        chVal = (char)this->operator int();
+        break;
+    case MT_BINARY:
+        if ( this->_pBuf->getSize() > 0 )
+        {
+            chVal = *this->_pBuf->get<char>();
+        }
+        break;
+    case MT_ARRAY:
+        if ( this->_pArr->size() > 0 )
+        {
+            chVal = this->_pArr->at(0).to<char>();
+        }
+        break;
+    case MT_COLLECTION:
+        if ( this->_pColl->getCount() > 0 )
+        {
+            chVal = this->_pColl->getPair(0).second.to<char>();
+        }
+        break;
+    default:
+        chVal = __MixedBaseTypeConv<char>(this);
+        break;
+    }
+    return chVal;
+}
+
+Mixed::operator byte() const
+{
+    byte btVal = 0U;
+    switch ( this->_type )
+    {
+    case MT_BYTE:
+        btVal = this->_btVal;
+        break;
+    case MT_ANSI:
+        btVal = (byte)this->operator uint();
+        break;
+    case MT_UNICODE:
+        btVal = (byte)this->operator uint();
+        break;
+    case MT_BINARY:
+        if ( this->_pBuf->getSize() > 0 )
+        {
+            btVal = *this->_pBuf->get<byte>();
+        }
+        break;
+    case MT_ARRAY:
+        if ( this->_pArr->size() > 0 )
+        {
+            btVal = this->_pArr->at(0).to<byte>();
+        }
+        break;
+    case MT_COLLECTION:
+        if ( this->_pColl->getCount() > 0 )
+        {
+            btVal = this->_pColl->getPair(0).second.to<byte>();
+        }
+        break;
+    default:
+        btVal = __MixedBaseTypeConv<byte>(this);
+        break;
+    }
+    return btVal;
+}
+
+Mixed::operator short() const
+{
+    short shVal = 0;
+    switch ( this->_type )
+    {
+    case MT_SHORT:
+        shVal = this->_shVal;
+        break;
+    case MT_ANSI:
+        shVal = (short)this->operator int();
+        break;
+    case MT_UNICODE:
+        shVal = (short)this->operator int();
+        break;
+    case MT_BINARY:
+        if ( this->_pBuf->getSize() > sizeof(short) - 1 )
+        {
+            shVal = *this->_pBuf->get<short>();
+        }
+        else if ( this->_pBuf->getSize() > sizeof(char) - 1 )
+        {
+            shVal = *this->_pBuf->get<char>();
+        }
+        break;
+    case MT_ARRAY:
+        if ( this->_pArr->size() > 0 )
+        {
+            shVal = this->_pArr->at(0).to<short>();
+        }
+        break;
+    case MT_COLLECTION:
+        if ( this->_pColl->getCount() > 0 )
+        {
+            shVal = this->_pColl->getPair(0).second.to<short>();
+        }
+        break;
+    default:
+        shVal = __MixedBaseTypeConv<short>(this);
+        break;
+    }
+    return shVal;
+}
+
+Mixed::operator ushort() const
+{
+    ushort ushVal = 0;
+    switch ( this->_type )
+    {
+    case MT_USHORT:
+        ushVal = this->_ushVal;
+        break;
+    case MT_ANSI:
+        ushVal = (ushort)this->operator uint();
+        break;
+    case MT_UNICODE:
+        ushVal = (ushort)this->operator uint();
+        break;
+    case MT_BINARY:
+        if ( this->_pBuf->getSize() > sizeof(ushort) - 1 )
+        {
+            ushVal = *this->_pBuf->get<ushort>();
+        }
+        else if ( this->_pBuf->getSize() > sizeof(byte) - 1 )
+        {
+            ushVal = *this->_pBuf->get<byte>();
+        }
+        break;
+    case MT_ARRAY:
+        if ( this->_pArr->size() > 0 )
+        {
+            ushVal = this->_pArr->at(0).to<ushort>();
+        }
+        break;
+    case MT_COLLECTION:
+        if ( this->_pColl->getCount() > 0 )
+        {
+            ushVal = this->_pColl->getPair(0).second.to<ushort>();
+        }
+        break;
+    default:
+        ushVal = __MixedBaseTypeConv<ushort>(this);
+        break;
+    }
+    return ushVal;
+}
+
+Mixed::operator int() const
+{
+    int iVal = 0;
+    switch ( this->_type )
+    {
+    case MT_INT:
+        iVal = this->_iVal;
+        break;
+    case MT_ANSI:
+        ParseInt( *this->_pStr, &iVal );
+        break;
+    case MT_UNICODE:
+        ParseInt( *this->_pWStr, &iVal );
+        break;
+    case MT_BINARY:
+        if ( this->_pBuf->getSize() > sizeof(int) - 1 )
+        {
+            iVal = *this->_pBuf->get<int>();
+        }
+        else if ( this->_pBuf->getSize() > sizeof(short) - 1 )
+        {
+            iVal = *this->_pBuf->get<short>();
+        }
+        else if ( this->_pBuf->getSize() > sizeof(char) - 1 )
+        {
+            iVal = *this->_pBuf->get<char>();
+        }
+        break;
+    case MT_ARRAY:
+        if ( this->_pArr->size() > 0 )
+        {
+            iVal = this->_pArr->at(0).to<int>();
+        }
+        break;
+    case MT_COLLECTION:
+        if ( this->_pColl->getCount() > 0 )
+        {
+            iVal = this->_pColl->getPair(0).second.to<int>();
+        }
+        break;
+    default:
+        iVal = __MixedBaseTypeConv<int>(this);
+        break;
+    }
+    return iVal;
+}
+
+Mixed::operator uint() const
+{
+    uint uiVal = 0U;
+    switch ( this->_type )
+    {
+    case MT_UINT:
+        uiVal = this->_uiVal;
+        break;
+    case MT_ANSI:
+        ParseUInt( *this->_pStr, &uiVal );
+        break;
+    case MT_UNICODE:
+        ParseUInt( *this->_pWStr, &uiVal );
+        break;
+    case MT_BINARY:
+        if ( this->_pBuf->getSize() > sizeof(uint) - 1 )
+        {
+            uiVal = *this->_pBuf->get<uint>();
+        }
+        else if ( this->_pBuf->getSize() > sizeof(ushort) - 1 )
+        {
+            uiVal = *this->_pBuf->get<ushort>();
+        }
+        else if ( this->_pBuf->getSize() > sizeof(byte) - 1 )
+        {
+            uiVal = *this->_pBuf->get<byte>();
+        }
+        break;
+    case MT_ARRAY:
+        if ( this->_pArr->size() > 0 )
+        {
+            uiVal = this->_pArr->at(0).to<uint>();
+        }
+        break;
+    case MT_COLLECTION:
+        if ( this->_pColl->getCount() > 0 )
+        {
+            uiVal = this->_pColl->getPair(0).second.to<uint>();
+        }
+        break;
+    default:
+        uiVal = __MixedBaseTypeConv<uint>(this);
+        break;
+    }
+    return uiVal;
+}
+
+Mixed::operator long() const
+{
+    long lVal = 0L;
+    switch ( this->_type )
+    {
+    case MT_LONG:
+        lVal = this->_lVal;
+        break;
+    case MT_ANSI:
+        ParseLong( *this->_pStr, &lVal );
+        break;
+    case MT_UNICODE:
+        ParseLong( *this->_pWStr, &lVal );
+        break;
+    case MT_BINARY:
+        if ( this->_pBuf->getSize() > sizeof(long) - 1 )
+        {
+            lVal = *this->_pBuf->get<long>();
+        }
+        else if ( this->_pBuf->getSize() > sizeof(short) - 1 )
+        {
+            lVal = *this->_pBuf->get<short>();
+        }
+        else if ( this->_pBuf->getSize() > sizeof(char) - 1 )
+        {
+            lVal = *this->_pBuf->get<char>();
+        }
+        break;
+    case MT_ARRAY:
+        if ( this->_pArr->size() > 0 )
+        {
+            lVal = this->_pArr->at(0).to<long>();
+        }
+        break;
+    case MT_COLLECTION:
+        if ( this->_pColl->getCount() > 0 )
+        {
+            lVal = this->_pColl->getPair(0).second.to<long>();
+        }
+        break;
+    default:
+        lVal = __MixedBaseTypeConv<long>(this);
+        break;
+    }
+    return lVal;
+}
+
+Mixed::operator ulong() const
+{
+    ulong ulVal = 0UL;
+    switch ( this->_type )
+    {
+    case MT_ULONG:
+        ulVal = this->_ulVal;
+        break;
+    case MT_ANSI:
+        ParseULong( *this->_pStr, &ulVal );
+        break;
+    case MT_UNICODE:
+        ParseULong( *this->_pWStr, &ulVal );
+        break;
+    case MT_BINARY:
+        if ( this->_pBuf->getSize() > sizeof(ulong) - 1 )
+        {
+            ulVal = *this->_pBuf->get<ulong>();
+        }
+        else if ( this->_pBuf->getSize() > sizeof(ushort) - 1 )
+        {
+            ulVal = *this->_pBuf->get<ushort>();
+        }
+        else if ( this->_pBuf->getSize() > sizeof(byte) - 1 )
+        {
+            ulVal = *this->_pBuf->get<byte>();
+        }
+        break;
+    case MT_ARRAY:
+        if ( this->_pArr->size() > 0 )
+        {
+            ulVal = this->_pArr->at(0).to<ulong>();
+        }
+        break;
+    case MT_COLLECTION:
+        if ( this->_pColl->getCount() > 0 )
+        {
+            ulVal = this->_pColl->getPair(0).second.to<ulong>();
+        }
+        break;
+    default:
+        ulVal = __MixedBaseTypeConv<ulong>(this);
+        break;
+    }
+    return ulVal;
+}
+
+Mixed::operator float() const
+{
+    float fltVal = 0.0f;
+    switch ( this->_type )
+    {
+    case MT_FLOAT:
+        fltVal = this->_fltVal;
+        break;
+    case MT_ANSI:
+        ParseFloat( *this->_pStr, &fltVal );
+        break;
+    case MT_UNICODE:
+        ParseFloat( *this->_pWStr, &fltVal );
+        break;
+    case MT_BINARY:
+        if ( this->_pBuf->getSize() > sizeof(float) - 1 )
+        {
+            fltVal = *this->_pBuf->get<float>();
+        }
+        else if ( this->_pBuf->getSize() > sizeof(short) - 1 )
+        {
+            fltVal = *this->_pBuf->get<short>();
+        }
+        else if ( this->_pBuf->getSize() > sizeof(char) - 1 )
+        {
+            fltVal = *this->_pBuf->get<char>();
+        }
+        break;
+    case MT_ARRAY:
+        if ( this->_pArr->size() > 0 )
+        {
+            fltVal = this->_pArr->at(0).to<float>();
+        }
+        break;
+    case MT_COLLECTION:
+        if ( this->_pColl->getCount() > 0 )
+        {
+            fltVal = this->_pColl->getPair(0).second.to<float>();
+        }
+        break;
+    default:
+        fltVal = __MixedBaseTypeConv<float>(this);
+        break;
+    }
+    return fltVal;
+}
+
+Mixed::operator int64() const
+{
+    int64 i64Val = 0;
+    switch ( this->_type )
+    {
+    case MT_INT64:
+        i64Val = this->_i64Val;
+        break;
+    case MT_ANSI:
+        ParseInt64( *this->_pStr, &i64Val );
+        break;
+    case MT_UNICODE:
+        ParseInt64( *this->_pWStr, &i64Val );
+        break;
+    case MT_BINARY:
+        if ( this->_pBuf->getSize() > sizeof(int64) - 1 )
+        {
+            i64Val = *this->_pBuf->get<int64>();
+        }
+        else if ( this->_pBuf->getSize() > sizeof(long) - 1 )
+        {
+            i64Val = *this->_pBuf->get<long>();
+        }
+        else if ( this->_pBuf->getSize() > sizeof(short) - 1 )
+        {
+            i64Val = *this->_pBuf->get<short>();
+        }
+        else if ( this->_pBuf->getSize() > sizeof(char) - 1 )
+        {
+            i64Val = *this->_pBuf->get<char>();
+        }
+        break;
+    case MT_ARRAY:
+        if ( this->_pArr->size() > 0 )
+        {
+            i64Val = this->_pArr->at(0).to<int64>();
+        }
+        break;
+    case MT_COLLECTION:
+        if ( this->_pColl->getCount() > 0 )
+        {
+            i64Val = this->_pColl->getPair(0).second.to<int64>();
+        }
+        break;
+    default:
+        i64Val = __MixedBaseTypeConv<int64>(this);
+        break;
+    }
+    return i64Val;
+}
+
+Mixed::operator uint64() const
+{
+    uint64 ui64Val = 0U;
+    switch ( this->_type )
+    {
+    case MT_UINT64:
+        ui64Val = this->_ui64Val;
+        break;
+    case MT_ANSI:
+        ParseUInt64( *this->_pStr, &ui64Val );
+        break;
+    case MT_UNICODE:
+        ParseUInt64( *this->_pWStr, &ui64Val );
+        break;
+    case MT_BINARY:
+        if ( this->_pBuf->getSize() > sizeof(uint64) - 1 )
+        {
+            ui64Val = *this->_pBuf->get<uint64>();
+        }
+        else if ( this->_pBuf->getSize() > sizeof(ulong) - 1 )
+        {
+            ui64Val = *this->_pBuf->get<ulong>();
+        }
+        else if ( this->_pBuf->getSize() > sizeof(ushort) - 1 )
+        {
+            ui64Val = *this->_pBuf->get<ushort>();
+        }
+        else if ( this->_pBuf->getSize() > sizeof(byte) - 1 )
+        {
+            ui64Val = *this->_pBuf->get<byte>();
+        }
+        break;
+    case MT_ARRAY:
+        if ( this->_pArr->size() > 0 )
+        {
+            ui64Val = this->_pArr->at(0).to<uint64>();
+        }
+        break;
+    case MT_COLLECTION:
+        if ( this->_pColl->getCount() > 0 )
+        {
+            ui64Val = this->_pColl->getPair(0).second.to<uint64>();
+        }
+        break;
+    default:
+        ui64Val = __MixedBaseTypeConv<uint64>(this);
+        break;
+    }
+    return ui64Val;
+}
+
+Mixed::operator double() const
+{
+    double dblVal = 0.0;
+    switch ( this->_type )
+    {
+    case MT_DOUBLE:
+        dblVal = this->_dblVal;
+        break;
+    case MT_ANSI:
+        ParseDouble( *this->_pStr, &dblVal );
+        break;
+    case MT_UNICODE:
+        ParseDouble( *this->_pWStr, &dblVal );
+        break;
+    case MT_BINARY:
+        if ( this->_pBuf->getSize() > sizeof(double) - 1 )
+        {
+            dblVal = *this->_pBuf->get<double>();
+        }
+        else if ( this->_pBuf->getSize() > sizeof(ulong) - 1 )
+        {
+            dblVal = *this->_pBuf->get<ulong>();
+        }
+        else if ( this->_pBuf->getSize() > sizeof(ushort) - 1 )
+        {
+            dblVal = *this->_pBuf->get<ushort>();
+        }
+        else if ( this->_pBuf->getSize() > sizeof(byte) - 1 )
+        {
+            dblVal = *this->_pBuf->get<byte>();
+        }
+        break;
+    case MT_ARRAY:
+        if ( this->_pArr->size() > 0 )
+        {
+            dblVal = this->_pArr->at(0).to<double>();
+        }
+        break;
+    case MT_COLLECTION:
+        if ( this->_pColl->getCount() > 0 )
+        {
+            dblVal = this->_pColl->getPair(0).second.to<double>();
+        }
+        break;
+    default:
+        dblVal = __MixedBaseTypeConv<double>(this);
+        break;
+    }
+    return dblVal;
 }
 
 Mixed::operator AnsiString() const
@@ -994,6 +2013,9 @@ Mixed::operator AnsiString() const
     {
     case MT_BOOLEAN:
         s = this->_boolVal ? "1" : "";
+        break;
+    case MT_CHAR:
+        s = this->_chVal;
         break;
     case MT_BYTE:
         {
@@ -1081,23 +2103,19 @@ Mixed::operator AnsiString() const
         }
         break;
     case MT_ANSI:
-        {
-            s = *this->_pStr;
-        }
+        s = *this->_pStr;
         break;
     case MT_UNICODE:
-        {
-            s = UnicodeToLocal(*this->_pWStr);
-        }
+        s = UnicodeToLocal(*this->_pWStr);
+        break;
+    case MT_BINARY:
+        s = this->_pBuf->toAnsi();
         break;
     case MT_ARRAY:
         s = MixedToJsonA( *this, false );
         break;
     case MT_COLLECTION:
         s = MixedToJsonA( *this, false );
-        break;
-    case MT_BINARY:
-        s.assign( (AnsiString::value_type*)this->_pBuf->getBuf(), this->_pBuf->getSize() / sizeof(AnsiString::value_type) );
         break;
     default:
         //s = "null";
@@ -1114,6 +2132,9 @@ Mixed::operator UnicodeString() const
     {
     case MT_BOOLEAN:
         s = this->_boolVal ? L"1" : L"";
+        break;
+    case MT_CHAR:
+        s = (UnicodeString::value_type)this->_chVal;
         break;
     case MT_BYTE:
         {
@@ -1206,23 +2227,19 @@ Mixed::operator UnicodeString() const
         }
         break;
     case MT_ANSI:
-        {
-            s = LocalToUnicode(*this->_pStr);
-        }
+        s = LocalToUnicode(*this->_pStr);
         break;
     case MT_UNICODE:
-        {
-            s = *this->_pWStr;
-        }
+        s = *this->_pWStr;
+        break;
+    case MT_BINARY:
+        s = this->_pBuf->toUnicode();
         break;
     case MT_ARRAY:
         s = MixedToJsonW( *this, false );
         break;
     case MT_COLLECTION:
         s = MixedToJsonW( *this, false );
-        break;
-    case MT_BINARY:
-        s.assign( (UnicodeString::value_type*)this->_pBuf->getBuf(), this->_pBuf->getSize() / sizeof(UnicodeString::value_type) );
         break;
     default:
         //s = L"null";
@@ -1240,6 +2257,12 @@ Mixed::operator Buffer() const
         {
             buf.alloc( sizeof(this->_boolVal) );
             memcpy( buf.getBuf(), &this->_boolVal, buf.getSize() );
+        }
+        break;
+    case MT_CHAR:
+        {
+            buf.alloc( sizeof(this->_chVal) );
+            memcpy( buf.getBuf(), &this->_chVal, buf.getSize() );
         }
         break;
     case MT_BYTE:
@@ -1320,9 +2343,13 @@ Mixed::operator Buffer() const
             memcpy( buf.getBuf(), this->_pWStr->c_str(), buf.getSize() );
         }
         break;
+    case MT_BINARY:
+        {
+            buf.setBuf( this->_pBuf->getBuf(), this->_pBuf->getSize(), false );
+        }
+        break;
     case MT_ARRAY:
         {
-            //s = MixedToJsonW( *this, false );
             GrowBuffer tmpBuf(64);
             size_t n = this->_pArr->size();
             for ( size_t i = 0; i < n; ++i )
@@ -1335,7 +2362,6 @@ Mixed::operator Buffer() const
         break;
     case MT_COLLECTION:
         {
-            //s = MixedToJsonW( *this, false );
             GrowBuffer tmpBuf(64);
             size_t n = this->getCount();
             for ( size_t i = 0; i < n; ++i )
@@ -1346,11 +2372,6 @@ Mixed::operator Buffer() const
             buf = std::move(tmpBuf);
         }
         break;
-    case MT_BINARY:
-        {
-            buf.setBuf( this->_pBuf->getBuf(), this->_pBuf->getSize(), false );
-        }
-        break;
     default:
         // empty buffer.
         break;
@@ -1358,479 +2379,160 @@ Mixed::operator Buffer() const
     return buf;
 }
 
-Mixed::operator bool() const
+Mixed::operator MixedArray() const
 {
-    bool b = false;
+    MixedArray arr;
     switch ( this->_type )
     {
     case MT_BOOLEAN:
-        b = this->_boolVal;
+        arr.push_back(this->_boolVal);
+        break;
+    case MT_CHAR:
+        arr.push_back(this->_chVal);
         break;
     case MT_BYTE:
-        b = this->_btVal != 0;
+        arr.push_back(this->_btVal);
         break;
     case MT_SHORT:
-        b = this->_shVal != 0;
+        arr.push_back(this->_shVal);
         break;
     case MT_USHORT:
-        b = this->_ushVal != 0;
+        arr.push_back(this->_ushVal);
         break;
     case MT_INT:
-        b = this->_iVal != 0;
+        arr.push_back(this->_iVal);
         break;
     case MT_UINT:
-        b = this->_uiVal != 0;
+        arr.push_back(this->_uiVal);
         break;
     case MT_LONG:
-        b = this->_lVal != 0;
+        arr.push_back(this->_lVal);
         break;
     case MT_ULONG:
-        b = this->_ulVal != 0;
+        arr.push_back(this->_ulVal);
         break;
     case MT_INT64:
-        b = this->_i64Val != 0;
+        arr.push_back(this->_i64Val);
         break;
     case MT_UINT64:
-        b = this->_ui64Val != 0;
+        arr.push_back(this->_ui64Val);
         break;
     case MT_FLOAT:
-        b = this->_fltVal != 0;
+        arr.push_back(this->_fltVal);
         break;
     case MT_DOUBLE:
-        b = this->_dblVal != 0;
-        break;
-    case MT_ANSI: // 字符串转成bool型,空串为false,否则为true
-        b = !this->_pStr->empty();
-        break;
-    case MT_UNICODE:
-        b = !this->_pWStr->empty();
-        break;
-    case MT_ARRAY:
-        return !this->_pArr->empty();
-        break;
-    case MT_COLLECTION:
-        return !this->_pMap->empty();
-        break;
-    case MT_BINARY:
-        return this->_pBuf->getSize() > 0;
-        break;
-    default:
-        break;
-    }
-    return b;
-}
-
-Mixed::operator byte() const
-{
-    byte bt = 0U;
-    switch ( this->_type )
-    {
-    case MT_BOOLEAN:
-        bt = (byte)this->_boolVal;
-        break;
-    case MT_BYTE:
-        bt = this->_btVal;
-        break;
-    case MT_SHORT:
-        bt = (byte)this->_shVal;
-        break;
-    case MT_USHORT:
-        bt = (byte)this->_ushVal;
-        break;
-    case MT_INT:
-        bt = (byte)this->_iVal;
-        break;
-    case MT_UINT:
-        bt = (byte)this->_uiVal;
-        break;
-    case MT_LONG:
-        bt = (byte)this->_lVal;
-        break;
-    case MT_ULONG:
-        bt = (byte)this->_ulVal;
-        break;
-    case MT_INT64:
-        bt = (byte)this->_i64Val;
-        break;
-    case MT_UINT64:
-        bt = (byte)this->_ui64Val;
-        break;
-    case MT_FLOAT:
-        bt = (byte)this->_fltVal;
-        break;
-    case MT_DOUBLE:
-        bt = (byte)this->_dblVal;
+        arr.push_back(this->_dblVal);
         break;
     case MT_ANSI:
-        bt = (byte)this->operator ulong();
+        arr.push_back(*this->_pStr);
         break;
     case MT_UNICODE:
-        bt = (byte)this->operator ulong();
-        break;
-    case MT_ARRAY:
-        throw MixedError( MixedError::meCantConverted, "MT_ARRAY can't convert to MT_BYTE" );
-        break;
-    case MT_COLLECTION:
-        throw MixedError( MixedError::meCantConverted, "MT_COLLECTION can't convert to MT_BYTE" );
+        arr.push_back(*this->_pWStr);
         break;
     case MT_BINARY:
-        throw MixedError( MixedError::meCantConverted, "MT_BINARY can't convert to MT_BYTE" );
+        arr.push_back(*this->_pBuf);
         break;
-    default:
-        break;
-    }
-    return bt;
-}
-
-Mixed::operator short() const
-{
-    switch ( this->_type )
-    {
-    case MT_SHORT:
-        return this->_shVal;
     case MT_ARRAY:
-        throw MixedError( MixedError::meCantConverted, "MT_ARRAY can't convert to MT_SHORT" );
+        arr = *this->_pArr;
         break;
     case MT_COLLECTION:
-        throw MixedError( MixedError::meCantConverted, "MT_COLLECTION can't convert to MT_SHORT" );
-        break;
-    case MT_BINARY:
-        throw MixedError( MixedError::meCantConverted, "MT_BINARY can't convert to MT_SHORT" );
-        break;
-    default:
-        return (short)this->operator long();
-    }
-}
-
-Mixed::operator ushort() const
-{
-    switch ( this->_type )
-    {
-    case MT_USHORT:
-        return this->_ushVal;
-    case MT_ARRAY:
-        throw MixedError( MixedError::meCantConverted, "MT_ARRAY can't convert to MT_USHORT" );
-        break;
-    case MT_COLLECTION:
-        throw MixedError( MixedError::meCantConverted, "MT_COLLECTION can't convert to MT_USHORT" );
-        break;
-    case MT_BINARY:
-        throw MixedError( MixedError::meCantConverted, "MT_BINARY can't convert to MT_USHORT" );
-        break;
-    default:
-        return (ushort)this->operator ulong();
-    }
-}
-
-Mixed::operator int() const
-{
-    switch ( this->_type )
-    {
-    case MT_INT:
-        return this->_iVal;
-    case MT_ARRAY:
-        throw MixedError( MixedError::meCantConverted, "MT_ARRAY can't convert to MT_INT" );
-        break;
-    case MT_COLLECTION:
-        throw MixedError( MixedError::meCantConverted, "MT_COLLECTION can't convert to MT_INT" );
-        break;
-    case MT_BINARY:
-        throw MixedError( MixedError::meCantConverted, "MT_BINARY can't convert to MT_INT" );
-        break;
-    default:
-        return (int)this->operator long();
-    }
-}
-
-Mixed::operator uint() const
-{
-    switch ( this->_type )
-    {
-    case MT_UINT:
-        return this->_uiVal;
-    case MT_ARRAY:
-        throw MixedError( MixedError::meCantConverted, "MT_ARRAY can't convert to MT_UINT" );
-        break;
-    case MT_COLLECTION:
-        throw MixedError( MixedError::meCantConverted, "MT_COLLECTION can't convert to MT_UINT" );
-        break;
-    case MT_BINARY:
-        throw MixedError( MixedError::meCantConverted, "MT_BINARY can't convert to MT_UINT" );
-        break;
-    default:
-        return (uint)this->operator ulong();
-    }
-}
-
-Mixed::operator long() const
-{
-    switch ( this->_type )
-    {
-    case MT_LONG:
-        return this->_lVal;
-    case MT_ARRAY:
-        throw MixedError( MixedError::meCantConverted, "MT_ARRAY can't convert to MT_LONG" );
-        break;
-    case MT_COLLECTION:
-        throw MixedError( MixedError::meCantConverted, "MT_COLLECTION can't convert to MT_LONG" );
-        break;
-    case MT_BINARY:
-        throw MixedError( MixedError::meCantConverted, "MT_BINARY can't convert to MT_LONG" );
-        break;
-    default:
-        break;
-    }
-    union
-    {
-        long l;
-        ulong ul;
-    } tmp;
-    tmp.ul = this->operator ulong();
-    return tmp.l;
-}
-
-Mixed::operator ulong() const
-{
-    ulong ul = 0UL;
-    switch ( this->_type )
-    {
-    case MT_BOOLEAN:
-        ul = this->_boolVal ? 1U : 0U;
-        break;
-    case MT_BYTE:
-        ul = (ulong)this->_btVal;
-        break;
-    case MT_SHORT:
-        ul = (ulong)this->_shVal;
-        break;
-    case MT_USHORT:
-        ul = (ulong)this->_ushVal;
-        break;
-    case MT_INT:
-        ul = (ulong)this->_iVal;
-        break;
-    case MT_UINT:
-        ul = (ulong)this->_uiVal;
-        break;
-    case MT_LONG:
+        for ( auto itKey = this->_pColl->refKeysArray().begin(); itKey != this->_pColl->refKeysArray().end(); ++itKey )
         {
-            union
-            {
-                long l;
-                ulong ul;
-            } tmp;
-            tmp.l = this->_lVal;
-            ul = tmp.ul;
+            Mixed pr;
+            pr.addPair( this->_pColl->getCaseInsensitive() )( *itKey, this->_pColl->operator [] (*itKey) );
+            arr.push_back( std::move(pr) );
         }
         break;
-    case MT_ULONG:
-        ul = this->_ulVal;
-        break;
-    case MT_INT64:
-        ul = (ulong)this->_i64Val;
-        break;
-    case MT_UINT64:
-        ul = (ulong)this->_ui64Val;
-        break;
-    case MT_FLOAT:
-        ul = (ulong)this->_fltVal;
-        break;
-    case MT_DOUBLE:
-        ul = (ulong)this->_dblVal;
-        break;
-    case MT_ANSI:
-        ParseULong( *this->_pStr, &ul );
-        break;
-    case MT_UNICODE:
-        ParseULong( *this->_pWStr, &ul );
-        break;
-    case MT_ARRAY:
-        throw MixedError( MixedError::meCantConverted, "MT_ARRAY can't convert to MT_ULONG" );
-        break;
-    case MT_COLLECTION:
-        throw MixedError( MixedError::meCantConverted, "MT_COLLECTION can't convert to MT_ULONG" );
-        break;
-    case MT_BINARY:
-        throw MixedError( MixedError::meCantConverted, "MT_BINARY can't convert to MT_ULONG" );
-        break;
     default:
+        // empty array.
         break;
     }
-    return ul;
+    return arr;
 }
 
-Mixed::operator float() const
+Mixed::operator Collection() const
 {
-    switch ( this->_type )
-    {
-    case MT_FLOAT:
-        return this->_fltVal;
-    case MT_ARRAY:
-        throw MixedError( MixedError::meCantConverted, "MT_ARRAY can't convert to MT_FLOAT" );
-        break;
-    case MT_COLLECTION:
-        throw MixedError( MixedError::meCantConverted, "MT_COLLECTION can't convert to MT_FLOAT" );
-        break;
-    case MT_BINARY:
-        throw MixedError( MixedError::meCantConverted, "MT_BINARY can't convert to MT_FLOAT" );
-        break;
-    default:
-        return (float)this->operator double();
-    }
-}
-
-Mixed::operator int64() const
-{
-    switch ( this->_type )
-    {
-    case MT_INT64:
-        return this->_i64Val;
-    case MT_ARRAY:
-        throw MixedError( MixedError::meCantConverted, "MT_ARRAY can't convert to MT_INT64" );
-        break;
-    case MT_COLLECTION:
-        throw MixedError( MixedError::meCantConverted, "MT_COLLECTION can't convert to MT_INT64" );
-        break;
-    case MT_BINARY:
-        throw MixedError( MixedError::meCantConverted, "MT_BINARY can't convert to MT_INT64" );
-        break;
-    default:
-        break;
-    }
-    union
-    {
-        int64 i64;
-        uint64 ui64;
-    } tmp;
-    tmp.ui64 = this->operator uint64();
-    return tmp.i64;
-}
-
-Mixed::operator uint64() const
-{
-    uint64 ui64 = 0U;
+    Collection coll;
     switch ( this->_type )
     {
     case MT_BOOLEAN:
-        ui64 = this->_boolVal ? 1U : 0U;
+        coll.addPair( MT_BOOLEAN, this->_boolVal );
+        break;
+    case MT_CHAR:
+        coll.addPair( MT_CHAR, this->_chVal );
         break;
     case MT_BYTE:
-        ui64 = (uint64)this->_btVal;
+        coll.addPair( MT_BYTE, this->_btVal );
         break;
     case MT_SHORT:
-        ui64 = (uint64)this->_shVal;
+        coll.addPair( MT_SHORT, this->_shVal );
         break;
     case MT_USHORT:
-        ui64 = (uint64)this->_ushVal;
+        coll.addPair( MT_USHORT, this->_ushVal );
         break;
     case MT_INT:
-        ui64 = (uint64)this->_iVal;
+        coll.addPair( MT_INT, this->_iVal );
         break;
     case MT_UINT:
-        ui64 = (uint64)this->_uiVal;
+        coll.addPair( MT_UINT, this->_uiVal );
         break;
     case MT_LONG:
-        ui64 = (uint64)this->_lVal;
+        coll.addPair( MT_LONG, this->_lVal );
         break;
     case MT_ULONG:
-        ui64 = (uint64)this->_ulVal;
+        coll.addPair( MT_ULONG, this->_ulVal );
         break;
     case MT_INT64:
-        ui64 = (uint64)this->_i64Val;
+        coll.addPair( MT_INT64, this->_i64Val );
         break;
     case MT_UINT64:
-        ui64 = this->_ui64Val;
+        coll.addPair( MT_UINT64, this->_ui64Val );
         break;
     case MT_FLOAT:
-        ui64 = (uint64)this->_fltVal;
+        coll.addPair( MT_FLOAT, this->_fltVal );
         break;
     case MT_DOUBLE:
-        ui64 = (uint64)this->_dblVal;
+        coll.addPair( MT_DOUBLE, this->_dblVal );
         break;
     case MT_ANSI:
-        ParseUInt64( *this->_pStr, &ui64 );
+        coll.addPair( MT_ANSI, *this->_pStr );
         break;
     case MT_UNICODE:
-        ParseUInt64( *this->_pWStr, &ui64 );
-        break;
-    case MT_ARRAY:
-        throw MixedError( MixedError::meCantConverted, "MT_ARRAY can't convert to MT_UINT64" );
-        break;
-    case MT_COLLECTION:
-        throw MixedError( MixedError::meCantConverted, "MT_COLLECTION can't convert to MT_UINT64" );
+        coll.addPair( MT_UNICODE, *this->_pWStr );
         break;
     case MT_BINARY:
-        throw MixedError( MixedError::meCantConverted, "MT_BINARY can't convert to MT_UINT64" );
-        break;
-    default:
-        break;
-    }
-    return ui64;
-}
-
-Mixed::operator double() const
-{
-    double dbl = 0.0;
-    switch ( this->_type )
-    {
-    case MT_BOOLEAN:
-        dbl = this->_boolVal ? 1.0 : 0.0;
-        break;
-    case MT_BYTE:
-        dbl = (double)this->_btVal;
-        break;
-    case MT_SHORT:
-        dbl = (double)this->_shVal;
-        break;
-    case MT_USHORT:
-        dbl = (double)this->_ushVal;
-        break;
-    case MT_INT:
-        dbl = (double)this->_iVal;
-        break;
-    case MT_UINT:
-        dbl = (double)this->_uiVal;
-        break;
-    case MT_LONG:
-        dbl = (double)this->_lVal;
-        break;
-    case MT_ULONG:
-        dbl = (double)this->_ulVal;
-        break;
-    case MT_INT64:
-        dbl = (double)this->_i64Val;
-        break;
-    case MT_UINT64:
-        dbl = (double)(int64)this->_ui64Val;
-        break;
-    case MT_FLOAT:
-        dbl = (double)this->_fltVal;
-        break;
-    case MT_DOUBLE:
-        dbl = this->_dblVal;
-        break;
-    case MT_ANSI:
-        ParseDouble( *this->_pStr, &dbl );
-        break;
-    case MT_UNICODE:
-        ParseDouble( *this->_pWStr, &dbl );
+        coll.addPair( MT_BINARY, *this->_pBuf );
         break;
     case MT_ARRAY:
-        throw MixedError( MixedError::meCantConverted, "MT_ARRAY can't convert to MT_DOUBLE" );
+        for ( size_t i = 0; i < this->_pArr->size(); ++i )
+        {
+            Mixed const & e = (*this->_pArr)[i];
+            if ( e.isCollection() )
+            {
+                size_t n = e._pColl->getCount();
+                for ( size_t j = 0; j < n; ++j )
+                {
+                    auto & pr = e._pColl->getPair(j);
+                    coll.addPair( pr.first, pr.second );
+                }
+            }
+            else
+            {
+                coll.addPair( i, e );
+            }
+        }
         break;
     case MT_COLLECTION:
-        throw MixedError( MixedError::meCantConverted, "MT_COLLECTION can't convert to MT_DOUBLE" );
-        break;
-    case MT_BINARY:
-        throw MixedError( MixedError::meCantConverted, "MT_BINARY can't convert to MT_DOUBLE" );
+        coll = *this->_pColl;
         break;
     default:
+        // empty collection.
         break;
     }
-    return dbl;
+    return coll;
 }
 
-// 比较操作符 ------------------------------------------------------------------------------------------------------
+// 比较操作符 ----------------------------------------------------------------------------------
 bool Mixed::operator == ( Mixed const & other ) const
 {
     if ( this->_type == other._type )
@@ -1842,6 +2544,9 @@ bool Mixed::operator == ( Mixed const & other ) const
             break;
         case MT_BOOLEAN:
             return this->_boolVal == other._boolVal;
+            break;
+        case MT_CHAR:
+            return this->_chVal == other._chVal;
             break;
         case MT_BYTE:
             return this->_btVal == other._btVal;
@@ -1882,17 +2587,14 @@ bool Mixed::operator == ( Mixed const & other ) const
         case MT_UNICODE:
             return *this->_pWStr == *other._pWStr;
             break;
+        case MT_BINARY:
+            return BufferCompare( *this->_pBuf, *other._pBuf ) == 0;
+            break;
         case MT_ARRAY:
-            throw MixedError( MixedError::meUnexpectedType, "MT_ARRAY type can't support `operator == ()`" );
+            return ArrayEqual( *this->_pArr, *other._pArr );
             break;
         case MT_COLLECTION:
-            throw MixedError( MixedError::meUnexpectedType, "MT_COLLECTION type can't support `operator == ()`" );
-            break;
-        case MT_BINARY:
-            throw MixedError( MixedError::meUnexpectedType, "MT_BINARY type can't support `operator == ()`" );
-            break;
-        default:
-            return false;
+            return CollectionEqual( *this->_pColl, *other._pColl );
             break;
         }
     }
@@ -1905,6 +2607,9 @@ bool Mixed::operator == ( Mixed const & other ) const
             break;
         case MT_BOOLEAN:
             return this->_boolVal == (bool)other;
+            break;
+        case MT_CHAR:
+            return this->_chVal == other.toChar();
             break;
         case MT_BYTE:
             return this->_btVal == (byte)other;
@@ -1940,22 +2645,19 @@ bool Mixed::operator == ( Mixed const & other ) const
             return this->_dblVal == (double)other;
             break;
         case MT_ANSI:
-            return *this->_pStr == (AnsiString)other;
+            return *this->_pStr == other.operator AnsiString();
             break;
         case MT_UNICODE:
-            return *this->_pWStr == (UnicodeString)other;
-            break;
-        case MT_ARRAY:
-            throw MixedError( MixedError::meUnexpectedType, "MT_ARRAY type can't support `operator == ()`" );
-            break;
-        case MT_COLLECTION:
-            throw MixedError( MixedError::meUnexpectedType, "MT_COLLECTION type can't support `operator == ()`" );
+            return *this->_pWStr == other.operator UnicodeString();
             break;
         case MT_BINARY:
-            throw MixedError( MixedError::meUnexpectedType, "MT_BINARY type can't support `operator == ()`" );
+            return BufferCompare( *this->_pBuf, other.operator Buffer() ) == 0;
             break;
-        default:
-            return false;
+        case MT_ARRAY:
+            return ArrayEqual( *this->_pArr, other.operator MixedArray() );
+            break;
+        case MT_COLLECTION:
+            return CollectionEqual( *this->_pColl, other.operator Collection() );
             break;
         }
     }
@@ -1968,6 +2670,9 @@ bool Mixed::operator == ( Mixed const & other ) const
             break;
         case MT_BOOLEAN:
             return (bool)*this == other._boolVal;
+            break;
+        case MT_CHAR:
+            return this->toChar() == other._chVal;
             break;
         case MT_BYTE:
             return (byte)*this == other._btVal;
@@ -2003,25 +2708,24 @@ bool Mixed::operator == ( Mixed const & other ) const
             return (double)*this == other._dblVal;
             break;
         case MT_ANSI:
-            return (AnsiString)*this == *other._pStr;
+            return this->operator AnsiString() == *other._pStr;
             break;
         case MT_UNICODE:
-            return (UnicodeString)*this == *other._pWStr;
-            break;
-        case MT_ARRAY:
-            throw MixedError( MixedError::meUnexpectedType, "MT_ARRAY type can't support `operator == ()`" );
-            break;
-        case MT_COLLECTION:
-            throw MixedError( MixedError::meUnexpectedType, "MT_COLLECTION type can't support `operator == ()`" );
+            return this->operator UnicodeString() == *other._pWStr;
             break;
         case MT_BINARY:
-            throw MixedError( MixedError::meUnexpectedType, "MT_BINARY type can't support `operator == ()`" );
+            return BufferCompare( this->operator Buffer(), *other._pBuf ) == 0;
             break;
-        default:
-            return false;
+        case MT_ARRAY:
+            return ArrayEqual( this->operator MixedArray(), *other._pArr );
+            break;
+        case MT_COLLECTION:
+            return CollectionEqual( this->operator Collection(), *other._pColl );
             break;
         }
     }
+
+    return false;
 }
 
 bool Mixed::operator < ( Mixed const & other ) const
@@ -2035,6 +2739,9 @@ bool Mixed::operator < ( Mixed const & other ) const
             break;
         case MT_BOOLEAN:
             return this->_boolVal < other._boolVal;
+            break;
+        case MT_CHAR:
+            return this->_chVal < other._chVal;
             break;
         case MT_BYTE:
             return this->_btVal < other._btVal;
@@ -2075,17 +2782,14 @@ bool Mixed::operator < ( Mixed const & other ) const
         case MT_UNICODE:
             return *this->_pWStr < *other._pWStr;
             break;
+        case MT_BINARY:
+            return BufferCompare( *this->_pBuf, *other._pBuf ) < 0;
+            break;
         case MT_ARRAY:
-            throw MixedError( MixedError::meUnexpectedType, "MT_ARRAY type can't support `operator < ()`" );
+            return ArrayLess( *this->_pArr, *other._pArr );
             break;
         case MT_COLLECTION:
-            throw MixedError( MixedError::meUnexpectedType, "MT_COLLECTION type can't support `operator < ()`" );
-            break;
-        case MT_BINARY:
-            throw MixedError( MixedError::meUnexpectedType, "MT_BINARY type can't support `operator < ()`" );
-            break;
-        default:
-            return false;
+            return CollectionLess( *this->_pColl, *other._pColl );
             break;
         }
     }
@@ -2098,6 +2802,9 @@ bool Mixed::operator < ( Mixed const & other ) const
             break;
         case MT_BOOLEAN:
             return this->_boolVal < (bool)other;
+            break;
+        case MT_CHAR:
+            return this->_chVal < other.toChar();
             break;
         case MT_BYTE:
             return this->_btVal < (byte)other;
@@ -2133,22 +2840,19 @@ bool Mixed::operator < ( Mixed const & other ) const
             return this->_dblVal < (double)other;
             break;
         case MT_ANSI:
-            return *this->_pStr < (AnsiString)other;
+            return *this->_pStr < other.operator AnsiString();
             break;
         case MT_UNICODE:
-            return *this->_pWStr < (UnicodeString)other;
-            break;
-        case MT_ARRAY:
-            throw MixedError( MixedError::meUnexpectedType, "MT_ARRAY type can't support `operator < ()`" );
-            break;
-        case MT_COLLECTION:
-            throw MixedError( MixedError::meUnexpectedType, "MT_COLLECTION type can't support `operator < ()`" );
+            return *this->_pWStr < other.operator UnicodeString();
             break;
         case MT_BINARY:
-            throw MixedError( MixedError::meUnexpectedType, "MT_BINARY type can't support `operator < ()`" );
+            return BufferCompare( *this->_pBuf, other.operator Buffer() ) < 0;
             break;
-        default:
-            return false;
+        case MT_ARRAY:
+            return ArrayLess( *this->_pArr, other.operator MixedArray() );
+            break;
+        case MT_COLLECTION:
+            return CollectionLess( *this->_pColl, other.operator Collection() );
             break;
         }
     }
@@ -2161,6 +2865,9 @@ bool Mixed::operator < ( Mixed const & other ) const
             break;
         case MT_BOOLEAN:
             return (bool)*this < other._boolVal;
+            break;
+        case MT_CHAR:
+            return this->toChar() < other._chVal;
             break;
         case MT_BYTE:
             return (byte)*this < other._btVal;
@@ -2196,38 +2903,259 @@ bool Mixed::operator < ( Mixed const & other ) const
             return (double)*this < other._dblVal;
             break;
         case MT_ANSI:
-            return (AnsiString)*this < *other._pStr;
+            return this->operator AnsiString() < *other._pStr;
             break;
         case MT_UNICODE:
-            return (UnicodeString)*this < *other._pWStr;
-            break;
-        case MT_ARRAY:
-            throw MixedError( MixedError::meUnexpectedType, "MT_ARRAY type can't support `operator < ()`" );
-            break;
-        case MT_COLLECTION:
-            throw MixedError( MixedError::meUnexpectedType, "MT_COLLECTION type can't support `operator < ()`" );
+            return this->operator UnicodeString() < *other._pWStr;
             break;
         case MT_BINARY:
-            throw MixedError( MixedError::meUnexpectedType, "MT_BINARY type can't support `operator < ()`" );
+            return BufferCompare( this->operator Buffer(), *other._pBuf ) < 0;
             break;
-        default:
-            return false;
+        case MT_ARRAY:
+            return ArrayLess( this->operator MixedArray(), *other._pArr );
+            break;
+        case MT_COLLECTION:
+            return CollectionLess( this->operator Collection(), *other._pColl );
             break;
         }
     }
+
+    return false;
 }
 
-// create functions -------------------------------------------------------------------------
-
-Mixed & Mixed::createAnsi()
+bool Mixed::operator > ( Mixed const & other ) const
 {
-    this->assign( "", 0 );
+    if ( this->_type == other._type )
+    {
+        switch ( this->_type )
+        {
+        case MT_NULL:
+            return false;
+            break;
+        case MT_BOOLEAN:
+            return this->_boolVal > other._boolVal;
+            break;
+        case MT_CHAR:
+            return this->_chVal > other._chVal;
+            break;
+        case MT_BYTE:
+            return this->_btVal > other._btVal;
+            break;
+        case MT_SHORT:
+            return this->_shVal > other._shVal;
+            break;
+        case MT_USHORT:
+            return this->_ushVal > other._ushVal;
+            break;
+        case MT_INT:
+            return this->_iVal > other._iVal;
+            break;
+        case MT_UINT:
+            return this->_uiVal > other._uiVal;
+            break;
+        case MT_LONG:
+            return this->_lVal > other._lVal;
+            break;
+        case MT_ULONG:
+            return this->_ulVal > other._ulVal;
+            break;
+        case MT_INT64:
+            return this->_i64Val > other._i64Val;
+            break;
+        case MT_UINT64:
+            return this->_ui64Val > other._ui64Val;
+            break;
+        case MT_FLOAT:
+            return this->_fltVal > other._fltVal;
+            break;
+        case MT_DOUBLE:
+            return this->_dblVal > other._dblVal;
+            break;
+        case MT_ANSI:
+            return *this->_pStr > *other._pStr;
+            break;
+        case MT_UNICODE:
+            return *this->_pWStr > *other._pWStr;
+            break;
+        case MT_BINARY:
+            return BufferCompare( *this->_pBuf, *other._pBuf ) > 0;
+            break;
+        case MT_ARRAY:
+            return ArrayGreater( *this->_pArr, *other._pArr );
+            break;
+        case MT_COLLECTION:
+            return CollectionGreater( *this->_pColl, *other._pColl );
+            break;
+        }
+    }
+    else if ( this->_type > other._type )
+    {
+        switch ( this->_type )
+        {
+        case MT_NULL:
+            return false;
+            break;
+        case MT_BOOLEAN:
+            return this->_boolVal > (bool)other;
+            break;
+        case MT_CHAR:
+            return this->_chVal > other.toChar();
+            break;
+        case MT_BYTE:
+            return this->_btVal > (byte)other;
+            break;
+        case MT_SHORT:
+            return this->_shVal > (short)other;
+            break;
+        case MT_USHORT:
+            return this->_ushVal > (ushort)other;
+            break;
+        case MT_INT:
+            return this->_iVal > (int)other;
+            break;
+        case MT_UINT:
+            return this->_uiVal > (uint)other;
+            break;
+        case MT_LONG:
+            return this->_lVal > (long)other;
+            break;
+        case MT_ULONG:
+            return this->_ulVal > (ulong)other;
+            break;
+        case MT_INT64:
+            return this->_i64Val > (int64)other;
+            break;
+        case MT_UINT64:
+            return this->_ui64Val > (uint64)other;
+            break;
+        case MT_FLOAT:
+            return this->_fltVal > (float)other;
+            break;
+        case MT_DOUBLE:
+            return this->_dblVal > (double)other;
+            break;
+        case MT_ANSI:
+            return *this->_pStr > other.operator AnsiString();
+            break;
+        case MT_UNICODE:
+            return *this->_pWStr > other.operator UnicodeString();
+            break;
+        case MT_BINARY:
+            return BufferCompare( *this->_pBuf, other.operator Buffer() ) > 0;
+            break;
+        case MT_ARRAY:
+            return ArrayGreater( *this->_pArr, other.operator MixedArray() );
+            break;
+        case MT_COLLECTION:
+            return CollectionGreater( *this->_pColl, other.operator Collection() );
+            break;
+        }
+    }
+    else // this->_type < other._type
+    {
+        switch ( other._type )
+        {
+        case MT_NULL:
+            return false;
+            break;
+        case MT_BOOLEAN:
+            return (bool)*this > other._boolVal;
+            break;
+        case MT_CHAR:
+            return this->toChar() > other._chVal;
+            break;
+        case MT_BYTE:
+            return (byte)*this > other._btVal;
+            break;
+        case MT_SHORT:
+            return (short)*this > other._shVal;
+            break;
+        case MT_USHORT:
+            return (ushort)*this > other._ushVal;
+            break;
+        case MT_INT:
+            return (int)*this > other._iVal;
+            break;
+        case MT_UINT:
+            return (uint)*this > other._uiVal;
+            break;
+        case MT_LONG:
+            return (long)*this > other._lVal;
+            break;
+        case MT_ULONG:
+            return (ulong)*this > other._ulVal;
+            break;
+        case MT_INT64:
+            return (int64)*this > other._i64Val;
+            break;
+        case MT_UINT64:
+            return (uint64)*this > other._ui64Val;
+            break;
+        case MT_FLOAT:
+            return (float)*this > other._fltVal;
+            break;
+        case MT_DOUBLE:
+            return (double)*this > other._dblVal;
+            break;
+        case MT_ANSI:
+            return this->operator AnsiString() > *other._pStr;
+            break;
+        case MT_UNICODE:
+            return this->operator UnicodeString() > *other._pWStr;
+            break;
+        case MT_BINARY:
+            return BufferCompare( this->operator Buffer(), *other._pBuf ) > 0;
+            break;
+        case MT_ARRAY:
+            return ArrayGreater( this->operator MixedArray(), *other._pArr );
+            break;
+        case MT_COLLECTION:
+            return CollectionGreater( this->operator Collection(), *other._pColl );
+            break;
+        }
+    }
+
+    return false;
+}
+
+// create functions ---------------------------------------------------------------------------
+Mixed & Mixed::createAnsi( AnsiString const & str )
+{
+    this->assign(str);
     return *this;
 }
 
-Mixed & Mixed::createUnicode()
+Mixed & Mixed::createAnsi( AnsiString && str )
 {
-    this->assign( L"", 0 );
+    this->assign( std::move(str) );
+    return *this;
+}
+
+Mixed & Mixed::createUnicode( UnicodeString const & str )
+{
+    this->assign(str);
+    return *this;
+}
+
+Mixed & Mixed::createUnicode( UnicodeString && str )
+{
+    this->assign( std::move(str) );
+    return *this;
+}
+
+Mixed & Mixed::createBuffer( size_t size )
+{
+    if ( this->_type == MT_BINARY )
+    {
+        this->_pBuf->alloc(size);
+    }
+    else
+    {
+        this->free();
+        this->_type = MT_BINARY;
+        this->_pBuf = new Buffer();
+        if ( size > 0 ) this->_pBuf->alloc(size);
+    }
     return *this;
 }
 
@@ -2253,78 +3181,105 @@ Mixed & Mixed::createArray( size_t count )
     return  *this;
 }
 
-Mixed & Mixed::createCollection()
+Mixed & Mixed::createCollection( bool caseInsensitive )
 {
     if ( this->_type == MT_COLLECTION )
     {
-        this->_pArr->clear();
-        this->_pMap->clear();
+        if ( this->_pColl->getCaseInsensitive() == caseInsensitive )
+        {
+            this->_pColl->clear();
+        }
+        else
+        {
+            this->_pColl->create(caseInsensitive);
+        }
     }
     else
     {
         this->free();
         this->_type = MT_COLLECTION;
-        this->_pArr = new MixedArray();
-        this->_pMap = new MixedMixedMap();
+        this->_pColl = new Collection(caseInsensitive);
     }
     return *this;
 }
 
-Mixed & Mixed::createBuffer( size_t size )
+// Buffer有关操作 --------------------------------------------------------------------------
+void Mixed::alloc( size_t size, bool setDataSize )
 {
     if ( this->_type == MT_BINARY )
     {
-        this->_pBuf->alloc(size);
+        this->_pBuf->alloc( size, setDataSize );
     }
     else
     {
         this->free();
         this->_type = MT_BINARY;
         this->_pBuf = new Buffer();
-        if ( size > 0 ) this->_pBuf->alloc(size);
+        this->_pBuf->alloc( size, setDataSize );
     }
-    return *this;
+}
+
+bool Mixed::peekCopy( bool copyCapacity )
+{
+    if ( this->_type == MT_BINARY && this->_pBuf )
+    {
+        return this->_pBuf->peekCopy(copyCapacity);
+    }
+    return false;
+}
+
+void * Mixed::getBuf() const
+{
+    if ( this->_type == MT_BINARY && this->_pBuf )
+    {
+        return this->_pBuf->getBuf();
+    }
+    return NULL;
 }
 
 // Array/Collection有关的操作 --------------------------------------------------------------
 Mixed & Mixed::operator [] ( Mixed const & k )
 {
-    if ( this->isArray() )
+    switch ( this->_type )
     {
-        size_t i = k;
-        if ( (offset_t)i < 0 || i >= this->_pArr->size() )
-            throw MixedError( MixedError::meOutOfArrayRange, Format( "Array out of bound: index:%d, size:%d", i, this->_pArr->size() ).c_str() );
-
-        return this->_pArr->operator [] (k);
-    }
-    else if ( this->isCollection() )
-    {
-        this->_addUniqueKey(k);
-        return this->_pMap->operator [] (k);
-    }
-    else
-    {
-        throw MixedError( MixedError::meUnexpectedType, this->typeString() + " can't support " + __FUNCTION__ + "(" + k.toAnsi() + ")" );
+    case MT_ARRAY:
+        {
+            size_t i = k;
+            if ( i >= this->_pArr->size() ) throw MixedError( MixedError::meOutOfArrayRange, FormatA( "Array out of bound: index:%d, size:%d", i, this->_pArr->size() ) );
+            return this->_pArr->operator [] (i);
+        }
+        break;
+    case MT_COLLECTION:
+        {
+            return this->_pColl->operator [] (k);
+        }
+        break;
+    default:
+        throw MixedError( MixedError::meUnexpectedType, TypeStringA(*this) + " can't support " + __FUNCTION__ + "(" + k.toAnsi() + ")" );
+        break;
     }
 }
 
 Mixed const & Mixed::operator [] ( Mixed const & k ) const
 {
-    if ( this->isArray() )
+    switch ( this->_type )
     {
-        size_t i = k;
-        if ( (offset_t)i < 0 || i >= this->_pArr->size() )
-            throw MixedError( MixedError::meOutOfArrayRange, Format( "Array out of bound: index:%d, size:%d", i, this->_pArr->size() ).c_str() );
-
-        return this->_pArr->operator [] (k);
-    }
-    else if ( this->isCollection() )
-    {
-        return this->_pMap->at(k);
-    }
-    else
-    {
-        throw MixedError( MixedError::meUnexpectedType, this->typeString() + " can't support " + __FUNCTION__ +  + "(" + k.toAnsi() + ") const" );
+    case MT_ARRAY:
+        {
+            size_t i = k;
+            if ( i >= this->_pArr->size() ) throw MixedError( MixedError::meOutOfArrayRange, FormatA( "Array out of bound: index:%d, size:%d", i, this->_pArr->size() ) );
+            return this->_pArr->operator [] (i);
+        }
+        break;
+    case MT_COLLECTION:
+        {
+            if ( !this->_pColl->has(k) ) throw MixedError( MixedError::meKeyNoExist, "Collection is not exist key:`" + k.toAnsi() + "`" );
+            return this->_pColl->at(k);
+        }
+        break;
+    default:
+        throw MixedError( MixedError::meUnexpectedType, TypeStringA(*this) + " can't support " + __FUNCTION__ +  + "(" + k.toAnsi() + ") const" );
+        break;
     }
 }
 
@@ -2335,74 +3290,97 @@ Mixed const & Mixed::get( Mixed const & k, Mixed const & defval ) const
     case MT_ARRAY:
         {
             size_t i = k;
-            if ( (offset_t)i < 0 || i >= this->_pArr->size() )
-                return defval;
-
-            return this->_pArr->operator [] (k);
+            if ( i < this->_pArr->size() ) return this->_pArr->operator [] (i);
         }
         break;
     case MT_COLLECTION:
-        if ( this->_pMap->find(k) != this->_pMap->end() )
         {
-            return this->_pMap->at(k);
+            if ( this->_pColl->has(k) ) return this->_pColl->at(k);
         }
-        return defval;
-        break;
-    default:
-        return defval;
         break;
     }
+    return defval;
 }
 
-Mixed::MixedMixedMap::value_type & Mixed::getPair( size_t i )
+MixedMixedPair & Mixed::getPair( size_t i )
 {
     if ( this->isCollection() )
     {
-        return *_pMap->find( _pArr->at(i) );
+        return this->_pColl->getPair(i);
     }
     else
     {
-        throw MixedError( MixedError::meUnexpectedType, this->typeString() + " can't support " + __FUNCTION__ + "()" );
+        throw MixedError( MixedError::meUnexpectedType, TypeStringA(*this) + " can't support " + __FUNCTION__ + "()" );
     }
 }
 
-Mixed::MixedMixedMap::value_type const & Mixed::getPair( size_t i ) const
+MixedMixedPair const & Mixed::getPair( size_t i ) const
 {
     if ( this->isCollection() )
     {
-        return *_pMap->find( _pArr->at(i) );
+        return this->_pColl->getPair(i);
     }
     else
     {
-        throw MixedError( MixedError::meUnexpectedType, this->typeString() + " can't support " + __FUNCTION__ + "()" );
+        throw MixedError( MixedError::meUnexpectedType, TypeStringA(*this) + " can't support " + __FUNCTION__ + "()" );
     }
+}
+
+Mixed & Mixed::setPair( size_t i, Mixed const & k, Mixed const & v )
+{
+    if ( this->isCollection() )
+    {
+        this->_pColl->setPair( i, k, v );
+    }
+    else
+    {
+        throw MixedError( MixedError::meUnexpectedType, TypeStringA(*this) + " can't support " + __FUNCTION__ + "()" );
+    }
+    return *this;
 }
 
 Mixed & Mixed::addPair( Mixed const & k, Mixed const & v )
 {
     if ( this->isCollection() )
     {
-        this->_addUniqueKey(k);
-        this->_pMap->operator[](k) = v;
+        this->_pColl->addPair( k, v );
     }
     else
     {
-        throw MixedError( MixedError::meUnexpectedType, this->typeString() + " can't support " + __FUNCTION__ + "()" );
+        throw MixedError( MixedError::meUnexpectedType, TypeStringA(*this) + " can't support " + __FUNCTION__ + "()" );
     }
     return *this;
+}
+
+template < typename _Ty >
+inline static size_t __MixedAdd( Mixed * thisMx, _Ty && v )
+{
+    size_t i = thisMx->_pArr->size();
+    thisMx->_pArr->push_back( std::forward<_Ty>(v) );
+    return i;
 }
 
 size_t Mixed::add( Mixed const & v )
 {
     if ( this->isArray() )
     {
-        size_t i = this->_pArr->size();
-        this->_pArr->push_back(v);
-        return i;
+        return __MixedAdd( this, v );
     }
     else
     {
-        throw MixedError( MixedError::meUnexpectedType, this->typeString() + " can't support " + __FUNCTION__ + "()" );
+        throw MixedError( MixedError::meUnexpectedType, TypeStringA(*this) + " can't support " + __FUNCTION__ + "()" );
+    }
+}
+
+size_t Mixed::add( Mixed && v )
+{
+    if ( this->isArray() )
+    {
+        return __MixedAdd( this, std::move(v) );
+    }
+    else
+    {
+        throw MixedError( MixedError::meUnexpectedType, TypeStringA(*this) + " can't support " + __FUNCTION__ + "()" );
     }
 }
 
@@ -2419,271 +3397,244 @@ size_t Mixed::addUnique( Mixed const & v )
             }
         }
 
-        i = this->_pArr->size();
-        this->_pArr->push_back(v);
-        return i;
+        return __MixedAdd( this, v );
     }
     else
     {
-        throw MixedError( MixedError::meUnexpectedType, this->typeString() + " can't support " + __FUNCTION__ + "()" );
+        throw MixedError( MixedError::meUnexpectedType, TypeStringA(*this) + " can't support " + __FUNCTION__ + "()" );
+    }
+}
+
+size_t Mixed::addUnique( Mixed && v )
+{
+    if ( this->isArray() )
+    {
+        size_t i;
+        for ( i = 0; i < this->_pArr->size(); ++i )
+        {
+            if ( (*this->_pArr)[i] == v )
+            {
+                return i;
+            }
+        }
+
+        return __MixedAdd( this, std::move(v) );
+    }
+    else
+    {
+        throw MixedError( MixedError::meUnexpectedType, TypeStringA(*this) + " can't support " + __FUNCTION__ + "()" );
     }
 }
 
 void Mixed::del( Mixed const & k )
 {
-    if ( this->isArray() )
+    switch ( this->_type )
     {
-        size_t i = k;
-        if ( (offset_t)i >= 0 && i < this->_pArr->size() )
-            this->_pArr->erase( this->_pArr->begin() + i );
-    }
-    else if ( this->isCollection() )
-    {
-        MixedArray::iterator it = std::find( this->_pArr->begin(), this->_pArr->end(), k );
-        if ( it != this->_pArr->end() )
-            this->_pArr->erase(it);
-        this->_pMap->erase(k);
+    case MT_ARRAY:
+        {
+            size_t i = k;
+            if ( i < this->_pArr->size() ) this->_pArr->erase( this->_pArr->begin() + i );
+        }
+        break;
+    case MT_COLLECTION:
+        this->_pColl->del(k);
+        break;
     }
 }
 
 bool Mixed::has( Mixed const & ek ) const
 {
-    if ( this->isArray() )
+    switch ( this->_type )
     {
+    case MT_ARRAY:
         return std::find( this->_pArr->begin(), this->_pArr->end(), ek ) != this->_pArr->end();
-    }
-    else if ( this->isCollection() )
-    {
-        return isset( *this->_pMap, ek );
-    }
-    else
-    {
+        break;
+    case MT_COLLECTION:
+        return this->_pColl->has(ek);
+        break;
+    default:
         return false;
+        break;
     }
 }
 
 Mixed & Mixed::merge( Mixed const & v )
 {
-    if ( this->isArray() )
+    switch ( this->_type )
     {
+    case MT_ARRAY:
         switch ( v._type )
         {
         case MT_ARRAY:
+            for ( auto itVal = v._pArr->begin(); itVal != v._pArr->end(); ++itVal )
             {
-                for ( auto itVal = v._pArr->begin(); itVal != v._pArr->end(); ++itVal )
-                {
-                    this->_pArr->push_back(*itVal);
-                }
+                this->_pArr->push_back(*itVal);
             }
             break;
         case MT_COLLECTION:
+            for ( auto itKey = v._pColl->refKeysArray().begin(); itKey != v._pColl->refKeysArray().end(); ++itKey )
             {
-                for ( auto itKey = v._pArr->begin(); itKey != v._pArr->end(); ++itKey )
-                {
-                    Mixed pr;
-                    pr.addPair()( *itKey, v._pMap->at(*itKey) );
-                    this->_pArr->push_back( std::move(pr) );
-                }
+                Mixed pr;
+                pr.addPair( v._pColl->getCaseInsensitive() )( *itKey, v._pColl->operator [] (*itKey) );
+                this->_pArr->push_back( std::move(pr) );
             }
             break;
         default:
             this->_pArr->push_back(v);
             break;
         }
-    }
-    else if ( this->isCollection() )
-    {
+        break;
+    case MT_COLLECTION:
         switch ( v._type )
         {
         case MT_ARRAY:
+            for ( auto itVal = v._pArr->begin(); itVal != v._pArr->end(); ++itVal )
             {
-                for ( auto itVal = v._pArr->begin(); itVal != v._pArr->end(); ++itVal )
-                {
-                    size_t inx = ( itVal - v._pArr->begin() );
-                    this->_addUniqueKey(inx);
-                    this->_pMap->operator[](inx) = *itVal;
-                }
+                size_t inx = itVal - v._pArr->begin();
+                this->_pColl->operator [] (inx) = *itVal;
             }
             break;
         case MT_COLLECTION:
+            for ( auto itKey = v._pColl->refKeysArray().begin(); itKey != v._pColl->refKeysArray().end(); ++itKey )
             {
-                for ( auto itKey = v._pArr->begin(); itKey != v._pArr->end(); ++itKey )
+                // 如果存在此Key
+                if ( this->_pColl->has(*itKey) )
                 {
-                    // 如果存在此值并且也是个容器，则继续合并
-                    if ( this->_pMap->find(*itKey) != this->_pMap->end() )
+                    Mixed & thisMx = this->_pColl->operator [] (*itKey);
+                    if ( thisMx.isContainer() ) // 如果是个容器，则继续调用merge()
                     {
-                        Mixed & thisMx = this->_pMap->operator[](*itKey);
-                        if ( thisMx.isContainer() )
-                        {
-                            thisMx.merge( v._pMap->at(*itKey) );
-                        }
-                        else
-                        {
-                            thisMx = v._pMap->at(*itKey);
-                        }
+                        thisMx.merge( v._pColl->at(*itKey) );
                     }
-                    else
+                    else // 不是容器，则替换掉
                     {
-                        this->_addUniqueKey(*itKey);
-                        this->_pMap->operator[](*itKey) = v._pMap->at(*itKey);
+                        thisMx = v._pColl->at(*itKey);
                     }
+                }
+                else // 不存在此Key
+                {
+                    this->_pColl->operator [] (*itKey) = v._pColl->at(*itKey);
                 }
             }
             break;
         default:
             {
                 size_t i = 0;
-                while ( _pMap->find(i) != _pMap->end() ) i++;
-                this->_addUniqueKey( Mixed(i).toAnsi() );
-                this->_pMap->operator[](i) = v;
+                while ( this->_pColl->has(i) ) i++;
+                this->_pColl->operator [] (i) = v;
             }
             break;
         }
+        break;
+    default:
+        throw MixedError( MixedError::meUnexpectedType, TypeStringA(*this) + " can't support " + __FUNCTION__ + "()" );
+        break;
     }
-    else
-    {
-        throw MixedError( MixedError::meUnexpectedType, this->typeString() + " can't support " + __FUNCTION__ + "()" );
-    }
+
     return *this;
 }
 
 Mixed & Mixed::reverse()
 {
-    if ( this->isCollection() || this->isArray() )
+    switch ( this->_type )
     {
-        int j = (int)_pArr->size() - 1;
-        int i = 0;
-        while ( i < j )
+    case MT_NULL:
+        break;
+    case MT_BOOLEAN:
+        break;
+    case MT_CHAR:
+        break;
+    case MT_BYTE:
+        break;
+    case MT_SHORT:
+        InvertByteOrder( &this->_shVal, sizeof(this->_shVal) );
+        break;
+    case MT_USHORT:
+        InvertByteOrder( &this->_ushVal, sizeof(this->_ushVal) );
+        break;
+    case MT_INT:
+        InvertByteOrder( &this->_iVal, sizeof(this->_iVal) );
+        break;
+    case MT_UINT:
+        InvertByteOrder( &this->_uiVal, sizeof(this->_uiVal) );
+        break;
+    case MT_LONG:
+        InvertByteOrder( &this->_lVal, sizeof(this->_lVal) );
+        break;
+    case MT_ULONG:
+        InvertByteOrder( &this->_ulVal, sizeof(this->_ulVal) );
+        break;
+    case MT_INT64:
+        InvertByteOrder( &this->_i64Val, sizeof(this->_i64Val) );
+        break;
+    case MT_UINT64:
+        InvertByteOrder( &this->_ui64Val, sizeof(this->_ui64Val) );
+        break;
+    case MT_FLOAT:
+        InvertByteOrder( &this->_fltVal, sizeof(this->_fltVal) );
+        break;
+    case MT_DOUBLE:
+        InvertByteOrder( &this->_dblVal, sizeof(this->_dblVal) );
+        break;
+    case MT_ANSI:
         {
-            Mixed t = std::move( _pArr->at(i) );
-            _pArr->at(i) = std::move( _pArr->at(j) );
-            _pArr->at(j) =  std::move(t);
+            ssize_t i = 0;
+            ssize_t j = (ssize_t)this->_pStr->length() - 1;
+            while ( i < j )
+            {
+                auto ch = (*this->_pStr)[i];
+                (*this->_pStr)[i] = (*this->_pStr)[j];
+                (*this->_pStr)[j] = ch;
 
-            i++;
-            j--;
+                i++;
+                j--;
+            }
         }
+        break;
+    case MT_UNICODE:
+        {
+            ssize_t i = 0;
+            ssize_t j = (ssize_t)this->_pWStr->length() - 1;
+            while ( i < j )
+            {
+                auto ch = (*this->_pWStr)[i];
+                (*this->_pWStr)[i] = (*this->_pWStr)[j];
+                (*this->_pWStr)[j] = ch;
+
+                i++;
+                j--;
+            }
+        }
+        break;
+    case MT_BINARY:
+        InvertByteOrder( this->_pBuf->getBuf(), this->_pBuf->getSize() );
+        break;
+    case MT_ARRAY:
+        {
+            offset_t j = (offset_t)this->_pArr->size() - 1;
+            offset_t i = 0;
+            while ( i < j )
+            {
+                Mixed t = std::move( this->_pArr->at(i) );
+                this->_pArr->at(i) = std::move( this->_pArr->at(j) );
+                this->_pArr->at(j) = std::move(t);
+
+                i++;
+                j--;
+            }
+        }
+        break;
+    case MT_COLLECTION:
+        this->_pColl->reverse();
+        break;
+    default:
+        throw MixedError( MixedError::meUnexpectedType, TypeStringA(*this) + " can't support " + __FUNCTION__ + "()" );
+        break;
     }
-    else
-    {
-        throw MixedError( MixedError::meUnexpectedType, this->typeString() + " can't support " + __FUNCTION__ + "()" );
-    }
+
     return *this;
 }
 
-// MT_BINARY相关 ----------------------------------------------------------------------------------------------------
-void Mixed::alloc( size_t size, bool setDataSize )
-{
-    this->free();
-    this->_type = MT_BINARY;
-    this->_pBuf = new Buffer();
-    this->_pBuf->alloc( size, setDataSize );
-}
-
-bool Mixed::peekCopy( bool copyCapacity )
-{
-    if ( this->_type == MT_BINARY && this->_pBuf != NULL )
-    {
-        return this->_pBuf->peekCopy(copyCapacity);
-    }
-    return false;
-}
-
-size_t Mixed::getSize() const
-{
-    if ( this->isBinary() && this->_pBuf )
-    {
-        return this->_pBuf->getSize();
-    }
-    return 0;
-}
-
-void * Mixed::getBuf() const
-{
-    if ( this->isBinary() && this->_pBuf )
-    {
-        return this->_pBuf->getBuf();
-    }
-    return NULL;
-}
-
-// Assignments ----------------------------------------------------------------------------
-void Mixed::assign( char const * str, size_t len )
-{
-    if ( this->_type == MT_ANSI )
-    {
-        str = str ? str : "";
-        if ( (ssize_t)len < 0 )
-        {
-            this->_pStr->assign(str);
-        }
-        else if ( len > 0 )
-        {
-            this->_pStr->assign( str, len );
-        }
-        else
-        {
-            this->_pStr->clear();
-        }
-    }
-    else
-    {
-        this->free();
-        str = str ? str : "";
-        this->_type = MT_ANSI; // set _type as AnsiString
-        if ( (ssize_t)len < 0 )
-        {
-            this->_pStr = new AnsiString(str);
-        }
-        else if ( len > 0 )
-        {
-            this->_pStr = new AnsiString( str, len );
-        }
-        else
-        {
-            this->_pStr = new AnsiString();
-        }
-    }
-}
-
-void Mixed::assign( wchar const * str, size_t len )
-{
-    if ( this->_type == MT_UNICODE )
-    {
-        str = str ? str : L"";
-        this->_type = MT_UNICODE; // set _type as UnicodeString
-        if ( (ssize_t)len < 0 )
-        {
-            this->_pWStr->assign(str);
-        }
-        else if ( len > 0 )
-        {
-            this->_pWStr->assign( str, len );
-        }
-        else
-        {
-            this->_pWStr->clear();
-        }
-    }
-    else
-    {
-        this->free();
-        str = str ? str : L"";
-        this->_type = MT_UNICODE; // set _type as UnicodeString
-        if ( (ssize_t)len < 0 )
-        {
-            this->_pWStr = new UnicodeString(str);
-        }
-        else if ( len > 0 )
-        {
-            this->_pWStr = new UnicodeString( str, len );
-        }
-        else
-        {
-            this->_pWStr = new UnicodeString();
-        }
-    }
-}
-
+// Assignments ------------------------------------------------------------------------------
 void Mixed::assign( bool boolVal )
 {
     if ( this->_type == MT_BOOLEAN )
@@ -2695,6 +3646,20 @@ void Mixed::assign( bool boolVal )
         this->free();
         this->_type = MT_BOOLEAN;
         this->_boolVal = boolVal;
+    }
+}
+
+void Mixed::assign( char chVal )
+{
+    if ( this->_type == MT_CHAR )
+    {
+        this->_chVal = chVal;
+    }
+    else
+    {
+        this->free();
+        this->_type = MT_CHAR;
+        this->_chVal = chVal;
     }
 }
 
@@ -2852,6 +3817,124 @@ void Mixed::assign( double dblVal )
     }
 }
 
+// 字符串赋值函数 -------------------------------------------------------------------------------
+void Mixed::assign( AnsiString const & str )
+{
+    if ( this->_type == MT_ANSI )
+    {
+        *this->_pStr = str;
+    }
+    else
+    {
+        this->free();
+        this->_type = MT_ANSI;
+        this->_pStr = new AnsiString(str);
+    }
+}
+
+void Mixed::assign( UnicodeString const & str )
+{
+    if ( this->_type == MT_UNICODE )
+    {
+        *this->_pWStr = str;
+    }
+    else
+    {
+        this->free();
+        this->_type = MT_UNICODE;
+        this->_pWStr = new UnicodeString(str);
+    }
+}
+
+void Mixed::assign( AnsiString && str )
+{
+    if ( this->_type == MT_ANSI )
+    {
+        *this->_pStr = std::move(str);
+    }
+    else
+    {
+        this->free();
+        this->_type = MT_ANSI;
+        this->_pStr = new AnsiString( std::move(str) );
+    }
+}
+
+void Mixed::assign( UnicodeString && str )
+{
+    if ( this->_type == MT_UNICODE )
+    {
+        *this->_pWStr = std::move(str);
+    }
+    else
+    {
+        this->free();
+        this->_type = MT_UNICODE;
+        this->_pWStr = new UnicodeString( std::move(str) );
+    }
+}
+
+void Mixed::assign( char const * str, size_t len )
+{
+    if ( this->_type == MT_ANSI )
+    {
+        str = str ? str : "";
+        if ( (ssize_t)len < 0 )
+        {
+            this->_pStr->assign(str);
+        }
+        else
+        {
+            this->_pStr->assign( str, len );
+        }
+    }
+    else
+    {
+        this->free();
+        this->_type = MT_ANSI; // set _type as AnsiString
+        str = str ? str : "";
+        if ( (ssize_t)len < 0 )
+        {
+            this->_pStr = new AnsiString(str);
+        }
+        else
+        {
+            this->_pStr = new AnsiString( str, len );
+        }
+    }
+}
+
+void Mixed::assign( wchar const * str, size_t len )
+{
+    if ( this->_type == MT_UNICODE )
+    {
+        str = str ? str : L"";
+        if ( (ssize_t)len < 0 )
+        {
+            this->_pWStr->assign(str);
+        }
+        else
+        {
+            this->_pWStr->assign( str, len );
+        }
+    }
+    else
+    {
+        this->free();
+        this->_type = MT_UNICODE; // set _type as UnicodeString
+        str = str ? str : L"";
+        if ( (ssize_t)len < 0 )
+        {
+            this->_pWStr = new UnicodeString(str);
+        }
+        else
+        {
+            this->_pWStr = new UnicodeString( str, len );
+        }
+    }
+}
+
+// Buffer赋值函数 ------------------------------------------------------------------------------
 void Mixed::assign( Buffer const & buf )
 {
     if ( this->_type == MT_BINARY )
@@ -2880,6 +3963,35 @@ void Mixed::assign( void const * binaryData, size_t size, bool isPeek )
     }
 }
 
+void Mixed::assign( Buffer && buf )
+{
+    if ( this->_type == MT_BINARY )
+    {
+        *this->_pBuf = std::move(buf);
+    }
+    else
+    {
+        this->free();
+        this->_type = MT_BINARY;
+        this->_pBuf = new Buffer( std::move(buf) );
+    }
+}
+
+void Mixed::assign( GrowBuffer && buf )
+{
+    if ( this->_type == MT_BINARY )
+    {
+        *this->_pBuf = std::move(buf);
+    }
+    else
+    {
+        this->free();
+        this->_type = MT_BINARY;
+        this->_pBuf = new Buffer( std::move(buf) );
+    }
+}
+
+// Array赋值函数 -------------------------------------------------------------------------------
 void Mixed::assign( Mixed * arr, size_t count )
 {
     if ( this->_type == MT_ARRAY )
@@ -2894,7 +4006,7 @@ void Mixed::assign( Mixed * arr, size_t count )
     }
 }
 
-void Mixed::assign( std::initializer_list<Mixed> list )
+void Mixed::assign( std::initializer_list<Mixed> && list )
 {
     if ( this->_type == MT_ARRAY )
     {
@@ -2908,7 +4020,7 @@ void Mixed::assign( std::initializer_list<Mixed> list )
     }
 }
 
-void Mixed::assign( $a arr )
+void Mixed::assign( $a && arr )
 {
     if ( this->_type == MT_ARRAY )
     {
@@ -2922,23 +4034,67 @@ void Mixed::assign( $a arr )
     }
 }
 
-void Mixed::assign( $c coll )
+// Collection赋值函数 --------------------------------------------------------------------------
+void Mixed::assign( $c && coll, bool caseInsensitive )
 {
-    this->free();
-    this->_type = MT_COLLECTION;
-    this->_pArr = new MixedArray(); // 存放keys
-    this->_pMap = new MixedMixedMap();
-    for ( auto & pr : coll._list )
+    if ( this->_type == MT_COLLECTION )
     {
-        this->_addUniqueKey(pr.first);
-        ( *this->_pMap )[pr.first] = pr.second;
+        this->_pColl->assign( std::move(coll), caseInsensitive );
+    }
+    else
+    {
+        this->free();
+        this->_type = MT_COLLECTION;
+        this->_pColl = new Collection( std::move(coll), caseInsensitive );
     }
 }
 
-// JSON -----------------------------------------------------------------------------------
-String Mixed::myJson( bool autoKeyQuotes, AnsiString const & spacer, AnsiString const & newline ) const
+inline static void __AssignDifferentColl( Collection * pColl, bool isClear, Collection const & coll )
 {
-    return MixedToJsonExA( *this, autoKeyQuotes, spacer, newline );
+    if ( pColl->getCaseInsensitive() == coll.getCaseInsensitive() )
+    {
+        pColl->refKeysArray() = coll.refKeysArray();
+        if ( pColl->getCaseInsensitive() )
+        {
+            pColl->refMapI() = coll.refMapI();
+        }
+        else
+        {
+            pColl->refMap() = coll.refMap();
+        }
+    }
+    else
+    {
+        if ( isClear ) pColl->clear();
+        size_t n = coll.getCount();
+        for ( size_t i = 0; i < n; ++i )
+        {
+            auto & pr = coll.getPair(i);
+            (*pColl)[pr.first] = pr.second;
+        }
+    }
+}
+
+void Mixed::assign( Collection const & coll, bool caseInsensitive )
+{
+    if ( this->_type == MT_COLLECTION && this->_pColl->_caseInsensitive == caseInsensitive )
+    {
+        __AssignDifferentColl( this->_pColl, true, coll );
+    }
+    else
+    {
+        this->free();
+        this->_type = MT_COLLECTION;
+        this->_pColl = new Collection(caseInsensitive);
+
+        __AssignDifferentColl( this->_pColl, false, coll );
+    }
+}
+
+// JSON ---------------------------------------------------------------------------------------
+String Mixed::myJson( bool autoKeyQuotes, String const & spacer, String const & newline ) const
+{
+    return MixedToJsonEx( *this, autoKeyQuotes, spacer, newline );
 }
 
 String Mixed::json() const
@@ -2948,174 +4104,219 @@ String Mixed::json() const
 
 Mixed & Mixed::json( String const & jsonStr )
 {
-    return Mixed::ParseJson( jsonStr, this );
+    ParseJson( jsonStr, this );
+    return *this;
 }
 
-// 类型解析功能 --------------------------------------------------------------------------------------------
-bool Mixed::ParseBool( AnsiString const & str, bool * boolVal )
+void Mixed::_copyConstruct( Mixed const & other )
 {
-    if ( _stricmp( str.c_str(), "true" ) == 0 || _stricmp( str.c_str(), "yes" ) == 0 || _stricmp( str.c_str(), "on" ) == 0 )
+    switch ( other._type )
     {
-        *boolVal = true;
+    case MT_ANSI:
+        this->_type = other._type;
+        this->_pStr = new AnsiString(*other._pStr);
+        break;
+    case MT_UNICODE:
+        this->_type = other._type;
+        this->_pWStr = new UnicodeString(*other._pWStr);
+        break;
+    case MT_BINARY:
+        this->_type = other._type;
+        this->_pBuf = new Buffer(*other._pBuf);
+        break;
+    case MT_ARRAY:
+        this->_type = other._type;
+        this->_pArr = new MixedArray(*other._pArr);
+        break;
+    case MT_COLLECTION:
+        this->_type = other._type;
+        this->_pColl = new Collection(*other._pColl);
+        break;
+    default: // 是其他的话，直接copy就好
+        memcpy( this, &other, sizeof(Mixed) );
+        break;
     }
-    else if ( _stricmp( str.c_str(), "false" ) == 0 || _stricmp( str.c_str(), "no" ) == 0 || _stricmp( str.c_str(), "off" ) == 0 )
-    {
-        *boolVal = false;
-    }
-    else
-    {
-        ulong ul;
-        ParseULong( str, &ul );
-        *boolVal = ul != 0;
-    }
-    return true;
 }
 
-bool Mixed::ParseBool( UnicodeString const & str, bool * boolVal )
+void Mixed::_copyAssignment( Mixed const & other )
 {
-    if ( _wcsicmp( str.c_str(), L"true" ) == 0 || _wcsicmp( str.c_str(), L"yes" ) == 0 || _wcsicmp( str.c_str(), L"on" ) == 0 )
+    if ( this->_type < MT_ANSI ) // this is POD type
     {
-        *boolVal = true;
+        if ( other._type < MT_ANSI ) // other is POD type
+        {
+            memcpy( this, &other, sizeof(Mixed) );
+        }
+        else // other isn't POD type
+        {
+            this->_copyConstruct(other);
+        }
     }
-    else if ( _wcsicmp( str.c_str(), L"false" ) == 0 || _wcsicmp( str.c_str(), L"no" ) == 0 || _wcsicmp( str.c_str(), L"off" ) == 0 )
+    else // this isn't POD type
     {
-        *boolVal = false;
+        if ( other._type < MT_ANSI ) // other is POD type
+        {
+            this->free();
+            memcpy( this, &other, sizeof(Mixed) );
+        }
+        else // other isn't POD type
+        {
+            if ( this->_type == other._type )
+            {
+                switch ( other._type )
+                {
+                case MT_ANSI:
+                    *this->_pStr = *other._pStr;
+                    break;
+                case MT_UNICODE:
+                    *this->_pWStr = *other._pWStr;
+                    break;
+                case MT_BINARY:
+                    *this->_pBuf = *other._pBuf;
+                    break;
+                case MT_ARRAY:
+                    *this->_pArr = *other._pArr;
+                    break;
+                case MT_COLLECTION:
+                    *this->_pColl = *other._pColl;
+                    break;
+                }
+            }
+            else
+            {
+                this->free();
+                this->_copyConstruct(other);
+            }
+        }
     }
-    else
-    {
-        ulong ul;
-        ParseULong( str, &ul );
-        *boolVal = ul != 0;
-    }
-    return true;
 }
 
-bool Mixed::ParseULong( AnsiString const & str, ulong * ulVal )
-{
-    if ( str.length() > 1 && str[0] == '0' && ( str[1] == 'x' || str[1] == 'X' ) ) // 16进制数
-    {
-        *ulVal = strtoul( str.c_str() + 2, NULL, 16 );
-    }
-    else if ( str.length() > 1 && str[0] == '0' ) // 8进制数
-    {
-        *ulVal = strtoul( str.c_str() + 1, NULL, 8 );
-    }
-    else
-    {
-        *ulVal = strtoul( str.c_str(), NULL, 10 );
-    }
-    return true;
-}
-
-bool Mixed::ParseULong( UnicodeString const & str, ulong * ulVal )
-{
-    if ( str.length() > 1 && str[0] == L'0' && ( str[1] == L'x' || str[1] == L'X' ) )
-    {
-        *ulVal = wcstoul( str.c_str() + 2, NULL, 16 );
-    }
-    else if ( str.length() > 1 && str[0] == L'0' )
-    {
-        *ulVal = wcstoul( str.c_str() + 1, NULL, 8 );
-    }
-    else
-    {
-        *ulVal = wcstoul( str.c_str(), NULL, 10 );
-    }
-    return true;
-}
-
-bool Mixed::ParseDouble( AnsiString const & str, double * dblVal )
-{
-    if ( str.length() > 1 && str[0] == '0' && ( str[1] == 'x' || str[1] == 'X' ) )
-    {
-        *dblVal = (double)StrToInt64A( str.c_str() + 2, 16 );
-    }
-    else if ( str.length() > 1 && str[0] == '0' && str[1] != '.' && ( str[1] != 'e' || str[1] != 'E' ) )
-    {
-        *dblVal = (double)StrToInt64A( str.c_str() + 1, 8 );
-    }
-    else
-    {
-        *dblVal = strtod( str.c_str(), NULL );
-    }
-    return true;
-}
-
-bool Mixed::ParseDouble( UnicodeString const & str, double * dblVal )
-{
-    if ( str.length() > 1 && str[0] == L'0' && ( str[1] == L'x' || str[1] == L'X' ) )
-    {
-        *dblVal = (double)StrToInt64W( str.c_str() + 2, 16 );
-    }
-    else if ( str.length() > 1 && str[0] == L'0' && ( str[1] != L'.' || str[1] != L'e' || str[1] != L'E' ) )
-    {
-        *dblVal = (double)StrToInt64W( str.c_str() + 1, 8 );
-    }
-    else
-    {
-        *dblVal = wcstod( str.c_str(), NULL );
-    }
-    return true;
-}
-
-bool Mixed::ParseUInt64( AnsiString const & str, uint64 * ui64Val )
-{
-    if ( str.length() > 1 && str[0] == '0' && ( str[1] == 'x' || str[1] == 'X' ) )
-    {
-        *ui64Val = StrToUint64A( str.c_str() + 2, 16 );
-    }
-    else if ( str.length() > 1 && str[0] == '0' )
-    {
-        *ui64Val = StrToUint64A( str.c_str() + 1, 8 );
-    }
-    else
-    {
-        *ui64Val = StrToUint64A( str.c_str(), 10 );
-    }
-    return true;
-}
-
-bool Mixed::ParseUInt64( UnicodeString const & str, uint64 * ui64Val )
-{
-    if ( str.length() > 1 && str[0] == L'0' && ( str[1] == L'x' || str[1] == L'X' ) )
-    {
-        *ui64Val = StrToUint64W( str.c_str() + 2, 16 );
-    }
-
-    else if ( str.length() > 1 && str[0] == L'0' )
-    {
-        *ui64Val = StrToUint64W( str.c_str() + 1, 8 );
-    }
-    else
-    {
-        *ui64Val = StrToUint64W( str, 10 );
-    }
-    return true;
-}
-
-Mixed & Mixed::ParseJson( AnsiString const & str, Mixed * val )
-{
-    bool r = JsonParse( str, val );
-    (void)r;
-    return *val;
-}
-
-void Mixed::_zeroInit()
-{
-    memset( this, 0, sizeof(Mixed) );
-    this->_type = MT_NULL;
-}
+// 预定义的Mixed常量 ------------------------------------------------------------------------
+Mixed const mxNull;
 
 // ostream 相关
 WINUX_FUNC_IMPL(std::ostream &) operator << ( std::ostream & o, Mixed const & m )
 {
-    o << m.toAnsi();
+    switch ( m._type )
+    {
+    case Mixed::MT_BOOLEAN:
+        o << m._boolVal;
+        break;
+    case Mixed::MT_CHAR:
+        o << m._chVal;
+        break;
+    case Mixed::MT_BYTE:
+        o << m._btVal;
+        break;
+    case Mixed::MT_SHORT:
+        o << m._shVal;
+        break;
+    case Mixed::MT_USHORT:
+        o << m._ushVal;
+        break;
+    case Mixed::MT_INT:
+        o << m._iVal;
+        break;
+    case Mixed::MT_UINT:
+        o << m._uiVal;
+        break;
+    case Mixed::MT_LONG:
+        o << m._lVal;
+        break;
+    case Mixed::MT_ULONG:
+        o << m._ulVal;
+        break;
+    case Mixed::MT_INT64:
+        o << m._i64Val;
+        break;
+    case Mixed::MT_UINT64:
+        o << m._ui64Val;
+        break;
+    case Mixed::MT_FLOAT:
+        o << m._fltVal;
+        break;
+    case Mixed::MT_DOUBLE:
+        o << m._dblVal;
+        break;
+    case Mixed::MT_ANSI:
+        o << *m._pStr;
+        break;
+    case Mixed::MT_UNICODE:
+        o << m.toAnsi();
+        break;
+    case Mixed::MT_BINARY:
+        o << m._pBuf->toAnsi();
+        break;
+    case Mixed::MT_ARRAY:
+        o << MixedToJsonA( m, false );
+        break;
+    case Mixed::MT_COLLECTION:
+        o << MixedToJsonA( m, false );
+        break;
+    }
+    //o << m.toAnsi();
     return o;
 }
 
 WINUX_FUNC_IMPL(std::wostream &) operator << ( std::wostream & o, Mixed const & m )
 {
-    o << m.toUnicode();
+    switch ( m._type )
+    {
+    case Mixed::MT_BOOLEAN:
+        o << m._boolVal;
+        break;
+    case Mixed::MT_CHAR:
+        o << m._chVal;
+        break;
+    case Mixed::MT_BYTE:
+        o << m._btVal;
+        break;
+    case Mixed::MT_SHORT:
+        o << m._shVal;
+        break;
+    case Mixed::MT_USHORT:
+        o << m._ushVal;
+        break;
+    case Mixed::MT_INT:
+        o << m._iVal;
+        break;
+    case Mixed::MT_UINT:
+        o << m._uiVal;
+        break;
+    case Mixed::MT_LONG:
+        o << m._lVal;
+        break;
+    case Mixed::MT_ULONG:
+        o << m._ulVal;
+        break;
+    case Mixed::MT_INT64:
+        o << m._i64Val;
+        break;
+    case Mixed::MT_UINT64:
+        o << m._ui64Val;
+        break;
+    case Mixed::MT_FLOAT:
+        o << m._fltVal;
+        break;
+    case Mixed::MT_DOUBLE:
+        o << m._dblVal;
+        break;
+    case Mixed::MT_ANSI:
+        o << m.toUnicode();
+        break;
+    case Mixed::MT_UNICODE:
+        o << *m._pWStr;
+        break;
+    case Mixed::MT_BINARY:
+        o << m._pBuf->toUnicode();
+        break;
+    case Mixed::MT_ARRAY:
+        o << MixedToJsonW( m, false );
+        break;
+    case Mixed::MT_COLLECTION:
+        o << MixedToJsonW( m, false );
+        break;
+    }
+    //o << m.toUnicode();
     return o;
 }
 

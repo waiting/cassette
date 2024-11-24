@@ -2895,36 +2895,36 @@ ZRESULT TZip::AddCentral()
 
 ZRESULT lasterrorZ=ZR_OK;
 
-unsigned int FormatZipMessageZ(ZRESULT code, char *buf,unsigned int len)
+unsigned int FormatZipMessageZ(ZRESULT code, TCHAR *buf,unsigned int len)
 { if (code==ZR_RECENT) code=lasterrorZ;
-  const char *msg="unknown zip result code";
+  const TCHAR *msg=_T("unknown zip result code");
   switch (code)
-  { case ZR_OK: msg="Success"; break;
-    case ZR_NODUPH: msg="Culdn't duplicate handle"; break;
-    case ZR_NOFILE: msg="Couldn't create/open file"; break;
-    case ZR_NOALLOC: msg="Failed to allocate memory"; break;
-    case ZR_WRITE: msg="Error writing to file"; break;
-    case ZR_NOTFOUND: msg="File not found in the zipfile"; break;
-    case ZR_MORE: msg="Still more data to unzip"; break;
-    case ZR_CORRUPT: msg="Zipfile is corrupt or not a zipfile"; break;
-    case ZR_READ: msg="Error reading file"; break;
-    case ZR_ARGS: msg="Caller: faulty arguments"; break;
-    case ZR_PARTIALUNZ: msg="Caller: the file had already been partially unzipped"; break;
-    case ZR_NOTMMAP: msg="Caller: can only get memory of a memory zipfile"; break;
-    case ZR_MEMSIZE: msg="Caller: not enough space allocated for memory zipfile"; break;
-    case ZR_FAILED: msg="Caller: there was a previous error"; break;
-    case ZR_ENDED: msg="Caller: additions to the zip have already been ended"; break;
-    case ZR_ZMODE: msg="Caller: mixing creation and opening of zip"; break;
-    case ZR_NOTINITED: msg="Zip-bug: internal initialisation not completed"; break;
-    case ZR_SEEK: msg="Zip-bug: trying to seek the unseekable"; break;
-    case ZR_MISSIZE: msg="Zip-bug: the anticipated size turned out wrong"; break;
-    case ZR_NOCHANGE: msg="Zip-bug: tried to change mind, but not allowed"; break;
-    case ZR_FLATE: msg="Zip-bug: an internal error during flation"; break;
+  { case ZR_OK: msg=_T("Success"); break;
+    case ZR_NODUPH: msg=_T("Culdn't duplicate handle"); break;
+    case ZR_NOFILE: msg=_T("Couldn't create/open file"); break;
+    case ZR_NOALLOC: msg=_T("Failed to allocate memory"); break;
+    case ZR_WRITE: msg=_T("Error writing to file"); break;
+    case ZR_NOTFOUND: msg=_T("File not found in the zipfile"); break;
+    case ZR_MORE: msg=_T("Still more data to unzip"); break;
+    case ZR_CORRUPT: msg=_T("Zipfile is corrupt or not a zipfile"); break;
+    case ZR_READ: msg=_T("Error reading file"); break;
+    case ZR_ARGS: msg=_T("Caller: faulty arguments"); break;
+    case ZR_PARTIALUNZ: msg=_T("Caller: the file had already been partially unzipped"); break;
+    case ZR_NOTMMAP: msg=_T("Caller: can only get memory of a memory zipfile"); break;
+    case ZR_MEMSIZE: msg=_T("Caller: not enough space allocated for memory zipfile"); break;
+    case ZR_FAILED: msg=_T("Caller: there was a previous error"); break;
+    case ZR_ENDED: msg=_T("Caller: additions to the zip have already been ended"); break;
+    case ZR_ZMODE: msg=_T("Caller: mixing creation and opening of zip"); break;
+    case ZR_NOTINITED: msg=_T("Zip-bug: internal initialisation not completed"); break;
+    case ZR_SEEK: msg=_T("Zip-bug: trying to seek the unseekable"); break;
+    case ZR_MISSIZE: msg=_T("Zip-bug: the anticipated size turned out wrong"); break;
+    case ZR_NOCHANGE: msg=_T("Zip-bug: tried to change mind, but not allowed"); break;
+    case ZR_FLATE: msg=_T("Zip-bug: an internal error during flation"); break;
   }
-  unsigned int mlen=(unsigned int)strlen(msg);
+  unsigned int mlen=(unsigned int)_tcslen(msg);
   if (buf==0 || len==0) return mlen;
   unsigned int n=mlen; if (n+1>len) n=len-1;
-  strncpy(buf,msg,n); buf[n]=0;
+  _tcsncpy(buf,msg,n); buf[n]=0;
   return mlen;
 }
 

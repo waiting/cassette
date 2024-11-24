@@ -8,7 +8,6 @@
 
 namespace winux
 {
-
 /** \brief 颜色属性标记 */
 enum ConsoleColorAttrFlags : winux::ushort
 {
@@ -90,40 +89,33 @@ enum ConsoleColorAttrFlags : winux::ushort
     bgFuchsia = bgPurple,
     bgYellow = bgOlive,
 #endif
-
+    ccaIgnore = 0x8000,
 };
 
-#if defined(OS_WIN)
-#else
-extern WINUX_DLL char const * __TerminalFgColorAttrs[];
-extern WINUX_DLL char const * __TerminalBgColorAttrs[];
-
-#endif
-
+/** \brief 控制台属性类 */
 class WINUX_DLL ConsoleAttr
 {
+public:
+    ConsoleAttr( winux::ushort attr, bool isSetBgColor = false );
+
+    void modify() const;
+    void resume() const;
+
 private:
 #if defined(OS_WIN)
     WORD _wPrevAttributes;
     WORD _wAttributes;
     HANDLE _hStdHandle;
 #else
-    winux::String _strAttr;
+    winux::AnsiString _strAttr;
 #endif
     bool _isSetBgColor;
-public:
-    ConsoleAttr( winux::ushort attr, bool isSetBgColor = false );
-
-    void modify() const;
-
-    void resume() const;
 };
 
+/** \brief 控制台属性类模板 */
 template < typename _VarType >
 class ConsoleAttrT : public ConsoleAttr
 {
-private:
-    _VarType & _v;
 public:
     ConsoleAttrT( winux::ushort attr, _VarType const & v, bool isSetBgColor = false ) : ConsoleAttr( attr, isSetBgColor ), _v( const_cast<_VarType&>(v) )
     {
@@ -131,15 +123,17 @@ public:
 
     _VarType & val() const { return _v; }
 
+private:
+    _VarType & _v;
 };
 
 template < typename _VarType >
-inline std::ostream & operator << ( std::ostream & o, ConsoleAttrT<_VarType> const & tr )
+inline std::ostream & operator << ( std::ostream & out, ConsoleAttrT<_VarType> const & tr )
 {
     tr.modify();
-    o << tr.val();
+    out << tr.val();
     tr.resume();
-    return o;
+    return out;
 }
 
 template < typename _VarType >
@@ -152,16 +146,37 @@ inline std::istream & operator >> ( std::istream & in, ConsoleAttrT<_VarType> co
 }
 
 template < typename _VarType >
+inline std::wostream & operator << ( std::wostream & out, ConsoleAttrT<_VarType> const & tr )
+{
+    tr.modify();
+    out << tr.val();
+    tr.resume();
+    return out;
+}
+
+template < typename _VarType >
+inline std::wistream & operator >> ( std::wistream & in, ConsoleAttrT<_VarType> const & tr )
+{
+    tr.modify();
+    in >> tr.val();
+    tr.resume();
+    return in;
+}
+
+/** \brief 控制台颜色函数 */
+template < typename _VarType >
 inline ConsoleAttrT<_VarType> ConsoleColor( winux::ushort attr, _VarType const & v, bool isSetBgColor = false )
 {
     return ConsoleAttrT<_VarType>( attr, v, isSetBgColor );
 }
 
+/** \brief 控制台输出ScopeGuard */
 class WINUX_DLL ConsoleOuputMutexScopeGuard
 {
 public:
     ConsoleOuputMutexScopeGuard();
     ~ConsoleOuputMutexScopeGuard();
+
 private:
     DISABLE_OBJECT_COPY(ConsoleOuputMutexScopeGuard)
 };
@@ -173,7 +188,11 @@ inline static void OutputV()
 template < typename _Ty, typename... _ArgType >
 inline static void OutputV( _Ty&& a, _ArgType&& ... arg )
 {
+#if defined(_UNICODE) || defined(UNICODE)
+    std::wcout << a;
+#else
     std::cout << a;
+#endif
     OutputV( std::forward<_ArgType>(arg)... );
 }
 
@@ -184,7 +203,11 @@ inline static void ColorOutputLine( winux::ConsoleAttr const & ca, _ArgType&& ..
     ca.modify();
     OutputV( std::forward<_ArgType>(arg)... );
     ca.resume();
+#if defined(_UNICODE) || defined(UNICODE)
+    std::wcout << std::endl;
+#else
     std::cout << std::endl;
+#endif
 }
 
 template < typename... _ArgType >
@@ -195,6 +218,19 @@ inline static void ColorOutput( winux::ConsoleAttr const & ca, _ArgType&& ... ar
     OutputV( std::forward<_ArgType>(arg)... );
     ca.resume();
 }
+
+// 控制台输出布局控制函数 --------------------------------------------------------------------------------
+/** \brief 文本对齐方式 */
+enum ConsoleTextLayoutAlignment
+{
+    ctlaLeft,
+    ctlaCenter,
+    ctlaRight
+};
+
+/** \brief 控制台文本布局，按指定长度输出文本。可以控制对齐方式，是否截断，截断省略号 */
+WINUX_FUNC_DECL(String) ConsoleTextLayout( String const & text, size_t maxLength, ConsoleTextLayoutAlignment align = ctlaLeft, String::value_type blankCh = ' ', bool isTrunc = true, size_t ellipsis = 3 );
+
 
 } // namespace winux
 

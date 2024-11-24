@@ -106,7 +106,7 @@ public:
 
     ZRESULT unzipEntry( int index, String const & outFilename );
     ZRESULT unzipEntry( int index, void * buf, uint32 size );
-    void unzipAll( String const & dirPath = "" );
+    void unzipAll( String const & dirPath = TEXT("") );
 
     ZRESULT setUnzipBaseDir( String const & dirPath );
 

@@ -76,7 +76,7 @@ public:
      *
      *  如果需要设置配置文件的外部变量，必须先调用set()，然后才load()配置文件。
      *  \param settingsFile 配置文件路径 */
-    ConfigureSettings( String const & settingsFile = "" );
+    ConfigureSettings( String const & settingsFile = TEXT("") );
     ~ConfigureSettings();
     ConfigureSettings( ConfigureSettings const & other );
     ConfigureSettings( ConfigureSettings && other );
@@ -90,12 +90,12 @@ public:
      *
      *  \param multiname 此参数不是表达式，而是一系列键名。可以用任何表达式可以识别的符号隔开（例如 > , . ），如果键名含空格应该用引号包起来。
      *  \param updateExprStr 更新的表达式，为空表示不更改表达式，只重新计算更新值 */
-    Mixed & update( String const & multiname, String const & updateExprStr = "" );
+    Mixed & update( String const & multiname, String const & updateExprStr = TEXT("") );
 
     /** \brief 以根变量场景执行表达式并返回引用，如果不能执行则返回内部一个引用 */
     Mixed & execRef( String const & exprStr ) const;
     /** \brief 以根变量场景执行表达式并返回值，如果不能执行则返回默认值 */
-    Mixed execVal( String const & exprStr, Mixed const & defval = Mixed() ) const;
+    Mixed execVal( String const & exprStr, Mixed const & defval = mxNull ) const;
 
     /** \brief 获取此名字的设置（只读） */
     Mixed const & operator [] ( String const & name ) const;
@@ -135,7 +135,7 @@ public:
     CsvWriter( IFile * outputFile );
 
     /** \brief 写入所有记录和列标头 */
-    void write( Mixed const & records, Mixed const & columnHeaders = Mixed() );
+    void write( Mixed const & records, Mixed const & columnHeaders = mxNull );
     /** \brief CSV文件写入一条记录 */
     void writeRecord( Mixed const & record );
 
@@ -174,7 +174,6 @@ private:
     void _readString( String const & str, int & i, String & valStr );
 };
 
-
 /** \brief 文本文档类。可载入文本文件自动识别BOM文件编码，转换为指定编码。\n
 
     核心参数有三个：\n
@@ -190,27 +189,12 @@ private:
 class WINUX_DLL TextArchive
 {
 public:
-    /** \brief 文件编码 */
-    enum FileEncoding
-    {
-        MultiByte,
-        Utf8,
-        Utf8Bom,
-        Utf16Le,
-        Utf16Be,
-        Utf16 = Utf16Be,
-        Utf32Le,
-        Utf32Be,
-        Utf32 = Utf32Be
-
-    };
-
     /** \brief 构造函数1
      *
      *  \param fileEncoding 文件编码，如果是直接写文档则需要指定一个文件编码
      *  \param contentEncoding 内容编码，当给文本文档写入内容时，内容的编码
      *  \param mbsEncoding 多字节字符串编码，当文件编码为多字节时，这个参数指示是哪一个多字节编码 */
-    TextArchive( FileEncoding fileEncoding = MultiByte, winux::AnsiString const & contentEncoding = "", winux::AnsiString const & mbsEncoding = "" ) : _fileEncoding(fileEncoding), _contentEncoding(contentEncoding), _mbsEncoding(mbsEncoding)
+    TextArchive( FileEncoding fileEncoding = feMultiByte, winux::AnsiString const & contentEncoding = "", winux::AnsiString const & mbsEncoding = "" ) : _fileEncoding(fileEncoding), _contentEncoding(contentEncoding), _mbsEncoding(mbsEncoding)
     {
     }
 
@@ -270,7 +254,7 @@ public:
     void load( winux::IFile * f, bool isConvert, winux::AnsiString const & targetEncoding = "", winux::AnsiString const & mbsEncoding = "" )
     {
         size_t n;
-        void * buf = f->buffer(&n);
+        void * buf = f->entire(&n);
         this->load( winux::Buffer( buf, n, true ), isConvert, targetEncoding, mbsEncoding );
     }
 
@@ -396,7 +380,7 @@ public:
      *  \param fileEncoding 文件编码 */
     void saveEx( winux::Buffer const & content, winux::AnsiString const & encoding, winux::String const & filePath, FileEncoding fileEncoding )
     {
-        winux::File file( filePath, "wb" );
+        winux::File file( filePath, TEXT("wb") );
         this->saveEx( content, encoding, &file, fileEncoding );
     }
 
@@ -424,6 +408,7 @@ private:
     mutable winux::AnsiString _contentEncoding; // 内容编码
     mutable winux::AnsiString _mbsEncoding; // 多字节编码，当文件编码是MultiByte时，此成员指定是哪个多字节编码
 };
+
 
 } // namespace winux
 

@@ -1,5 +1,4 @@
-﻿
-#include "utilities.hpp"
+﻿#include "utilities.hpp"
 #include "strings.hpp"
 #include "time.hpp"
 #include <time.h>
@@ -10,6 +9,19 @@
 
 #ifdef __GNUC__
 #include <sys/time.h>
+#endif
+
+#if defined(OS_WIN)
+    #include <mbstring.h>
+    #include <tchar.h>
+
+#else
+    #ifdef UNICODE
+        #define _stscanf swscanf
+    #else
+        #define _stscanf sscanf
+    #endif
+
 #endif
 
 namespace winux
@@ -75,7 +87,7 @@ DateTimeL::DateTimeL( MilliSec const & utcMillisec ) : _millisec(0), _second(0),
 
 DateTimeL::DateTimeL( String const & dateTimeStr ) : _millisec(0), _second(0), _minute(0), _hour(0), _day(0), _month(0), _year(0), _wday(0), _yday(0)
 {
-    sscanf( dateTimeStr.c_str(), "%04hu-%02hu-%02huT%02hu:%02hu:%02hu.%03hu", &_year, &_month, &_day, &_hour, &_minute, &_second, &_millisec );
+    _stscanf( dateTimeStr.c_str(), TEXT("%04hu-%02hu-%02huT%02hu:%02hu:%02hu.%03hu"), &_year, &_month, &_day, &_hour, &_minute, &_second, &_millisec );
     struct tm t = { 0 };
     t.tm_year = _year - 1900;
     t.tm_mon = _month - 1;
@@ -108,9 +120,16 @@ uint64 DateTimeL::toUtcTimeMs() const
     return t;
 }
 
-winux::String DateTimeL::toString() const
+template <>
+WINUX_FUNC_IMPL(AnsiString) DateTimeL::toString() const
 {
-    return Format( "%04hu-%02hu-%02huT%02hu:%02hu:%02hu.%03hu", _year, _month, _day, _hour, _minute, _second, _millisec );
+    return FormatA( "%04hu-%02hu-%02huT%02hu:%02hu:%02hu.%03hu", _year, _month, _day, _hour, _minute, _second, _millisec );
+}
+
+template <>
+WINUX_FUNC_IMPL(UnicodeString) DateTimeL::toString() const
+{
+    return FormatW( L"%04hu-%02hu-%02huT%02hu:%02hu:%02hu.%03hu", _year, _month, _day, _hour, _minute, _second, _millisec );
 }
 
 DateTimeL & DateTimeL::fromCurrent()
@@ -154,7 +173,13 @@ DateTimeL & DateTimeL::fromTm( struct tm const * t )
 
 WINUX_FUNC_IMPL(std::ostream &) operator << ( std::ostream & o, DateTimeL const & dt )
 {
-    o << dt.toString();
+    o << dt.toString<char>();
+    return o;
+}
+
+WINUX_FUNC_IMPL(std::wostream &) operator << ( std::wostream & o, DateTimeL const & dt )
+{
+    o << dt.toString<wchar>();
     return o;
 }
 
@@ -226,5 +251,6 @@ WINUX_FUNC_IMPL(time_t) GetUtcTime( void )
 {
     return time(NULL);
 }
+
 
 } // namespace winux

@@ -6,7 +6,7 @@
 namespace winux
 {
 
-static MutexLockObj __refCountAtomic;
+static MutexNative __refCountAtomic;
 
 WINUX_FUNC_IMPL(long) LongAtomicIncrement( long volatile * p )
 {
@@ -27,5 +27,6 @@ WINUX_FUNC_IMPL(long) LongAtomicCompareExchange( long volatile * p, long exchang
     if ( *p == comparand ) *p = exchange;
     return t;
 }
+
 
 } // namespace winux

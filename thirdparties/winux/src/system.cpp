@@ -1,5 +1,4 @@
-﻿
-#include "utilities.hpp"
+﻿#include "utilities.hpp"
 #include "system.hpp"
 #include "strings.hpp"
 #include "smartptr.hpp"
@@ -10,24 +9,44 @@
 #endif
 
 #if defined(OS_WIN)
-
+#include <process.h>
 #else
 #include <unistd.h>
 #include <sys/types.h>
+#include <sys/syscall.h>
+#include <sys/wait.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <dlfcn.h>
 #include <string.h>
 #include <errno.h>
-#include <sys/wait.h>
-#include <dlfcn.h>
-#include <sys/ipc.h>
-#include <sys/shm.h>
 #endif
 
 namespace winux
 {
 #include "is_x_funcs.inl"
 
+WINUX_FUNC_IMPL(uint) GetPid()
+{
+#if defined(OS_WIN)
+    return (uint)GetCurrentProcessId();
+#else
+    return (uint)getpid();
+#endif
+}
+
+WINUX_FUNC_IMPL(uint) GetTid()
+{
+#if defined(OS_WIN)
+    return (uint)GetCurrentThreadId();
+#else
+    return (uint)syscall(SYS_gettid);
+#endif
+}
+
 template < typename _ChTy >
-static void Impl_ParseCommandLineString( XString<_ChTy> const & cmd, size_t * pI, XString<_ChTy> * str )
+inline static void Impl_ParseCommandLineString( XString<_ChTy> const & cmd, size_t * pI, XString<_ChTy> * str )
 {
     size_t & i = *pI;
     _ChTy quote = cmd[i];
@@ -80,7 +99,7 @@ static void Impl_ParseCommandLineString( XString<_ChTy> const & cmd, size_t * pI
 }
 
 template < typename _ChTy >
-size_t Impl_CommandLineToArgv( XString<_ChTy> const & cmd, XStringArray<_ChTy> * argv )
+inline size_t Impl_CommandLineToArgv( XString<_ChTy> const & cmd, XStringArray<_ChTy> * argv )
 {
     size_t i = 0;
     winux::uint slashes = 0;
@@ -288,7 +307,7 @@ WINUX_FUNC_IMPL(HProcess) ExecCommandEx(
         }
     }
 
-    bCreateRet = CreateProcess( NULL, ( cmdBuf.empty() ? (LPSTR)"": &cmdBuf[0] ), NULL, NULL, TRUE, 0, NULL, NULL, &si, &pi );
+    bCreateRet = CreateProcess( NULL, ( cmdBuf.empty() ? (LPTSTR)TEXT(""): &cmdBuf[0] ), NULL, NULL, TRUE, 0, NULL, NULL, &si, &pi );
     if ( !bCreateRet )
     {
         goto StdPipeError;
@@ -349,63 +368,46 @@ WINUX_FUNC_IMPL(int) ExecCommand(
         ( stderrStr ? &hStderrRead : NULL ),
         closeStdinIfStdinStrEmpty
     );
-    if ( hChildProcess == INVALID_HANDLE_VALUE )
-    {
-        return -1;
-    }
+    if ( hChildProcess == INVALID_HANDLE_VALUE ) return -1;
 
     if ( !stdinStr.empty() )
     {
         DWORD bytes;
-        WriteFile( hStdinWrite, stdinStr.c_str(), (DWORD)stdinStr.length(), &bytes, NULL );
+        AnsiString stdinData = StringToLocal(stdinStr);
+        WriteFile( hStdinWrite, stdinData.c_str(), (DWORD)stdinData.length(), &bytes, NULL );
         CloseHandle(hStdinWrite);
     }
     if ( stdoutStr != NULL )
     {
+        AnsiString stdoutData;
+        stdoutData.reserve(4096);
+        char buf[4096];
         DWORD bytes = 0;
-        int const nSize = 4096;
-        char buf[nSize];
-        BOOL b;
-        stdoutStr->reserve(nSize);
-        while ( ( b = ReadFile( hStdoutRead, buf, nSize, &bytes, NULL ) ) )
+        while ( ReadFile( hStdoutRead, buf, 4096, &bytes, NULL ) && bytes )
         {
-            if ( bytes == 0 ) break;
-            stdoutStr->append( buf, bytes );
+            stdoutData.append( buf, bytes );
         }
         CloseHandle(hStdoutRead);
+        *stdoutStr = LocalToString(stdoutData);
     }
     if ( stderrStr != NULL )
     {
+        AnsiString stderrData;
+        stderrData.reserve(4096);
+        char buf[4096];
         DWORD bytes = 0;
-        int const nSize = 4096;
-        char buf[nSize];
-        BOOL b;
-        stderrStr->reserve(nSize);
-        while ( ( b = ReadFile( hStderrRead, buf, nSize, &bytes, NULL ) ) )
+        while ( ReadFile( hStderrRead, buf, 4096, &bytes, NULL ) && bytes )
         {
-            if ( bytes == 0 ) break;
-            stderrStr->append( buf, bytes );
+            stderrData.append( buf, bytes );
         }
         CloseHandle(hStderrRead);
+        *stderrStr = LocalToString(stderrData);
     }
 
     WaitForSingleObject( hChildProcess, INFINITE );
     GetExitCodeProcess( hChildProcess, &status );
     CloseHandle(hChildProcess);
     return status;
-}
-
-WINUX_FUNC_IMPL(String) GetExec(
-    String const & cmd,
-    String const & stdinStr,
-    String * stderrStr,
-    bool closeStdinIfStdinStrEmpty
-)
-{
-    int rc;
-    String stdoutStr;
-    rc = ExecCommand( cmd, stdinStr, &stdoutStr, stderrStr, closeStdinIfStdinStrEmpty );
-    return stdoutStr;
 }
 
 #else
@@ -552,10 +554,8 @@ WINUX_FUNC_IMPL(int) ExecCommand(
     {
         int bytes = write( hStdinWrite, stdinStr.c_str(), stdinStr.length() );
         (void)bytes;
-
         close(hStdinWrite);
     }
-
     if ( stdoutStr != NULL )
     {
         stdoutStr->reserve(4096);
@@ -567,7 +567,6 @@ WINUX_FUNC_IMPL(int) ExecCommand(
         }
         close(hStdoutRead);
     }
-
     if ( stderrStr != NULL )
     {
         stderrStr->reserve(4096);
@@ -585,6 +584,8 @@ WINUX_FUNC_IMPL(int) ExecCommand(
     return (char)( ( status & 0xff00 ) >> 8 );
 }
 
+#endif
+
 WINUX_FUNC_IMPL(String) GetExec(
     String const & cmd,
     String const & stdinStr,
@@ -598,9 +599,7 @@ WINUX_FUNC_IMPL(String) GetExec(
     return stdoutStr;
 }
 
-#endif
-
-// ----------------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------------
 
 inline static void __MixedAppendToStringArray( Mixed const & mx, StringArray * arr )
 {
@@ -618,7 +617,7 @@ inline static void __MixedAppendToStringArray( Mixed const & mx, StringArray * a
         if ( !s.empty() )
         {
             StringArray tmpArr;
-            size_t n = StrSplit( s, ",", &tmpArr );
+            size_t n = StrSplit( s, TEXT(","), &tmpArr );
             for ( size_t i = 0; i < n; i++ )
             {
                 if ( !tmpArr[i].empty() )
@@ -634,6 +633,7 @@ inline static void __MixedAppendToStringArray( Mixed const & mx, StringArray * a
     }
 }
 
+// 获取前缀和名称
 inline static size_t __ObtainPrefixAndName( String const & str, String * prefix, String * name )
 {
     size_t len = 0, i = 0;
@@ -670,9 +670,9 @@ inline static void __ObtainFlagPrefixAndFlagNameList( StringArray const & desire
         {
             Mixed & nameList = nameLists[prefix];
 
-            if ( nameList.isAnsi() )
+            if ( nameList.isString() )
             {
-                nameList.refAnsi() += name;
+                nameList.ref<String>() += name;
             }
             else
             {
@@ -684,27 +684,14 @@ inline static void __ObtainFlagPrefixAndFlagNameList( StringArray const & desire
     for ( size_t i = 0; i < nameLists.getCount(); i++ )
     {
         auto & pr = nameLists.getPair(i);
-        *flagPrefix = pr.first.toAnsi();
-        *flagNameList = pr.second.toAnsi();
+        *flagPrefix = pr.first.to<String>();
+        *flagNameList = pr.second.to<String>();
         break;
     }
-
-    //String nameList;
-    //String prefix;
-    //for ( auto & pr : nameLists )
-    //{
-    //    if ( pr.second.length() > nameList.length() )
-    //    {
-    //        nameList = pr.second;
-    //        prefix = pr.first;
-    //    }
-    //}
-    //*flagPrefix = prefix;
-    //*flagNameList = nameList;
 }
 
 // class CommandLineVars ------------------------------------------------------------------
-CommandLineVars::CommandLineVars( int argc, char const ** argv, Mixed const & desiredParams, Mixed const & desiredOptions, Mixed const & desiredFlags, Mixed const & optionSymbols /*= "=,:" */ ) :
+CommandLineVars::CommandLineVars( int argc, winux::tchar const ** argv, Mixed const & desiredParams, Mixed const & desiredOptions, Mixed const & desiredFlags, Mixed const & optionSymbols /*= "=,:" */ ) :
     _argc(argc),
     _argv(argv)
 {
@@ -746,7 +733,7 @@ CommandLineVars::CommandLineVars( int argc, char const ** argv, Mixed const & de
                     }
                     else // 已经是最后一个，参数值只好认为是空
                     {
-                        _params[_desiredParams[iDesiredParam]] = "";
+                        _params[_desiredParams[iDesiredParam]] = TEXT("");
                     }
                 }
             }
@@ -760,7 +747,7 @@ CommandLineVars::CommandLineVars( int argc, char const ** argv, Mixed const & de
                 if ( arg.length() < _desiredOptions[iDesiredOption].length() )
                     continue;
                 MultiMatch mmFind( _optionSymbols, NULL );
-                MultiMatch::MatchResult mr = mmFind.search(arg);
+                MultiMatch::MatchResult mr = mmFind.commonSearch(arg);
                 String optionName, optionVal;
                 if ( mr.pos != -1 )
                 {
@@ -770,7 +757,7 @@ CommandLineVars::CommandLineVars( int argc, char const ** argv, Mixed const & de
                 else
                 {
                     optionName = arg;
-                    optionVal = "";
+                    optionVal = TEXT("");
                 }
 
                 if ( optionName == _desiredOptions[iDesiredOption] )
@@ -848,28 +835,28 @@ CommandLineVars::CommandLineVars( int argc, char const ** argv, Mixed const & de
 // struct MutexLockObj_Data ---------------------------------------------------------------
 struct MutexLockObj_Data
 {
-#if defined(OS_WIN) && !defined(HAVE_PTHREAD)
+#if defined(OS_WIN)
     HANDLE _mutex;
 #else
     pthread_mutex_t _mutex;
 #endif
 };
 
-// class MutexLockObj ---------------------------------------------------------------------
-MutexLockObj::MutexLockObj()
+// class MutexNative --------------------------------------------------------------------------
+MutexNative::MutexNative()
 {
     _self.create(); //
 
-#if defined(OS_WIN) && !defined(HAVE_PTHREAD)
+#if defined(OS_WIN)
     _self->_mutex = CreateMutex( NULL, FALSE, NULL );
 #else
     pthread_mutex_init( &_self->_mutex, NULL );
 #endif
 }
 
-MutexLockObj::~MutexLockObj()
+MutexNative::~MutexNative()
 {
-#if defined(OS_WIN) && !defined(HAVE_PTHREAD)
+#if defined(OS_WIN)
     CloseHandle(_self->_mutex);
 #else
     pthread_mutex_destroy(&_self->_mutex);
@@ -878,27 +865,27 @@ MutexLockObj::~MutexLockObj()
     _self.destroy(); //
 }
 
-bool MutexLockObj::tryLock()
+bool MutexNative::tryLock()
 {
-#if defined(OS_WIN) && !defined(HAVE_PTHREAD)
+#if defined(OS_WIN)
     return WaitForSingleObject( _self->_mutex, 0 ) == WAIT_OBJECT_0;
 #else
     return pthread_mutex_trylock(&_self->_mutex) == 0;
 #endif
 }
 
-bool MutexLockObj::lock()
+bool MutexNative::lock()
 {
-#if defined(OS_WIN) && !defined(HAVE_PTHREAD)
+#if defined(OS_WIN)
     return WaitForSingleObject( _self->_mutex, INFINITE ) == WAIT_OBJECT_0;
 #else
     return pthread_mutex_lock(&_self->_mutex) == 0;
 #endif
 }
 
-bool MutexLockObj::unlock()
+bool MutexNative::unlock()
 {
-#if defined(OS_WIN) && !defined(HAVE_PTHREAD)
+#if defined(OS_WIN)
     return ReleaseMutex(_self->_mutex) != 0;
 #else
     return pthread_mutex_unlock(&_self->_mutex) == 0;
@@ -912,13 +899,13 @@ bool MutexLockObj::unlock()
 // Windows下获取错误串
 inline static String __GetErrorStr( DWORD err )
 {
-    char * buf = NULL;
-    DWORD dw = FormatMessageA(
+    tchar * buf = NULL;
+    DWORD dw = FormatMessage(
         FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_ALLOCATE_BUFFER,
         NULL,
         err,
         0,
-        (LPSTR)&buf,
+        (LPTSTR)&buf,
         256,
         NULL
     );
@@ -978,7 +965,7 @@ DllLoader::DllLoader( String const & dllName ) : _hDllModule(NULL), dllModuleFil
     if ( !_hDllModule )
     {
         DWORD err = GetLastError();
-        _errStr = __GetErrorStr(err);
+        _errStr = StringToLocal( __GetErrorStr(err) );
     }
 #else
     _hDllModule = dlopen( dllName.c_str(), RTLD_LAZY );
@@ -1011,7 +998,7 @@ void (* DllLoader::funcAddr( AnsiString const & funcName ) )()
 {
     if ( !_hDllModule )
     {
-        throw DllLoaderError( DllLoaderError::dllModuleNoLoaded, "`" + dllModuleFile + "` module is not loaded" );
+        throw DllLoaderError( DllLoaderError::dllModuleNoLoaded, "`" + StringToLocal(dllModuleFile) + "` module is not loaded" );
     }
 
 #if defined(OS_WIN)
@@ -1021,7 +1008,301 @@ void (* DllLoader::funcAddr( AnsiString const & funcName ) )()
 #endif
 }
 
-// class SharedMemory ---------------------------------------------------------------------
+// class FileMapping --------------------------------------------------------------------------
+FileMapping::FileMapping()
+{
+    this->_zeroInit();
+}
+
+FileMapping::FileMapping( String const & filePath, FileMappingFlag flag )
+{
+    this->_zeroInit();
+    this->create( filePath, flag );
+}
+
+FileMapping::FileMapping(
+#if defined(OS_WIN)
+    HANDLE file,
+#else
+    int file,
+#endif
+    bool isPeekFile,
+    FileMappingFlag flag
+)
+{
+    this->_zeroInit();
+    this->create( file, isPeekFile, flag );
+}
+
+FileMapping::~FileMapping()
+{
+    this->destroy();
+}
+
+bool FileMapping::create( String const & filePath, FileMappingFlag flag )
+{
+    return this->loadFile( filePath, flag ) && this->map(flag);
+}
+
+bool FileMapping::create(
+#if defined(OS_WIN)
+    HANDLE file,
+#else
+    int file,
+#endif
+    bool isPeekFile,
+    FileMappingFlag flag
+)
+{
+    return this->loadFile( file, isPeekFile, flag ) && this->map(flag);
+}
+
+void FileMapping::destroy()
+{
+    this->unmap();
+    this->unloadFile();
+}
+
+bool FileMapping::loadFile( String const & filePath, FileMappingFlag flag )
+{
+    this->unloadFile();
+    _flag = flag;
+#if defined(OS_WIN)
+    // 计算映射对象的旗标
+    static uint fileFlags[] = {
+        0,
+        GENERIC_READ,
+        GENERIC_READ,
+        GENERIC_READ | GENERIC_WRITE,
+        0,
+        GENERIC_EXECUTE | GENERIC_READ,
+        GENERIC_EXECUTE | GENERIC_READ,
+        GENERIC_EXECUTE | GENERIC_READ | GENERIC_WRITE
+    };
+    _file = CreateFile( filePath.c_str(), fileFlags[flag], 0, nullptr, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr );
+    return _file != INVALID_HANDLE_VALUE;
+#else
+    // 计算映射对象的旗标
+    static uint fileFlags[] = {
+        0,
+        O_RDONLY,
+        O_RDONLY,
+        O_RDWR | O_CREAT,
+        0,
+        O_RDONLY,
+        O_RDONLY,
+        O_RDWR | O_CREAT
+    };
+    static uint fileMode[] = {
+        0,
+        S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH,
+        S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH,
+        S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH,
+        0,
+        S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH,
+        S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH,
+        S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH,
+    };
+    _file = open( filePath.c_str(), fileFlags[flag], fileMode[flag] );
+    return _file != -1;
+#endif
+}
+
+bool FileMapping::loadFile(
+#if defined(OS_WIN)
+    HANDLE file,
+#else
+    int file,
+#endif
+    bool isPeekFile,
+    FileMappingFlag flag
+)
+{
+    this->unloadFile();
+    _flag = flag;
+    _file = file;
+    _isPeekFile = isPeekFile;
+    return true;
+}
+
+size_t FileMapping::getFileSize() const
+{
+#if defined(OS_WIN)
+    LARGE_INTEGER lg;
+    lg.LowPart = GetFileSize( _file, (LPDWORD)&lg.HighPart );
+    if ( lg.LowPart == INVALID_FILE_SIZE && GetLastError() != NO_ERROR ) lg.QuadPart = 0;
+    return (size_t)lg.QuadPart;
+#else
+    struct stat64 st;
+    int rc = fstat64( _file, &st );
+    if ( rc < 0 ) st.st_size = 0;
+    return (size_t)st.st_size;
+#endif
+}
+
+void FileMapping::unloadFile()
+{
+#if defined(OS_WIN)
+    if ( !_isPeekFile && _file != INVALID_HANDLE_VALUE )
+    {
+        CloseHandle(_file);
+        _file = INVALID_HANDLE_VALUE;
+        _isPeekFile = false;
+    }
+#else
+    if ( !_isPeekFile && _file != -1 )
+    {
+        close(_file);
+        _file = -1;
+        _isPeekFile = false;
+    }
+#endif
+}
+
+bool FileMapping::map( FileMappingFlag flag, size_t size, offset_t offset )
+{
+    this->unmap();
+
+    // 如果是fmfUnspec，则使用记下的标志
+    flag = flag == fmfUnspec ? _flag : flag;
+
+    // 记下大小
+#if defined(OS_WIN)
+    if ( _file != INVALID_HANDLE_VALUE )
+#else
+    if ( _file != -1 )
+#endif
+    {
+        size_t fsize = this->getFileSize();
+        if ( fsize > 0 )
+        {
+            _size = ( size > 0 ? ( size < fsize ? size : fsize ) : fsize );
+        }
+        else
+        {
+            _size = size;
+        }
+    }
+    else
+    {
+        _size = size;
+    }
+
+#if defined(OS_WIN)
+    LARGE_INTEGER lg;
+    lg.QuadPart = _size;
+
+    // 计算映射对象的旗标
+    static uint mappingFlags[] = {
+        0,
+        PAGE_READONLY,
+        PAGE_WRITECOPY,
+        PAGE_READWRITE,
+        0,
+        PAGE_EXECUTE_READ,
+        PAGE_EXECUTE_WRITECOPY,
+        PAGE_EXECUTE_READWRITE
+    };
+    // 创建映射对象
+    _fileMapping = CreateFileMapping( _file, nullptr, mappingFlags[flag], lg.HighPart, lg.LowPart, nullptr );
+    if ( _fileMapping == nullptr ) return false;
+
+    lg.QuadPart = offset;
+
+    // 计算视图旗标
+    static uint viewFlags[] = {
+        0,
+        FILE_MAP_READ,
+        FILE_MAP_COPY,
+        FILE_MAP_WRITE,
+        0,
+        FILE_MAP_EXECUTE | FILE_MAP_READ,
+        FILE_MAP_EXECUTE | FILE_MAP_COPY,
+        FILE_MAP_EXECUTE | FILE_MAP_WRITE
+    };
+    // 映射视图
+    _p = MapViewOfFile( _fileMapping, viewFlags[flag], lg.HighPart, lg.LowPart, 0 );
+
+    if ( _p == nullptr ) return false;
+#else
+    // 计算视图旗标
+    static uint protFlags[] = {
+        0,
+        PROT_READ,
+        PROT_READ | PROT_WRITE,
+        PROT_READ | PROT_WRITE,
+        0,
+        PROT_READ | PROT_EXEC,
+        PROT_READ | PROT_WRITE | PROT_EXEC,
+        PROT_READ | PROT_WRITE | PROT_EXEC
+    };
+    static uint mapFlags[] = {
+        0,
+        MAP_PRIVATE,
+        MAP_PRIVATE,
+        MAP_SHARED,
+        0,
+        MAP_PRIVATE | MAP_EXECUTABLE,
+        MAP_PRIVATE | MAP_EXECUTABLE,
+        MAP_SHARED | MAP_EXECUTABLE
+    };
+    // 映射视图
+    _p = mmap64( nullptr, _size, protFlags[flag], mapFlags[flag] | ( _file == -1 ? MAP_ANONYMOUS : 0 ), _file, offset );
+
+    if ( _p == MAP_FAILED ) return false;
+#endif
+    return true;
+}
+
+void FileMapping::unmap()
+{
+#if defined(OS_WIN)
+    if ( _p != nullptr )
+    {
+        UnmapViewOfFile(_p);
+        _p = nullptr;
+    }
+    if ( _fileMapping != nullptr )
+    {
+        CloseHandle(_fileMapping);
+        _fileMapping = nullptr;
+    }
+#else
+    if ( _p != MAP_FAILED )
+    {
+        munmap( _p, _size );
+        _p = MAP_FAILED;
+    }
+#endif
+    _size = 0;
+}
+
+FileMapping::operator bool() const
+{
+#if defined(OS_WIN)
+    return _fileMapping != nullptr && _p != nullptr;
+#else
+    return _p != MAP_FAILED;
+#endif
+}
+
+void FileMapping::_zeroInit()
+{
+#if defined(OS_WIN)
+    _file = INVALID_HANDLE_VALUE;
+    _fileMapping = nullptr;
+    _p = nullptr;
+#else
+    _file = -1;
+    _p = MAP_FAILED;
+#endif
+    _size = 0;
+    _flag = fmfWriteCopy;
+    _isPeekFile = false;
+}
+
+
+// class SharedMemory -------------------------------------------------------------------------
 SharedMemory::SharedMemory() :
 #if defined(OS_WIN)
     _shm(NULL),
@@ -1034,7 +1315,7 @@ SharedMemory::SharedMemory() :
 
 }
 
-SharedMemory::SharedMemory( int shmKey, size_t size ) :
+SharedMemory::SharedMemory( String const & shmName, size_t size ) :
 #if defined(OS_WIN)
     _shm(NULL),
 #else
@@ -1043,7 +1324,7 @@ SharedMemory::SharedMemory( int shmKey, size_t size ) :
     _data(NULL),
     _size(0)
 {
-    this->create( shmKey, size );
+    this->create( shmName, size );
 }
 
 SharedMemory::~SharedMemory()
@@ -1051,10 +1332,11 @@ SharedMemory::~SharedMemory()
     this->destroy();
 }
 
-bool SharedMemory::create( int shmKey, size_t size )
+bool SharedMemory::create( String const & shmName, size_t size )
 {
     this->destroy();
 
+    _shmName = shmName;
     _size = size;
 
 #if defined(OS_WIN)
@@ -1071,13 +1353,14 @@ bool SharedMemory::create( int shmKey, size_t size )
     unSize.size = _size;
 
     // 创建内核对象
-    String strShmKey = Format( "shm_%u", shmKey );
-    _shm = CreateFileMapping( INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, unSize.dwHigh, unSize.dwLow, strShmKey.c_str() );
+    _shm = CreateFileMapping( INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, unSize.dwHigh, unSize.dwLow, _shmName.c_str() );
     return _shm != NULL;
 #else
     // 创建内核对象
-    _shm = shmget( (key_t)shmKey, _size, IPC_CREAT | 0666 );
+    _shm = shm_open( _shmName.c_str(), O_CREAT | O_RDWR, 0666 );
     if ( _shm < 0 ) return false;
+    int rc = ftruncate( _shm, _size );
+    if ( rc < 0 ) return false;
     return true;
 #endif
 }
@@ -1090,16 +1373,16 @@ void SharedMemory::destroy()
     if ( _shm != NULL )
     {
         CloseHandle(_shm);
+        _shmName.clear();
         _shm = NULL;
         _size = 0;
     }
 #else
     if ( _shm > -1 )
     {
-        shmid_ds ds = { 0 };
-        shmctl( _shm, IPC_STAT, &ds );
-        if ( ds.shm_nattch < 1 ) shmctl( _shm, IPC_RMID, nullptr );
-
+        close(_shm);
+        shm_unlink( _shmName.c_str() );
+        _shmName.clear();
         _shm = -1;
         _size = 0;
     }
@@ -1113,26 +1396,21 @@ void * SharedMemory::lock()
 #if defined(OS_WIN)
     return _data = MapViewOfFile( _shm, FILE_MAP_ALL_ACCESS, 0, 0, 0 );
 #else
-    return _data = shmat( _shm, nullptr, 0 );
+    return _data = mmap( nullptr, _size, PROT_READ | PROT_WRITE, MAP_SHARED, _shm, 0 );
 #endif
 }
 
 void SharedMemory::unlock()
 {
-    if ( _data != NULL )
+    if ( _data != nullptr )
     {
     #if defined(OS_WIN)
         UnmapViewOfFile(_data);
     #else
-        shmdt(_data);
+        munmap( _data, _size );
     #endif
-        _data = NULL;
+        _data = nullptr;
     }
-}
-
-void * SharedMemory::get()
-{
-    return _data ? _data : this->lock();
 }
 
 

@@ -51,49 +51,50 @@ namespace winplus
  */
 
 /* WordsLibException */
-class WINPLUS_DLL WordsLibException : public std::exception
+class WINPLUS_DLL WordsLibException : public Error
 {
 public:
-    WordsLibException( LPCSTR what ) : std::exception(what) {}
+    WordsLibException( AnsiString const & what ) : Error( -1, what ) { }
 };
 
 class WINPLUS_DLL WordsLib
 {
-
 public:
-    WordsLib( String const & filename ) throw(WordsLibException);
+    WordsLib( AnsiString const & filename ) throw(WordsLibException);
     ~WordsLib();
 
     // 当str1等于str2.substr(0, strlen(str1))时返回0，大于返回1，小于返回-1
-    static int StrMatch( String const & str1, String const & str2 );
+    static int StrMatch( AnsiString const & str1, AnsiString const & str2 );
     // 搜索一个词(精确匹配), 返回其在词库中的索引, 否则返回-1
-    int find( String const & word, int first, int last ) const;
-    int find( String const & word ) const
+    int find( AnsiString const & word, int first, int last ) const;
+    int find( AnsiString const & word ) const
     {
         return this->find( word, 0, wordscount - 1 );
     }
     // 搜索一个串(模糊匹配), 返回其匹配词库中第一个词的索引以及匹配到的词数, 否则返回-1
-    int findEx( String const & word, int first, int last, int * count ) const;
-    int findEx( String const & word, int * count ) const
+    int findEx( AnsiString const & word, int first, int last, int * count ) const;
+    int findEx( AnsiString const & word, int * count ) const
     {
         return this->findEx( word, 0, wordscount - 1, count );
     }
     // 分词1 把text拆分成词组。只会把词库有的词放入arrWords
-    int splitWords( String const & text, StringArray * arrWords ) const;
+    int splitWords( AnsiString const & text, AnsiStringArray * arrWords ) const;
     // 分词2 把text拆分成词组。会把非词库内容合在一起作为一词放入arrWords
-    int splitWords2( String const & text, StringArray * arrWords ) const;
+    int splitWords2( AnsiString const & text, AnsiStringArray * arrWords ) const;
 
-    String prev() const;
-    String next() const;
-    String at( int i ) const;
-    String seek( int index ) const;
+    AnsiString prev() const;
+    AnsiString next() const;
+    AnsiString at( int i ) const;
+    AnsiString seek( int index ) const;
 
-    StringStringMap header;
-    String name, desc, type, compress, encoding;
+    std::map<AnsiString, AnsiString> header;
+    AnsiString name, desc, type, compress, encoding;
     int itemsize, wordscount;
     uint filesize;
+
 protected:
-    String getHeader( String const & key, String const & defval );
+    AnsiString getHeader( AnsiString const & key, AnsiString const & defval );
+
 private:
     // 读取头部信息并解析、存储
     void readHeaders();
@@ -103,8 +104,8 @@ private:
     LPBYTE _p, _data;
     uint _dataSize; // 实际词汇数据大小
     mutable int _curIndex;
-    WordsLib( WordsLib const & );
-    WordsLib & operator = ( WordsLib const & );
+
+    DISABLE_OBJECT_COPY(WordsLib)
 };
 
 } // namespace winplus

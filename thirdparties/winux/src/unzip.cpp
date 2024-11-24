@@ -1,4 +1,5 @@
-﻿#if defined(__linux__) || ( defined(__GNUC__) && !defined(_WIN32) )
+﻿#define _CRT_NON_CONFORMING_SWPRINTFS
+#if defined(__linux__) || ( defined(__GNUC__) && !defined(_WIN32) )
     #include <stdio.h>
     #include <string.h>
     #include <malloc.h>

@@ -1,5 +1,4 @@
-﻿
-#include "eiendb.hpp"
+﻿#include "eiendb.hpp"
 
 namespace eiendb
 {

@@ -4,6 +4,10 @@
 #ifndef SHA1_H_
 #define SHA1_H_ (1)
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /** SHA-1 Context */
 typedef struct {
     uint32_t h[5];
@@ -24,5 +28,9 @@ void sha1_update(sha1_ctx *context, const void *p, size_t len);
 void sha1_final(sha1_ctx *context, uint8_t digest[SHA1_DIGEST_SIZE]);
 
 void sha1_transform(sha1_ctx *context, const uint8_t buffer[64]);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* SHA1_H_ */

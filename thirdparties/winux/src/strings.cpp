@@ -9,7 +9,7 @@
 #include "utilities.hpp"
 #include "strings.hpp"
 
-#if defined(__GNUC__) || defined(HAVE_ICONV_H)
+#if defined(__GNUC__) || defined(HAVE_ICONV)
 #include <iconv.h>
 #endif
 #include <stdio.h>
@@ -57,6 +57,7 @@ inline static bool InCharList( _ChTy ch, XString<_ChTy> const & charlist )
     return charlist.find(ch) != XString<_ChTy>::npos;
 }
 
+
 template < typename _ChTy >
 inline static size_t Impl_StrSplit( XString<_ChTy> const & str, XString<_ChTy> const & delimList, XStringArray<_ChTy> * arr, bool alwaysRetOneElem )
 {
@@ -83,15 +84,62 @@ inline static size_t Impl_StrSplit( XString<_ChTy> const & str, XString<_ChTy> c
     return count;
 }
 
-WINUX_FUNC_IMPL(size_t) StrSplitA( AnsiString const & str, AnsiString const & delimList, AnsiStringArray * arr, bool alwaysRetOneElem )
+template <>
+WINUX_FUNC_IMPL(size_t) StrSplit( XString<char> const & str, XString<char> const & delimList, XStringArray<char> * arr, bool alwaysRetOneElem )
 {
     return Impl_StrSplit( str, delimList, arr, alwaysRetOneElem );
 }
 
-WINUX_FUNC_IMPL(size_t) StrSplitW( UnicodeString const & str, UnicodeString const & delimList, UnicodeStringArray * arr, bool alwaysRetOneElem )
+template <>
+WINUX_FUNC_IMPL(size_t) StrSplit( XString<wchar> const & str, XString<wchar> const & delimList, XStringArray<wchar> * arr, bool alwaysRetOneElem )
 {
     return Impl_StrSplit( str, delimList, arr, alwaysRetOneElem );
 }
+
+template <>
+WINUX_FUNC_IMPL(size_t) StrSplit( XString<char16> const & str, XString<char16> const & delimList, XStringArray<char16> * arr, bool alwaysRetOneElem )
+{
+    return Impl_StrSplit( str, delimList, arr, alwaysRetOneElem );
+}
+
+template <>
+WINUX_FUNC_IMPL(size_t) StrSplit( XString<char32> const & str, XString<char32> const & delimList, XStringArray<char32> * arr, bool alwaysRetOneElem )
+{
+    return Impl_StrSplit( str, delimList, arr, alwaysRetOneElem );
+}
+
+template <>
+WINUX_FUNC_IMPL(XStringArray<char>) StrSplit( XString<char> const & str, XString<char> const & delimList, bool alwaysRetOneElem )
+{
+    XStringArray<char> arr;
+    Impl_StrSplit( str, delimList, &arr, alwaysRetOneElem );
+    return arr;
+}
+
+template <>
+WINUX_FUNC_IMPL(XStringArray<wchar>) StrSplit( XString<wchar> const & str, XString<wchar> const & delimList, bool alwaysRetOneElem )
+{
+    XStringArray<wchar> arr;
+    Impl_StrSplit( str, delimList, &arr, alwaysRetOneElem );
+    return arr;
+}
+
+template <>
+WINUX_FUNC_IMPL(XStringArray<char16>) StrSplit( XString<char16> const & str, XString<char16> const & delimList, bool alwaysRetOneElem )
+{
+    XStringArray<char16> arr;
+    Impl_StrSplit( str, delimList, &arr, alwaysRetOneElem );
+    return arr;
+}
+
+template <>
+WINUX_FUNC_IMPL(XStringArray<char32>) StrSplit( XString<char32> const & str, XString<char32> const & delimList, bool alwaysRetOneElem )
+{
+    XStringArray<char32> arr;
+    Impl_StrSplit( str, delimList, &arr, alwaysRetOneElem );
+    return arr;
+}
+
 
 template < typename _ChTy >
 inline static size_t Impl_StrSplit2( XString<_ChTy> const & str, XString<_ChTy> const & delim, XStringArray<_ChTy> * arr, bool alwaysRetOneElem )
@@ -118,15 +166,62 @@ inline static size_t Impl_StrSplit2( XString<_ChTy> const & str, XString<_ChTy> 
     return count;
 }
 
-WINUX_FUNC_IMPL(size_t) StrSplit2A( AnsiString const & str, AnsiString const & delim, AnsiStringArray * arr, bool alwaysRetOneElem )
+template <>
+WINUX_FUNC_IMPL(size_t) StrSplit2( XString<char> const & str, XString<char> const & delim, XStringArray<char> * arr, bool alwaysRetOneElem )
 {
     return Impl_StrSplit2( str, delim, arr, alwaysRetOneElem );
 }
 
-WINUX_FUNC_IMPL(size_t) StrSplit2W( UnicodeString const & str, UnicodeString const & delim, UnicodeStringArray * arr, bool alwaysRetOneElem )
+template <>
+WINUX_FUNC_IMPL(size_t) StrSplit2( XString<wchar> const & str, XString<wchar> const & delim, XStringArray<wchar> * arr, bool alwaysRetOneElem )
 {
     return Impl_StrSplit2( str, delim, arr, alwaysRetOneElem );
 }
+
+template <>
+WINUX_FUNC_IMPL(size_t) StrSplit2( XString<char16> const & str, XString<char16> const & delim, XStringArray<char16> * arr, bool alwaysRetOneElem )
+{
+    return Impl_StrSplit2( str, delim, arr, alwaysRetOneElem );
+}
+
+template <>
+WINUX_FUNC_IMPL(size_t) StrSplit2( XString<char32> const & str, XString<char32> const & delim, XStringArray<char32> * arr, bool alwaysRetOneElem )
+{
+    return Impl_StrSplit2( str, delim, arr, alwaysRetOneElem );
+}
+
+template <>
+WINUX_FUNC_IMPL(XStringArray<char>) StrSplit2( XString<char> const & str, XString<char> const & delim, bool alwaysRetOneElem )
+{
+    XStringArray<char> arr;
+    Impl_StrSplit2( str, delim, &arr, alwaysRetOneElem );
+    return arr;
+}
+
+template <>
+WINUX_FUNC_IMPL(XStringArray<wchar>) StrSplit2( XString<wchar> const & str, XString<wchar> const & delim, bool alwaysRetOneElem )
+{
+    XStringArray<wchar> arr;
+    Impl_StrSplit2( str, delim, &arr, alwaysRetOneElem );
+    return arr;
+}
+
+template <>
+WINUX_FUNC_IMPL(XStringArray<char16>) StrSplit2( XString<char16> const & str, XString<char16> const & delim, bool alwaysRetOneElem )
+{
+    XStringArray<char16> arr;
+    Impl_StrSplit2( str, delim, &arr, alwaysRetOneElem );
+    return arr;
+}
+
+template <>
+WINUX_FUNC_IMPL(XStringArray<char32>) StrSplit2( XString<char32> const & str, XString<char32> const & delim, bool alwaysRetOneElem )
+{
+    XStringArray<char32> arr;
+    Impl_StrSplit2( str, delim, &arr, alwaysRetOneElem );
+    return arr;
+}
+
 
 template < typename _ChTy >
 inline static XString<_ChTy> Impl_StrJoin( XString<_ChTy> const & delim, XStringArray<_ChTy> const & arr )
@@ -145,21 +240,45 @@ inline static XString<_ChTy> Impl_StrJoin( XString<_ChTy> const & delim, XString
     return res;
 }
 
-WINUX_FUNC_IMPL(AnsiString) StrJoinA( AnsiString const & delim, AnsiStringArray const & arr )
+template <>
+WINUX_FUNC_IMPL(XString<char>) StrJoin( XString<char> const & delim, XStringArray<char> const & arr )
 {
     return Impl_StrJoin( delim, arr );
 }
 
-WINUX_FUNC_IMPL(UnicodeString) StrJoinW( UnicodeString const & delim, UnicodeStringArray const & arr )
+template <>
+WINUX_FUNC_IMPL(XString<wchar>) StrJoin( XString<wchar> const & delim, XStringArray<wchar> const & arr )
 {
     return Impl_StrJoin( delim, arr );
 }
+
+template <>
+WINUX_FUNC_IMPL(XString<char16>) StrJoin( XString<char16> const & delim, XStringArray<char16> const & arr )
+{
+    return Impl_StrJoin( delim, arr );
+}
+
+template <>
+WINUX_FUNC_IMPL(XString<char32>) StrJoin( XString<char32> const & delim, XStringArray<char32> const & arr )
+{
+    return Impl_StrJoin( delim, arr );
+}
+
 
 template < typename _ChTy >
 inline static XString<_ChTy> Impl_StrJoinEx( XString<_ChTy> const & delim, XStringArray<_ChTy> const & arr, size_t start, size_t elemCount )
 {
     XString<_ChTy> res;
-    size_t count = ( elemCount < arr.size() - start ? elemCount : arr.size() - start );
+    size_t count = 0; //arr.size() < start ? 0 : ( elemCount < arr.size() - start ? elemCount : arr.size() - start );
+    if ( arr.size() < start )
+    {
+        count = 0;
+    }
+    else
+    {
+        count = arr.size() - start;
+        if ( elemCount < count ) count = elemCount;
+    }
     for ( size_t i = 0; i < count; i++ )
     {
         if ( i != 0 )
@@ -171,15 +290,30 @@ inline static XString<_ChTy> Impl_StrJoinEx( XString<_ChTy> const & delim, XStri
     return res;
 }
 
-WINUX_FUNC_IMPL(AnsiString) StrJoinExA( AnsiString const & delim, AnsiStringArray const & arr, size_t start, size_t elemCount )
+template <>
+WINUX_FUNC_IMPL(XString<char>) StrJoinEx( XString<char> const & delim, XStringArray<char> const & arr, size_t start, size_t elemCount )
 {
     return Impl_StrJoinEx( delim, arr, start, elemCount );
 }
 
-WINUX_FUNC_IMPL(UnicodeString) StrJoinExW( UnicodeString const & delim, UnicodeStringArray const & arr, size_t start, size_t elemCount )
+template <>
+WINUX_FUNC_IMPL(XString<wchar>) StrJoinEx( XString<wchar> const & delim, XStringArray<wchar> const & arr, size_t start, size_t elemCount )
 {
     return Impl_StrJoinEx( delim, arr, start, elemCount );
 }
+
+template <>
+WINUX_FUNC_IMPL(XString<char16>) StrJoinEx( XString<char16> const & delim, XStringArray<char16> const & arr, size_t start, size_t elemCount )
+{
+    return Impl_StrJoinEx( delim, arr, start, elemCount );
+}
+
+template <>
+WINUX_FUNC_IMPL(XString<char32>) StrJoinEx( XString<char32> const & delim, XStringArray<char32> const & arr, size_t start, size_t elemCount )
+{
+    return Impl_StrJoinEx( delim, arr, start, elemCount );
+}
+
 
 template < typename _ChTy >
 inline static XString<_ChTy> Impl_StrInsert( XString<_ChTy> const & str, size_t start, size_t end, XString<_ChTy> const & insert )
@@ -192,15 +326,30 @@ inline static XString<_ChTy> Impl_StrInsert( XString<_ChTy> const & str, size_t 
     return res;
 }
 
-WINUX_FUNC_IMPL(AnsiString) StrInsertA( AnsiString const & str, size_t start, size_t end, AnsiString const & insert )
+template <>
+WINUX_FUNC_IMPL(XString<char>) StrInsert( XString<char> const & str, size_t start, size_t end, XString<char> const & insert )
 {
     return Impl_StrInsert( str, start, end, insert );
 }
 
-WINUX_FUNC_IMPL(UnicodeString) StrInsertW( UnicodeString const & str, size_t start, size_t end, UnicodeString const & insert )
+template <>
+WINUX_FUNC_IMPL(XString<wchar>) StrInsert( XString<wchar> const & str, size_t start, size_t end, XString<wchar> const & insert )
 {
     return Impl_StrInsert( str, start, end, insert );
 }
+
+template <>
+WINUX_FUNC_IMPL(XString<char16>) StrInsert( XString<char16> const & str, size_t start, size_t end, XString<char16> const & insert )
+{
+    return Impl_StrInsert( str, start, end, insert );
+}
+
+template <>
+WINUX_FUNC_IMPL(XString<char32>) StrInsert( XString<char32> const & str, size_t start, size_t end, XString<char32> const & insert )
+{
+    return Impl_StrInsert( str, start, end, insert );
+}
+
 
 template < typename _ChTy >
 inline static XString<_ChTy> & Impl_StrMakeReplace( XString<_ChTy> * str, XString<_ChTy> const & findText, XString<_ChTy> const & replaceText, size_t offset )
@@ -214,136 +363,334 @@ inline static XString<_ChTy> & Impl_StrMakeReplace( XString<_ChTy> * str, XStrin
     return *str;
 }
 
-WINUX_FUNC_IMPL(AnsiString &) StrMakeReplaceA( AnsiString * str, AnsiString const & findText, AnsiString const & replaceText, size_t offset )
+template <>
+WINUX_FUNC_IMPL(XString<char> &) StrMakeReplace( XString<char> * str, XString<char> const & findText, XString<char> const & replaceText, size_t offset )
 {
     return Impl_StrMakeReplace( str, findText, replaceText, offset );
 }
 
-WINUX_FUNC_IMPL(UnicodeString &) StrMakeReplaceW( UnicodeString * str, UnicodeString const & findText, UnicodeString const & replaceText, size_t offset )
+template <>
+WINUX_FUNC_IMPL(XString<wchar> &) StrMakeReplace( XString<wchar> * str, XString<wchar> const & findText, XString<wchar> const & replaceText, size_t offset )
 {
     return Impl_StrMakeReplace( str, findText, replaceText, offset );
 }
+
+template <>
+WINUX_FUNC_IMPL(XString<char16> &) StrMakeReplace( XString<char16> * str, XString<char16> const & findText, XString<char16> const & replaceText, size_t offset )
+{
+    return Impl_StrMakeReplace( str, findText, replaceText, offset );
+}
+
+template <>
+WINUX_FUNC_IMPL(XString<char32> &) StrMakeReplace( XString<char32> * str, XString<char32> const & findText, XString<char32> const & replaceText, size_t offset )
+{
+    return Impl_StrMakeReplace( str, findText, replaceText, offset );
+}
+
+
+enum StrTrimFlags
+{
+    trimLeft = 1,
+    trimRight = 2
+};
 
 template < typename _ChTy >
-inline static XString<_ChTy> Impl_StrTrim( XString<_ChTy> const & str )
+inline static XString<_ChTy> Impl_StrTrim( XString<_ChTy> const & str, int trimFlags, size_t * leftSpaceCount = nullptr, size_t * rightSpaceCount = nullptr )
 {
     _ChTy const * p1, * p2;
     p1 = str.c_str();
     p2 = str.c_str() + str.length();
-    while ( p1 < p2 && ( *p1 == Literal<_ChTy>::spaceChar || *p1 == Literal<_ChTy>::crChar || *p1 == Literal<_ChTy>::lfChar || *p1 == Literal<_ChTy>::htChar || *p1 == Literal<_ChTy>::vtChar ) )
+    if ( trimFlags & trimLeft )
     {
-        p1++;
+        size_t c = 0;
+        while ( p1 < p2 && ( *p1 == Literal<_ChTy>::spaceChar || *p1 == Literal<_ChTy>::crChar || *p1 == Literal<_ChTy>::lfChar || *p1 == Literal<_ChTy>::htChar || *p1 == Literal<_ChTy>::vtChar ) )
+        {
+            p1++;
+            c++;
+        }
+        ASSIGN_PTR(leftSpaceCount) = c;
     }
-    while ( p2 > p1 && ( p2[-1] == Literal<_ChTy>::spaceChar || p2[-1] == Literal<_ChTy>::crChar || p2[-1] == Literal<_ChTy>::lfChar || p2[-1] == Literal<_ChTy>::htChar || p2[-1] == Literal<_ChTy>::vtChar ) )
+    if ( trimFlags & trimRight )
     {
-        p2--;
+        size_t c = 0;
+        while ( p2 > p1 && ( p2[-1] == Literal<_ChTy>::spaceChar || p2[-1] == Literal<_ChTy>::crChar || p2[-1] == Literal<_ChTy>::lfChar || p2[-1] == Literal<_ChTy>::htChar || p2[-1] == Literal<_ChTy>::vtChar ) )
+        {
+            p2--;
+            c++;
+        }
+        ASSIGN_PTR(rightSpaceCount) = c;
     }
-
     return XString<_ChTy>( p1, p2 );
 }
 
-WINUX_FUNC_IMPL(AnsiString) StrTrimA( AnsiString const & str )
+template <>
+WINUX_FUNC_IMPL(XString<char>) StrTrim( XString<char> const & str, size_t * leftSpaceCount, size_t * rightSpaceCount )
 {
-    return Impl_StrTrim(str);
+    return Impl_StrTrim( str, trimLeft | trimRight, leftSpaceCount, rightSpaceCount );
 }
 
-WINUX_FUNC_IMPL(UnicodeString) StrTrimW( UnicodeString const & str )
+template <>
+WINUX_FUNC_IMPL(XString<wchar>) StrTrim( XString<wchar> const & str, size_t * leftSpaceCount, size_t * rightSpaceCount )
 {
-    return Impl_StrTrim(str);
+    return Impl_StrTrim( str, trimLeft | trimRight, leftSpaceCount, rightSpaceCount );
 }
+
+template <>
+WINUX_FUNC_IMPL(XString<char16>) StrTrim( XString<char16> const & str, size_t * leftSpaceCount, size_t * rightSpaceCount )
+{
+    return Impl_StrTrim( str, trimLeft | trimRight, leftSpaceCount, rightSpaceCount );
+}
+
+template <>
+WINUX_FUNC_IMPL(XString<char32>) StrTrim( XString<char32> const & str, size_t * leftSpaceCount, size_t * rightSpaceCount )
+{
+    return Impl_StrTrim( str, trimLeft | trimRight, leftSpaceCount, rightSpaceCount );
+}
+
+
+template <>
+WINUX_FUNC_IMPL(XString<char>) StrLTrim( XString<char> const & str, size_t * leftSpaceCount )
+{
+    return Impl_StrTrim( str, trimLeft, leftSpaceCount, nullptr );
+}
+
+template <>
+WINUX_FUNC_IMPL(XString<wchar>) StrLTrim( XString<wchar> const & str, size_t * leftSpaceCount )
+{
+    return Impl_StrTrim( str, trimLeft, leftSpaceCount, nullptr );
+}
+
+template <>
+WINUX_FUNC_IMPL(XString<char16>) StrLTrim( XString<char16> const & str, size_t * leftSpaceCount )
+{
+    return Impl_StrTrim( str, trimLeft, leftSpaceCount, nullptr );
+}
+
+template <>
+WINUX_FUNC_IMPL(XString<char32>) StrLTrim( XString<char32> const & str, size_t * leftSpaceCount )
+{
+    return Impl_StrTrim( str, trimLeft, leftSpaceCount, nullptr );
+}
+
+
+template <>
+WINUX_FUNC_IMPL(XString<char>) StrRTrim( XString<char> const & str, size_t * rightSpaceCount )
+{
+    return Impl_StrTrim( str, trimRight, nullptr, rightSpaceCount );
+}
+
+template <>
+WINUX_FUNC_IMPL(XString<wchar>) StrRTrim( XString<wchar> const & str, size_t * rightSpaceCount )
+{
+    return Impl_StrTrim( str, trimRight, nullptr, rightSpaceCount );
+}
+
+template <>
+WINUX_FUNC_IMPL(XString<char16>) StrRTrim( XString<char16> const & str, size_t * rightSpaceCount )
+{
+    return Impl_StrTrim( str, trimRight, nullptr, rightSpaceCount );
+}
+
+template <>
+WINUX_FUNC_IMPL(XString<char32>) StrRTrim( XString<char32> const & str, size_t * rightSpaceCount )
+{
+    return Impl_StrTrim( str, trimRight, nullptr, rightSpaceCount );
+}
+
 
 template < typename _ChTy >
 inline static XString<_ChTy> & Impl_StrMakeUpper( XString<_ChTy> * str )
 {
-    std::transform( str->begin(), str->end(), str->begin(), toupper );
-    return *str;
+    XString<_ChTy> & rStr = *str;
+    for ( size_t i = 0; i < rStr.length(); ++i )
+    {
+        auto & ch = rStr[i];
+        if ( IsAlphabet(ch) ) ch &= ~0x20;
+    }
+    return rStr;
 }
 
 template < typename _ChTy >
 inline static XString<_ChTy> & Impl_StrMakeLower( XString<_ChTy> * str )
 {
-    std::transform( str->begin(), str->end(), str->begin(), tolower );
-    return *str;
+    XString<_ChTy> & rStr = *str;
+    for ( size_t i = 0; i < rStr.length(); ++i )
+    {
+        auto & ch = rStr[i];
+        if ( IsAlphabet(ch) ) ch |= 0x20;
+    }
+    return rStr;
 }
 
-WINUX_FUNC_IMPL(AnsiString &) StrMakeUpperA( AnsiString * str )
+template <>
+WINUX_FUNC_IMPL(XString<char> &) StrMakeUpper( XString<char> * str )
 {
     return Impl_StrMakeUpper(str);
 }
 
-WINUX_FUNC_IMPL(AnsiString) StrUpperA( AnsiString str )
+template <>
+WINUX_FUNC_IMPL(XString<wchar> &) StrMakeUpper( XString<wchar> * str )
+{
+    return Impl_StrMakeUpper(str);
+}
+
+template <>
+WINUX_FUNC_IMPL(XString<char16> &) StrMakeUpper( XString<char16> * str )
+{
+    return Impl_StrMakeUpper(str);
+}
+
+template <>
+WINUX_FUNC_IMPL(XString<char32> &) StrMakeUpper( XString<char32> * str )
+{
+    return Impl_StrMakeUpper(str);
+}
+
+template <>
+WINUX_FUNC_IMPL(XString<char>) StrUpper( XString<char> str )
 {
     Impl_StrMakeUpper(&str);
     return str;
 }
 
-WINUX_FUNC_IMPL(UnicodeString &) StrMakeUpperW( UnicodeString * str )
-{
-    return Impl_StrMakeUpper(str);
-}
-
-WINUX_FUNC_IMPL(UnicodeString) StrUpperW( UnicodeString str )
+template <>
+WINUX_FUNC_IMPL(XString<wchar>) StrUpper( XString<wchar> str )
 {
     Impl_StrMakeUpper(&str);
     return str;
 }
 
-WINUX_FUNC_IMPL(AnsiString &) StrMakeLowerA( AnsiString * str )
+template <>
+WINUX_FUNC_IMPL(XString<char16>) StrUpper( XString<char16> str )
+{
+    Impl_StrMakeUpper(&str);
+    return str;
+}
+
+template <>
+WINUX_FUNC_IMPL(XString<char32>) StrUpper( XString<char32> str )
+{
+    Impl_StrMakeUpper(&str);
+    return str;
+}
+
+template <>
+WINUX_FUNC_IMPL(XString<char> &) StrMakeLower( XString<char> * str )
 {
     return Impl_StrMakeLower(str);
 }
 
-WINUX_FUNC_IMPL(AnsiString) StrLowerA( AnsiString str )
+template <>
+WINUX_FUNC_IMPL(XString<wchar> &) StrMakeLower( XString<wchar> * str )
+{
+    return Impl_StrMakeLower(str);
+}
+
+template <>
+WINUX_FUNC_IMPL(XString<char16> &) StrMakeLower( XString<char16> * str )
+{
+    return Impl_StrMakeLower(str);
+}
+
+template <>
+WINUX_FUNC_IMPL(XString<char32> &) StrMakeLower( XString<char32> * str )
+{
+    return Impl_StrMakeLower(str);
+}
+
+template <>
+WINUX_FUNC_IMPL(XString<char>) StrLower( XString<char> str )
 {
     Impl_StrMakeLower(&str);
     return str;
 }
 
-WINUX_FUNC_IMPL(UnicodeString &) StrMakeLowerW( UnicodeString * str )
-{
-    return Impl_StrMakeLower(str);
-}
-
-WINUX_FUNC_IMPL(UnicodeString) StrLowerW( UnicodeString str )
+template <>
+WINUX_FUNC_IMPL(XString<wchar>) StrLower( XString<wchar> str )
 {
     Impl_StrMakeLower(&str);
     return str;
 }
+
+template <>
+WINUX_FUNC_IMPL(XString<char16>) StrLower( XString<char16> str )
+{
+    Impl_StrMakeLower(&str);
+    return str;
+}
+
+template <>
+WINUX_FUNC_IMPL(XString<char32>) StrLower( XString<char32> str )
+{
+    Impl_StrMakeLower(&str);
+    return str;
+}
+
 
 template < typename _ChTy >
-inline static XString<_ChTy> Impl_StrMultiple( XString<_ChTy> const & str, int multiple )
+inline static XString<_ChTy> Impl_StrMultiple( XString<_ChTy> const & str, size_t multiple )
 {
     XString<_ChTy> r;
-    for ( int i = 0; i < multiple; i++ ) r += str;
+    for ( size_t i = 0; i < multiple; i++ ) r += str;
     return r;
 }
 
-WINUX_FUNC_IMPL(AnsiString) StrMultipleA( AnsiString const & str, int multiple )
+template <>
+WINUX_FUNC_IMPL(XString<char>) StrMultiple( XString<char> const & str, size_t multiple )
 {
     return Impl_StrMultiple( str, multiple );
 }
 
-WINUX_FUNC_IMPL(UnicodeString) StrMultipleW( UnicodeString const & str, int multiple )
+template <>
+WINUX_FUNC_IMPL(XString<wchar>) StrMultiple( XString<wchar> const & str, size_t multiple )
 {
     return Impl_StrMultiple( str, multiple );
 }
+
+template <>
+WINUX_FUNC_IMPL(XString<char16>) StrMultiple( XString<char16> const & str, size_t multiple )
+{
+    return Impl_StrMultiple( str, multiple );
+}
+
+template <>
+WINUX_FUNC_IMPL(XString<char32>) StrMultiple( XString<char32> const & str, size_t multiple )
+{
+    return Impl_StrMultiple( str, multiple );
+}
+
 
 template < typename _ChTy >
 inline static XString<_ChTy> Impl_StrSubtract( XString<_ChTy> str1, XString<_ChTy> const & str2 )
 {
-    Impl_StrMakeReplace<_ChTy>( &str1, str2, Literal<_ChTy>::emptyStr, 0 );
+    Impl_StrMakeReplace<_ChTy>( &str1, str2, Literal<_ChTy>::nulStr, 0 );
     return str1;
 }
 
-WINUX_FUNC_IMPL(AnsiString) StrSubtractA( AnsiString str1, AnsiString const & str2 )
+template <>
+WINUX_FUNC_IMPL(XString<char>) StrSubtract( XString<char> str1, XString<char> const & str2 )
 {
     return Impl_StrSubtract( str1, str2 );
 }
 
-WINUX_FUNC_IMPL(UnicodeString) StrSubtractW( UnicodeString str1, UnicodeString const & str2 )
+template <>
+WINUX_FUNC_IMPL(XString<wchar>) StrSubtract( XString<wchar> str1, XString<wchar> const & str2 )
 {
     return Impl_StrSubtract( str1, str2 );
 }
+
+template <>
+WINUX_FUNC_IMPL(XString<char16>) StrSubtract( XString<char16> str1, XString<char16> const & str2 )
+{
+    return Impl_StrSubtract( str1, str2 );
+}
+
+template <>
+WINUX_FUNC_IMPL(XString<char32>) StrSubtract( XString<char32> str1, XString<char32> const & str2 )
+{
+    return Impl_StrSubtract( str1, str2 );
+}
+
 
 #if defined(__GNUC__) /*&& !defined(WIN32)*/
 #define _UI64_MAX 0xffffffffffffffffull
@@ -491,44 +838,78 @@ inline static uint64 Impl_StrToXq( _ChTy const * nptr, _ChTy const ** endptr, in
     return number; /* done. */
 }
 
-WINUX_FUNC_IMPL(uint64) StrToXqA( char const * nptr, char const ** endptr, int ibase, int flags )
+template <>
+WINUX_FUNC_IMPL(uint64) StrToXq( char const * nptr, char const ** endptr, int ibase, int flags )
 {
     return Impl_StrToXq( nptr, endptr, ibase, flags );
 }
 
-WINUX_FUNC_IMPL(uint64) StrToXqW( wchar const * nptr, wchar const ** endptr, int ibase, int flags )
+template <>
+WINUX_FUNC_IMPL(uint64) StrToXq( wchar const * nptr, wchar const ** endptr, int ibase, int flags )
 {
     return Impl_StrToXq( nptr, endptr, ibase, flags );
 }
 
-WINUX_FUNC_IMPL(uint64) StrToXqU16( char16 const * nptr, char16 const ** endptr, int ibase, int flags )
+template <>
+WINUX_FUNC_IMPL(uint64) StrToXq( char16 const * nptr, char16 const ** endptr, int ibase, int flags )
 {
     return Impl_StrToXq( nptr, endptr, ibase, flags );
 }
 
-WINUX_FUNC_IMPL(uint64) StrToXqU32( char32 const * nptr, char32 const ** endptr, int ibase, int flags )
+template <>
+WINUX_FUNC_IMPL(uint64) StrToXq( char32 const * nptr, char32 const ** endptr, int ibase, int flags )
 {
     return Impl_StrToXq( nptr, endptr, ibase, flags );
 }
 
-WINUX_FUNC_IMPL(int64) StrToInt64A( AnsiString const & numStr, int ibase )
+
+template <>
+WINUX_FUNC_IMPL(int64) StrToInt64( XString<char> const & numStr, int ibase )
 {
-    return (int64)Impl_StrToXq<AnsiString::value_type>( numStr.c_str(), nullptr, ibase, 0 );
+    return (int64)Impl_StrToXq<char>( numStr.c_str(), nullptr, ibase, 0 );
 }
 
-WINUX_FUNC_IMPL(int64) StrToInt64W( UnicodeString const & numStr, int ibase )
+template <>
+WINUX_FUNC_IMPL(int64) StrToInt64( XString<wchar> const & numStr, int ibase )
 {
-    return (int64)Impl_StrToXq<UnicodeString::value_type>( numStr.c_str(), nullptr, ibase, 0 );
+    return (int64)Impl_StrToXq<wchar>( numStr.c_str(), nullptr, ibase, 0 );
 }
 
-WINUX_FUNC_IMPL(uint64) StrToUint64A( AnsiString const & numStr, int ibase )
+template <>
+WINUX_FUNC_IMPL(int64) StrToInt64( XString<char16> const & numStr, int ibase )
 {
-    return Impl_StrToXq<AnsiString::value_type>( numStr.c_str(), nullptr, ibase, stqUnsigned );
+    return (int64)Impl_StrToXq<char16>( numStr.c_str(), nullptr, ibase, 0 );
 }
 
-WINUX_FUNC_IMPL(uint64) StrToUint64W( UnicodeString const & numStr, int ibase )
+template <>
+WINUX_FUNC_IMPL(int64) StrToInt64( XString<char32> const & numStr, int ibase )
 {
-    return Impl_StrToXq<UnicodeString::value_type>( numStr.c_str(), nullptr, ibase, stqUnsigned );
+    return (int64)Impl_StrToXq<char32>( numStr.c_str(), nullptr, ibase, 0 );
+}
+
+
+template <>
+WINUX_FUNC_IMPL(uint64) StrToUInt64( XString<char> const & numStr, int ibase )
+{
+    return Impl_StrToXq<char>( numStr.c_str(), nullptr, ibase, stqUnsigned );
+}
+
+template <>
+WINUX_FUNC_IMPL(uint64) StrToUInt64( XString<wchar> const & numStr, int ibase )
+{
+    return Impl_StrToXq<wchar>( numStr.c_str(), nullptr, ibase, stqUnsigned );
+}
+
+template <>
+WINUX_FUNC_IMPL(uint64) StrToUInt64( XString<char16> const & numStr, int ibase )
+{
+    return Impl_StrToXq<char16>( numStr.c_str(), nullptr, ibase, stqUnsigned );
+}
+
+template <>
+WINUX_FUNC_IMPL(uint64) StrToUInt64( XString<char32> const & numStr, int ibase )
+{
+    return Impl_StrToXq<char32>( numStr.c_str(), nullptr, ibase, stqUnsigned );
 }
 
 // add/strip slashes internal functions ------------------------------------------------------------------
@@ -590,25 +971,10 @@ template <> struct UT<4> { using type = uint32; };
 template <> struct UT<8> { using type = uint64; };
 
 template < typename _ChTy >
-inline static XString<_ChTy> CharToHexStr( _ChTy ch )
-{
-    std::basic_ostringstream<_ChTy> sout;
-    sout
-        << std::setw(sizeof(_ChTy) * 2)
-        << std::setfill(Literal<_ChTy>::zeroChar)
-        << std::hex
-        << (uint32)(typename UT< sizeof(_ChTy) >::type)ch
-    ;
-    return sout.str();
-}
-
-template < typename _ChTy >
 inline static XString<_ChTy> Impl_AddSlashes( XString<_ChTy> const & str, XString<_ChTy> const & charlist )
 {
-    using MyConstIterator = typename XString<_ChTy>::const_iterator;
-
     XString<_ChTy> slashes;
-    for ( MyConstIterator it = str.begin(); it != str.end(); it++ )
+    for ( auto it = str.begin(); it != str.end(); it++ )
     {
         _ChTy ch = *it;
         if ( charlist.find(ch) != XString<_ChTy>::npos )
@@ -642,7 +1008,7 @@ inline static XString<_ChTy> Impl_AddSlashes( XString<_ChTy> const & str, XStrin
                     using MyUT = typename UT<sizeof(_ChTy)>::type;
                     if ( IsSpecial(ch) || ch <= Literal<_ChTy>::spaceChar || (MyUT)ch > (MyUT)0x7f )
                     {
-                        slash = Literal<_ChTy>::slash_xStr + CharToHexStr(ch);
+                        slash = Literal<_ChTy>::slash_xStr + CharToHexStr<_ChTy>(ch);
                     }
                     else
                     {
@@ -663,149 +1029,41 @@ inline static XString<_ChTy> Impl_AddSlashes( XString<_ChTy> const & str, XStrin
     return slashes;
 }
 
-WINUX_FUNC_IMPL(AnsiString) AddSlashesA( AnsiString const & str, AnsiString const & charlist )
+template <>
+WINUX_FUNC_IMPL(XString<char>) AddSlashes( XString<char> const & str, XString<char> const & charlist )
 {
     return Impl_AddSlashes( str, charlist );
 }
 
-WINUX_FUNC_IMPL(UnicodeString) AddSlashesW( UnicodeString const & str, UnicodeString const & charlist )
+template <>
+WINUX_FUNC_IMPL(XString<wchar>) AddSlashes( XString<wchar> const & str, XString<wchar> const & charlist )
 {
     return Impl_AddSlashes( str, charlist );
 }
 
-/*
-WINUX_FUNC_IMPL(AnsiString) AddSlashesA( AnsiString const & str, AnsiString const & charlist )
+template <>
+WINUX_FUNC_IMPL(XString<char16>) AddSlashes( XString<char16> const & str, XString<char16> const & charlist )
 {
-    AnsiString slashes = "";
-    for ( AnsiString::const_iterator it = str.begin(); it != str.end(); it++ )
-    {
-        char ch = *it;
-        if ( charlist.find(ch) != AnsiString::npos )
-        {
-            AnsiString slash = "";
-            switch ( ch )
-            {
-            case '\a':// 响铃(BEL)  07H/7
-                slash = "\\a";
-                break;
-            case '\b':// 退格符(BS) 08H/8
-                slash = "\\b";
-                break;
-            case '\t':// 水平制表符(HT) 09H/9
-                slash = "\\t";
-                break;
-            case '\n':// 换行符(LF) 0AH/10
-                slash = "\\n";
-                break;
-            case '\v':// 垂直制表(VT) 0BH/11
-                slash = "\\v";
-                break;
-            case '\f':// 换页符(FF) 0CH/12
-                slash = "\\f";
-                break;
-            case '\r':// 回车符(CR) 0DH/13
-                slash = "\\r";
-                break;
-            default:
-                {
-                    if ( IsSpecial(ch) || ch <= ' ' || ch & (unsigned char)0x80 )
-                    {
-                        char s[8] = { 0 };
-                        sprintf( s, "\\x%02x", (unsigned)( ch & 0xFF ) );
-                        slash = s;
-                    }
-                    else
-                    {
-                        slash += '\\';
-                        slash += ch;
-                    }
-                }
-                break;
-            }
-            slashes += slash;
-        }
-        else
-        {
-            slashes += ch;
-        }
-    }
-    return slashes;
+    return Impl_AddSlashes( str, charlist );
 }
 
-WINUX_FUNC_IMPL(UnicodeString) AddSlashesW( UnicodeString const & str, UnicodeString const & charlist )
+template <>
+WINUX_FUNC_IMPL(XString<char32>) AddSlashes( XString<char32> const & str, XString<char32> const & charlist )
 {
-    UnicodeString slashes = L"";
-    for ( UnicodeString::const_iterator it = str.begin(); it != str.end(); it++ )
-    {
-        wchar ch = *it;
-        if ( charlist.find(ch) != UnicodeString::npos )
-        {
-            UnicodeString slash = L"";
-            switch ( ch )
-            {
-            case L'\a':// 响铃(BEL)  07H/7
-                slash = L"\\a";
-                break;
-            case L'\b':// 退格符(BS) 08H/8
-                slash = L"\\b";
-                break;
-            case L'\t':// 水平制表符(HT) 09H/9
-                slash = L"\\t";
-                break;
-            case L'\n':// 换行符(LF) 0AH/10
-                slash = L"\\n";
-                break;
-            case L'\v':// 垂直制表(VT) 0BH/11
-                slash = L"\\v";
-                break;
-            case L'\f':// 换页符(FF) 0CH/12
-                slash = L"\\f";
-                break;
-            case L'\r':// 回车符(CR) 0DH/13
-                slash = L"\\r";
-                break;
-            default:
-                {
-                    if ( IsSpecial(ch) || ch <= L' ' || ch > (ushort)0x7f )
-                    {
-                        wchar s[8] = { 0 };
-                        #if defined(CL_MINGW)
-                        swprintf( s, L"\\x%04x", (unsigned)( ch & 0xFFFF ) );
-                        #else
-                        swprintf_s( s, 8, L"\\x%04x", (unsigned)( ch & 0xFFFF ) );
-                        #endif
-                        slash = s;
-                    }
-                    else
-                    {
-                        slash += L'\\';
-                        slash += ch;
-                    }
-                }
-                break;
-            }
-            slashes += slash;
-        }
-        else
-        {
-            slashes += ch;
-        }
-    }
-    return slashes;
+    return Impl_AddSlashes( str, charlist );
 }
-//*/
+
 
 template < typename _ChTy >
 inline static XString<_ChTy> Impl_StripSlashes( XString<_ChTy> const & str, XString<_ChTy> const & charlist )
 {
-    using MyConstIterator = typename XString<_ChTy>::const_iterator;
     using MyUT = typename UT< sizeof(_ChTy) >::type;
 
     XString<_ChTy> result;
     size_t octMaxLen = (size_t)ceil( log((MyUT)(-1)) / log(8) );
     size_t hexMaxLen = (size_t)ceil( log((MyUT)(-1)) / log(16) );
 
-    for ( MyConstIterator it = str.begin(); it != str.end(); )
+    for ( auto it = str.begin(); it != str.end(); )
     {
         _ChTy const current = *it;
         if ( current == Literal<_ChTy>::slashChar )
@@ -942,160 +1200,30 @@ inline static XString<_ChTy> Impl_StripSlashes( XString<_ChTy> const & str, XStr
     return result;
 }
 
-WINUX_FUNC_IMPL(AnsiString) StripSlashesA( AnsiString const & str, AnsiString const & charlist )
+template <>
+WINUX_FUNC_IMPL(XString<char>) StripSlashes( XString<char> const & str, XString<char> const & charlist )
 {
     return Impl_StripSlashes( str, charlist );
 }
 
-WINUX_FUNC_IMPL(UnicodeString) StripSlashesW( UnicodeString const & str, UnicodeString const & charlist )
+template <>
+WINUX_FUNC_IMPL(XString<wchar>) StripSlashes( XString<wchar> const & str, XString<wchar> const & charlist )
 {
     return Impl_StripSlashes( str, charlist );
 }
 
-/*WINUX_FUNC_IMPL(AnsiString) StripSlashes( AnsiString const & str, AnsiString const & charlist )
+template <>
+WINUX_FUNC_IMPL(XString<char16>) StripSlashes( XString<char16> const & str, XString<char16> const & charlist )
 {
-    AnsiString result = "";
-    for ( AnsiString::const_iterator it = str.begin(); it != str.end(); )
-    {
-        const char current = *it;
-        if ( current == '\\' )
-        {
-            it++; // skip '\\'
-            if ( it != str.end() ) // \后有字符
-            {
-                for ( ; it != str.end(); it++ )
-                {
-                    char ch0 = *it; // ch0表示\后的一个字符
-                    if ( IsOct(ch0) )
-                    {
-                        AnsiString ch0s = "";
-                        for ( ; it != str.end(); it++ )
-                        {
-                            ch0 = *it;
-                            if ( IsOct(ch0) && ch0s.length() < 3 )
-                            {
-                                ch0s += ch0;
-                            }
-                            else
-                            {
-                                break;
-                            }
-                        }
-                        if ( ch0s.length() > 0 )
-                        {
-                            char c1 = NumberStringToChar( ch0s.c_str(), 8 );
-                            if ( InCharList( c1, charlist ) )
-                            {
-                                result += c1;
-                            }
-                            else
-                            {
-                                result += '\\';
-                                result += ch0s;
-                            }
-                        }
-
-                        break;
-                    }
-                    else if ( ch0 == 'x' ) // is x 16进制
-                    {
-                        it++; // skip 'x'
-                        if ( it != str.end() )
-                        {
-                            if ( IsHex(*it) )
-                            {
-                                AnsiString ch0s = "";
-                                for ( ; it != str.end(); it++ )
-                                {
-                                    ch0 = *it;
-                                    if ( IsHex(ch0) && ch0s.length() < 2 )
-                                    {
-                                        ch0s += ch0;
-                                    }
-                                    else
-                                    {
-                                        break;
-                                    }
-                                }
-
-                                if ( ch0s.length() > 0 )
-                                {
-                                    char c2 = NumberStringToChar( ch0s.c_str(), 16 );
-                                    if ( InCharList( c2, charlist ) )
-                                    {
-                                        result += c2;
-                                        break;
-                                    }
-                                    else
-                                    {
-                                        result += '\\';
-                                        result += 'x';
-                                        result += ch0s;
-                                        break;
-                                    }
-                                }
-                                break;
-                            }
-                            else // x后不是16进制字符
-                            {
-                                result += '\\';
-                                result += 'x';
-                                break;
-                            }
-                        }
-                        else // 后面已经没有字符
-                        {
-                            result += '\\';
-                            result += 'x';
-                            break;
-                        }
-                    }
-                    else if ( IsSpecial(ch0) )
-                    {
-                        char special = 0;
-                        special = SpecialToChar(ch0);
-                        // 查看CharList是否含有此字符
-                        if ( InCharList( special, charlist ) )
-                        {
-                            result += special;
-                            it++; // skip ch0
-                            break;
-                        }
-                        else
-                        {
-                            result += '\\';
-                            result += ch0;
-                            it++; // skip ch0
-                            break;
-                        }
-                    }
-                    else if ( InCharList( ch0, charlist ) )
-                    {
-                        result += ch0;
-                        it++; // skip ch0
-                        break;
-                    }
-                    else // 都不是
-                    {
-                        result += '\\';
-                        break;
-                    }
-                } // end for loop
-            }
-            else // \后没有字符
-            {
-                result += current;
-            }
-        }
-        else // 当前字符不是 \ .
-        {
-            result += current;
-            it++;
-        }
-    }
-    return result;
+    return Impl_StripSlashes( str, charlist );
 }
-//*/
+
+template <>
+WINUX_FUNC_IMPL(XString<char32>) StripSlashes( XString<char32> const & str, XString<char32> const & charlist )
+{
+    return Impl_StripSlashes( str, charlist );
+}
+
 
 template < typename _ChTy >
 inline static XString<_ChTy> Impl_AddQuotes( XString<_ChTy> const & str, _ChTy quote )
@@ -1117,84 +1245,195 @@ inline static XString<_ChTy> Impl_AddQuotes( XString<_ChTy> const & str, _ChTy q
     return res;
 }
 
-WINUX_FUNC_IMPL(AnsiString) AddQuotesA( AnsiString const & str, AnsiString::value_type quote )
+template <>
+WINUX_FUNC_IMPL(XString<char>) AddQuotes( XString<char> const & str, char quote )
 {
     return Impl_AddQuotes( str, quote );
 }
 
-WINUX_FUNC_IMPL(UnicodeString) AddQuotesW( UnicodeString const & str, UnicodeString::value_type quote )
+template <>
+WINUX_FUNC_IMPL(XString<wchar>) AddQuotes( XString<wchar> const & str, wchar quote )
 {
     return Impl_AddQuotes( str, quote );
 }
+
+template <>
+WINUX_FUNC_IMPL(XString<char16>) AddQuotes( XString<char16> const & str, char16 quote )
+{
+    return Impl_AddQuotes( str, quote );
+}
+
+template <>
+WINUX_FUNC_IMPL(XString<char32>) AddQuotes( XString<char32> const & str, char32 quote )
+{
+    return Impl_AddQuotes( str, quote );
+}
+
 
 template < typename _ChTy >
-inline static bool Impl_StrGetLine( XString<_ChTy> * line, XString<_ChTy> const & str, size_t * i, XString<_ChTy> * nl )
+inline static bool Impl_StrGetLine( XString<_ChTy> * line, _ChTy const * str, size_t len, size_t * pI, XString<_ChTy> * nl )
 {
-    if ( *i >= str.length() )
-    {
-        return false;
-    }
+    size_t & i = *pI;
+    if ( i >= len ) return false;
 
-    IF_PTR(line)->clear();
-    IF_PTR(nl)->clear();
+    line->clear();
 
-    size_t start = *i;
-    while ( *i < str.length() )
+    _ChTy nlchs[3] = { 0 }; // 换行符
+    size_t start = i;
+
+    while ( i < len )
     {
-        _ChTy ch = str[*i];
+        _ChTy ch = str[i];
         switch ( ch )
         {
         case Literal<_ChTy>::lfChar:
         case Literal<_ChTy>::crChar:
             {
-                if ( *i - start > 0 )
+                if ( i - start > 0 )
                 {
-                    ASSIGN_PTR(line) = str.substr( start, *i - start ); // 不包括 \r \n
+                    line->assign( str + start, i - start ); // 不包括 \r \n
                 }
 
                 switch ( ch )
                 {
                 case Literal<_ChTy>::lfChar:
-                    ASSIGN_PTR(nl) += ch;
-                    ++ *i; // skip '\n'
+                    nlchs[0] = ch;
+                    ++i; // skip '\n'
                     break;
                 case Literal<_ChTy>::crChar:
-                    ASSIGN_PTR(nl) += ch;
-                    ++ *i; // skip '\r'
-                    if ( *i < str.length() && ( ch = str[*i] ) == Literal<_ChTy>::lfChar )
+                    nlchs[0] = ch;
+                    ++i; // skip '\r'
+                    if ( i < len && ( ch = str[i] ) == Literal<_ChTy>::lfChar )
                     {
-                        ASSIGN_PTR(nl) += ch;
-                        ++ *i; // skip '\n'
+                        nlchs[1] = ch;
+                        ++i; // skip '\n'
                     }
                     break;
                 }
+
                 goto RETURN;
             }
             break;
         default:
-            ++ *i;
+            ++i;
             break;
         }
     }
 
-    if ( *i == str.length() )
+    if ( i == len )
     {
-        ASSIGN_PTR(line) = str.substr(start);
+        line->assign( str + start, i - start );
     }
+
 RETURN:
+    if ( nl != nullptr )
+    {
+        *nl = nlchs;
+    }
+    else
+    {
+        *line += nlchs;
+    }
     return true;
 }
 
-WINUX_FUNC_IMPL(bool) StrGetLineA( AnsiString * line, AnsiString const & str, size_t * i, AnsiString * nl )
+template <>
+WINUX_FUNC_IMPL(bool) StrGetLine( XString<char> * line, XString<char> const & str, size_t * i, XString<char> * nl )
 {
-    return Impl_StrGetLine( line, str, i, nl );
+    return Impl_StrGetLine( line, str.c_str(), str.length(), i, nl );
 }
 
-WINUX_FUNC_IMPL(bool) StrGetLineW( UnicodeString * line, UnicodeString const & str, size_t * i, UnicodeString * nl )
+template <>
+WINUX_FUNC_IMPL(bool) StrGetLine( XString<wchar> * line, XString<wchar> const & str, size_t * i, XString<wchar> * nl )
 {
-    return Impl_StrGetLine( line, str, i, nl );
+    return Impl_StrGetLine( line, str.c_str(), str.length(), i, nl );
 }
 
+template <>
+WINUX_FUNC_IMPL(bool) StrGetLine( XString<char16> * line, XString<char16> const & str, size_t * i, XString<char16> * nl )
+{
+    return Impl_StrGetLine( line, str.c_str(), str.length(), i, nl );
+}
+
+template <>
+WINUX_FUNC_IMPL(bool) StrGetLine( XString<char32> * line, XString<char32> const & str, size_t * i, XString<char32> * nl )
+{
+    return Impl_StrGetLine( line, str.c_str(), str.length(), i, nl );
+}
+
+template <>
+WINUX_FUNC_IMPL(bool) StrGetLine( XString<char> * line, char const * str, size_t len, size_t * i, XString<char> * nl )
+{
+    return Impl_StrGetLine( line, str, len, i, nl );
+}
+
+template <>
+WINUX_FUNC_IMPL(bool) StrGetLine( XString<wchar> * line, wchar const * str, size_t len, size_t * i, XString<wchar> * nl )
+{
+    return Impl_StrGetLine( line, str, len, i, nl );
+}
+
+template <>
+WINUX_FUNC_IMPL(bool) StrGetLine( XString<char16> * line, char16 const * str, size_t len, size_t * i, XString<char16> * nl )
+{
+    return Impl_StrGetLine( line, str, len, i, nl );
+}
+
+template <>
+WINUX_FUNC_IMPL(bool) StrGetLine( XString<char32> * line, char32 const * str, size_t len, size_t * i, XString<char32> * nl )
+{
+    return Impl_StrGetLine( line, str, len, i, nl );
+}
+
+
+template < typename _ChTy >
+inline static void Impl_GetLineByPos( XString<_ChTy> const & content, ssize_t pos, ssize_t * lineHead, ssize_t * lineTail, XString<_ChTy> * line )
+{
+    if ( content[pos] == Literal<_ChTy>::lfChar )
+    {
+        *lineHead = pos - 1;
+        *lineTail = pos;
+    }
+    else
+    {
+        *lineHead = pos;
+        *lineTail = pos + 1;
+    }
+
+    while ( *lineHead > -1 && content[*lineHead] != Literal<_ChTy>::lfChar ) --*lineHead; // 向前找'\n'
+    ++*lineHead; // skip '\n' or 恢复索引到0
+
+    while ( *lineTail < (ssize_t)content.length() && content[*lineTail] != Literal<_ChTy>::lfChar ) ++*lineTail; // 向后找'\n'
+    ASSIGN_PTR(line) = content.substr( *lineHead, *lineTail - *lineHead );
+    if ( *lineTail > 0 ) --*lineTail; // 指向尾字符而不是END
+}
+
+template <>
+WINUX_FUNC_IMPL(void) GetLineByPos( XString<char> const & content, ssize_t pos, ssize_t * lineHead, ssize_t * lineTail, XString<char> * line )
+{
+    return Impl_GetLineByPos( content, pos, lineHead, lineTail, line );
+}
+
+template <>
+WINUX_FUNC_IMPL(void) GetLineByPos( XString<wchar> const & content, ssize_t pos, ssize_t * lineHead, ssize_t * lineTail, XString<wchar> * line )
+{
+    return Impl_GetLineByPos( content, pos, lineHead, lineTail, line );
+}
+
+template <>
+WINUX_FUNC_IMPL(void) GetLineByPos( XString<char16> const & content, ssize_t pos, ssize_t * lineHead, ssize_t * lineTail, XString<char16> * line )
+{
+    return Impl_GetLineByPos( content, pos, lineHead, lineTail, line );
+}
+
+template <>
+WINUX_FUNC_IMPL(void) GetLineByPos( XString<char32> const & content, ssize_t pos, ssize_t * lineHead, ssize_t * lineTail, XString<char32> * line )
+{
+    return Impl_GetLineByPos( content, pos, lineHead, lineTail, line );
+}
+
+
+// 整理单词
 template < typename _ChTy >
 inline static XString<_ChTy> & Impl_CollateWord( XString<_ChTy> * word, winux::uint flags )
 {
@@ -1208,10 +1447,13 @@ inline static XString<_ChTy> & Impl_CollateWord( XString<_ChTy> * word, winux::u
         Impl_StrMakeLower(word);
         break;
     case wordFirstCharUpper:
-        Impl_StrMakeLower(word);
-        if ( IsLowerAlphabet( word->at(0) ) )
         {
-            word->at(0) &= ~0x20;
+            Impl_StrMakeLower(word);
+            auto & ch = word->at(0);
+            if ( IsLowerAlphabet(ch) )
+            {
+                ch &= ~0x20;
+            }
         }
         break;
     default:
@@ -1221,32 +1463,52 @@ inline static XString<_ChTy> & Impl_CollateWord( XString<_ChTy> * word, winux::u
 }
 
 template < typename _ChTy >
-inline static void Impl_StoreWordToIdentifierString( XString<_ChTy> * resIdentifier, XStringArray<_ChTy> * resWords, XString<_ChTy> & tmpWord, XString<_ChTy> const & sep, winux::uint flags )
+inline static void Impl_StoreWordToIdentifierString( XString<_ChTy> * resIdentifier, XString<_ChTy> & tmpWord, XString<_ChTy> const & sep, winux::uint flags )
 {
     Impl_CollateWord( &tmpWord, flags );
-    if ( resIdentifier->empty() && ( flags & 0xF0 ) == nameSmallHump )
+    switch ( flags )
     {
-        if ( !tmpWord.empty() ) tmpWord[0] |= 0x20;
+    case nameLowerCamelCase:
+        if ( resIdentifier->empty() )
+        {
+            if ( !tmpWord.empty() ) tmpWord[0] |= 0x20;
+            *resIdentifier += tmpWord;
+        }
+        break;
+    case nameUpperCamelCase: // or namePascalCase
+        *resIdentifier += tmpWord;
+        break;
+    case nameSnakeCase:
+        *resIdentifier += tmpWord + ( sep.empty() ? Literal<_ChTy>::nulStr : Literal<_ChTy>::underStr ); // "_"
+        break;
+    case nameKebabCase:
+        *resIdentifier += tmpWord + ( sep.empty() ? Literal<_ChTy>::nulStr : Literal<_ChTy>::negativeStr ); // "-"
+        break;
+    case nameScreamingSnakeCase:
+        *resIdentifier += tmpWord + ( sep.empty() ? Literal<_ChTy>::nulStr : Literal<_ChTy>::underStr ); // "_"
+        break;
+    default:
         *resIdentifier += tmpWord + sep;
-    }
-    else
-    {
-        *resIdentifier += tmpWord + sep;
+        break;
     }
 }
 
 template < typename _ChTy >
-inline static void Impl_StoreWordToArray( XString<_ChTy> * resIdentifier, XStringArray<_ChTy> * resWords, XString<_ChTy> & tmpWord, XString<_ChTy> const & sep, winux::uint flags )
+inline static void Impl_StoreWordToArray( XStringArray<_ChTy> * resWords, XString<_ChTy> & tmpWord, winux::uint flags )
 {
     Impl_CollateWord( &tmpWord, flags );
-    if ( resWords->empty() && ( flags & 0xF0 ) == nameSmallHump )
+    switch ( flags )
     {
-        if ( !tmpWord.empty() ) tmpWord[0] |= 0x20;
+    case nameLowerCamelCase:
+        if ( resWords->empty() )
+        {
+            if ( !tmpWord.empty() ) tmpWord[0] |= 0x20;
+            resWords->push_back(tmpWord);
+        }
+        break;
+    default:
         resWords->push_back(tmpWord);
-    }
-    else
-    {
-        resWords->push_back(tmpWord);
+        break;
     }
 }
 
@@ -1268,7 +1530,7 @@ inline static void Impl_CollateIdentifierToX(
 {
     XString<_ChTy> tmpWord;
 
-    /* 拆词算法 */
+    // 拆词算法
     for ( size_t i = 0; i < identifier.length(); )
     {
         _ChTy ch = identifier[i];
@@ -1289,10 +1551,10 @@ inline static void Impl_CollateIdentifierToX(
                         switch ( storeType )
                         {
                         case winux::storeIdentifier:
-                            Impl_StoreWordToIdentifierString( resIdentifier, resWords, tmpWord, sep, flags );
+                            Impl_StoreWordToIdentifierString( resIdentifier, tmpWord, sep, flags );
                             break;
                         case winux::storeArray:
-                            Impl_StoreWordToArray( resIdentifier, resWords, tmpWord, sep, flags );
+                            Impl_StoreWordToArray( resWords, tmpWord, flags );
                             break;
                         }
                         tmpWord = ch;
@@ -1304,10 +1566,10 @@ inline static void Impl_CollateIdentifierToX(
                             switch ( storeType )
                             {
                             case winux::storeIdentifier:
-                                Impl_StoreWordToIdentifierString( resIdentifier, resWords, tmpWord, sep, flags );
+                                Impl_StoreWordToIdentifierString( resIdentifier, tmpWord, sep, flags );
                                 break;
                             case winux::storeArray:
-                                Impl_StoreWordToArray( resIdentifier, resWords, tmpWord, sep, flags );
+                                Impl_StoreWordToArray( resWords, tmpWord, flags );
                                 break;
                             }
                             tmpWord = ch;
@@ -1336,10 +1598,10 @@ inline static void Impl_CollateIdentifierToX(
             switch ( storeType )
             {
             case winux::storeIdentifier:
-                Impl_StoreWordToIdentifierString( resIdentifier, resWords, tmpWord, sep, flags );
+                Impl_StoreWordToIdentifierString( resIdentifier, tmpWord, sep, flags );
                 break;
             case winux::storeArray:
-                Impl_StoreWordToArray( resIdentifier, resWords, tmpWord, sep, flags );
+                Impl_StoreWordToArray( resWords, tmpWord, flags );
                 break;
             }
             tmpWord.clear();
@@ -1357,10 +1619,10 @@ inline static void Impl_CollateIdentifierToX(
         switch ( storeType )
         {
         case winux::storeIdentifier:
-            Impl_StoreWordToIdentifierString<_ChTy>( resIdentifier, resWords, tmpWord, Literal<_ChTy>::emptyStr, flags );
+            Impl_StoreWordToIdentifierString<_ChTy>( resIdentifier, tmpWord, Literal<_ChTy>::nulStr, flags );
             break;
         case winux::storeArray:
-            Impl_StoreWordToArray<_ChTy>( resIdentifier, resWords, tmpWord, Literal<_ChTy>::emptyStr, flags );
+            Impl_StoreWordToArray<_ChTy>( resWords, tmpWord, flags );
             break;
         }
     }
@@ -1374,12 +1636,26 @@ inline static XString<_ChTy> Impl_CollateIdentifierToString( XString<_ChTy> cons
     return resIdentifier;
 }
 
-WINUX_FUNC_IMPL(AnsiString) CollateIdentifierToStringA( AnsiString const & identifier, AnsiString const & sep, winux::uint flags )
+template <>
+WINUX_FUNC_IMPL(XString<char>) CollateIdentifierToString( XString<char> const & identifier, XString<char> const & sep, winux::uint flags )
 {
     return Impl_CollateIdentifierToString( identifier, sep, flags );
 }
 
-WINUX_FUNC_IMPL(UnicodeString) CollateIdentifierToStringW( UnicodeString const & identifier, UnicodeString const & sep, winux::uint flags )
+template <>
+WINUX_FUNC_IMPL(XString<wchar>) CollateIdentifierToString( XString<wchar> const & identifier, XString<wchar> const & sep, winux::uint flags )
+{
+    return Impl_CollateIdentifierToString( identifier, sep, flags );
+}
+
+template <>
+WINUX_FUNC_IMPL(XString<char16>) CollateIdentifierToString( XString<char16> const & identifier, XString<char16> const & sep, winux::uint flags )
+{
+    return Impl_CollateIdentifierToString( identifier, sep, flags );
+}
+
+template <>
+WINUX_FUNC_IMPL(XString<char32>) CollateIdentifierToString( XString<char32> const & identifier, XString<char32> const & sep, winux::uint flags )
 {
     return Impl_CollateIdentifierToString( identifier, sep, flags );
 }
@@ -1388,37 +1664,35 @@ template < typename _ChTy >
 inline static XStringArray<_ChTy> Impl_CollateIdentifierToArray( XString<_ChTy> const & identifier, winux::uint flags )
 {
     XStringArray<_ChTy> resWords;
-    Impl_CollateIdentifierToX<_ChTy>( identifier, Literal<_ChTy>::emptyStr, flags, storeArray, nullptr, &resWords );
+    Impl_CollateIdentifierToX<_ChTy>( identifier, Literal<_ChTy>::nulStr, flags, storeArray, nullptr, &resWords );
     return resWords;
 }
 
-WINUX_FUNC_IMPL(AnsiStringArray) CollateIdentifierToArrayA( AnsiString const & identifier, winux::uint flags )
+template <>
+WINUX_FUNC_IMPL(XStringArray<char>) CollateIdentifierToArray( XString<char> const & identifier, winux::uint flags )
 {
     return Impl_CollateIdentifierToArray( identifier, flags );
 }
 
-WINUX_FUNC_IMPL(UnicodeStringArray) CollateIdentifierToArrayW( UnicodeString const & identifier, winux::uint flags )
+template <>
+WINUX_FUNC_IMPL(XStringArray<wchar>) CollateIdentifierToArray( XString<wchar> const & identifier, winux::uint flags )
 {
     return Impl_CollateIdentifierToArray( identifier, flags );
 }
 
-// KMP算法 ---------------------------------------------------------------------------------
-WINUX_FUNC_IMPL(std::vector<int>) KmpCalcNext( char const * substr, size_t sublen )
+template <>
+WINUX_FUNC_IMPL(XStringArray<char16>) CollateIdentifierToArray( XString<char16> const & identifier, winux::uint flags )
 {
-    return _Templ_KmpCalcNext<int>( substr, sublen );
+    return Impl_CollateIdentifierToArray( identifier, flags );
 }
 
-WINUX_FUNC_IMPL(size_t) KmpMatchEx( char const * str, size_t len, char const * substr, size_t sublen, size_t pos, std::vector<int> const & next )
+template <>
+WINUX_FUNC_IMPL(XStringArray<char32>) CollateIdentifierToArray( XString<char32> const & identifier, winux::uint flags )
 {
-    return _Templ_KmpMatchEx<int>( str, len, substr, sublen, pos, next );
+    return Impl_CollateIdentifierToArray( identifier, flags );
 }
 
-WINUX_FUNC_IMPL(size_t) KmpMatch( char const * str, size_t len, char const * substr, size_t sublen, size_t pos )
-{
-    return KmpMatchEx( str, len, substr, sublen, pos, KmpCalcNext( substr, sublen ) );
-}
-
-// class MultiMatch -----------------------------------------------------------------------
+// class MultiMatch ---------------------------------------------------------------------------
 MultiMatch::MultiMatch() : _replaceFunc(NULL), _extra(NULL)
 {
 }
@@ -1435,6 +1709,7 @@ MultiMatch::MultiMatch( StringArray const & matches, ReplaceFuncType replaceFunc
 
 void MultiMatch::init( StringArray const & matches, StringArray const & replaces )
 {
+    for ( size_t i = 0; i < matches.size(); ++i ) _states.emplace_back();
     _matchItems = matches;
     for ( auto it = _matchItems.begin(); it != _matchItems.end(); it++ )
     {
@@ -1447,6 +1722,7 @@ void MultiMatch::init( StringArray const & matches, StringArray const & replaces
 
 void MultiMatch::init( StringArray const & matches, ReplaceFuncType replaceFunc, void * extra )
 {
+    for ( size_t i = 0; i < matches.size(); ++i ) _states.emplace_back();
     _matchItems = matches;
     for ( auto it = _matchItems.begin(); it != _matchItems.end(); it++ )
     {
@@ -1458,6 +1734,7 @@ void MultiMatch::init( StringArray const & matches, ReplaceFuncType replaceFunc,
 
 ssize_t MultiMatch::addMatchReplacePair( String const & match, String const & replace )
 {
+    _states.emplace_back();
     _matchItems.push_back(match);
     _nextVals.push_back( _Templ_KmpCalcNext<short>( match.c_str(), match.length() ) );
     _replaceItems.push_back(replace);
@@ -1466,6 +1743,7 @@ ssize_t MultiMatch::addMatchReplacePair( String const & match, String const & re
 
 ssize_t MultiMatch::addMatch( String const & match )
 {
+    _states.emplace_back();
     _matchItems.push_back(match);
     _nextVals.push_back( _Templ_KmpCalcNext<short>( match.c_str(), match.length() ) );
     return (ssize_t)_nextVals.size();
@@ -1510,6 +1788,7 @@ MultiMatch::ReplaceFuncType MultiMatch::setReplaceFunc( ReplaceFuncType newRepla
 
 void MultiMatch::clear()
 {
+    this->_states.clear();
     this->_matchItems.clear();
     this->_nextVals.clear();
     this->_replaceItems.clear();
@@ -1521,23 +1800,14 @@ MultiMatch::MatchResult MultiMatch::search( String const & str, ssize_t offset )
 {
     MatchResult res = { -1, -1 };
     ssize_t count = (ssize_t)_matchItems.size();
-    std::vector<MatchState> states(count);
-    for ( auto & state : states )
-    {
-        state.j = 0;
-        state.markpos = 0;
-        state.mr.item = -1;
-        state.mr.pos = -1;
-        state.prevCharMatch = false;
-        state.matched = false;
-    }
+    for ( auto & state : this->_states ) state.reset();
     ssize_t i; // 主字符串当前字符位置
     bool nomove = false; // 不移动i
     for ( i = offset; i < (ssize_t)str.length(); )
     {
         for ( ssize_t curr = 0; curr < count; curr++ ) // 各个匹配项进行匹配
         {
-            auto & state = states[curr];
+            auto & state = this->_states[curr];
 
             if ( i < state.markpos ) continue;
 
@@ -1593,16 +1863,7 @@ MultiMatch::MatchResult MultiMatch::greedSearch( String const & str, ssize_t off
 {
     MatchResult res = { -1, -1 };
     ssize_t count = (ssize_t)_matchItems.size();
-    std::vector<MatchState> states(count);
-    for ( auto & state : states )
-    {
-        state.j = 0;
-        state.markpos = 0;
-        state.mr.item = -1;
-        state.mr.pos = -1;
-        state.prevCharMatch = false;
-        state.matched = false;
-    }
+    for ( auto & state : this->_states ) state.reset();
     ssize_t i; // 主字符串当前字符位置
     bool nomove = false; // 不移动i
     bool hasMatched = false; // 已有匹配
@@ -1612,7 +1873,7 @@ MultiMatch::MatchResult MultiMatch::greedSearch( String const & str, ssize_t off
         {
             auto & currItem = _matchItems[curr];
             auto currItemLen = (ssize_t)currItem.length();
-            auto & state = states[curr];
+            auto & state = this->_states[curr];
 
             if ( state.matched || i < state.markpos ) continue;
 
@@ -1658,7 +1919,7 @@ MultiMatch::MatchResult MultiMatch::greedSearch( String const & str, ssize_t off
             // 有匹配，并且其余prevCharMatch都是false，才可终止
             size_t cPrevCharMatches = 0;
             size_t matchMaxLen = 0;
-            for ( auto & state : states )
+            for ( auto & state : this->_states )
             {
                 if ( state.matched )
                 {
@@ -1730,7 +1991,7 @@ MultiMatch::MatchResult MultiMatch::commonSearch( String const & str, ssize_t of
 String MultiMatch::replace( String const & str, ssize_t offset, SearchFuncType fnSearch ) const
 {
     ssize_t start = 0;
-    String s = "";
+    String s = TEXT("");
     MatchResult r = (this->*fnSearch)( str, start + offset );
     while ( r.pos != -1 )
     {
@@ -1809,8 +2070,8 @@ WINUX_FUNC_IMPL(AnsiString) UnicodeToLocal( UnicodeString const & unicode )
     Locale __setLoc;
     AnsiString r;
     r.resize( UnicodeMinLength(unicode) + 1 );
-    wcstombs( &r[0], unicode.c_str(), r.size() );
-    return r.c_str();
+    size_t n = wcstombs( &r[0], unicode.c_str(), r.size() );
+    return AnsiString( r.c_str(), n );
 }
 
 WINUX_FUNC_IMPL(UnicodeString) LocalToUnicode( AnsiString const & local )
@@ -1818,8 +2079,8 @@ WINUX_FUNC_IMPL(UnicodeString) LocalToUnicode( AnsiString const & local )
     Locale __setLoc;
     UnicodeString r;
     r.resize( LocalCharsCount(local) + 1 );
-    mbstowcs( &r[0], local.c_str(), local.length() );
-    return r.c_str();
+    size_t n = mbstowcs( &r[0], local.c_str(), local.length() );
+    return UnicodeString( r.c_str(), n );
 }
 
 WINUX_FUNC_IMPL(String) LocalToString( AnsiString const & local )
@@ -1930,6 +2191,9 @@ UnicodeString FormatEx( size_t cch, wchar const * fmt, ... )
 
 UnicodeString Format( wchar const * fmt, ... )
 {
+    va_list args;
+    va_start( args, fmt );
+
     #if defined(_MSC_VER) || defined(WIN32)
     int c = _vscwprintf( fmt, args );
     return FormatExV( c, fmt, args );
@@ -2048,7 +2312,7 @@ SZInput & SZInput::operator = ( wchar_t const * pwstr )
 // struct Conv_Data -----------------------------------------------------------------------
 struct Conv_Data
 {
-#if defined(__GNUC__) || defined(HAVE_ICONV_H)
+#if defined(__GNUC__) || defined(HAVE_ICONV)
     //转换句柄
     iconv_t _cd;
 #else
@@ -2059,10 +2323,10 @@ struct Conv_Data
 };
 
 // class Conv -----------------------------------------------------------------------------
-#if !defined(__GNUC__) && !defined(HAVE_ICONV_H)
+#if !defined(__GNUC__) && !defined(HAVE_ICONV)
 static struct __ConvLangCodePage
 {
-    std::map< String, uint > _convLangCP;
+    std::map< AnsiString, uint > _convLangCP;
     __ConvLangCodePage()
     {
         _convLangCP[""] = CP_ACP;
@@ -2081,8 +2345,9 @@ static struct __ConvLangCodePage
         _convLangCP["SHIFT_JIS"] = 932;
         _convLangCP["BIG5"] = 950;
     }
+
     // 根据语言串获取代码页编码
-    uint operator [] ( String cp ) const
+    uint operator [] ( AnsiString cp ) const
     {
         if ( !cp.empty() ) StrMakeUpper(&cp);
 
@@ -2118,10 +2383,9 @@ static struct __ConvLangCodePage
 } __LangCP;
 
 // UCS-2 大小端次序转换
-static void __Ucs2LeBe( wchar * inOutBuf, uint cch )
+static void __Ucs2LeBe( wchar * inOutBuf, size_t cch )
 {
-    uint i;
-    for ( i = 0; i < cch; ++i )
+    for ( size_t i = 0; i < cch; ++i )
     {
         union
         {
@@ -2139,29 +2403,29 @@ static void __Ucs2LeBe( wchar * inOutBuf, uint cch )
     }
 }
 
-// 多字节到宽字符,*str2自动分配内存，用户负责free(),返回写入*str2缓冲区的字节数
-static int __MbsToWcs( uint cp1, char const * str1, uint size1, uint cp2, wchar * * str2 )
+// 多字节到宽字符，*str2自动分配内存，用户负责Buffer.Free()。返回写入*str2缓冲区的字节数。
+static size_t __MbsToWcs( uint cp1, char const * str1, size_t size1, uint cp2, wchar * * str2 )
 {
-    // 你得先获得缓冲区大小,字符数
-    int cch = MultiByteToWideChar(
+    // 你得先获得缓冲区大小，字符数
+    size_t cch = MultiByteToWideChar(
         cp1,
         0,
         str1,
-        size1,
+        (int)size1,
         NULL,
         0
     );
-    int size2 = sizeof(wchar) * ( cch + 1 ) ;
-    *str2 = (wchar *)malloc(size2); // 分配内存
+    size_t size2 = sizeof(wchar) * ( cch + 1 ) ;
+    *str2 = (wchar *)Buffer::Alloc(size2); // 分配内存
     memset( *str2, 0, size2 );
     // 这才进行转换
     size2 = sizeof(wchar) * MultiByteToWideChar(
         cp1,
         0,
         str1,
-        size1,
+        (int)size1,
         *str2,
-        cch + 1
+        (int)( cch + 1 )
     );
     // 如果是UCS-2BE
     if ( cp2 == 1201 )
@@ -2171,38 +2435,37 @@ static int __MbsToWcs( uint cp1, char const * str1, uint size1, uint cp2, wchar 
     return size2;
 }
 
-// 宽字符到多字节,注意:size1必须是字节数，即,宽字符数*sizeof(wchar),*str2自动分配内存，用户负责free(),返回写入*str2缓冲区的字节数
-static int __WcsToMbs( uint cp1, wchar const * str1, uint size1, uint cp2, char * * str2 )
+// 宽字符到多字节，注意：size1必须是字节数（即宽字符数*sizeof(wchar)），*str2自动分配内存，用户负责Buffer.Free()。返回写入*str2缓冲区的字节数。
+static size_t __WcsToMbs( uint cp1, wchar const * str1, size_t size1, uint cp2, char * * str2 )
 {
-    UnicodeString strTmp(str1);
+    UnicodeString strTmp( str1, size1 / sizeof(wchar) );
     if ( cp1 == 1201 )
     {
         if ( !strTmp.empty() ) __Ucs2LeBe( &strTmp[0], (uint)strTmp.length() );
         str1 = strTmp.c_str();
     }
-    //LOG( Format( "cp2=%d,str1=%s,size1=%d", cp2, UnicodeToLocal(str1).c_str(), size1 ) );
-    int length = WideCharToMultiByte(
+
+    size_t length = WideCharToMultiByte(
         cp2,
         0 /*| ( cp2 == CP_UTF8 ? WC_ERR_INVALID_CHARS : 0 )*/,
         str1,
-        size1 / sizeof(wchar),
+        (int)( size1 / sizeof(wchar) ),
         NULL,
         0,
         NULL,
         NULL
     );
-    int size2 = sizeof(char) * ( length + 1 );
-    *str2 = (char *)malloc(size2);
+    size_t size2 = sizeof(char) * ( length + 1 );
+    *str2 = (char *)Buffer::Alloc(size2);
     memset( *str2, 0, size2 );
 
-    //LOG( Format("size2=%d,length=%d",size2,length) );
     size2 = WideCharToMultiByte(
         cp2,
         0 /*| ( cp2 == CP_UTF8 ? WC_ERR_INVALID_CHARS : 0 )*/,
         str1,
-        size1 / sizeof(wchar),
+        (int)( size1 / sizeof(wchar) ),
         *str2,
-        sizeof(char) * ( length + 1 ),
+        (int)( length + 1 ),
         NULL,
         NULL
     );
@@ -2214,41 +2477,39 @@ static int __WcsToMbs( uint cp1, wchar const * str1, uint size1, uint cp2, char 
     return size2;
 }
 
-// 多字节字符到多字节字符,*str2自动分配内存，用户负责free(),返回写入*str2缓冲区的字节数
-static int __MbsToMbs( uint cp1, char const * str1, uint size1, uint cp2, char * * str2 )
+// 多字节字符到多字节字符，*str2自动分配内存，用户负责Buffer.Free()，返回写入*str2缓冲区的字节数
+static size_t __MbsToMbs( uint cp1, char const * str1, size_t size1, uint cp2, char * * str2 )
 {
     // 首先要转到Unicode
     wchar * tmpUcs;
-    //LOG( Format("mbstombs() cp1:%d to cp2:%d", cp1, cp2 ) );
-    int tmpUcsSize = __MbsToWcs( cp1, str1, size1, 0, &tmpUcs );
-    //LOG( Format("mbstowcs() OK, ucs bytes:%d", tmpUcsSize ) );
-    int size2 = __WcsToMbs( 0, tmpUcs, tmpUcsSize, cp2, str2 );
-    //LOG( Format("wcstombs() OK, mbs bytes:%u", size2 ) );
-    free(tmpUcs);
+    size_t tmpUcsSize = __MbsToWcs( cp1, str1, size1, 0, &tmpUcs );
+    // 然后再转换成多字节
+    size_t size2 = __WcsToMbs( 0, tmpUcs, tmpUcsSize, cp2, str2 );
+    Buffer::Free(tmpUcs);
 
     return size2;
 }
 
-// 字符串编码转换,返回写入*str2缓冲区的数量
-static int __StrCodeConvert( uint cp1, char const * str1, uint size1, uint cp2, char ** str2 )
+// 字符串编码转换，返回写入*str2缓冲区的字节数
+static size_t __StrConvert( uint cp1, char const * str1, size_t size1, uint cp2, char ** str2 )
 {
-    int size2 = 0;
+    size_t size2 = 0;
     // 4种方式,1 m to w, 2 w to m, 3 m to m, 4 w to w
     if ( __LangCP.isWideChar(cp1) ) // cp1 is w
     {
         if ( __LangCP.isWideChar(cp2) ) // cp2 is w
         {
             // w to w, directly copy
-            int cch1 = size1 / sizeof(wchar);
-            size2 = ( cch1 + 1 ) * sizeof(wchar);
-            *str2 = (char *)malloc(size2);
+            size_t cch1 = size1 / sizeof(wchar);
+            size2 = cch1 * sizeof(wchar);
+            *str2 = (char *)Buffer::Alloc(size2);
             memset( *str2, 0, size2 );
             memcpy( *str2, str1, size1 );
             if ( cp1 != cp2 )
             {
                 __Ucs2LeBe( (wchar *)*str2, cch1 );
             }
-            return cch1;
+            return cch1 * sizeof(wchar);
         }
         else // cp2 is m
         {
@@ -2272,12 +2533,12 @@ static int __StrCodeConvert( uint cp1, char const * str1, uint size1, uint cp2, 
 
 #endif
 
-Conv::Conv( char const * fromCode, char const * toCode )
+Conv::Conv( AnsiString const & fromCode, AnsiString const & toCode )
 {
     _self.create(); //
 
-#if defined(__GNUC__) || defined(HAVE_ICONV_H)
-    _self->_cd = iconv_open( toCode, fromCode );
+#if defined(__GNUC__) || defined(HAVE_ICONV)
+    _self->_cd = iconv_open( toCode.c_str(), fromCode.c_str() );
 
     #if _LIBICONV_VERSION > 0x0108
     int optval;
@@ -2297,7 +2558,7 @@ Conv::Conv( char const * fromCode, char const * toCode )
 
 Conv::~Conv()
 {
-#if defined(__GNUC__) || defined(HAVE_ICONV_H)
+#if defined(__GNUC__) || defined(HAVE_ICONV)
     iconv_close(_self->_cd);
 #endif
 
@@ -2306,16 +2567,16 @@ Conv::~Conv()
 
 size_t Conv::convert( char const * srcBuf, size_t srcSize, char * * destBuf )
 {
-#if defined(__GNUC__) || defined(HAVE_ICONV_H)
+#if defined(__GNUC__) || defined(HAVE_ICONV)
     size_t r = 0, outBytes = 0, err = 0;
-    size_t destSize = srcSize;
+    size_t destSize = srcSize + 1;
     *destBuf = nullptr;
     do
     {
         char * srcP = (char *)srcBuf;
         size_t srcN = srcSize;
         destSize <<= 1;
-        *destBuf = (char *)realloc( *destBuf, destSize );
+        *destBuf = (char *)Buffer::Realloc( *destBuf, destSize );
         char * buf = *destBuf;
         size_t outBytesLeft = destSize;
         memset( *destBuf, 0, destSize );
@@ -2326,17 +2587,812 @@ size_t Conv::convert( char const * srcBuf, size_t srcSize, char * * destBuf )
     } while ( r == -1 && err == E2BIG );
     return outBytes;
 #else
-    return __StrCodeConvert( _self->_fromCP, srcBuf, (uint)srcSize, _self->_toCP, destBuf );
+    return __StrConvert( _self->_fromCP, srcBuf, (uint)srcSize, _self->_toCP, destBuf );
 #endif
 }
 
-//ConvFrom<AnsiString> LocalFromUtf8("UTF-8");
+// class UnicodeConverter static methods ------------------------------------------------------
+inline static void _Utf8_ToUtf16( Utf16String * p, char const * str, size_t len, size_t newCap = 0 )
+{
+    if ( newCap )
+    {
+        p->reserve(newCap);
+    }
+    else
+    {
+        p->reserve( len * 2 / 3 );
+    }
+
+    size_t index = 0;
+    uint32 codepoint;
+    while ( index < len )
+    {
+        auto ch = str[index];
+        index++;
+        if ( ( ch & 0xC0 ) != 0x80 ) // UTF-8字符的起始字节
+        {
+            if ( ( ch & 0x80 ) == 0x00 ) // 1字节UTF-8编码
+            {
+                codepoint = ch;
+            }
+            else if ( ( ch & 0xE0 ) == 0xC0 ) // 2字节UTF-8编码
+            {
+                codepoint = ch & 0x1F;
+            }
+            else if ( ( ch & 0xF0 ) == 0xE0 ) // 3字节UTF-8编码
+            {
+                codepoint = ch & 0x0F;
+            }
+            else if ( ( ch & 0xF8 ) == 0xF0 ) // 4字节UTF-8编码
+            {
+                codepoint = ch & 0x07;
+            }
+
+            // 读取后续字节
+            size_t bytes = ( ch & 0xE0 ) == 0xC0 ? 1 : ( ch & 0xF0 ) == 0xE0 ? 2 : ( ch & 0xF8 ) == 0xF0 ? 3 : 0;
+            for ( size_t i = 0; i < bytes; ++i )
+            {
+                codepoint = ( codepoint << 6 ) | ( str[index] & 0x3F );
+                index++;
+            }
+
+            // 转换UTF-32码点为UTF-16编码
+            if ( codepoint <= 0xFFFF ) // BMP字符
+            {
+                *p += (char16)codepoint;
+            }
+            else // 非BMP字符，使用代理对
+            {
+                codepoint -= 0x10000;
+
+                *p += (char16)( ( codepoint >> 10 ) + 0xD800 );
+                *p += (char16)( ( codepoint & 0x3FF ) + 0xDC00 );
+            }
+        }
+    }
+}
+inline static void _Utf8_ToUtf32( Utf32String * p, char const * str, size_t len, size_t newCap = 0 )
+{
+    if ( newCap )
+    {
+        p->reserve(newCap);
+    }
+    else
+    {
+        p->reserve( len * 1 / 2 );
+    }
+
+    size_t index = 0;
+    uint32 codepoint;
+    while ( index < len )
+    {
+        auto ch = str[index];
+        index++;
+        if ( ( ch & 0xC0 ) != 0x80 ) // UTF-8字符的起始字节
+        {
+            if ( ( ch & 0x80 ) == 0x00 ) // 1字节UTF-8编码
+            {
+                codepoint = ch;
+            }
+            else if ( ( ch & 0xE0 ) == 0xC0 ) // 2字节UTF-8编码
+            {
+                codepoint = ch & 0x1F;
+            }
+            else if ( ( ch & 0xF0 ) == 0xE0 ) // 3字节UTF-8编码
+            {
+                codepoint = ch & 0x0F;
+            }
+            else if ( ( ch & 0xF8 ) == 0xF0 ) // 4字节UTF-8编码
+            {
+                codepoint = ch & 0x07;
+            }
+
+            // 读取后续字节
+            size_t bytes = ( ch & 0xE0 ) == 0xC0 ? 1 : ( ch & 0xF0 ) == 0xE0 ? 2 : ( ch & 0xF8 ) == 0xF0 ? 3 : 0;
+            for ( size_t i = 0; i < bytes; ++i )
+            {
+                codepoint = ( codepoint << 6 ) | ( str[index] & 0x3F );
+                index++;
+            }
+
+            *p += (char32)codepoint;
+        }
+    }
+}
+
+inline static void _Utf16_ToUtf8( Utf8String * p, char16 const * str, size_t len, size_t newCap = 0 )
+{
+    if ( newCap )
+    {
+        p->reserve(newCap);
+    }
+    else
+    {
+        p->reserve( len * 5 / 2 );
+    }
+
+    size_t index = 0;
+    uint32 codepoint;
+    while ( index < len )
+    {
+        auto ch = str[index];
+        auto ch2 = str[index + 1];
+        if ( ( ch >= 0xD800 && ch <= 0xDBFF ) && ( ch2 >= 0xDC00 && ch2 <= 0xDFFF ) )
+        {
+            // 代理对，4字节UTF-8编码
+            // 计算UTF-32码点
+            codepoint = ( ( ch - 0xD800 ) << 10 ) + ( ch2 - 0xDC00 ) + 0x10000;
+            *p += (char)( 0xF0 | ( codepoint >> 18 ) );
+            *p += (char)( 0x80 | ( ( codepoint >> 12 ) & 0x3F ) );
+            *p += (char)( 0x80 | ( ( codepoint >> 6 ) & 0x3F ) );
+            *p += (char)( 0x80 | ( codepoint & 0x3F ) );
+            index += 2;
+        }
+        else if ( ch <= 0x7F )
+        {
+            // 1字节UTF-8编码
+            *p += (char)ch;
+            index += 1;
+        }
+        else if ( ch <= 0x07FF )
+        {
+            // 2字节UTF-8编码
+            *p += (char)( 0xC0 | ( ch >> 6 ) );
+            *p += (char)( 0x80 | ( ch & 0x3F ) );
+            index += 1;
+        }
+        else
+        {
+            // 3字节UTF-8编码
+            *p += (char)( 0xE0 | ( ch >> 12 ) );
+            *p += (char)( 0x80 | ( ( ch >> 6 ) & 0x3F ) );
+            *p += (char)( 0x80 | ( ch & 0x3F ) );
+            index += 1;
+        }
+    }
+}
+inline static void _Utf16_ToUtf32( Utf32String * p, char16 const * str, size_t len, size_t newCap = 0 )
+{
+    if ( newCap )
+    {
+        p->reserve(newCap);
+    }
+    else
+    {
+        p->reserve( len * 4 / 5 );
+    }
+
+    size_t index = 0;
+    uint32 codepoint;
+    while ( index < len )
+    {
+        auto ch = str[index];
+        auto ch2 = str[index + 1];
+        if ( ( ch >= 0xD800 && ch <= 0xDBFF ) && ( ch2 >= 0xDC00 && ch2 <= 0xDFFF ) )
+        {
+            // 代理对，4字节UTF-8编码
+            // 计算UTF-32码点
+            codepoint = ( ( ch - 0xD800 ) << 10 ) + ( ch2 - 0xDC00 ) + 0x10000;
+            *p += (char32)codepoint;
+            index += 2;
+        }
+        else
+        {
+            // 1~3字节UTF-8编码
+            *p += (char32)ch;
+            index += 1;
+        }
+    }
+}
+
+inline static void _Utf32_ToUtf8( Utf8String * p, char32 const * str, size_t len, size_t newCap = 0 )
+{
+    if ( newCap )
+    {
+        p->reserve(newCap);
+    }
+    else
+    {
+        p->reserve( len * 3 );
+    }
+
+    size_t index = 0;
+    while ( index < len )
+    {
+        auto ch = str[index];
+        if ( ch <= 0x7F )
+        {
+            // 1字节UTF-8编码
+            *p += (char)ch;
+            index += 1;
+        }
+        else if ( ch <= 0x07FF )
+        {
+            // 2字节UTF-8编码
+            *p += (char)( 0xC0 | ( ch >> 6 ) );
+            *p += (char)( 0x80 | ( ch & 0x3F ) );
+            index += 1;
+        }
+        else if ( ch <= 0xFFFF )
+        {
+            // 3字节UTF-8编码
+            *p += (char)( 0xE0 | ( ch >> 12 ) );
+            *p += (char)( 0x80 | ( ( ch >> 6 ) & 0x3F ) );
+            *p += (char)( 0x80 | ( ch & 0x3F ) );
+            index += 1;
+        }
+        else
+        {
+            // 4字节UTF-8编码
+            *p += (char)( 0xF0 | ( ch >> 18 ) );
+            *p += (char)( 0x80 | ( ( ch >> 12 ) & 0x3F ) );
+            *p += (char)( 0x80 | ( ( ch >> 6 ) & 0x3F ) );
+            *p += (char)( 0x80 | ( ch & 0x3F ) );
+            index += 1;
+        }
+    }
+}
+inline static void _Utf32_ToUtf16( Utf16String * p, char32 const * str, size_t len, size_t newCap = 0 )
+{
+    if ( newCap )
+    {
+        p->reserve(newCap);
+    }
+    else
+    {
+        p->reserve( len * 3 / 2 );
+    }
+
+    size_t index = 0;
+    while ( index < len )
+    {
+        auto ch = str[index];
+        if ( ch <= 0xFFFF ) // BMP字符
+        {
+            *p += (char16)ch;
+            index += 1;
+        }
+        else // 非BMP字符，使用代理对
+        {
+            ch -= 0x10000;
+
+            *p += (char16)( ( ch >> 10 ) + 0xD800 );
+            *p += (char16)( ( ch & 0x3FF ) + 0xDC00 );
+            index += 1;
+        }
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////
+inline static size_t _Utf8_CalcUtf16Length( char const * str, size_t len )
+{
+    size_t utf16length = 0;
+    for ( size_t i = 0; i < len; i++ )
+    {
+        char ch = str[i];
+        if ( ( ch & 0xC0 ) != 0x80 ) // UTF-8字符的起始字节
+        {
+            if ( ( ch & 0xF8 ) == 0xF0 ) // 4字节UTF-8编码
+            {
+                utf16length += 2;
+            }
+            else
+            {
+                utf16length++;
+            }
+        }
+    }
+    return utf16length;
+}
+inline static size_t _Utf8_CalcUtf32Length( char const * str, size_t len )
+{
+    size_t utf32length = 0;
+    for ( size_t i = 0; i < len; ++i )
+    {
+        if ( ( str[i] & 0xC0 ) != 0x80 ) // UTF-8字符的起始字节，或ANSI字符
+        {
+            utf32length++;
+        }
+    }
+    return utf32length;
+}
+
+inline static size_t _Utf16_CalcUtf8Length( char16 const * str, size_t len )
+{
+    size_t utf8length = 0;
+
+    for ( size_t i = 0; i < len; )
+    {
+        if ( ( str[i] >= 0xD800 && str[i] <= 0xDBFF ) && ( str[i + 1] >= 0xDC00 && str[i + 1] <= 0xDFFF ) )
+        {
+            utf8length += 4; // 代理对，4字节UTF-8编码
+            i += 2;
+        }
+        else if ( str[i] <= 0x7F )
+        {
+            utf8length += 1; // 1字节UTF-8编码
+            i += 1;
+        }
+        else if ( str[i] <= 0x07FF )
+        {
+            utf8length += 2; // 2字节UTF-8编码
+            i += 1;
+        }
+        else
+        {
+            utf8length += 3; // 3字节UTF-8编码
+            i += 1;
+        }
+    }
+    return utf8length;
+}
+inline static size_t _Utf16_CalcUtf32Length( char16 const * str, size_t len )
+{
+    size_t utf32length = 0;
+    for ( size_t i = 0; i < len; )
+    {
+        if ( ( str[i] >= 0xD800 && str[i] <= 0xDBFF ) && ( str[i + 1] >= 0xDC00 && str[i + 1] <= 0xDFFF ) )
+        {
+            i += 2;
+        }
+        else
+        {
+            i++;
+        }
+        utf32length++;
+    }
+    return utf32length;
+}
+
+inline static size_t _Utf32_CalcUtf8Length( char32 const * str, size_t len )
+{
+    size_t utf8length = 0;
+    for ( size_t i = 0; i < len; i++ )
+    {
+        if ( str[i] < 0x80 )
+        {
+            utf8length++;
+        }
+        else if ( str[i] < 0x0800 )
+        {
+            utf8length += 2;
+        }
+        else if ( str[i] < 0x10000 )
+        {
+            utf8length += 3;
+        }
+        else
+        {
+            utf8length += 4;
+        }
+    }
+    return utf8length;
+}
+inline static size_t _Utf32_CalcUtf16Length( char32 const * str, size_t len )
+{
+    size_t utf16length = 0;
+    for ( size_t i = 0; i < len; i++ )
+    {
+        if ( str[i] < 0x10000 )
+        {
+            utf16length++;
+        }
+        else
+        {
+            utf16length += 2;
+        }
+    }
+    return utf16length;
+}
+
+
+///////////////////////////////////////////////////////////////////////////////////////////
+// 用模板特化解决`wchar_t`平台位长不同的问题
+///////////////////////////////////////////////////////////////////////////////////////////
+template < size_t >
+struct WCharT;
+
+template <>
+struct WCharT< sizeof(char16) >
+{
+    static void _Utf8_ToUnicode( UnicodeString * p, char const * str, size_t len, size_t newCap = 0 )
+    {
+        _Utf8_ToUtf16( (Utf16String *)p, str, len, newCap );
+    }
+
+    static void _Unicode_ToUtf8( Utf8String * p, wchar const * str, size_t len, size_t newCap = 0 )
+    {
+        _Utf16_ToUtf8( p, (char16 const *)str, len, newCap );
+    }
+    static void _Unicode_ToUtf16( Utf16String * p, wchar const * str, size_t len, size_t newCap = 0 )
+    {
+        p->assign( (char16 const *)str, len );
+    }
+    static void _Unicode_ToUtf32( Utf32String * p, wchar const * str, size_t len, size_t newCap = 0 )
+    {
+        _Utf16_ToUtf32( p, (char16 const *)str, len, newCap );
+    }
+
+    static void _Utf16_ToUnicode( UnicodeString * p, char16 const * str, size_t len, size_t newCap = 0 )
+    {
+        p->assign( (wchar const *)str, len );
+    }
+
+    static void _Utf32_ToUnicode( UnicodeString * p, char32 const * str, size_t len, size_t newCap = 0 )
+    {
+        _Utf32_ToUtf16( (Utf16String *)p, str, len, newCap );
+    }
+
+    ///////////////////////////////////////////////////////////////////////////////////////////
+
+    static size_t _Utf8_CalcUnicodeLength( char const * str, size_t len ) { return _Utf8_CalcUtf16Length( str, len ); }
+
+    static size_t _Unicode_CalcUtf8Length( wchar const * str, size_t len ) { return _Utf16_CalcUtf8Length( (char16 const *)str, len ); }
+    static size_t _Unicode_CalcUtf16Length( wchar const * str, size_t len ) { return len; }
+    static size_t _Unicode_CalcUtf32Length( wchar const * str, size_t len ) { return _Utf16_CalcUtf32Length( (char16 const *)str, len ); }
+
+    static size_t _Utf16_CalcUnicodeLength( char16 const * str, size_t len ) { return len; }
+
+    static size_t _Utf32_CalcUnicodeLength( char32 const * str, size_t len ) { return _Utf32_CalcUtf16Length( str, len ); }
+};
+
+template <>
+struct WCharT< sizeof(char32) >
+{
+    static void _Utf8_ToUnicode( UnicodeString * p, char const * str, size_t len, size_t newCap = 0 )
+    {
+        _Utf8_ToUtf32( (Utf32String *)p, str, len, newCap );
+    }
+
+    static void _Unicode_ToUtf8( Utf8String * p, wchar const * str, size_t len, size_t newCap = 0 )
+    {
+        _Utf32_ToUtf8( p, (char32 const *)str, len, newCap );
+    }
+    static void _Unicode_ToUtf16( Utf16String * p, wchar const * str, size_t len, size_t newCap = 0 )
+    {
+        _Utf32_ToUtf16( p, (char32 const *)str, len, newCap );
+    }
+    static void _Unicode_ToUtf32( Utf32String * p, wchar const * str, size_t len, size_t newCap = 0 )
+    {
+        p->assign( (char32 const *)str, len );
+    }
+
+    static void _Utf16_ToUnicode( UnicodeString * p, char16 const * str, size_t len, size_t newCap = 0 )
+    {
+        _Utf16_ToUtf32( (Utf32String *)p, str, len, newCap );
+    }
+
+    static void _Utf32_ToUnicode( UnicodeString * p, char32 const * str, size_t len, size_t newCap = 0 )
+    {
+        p->assign( (wchar const *)str, len );
+    }
+
+    ///////////////////////////////////////////////////////////////////////////////////////////
+
+    static size_t _Utf8_CalcUnicodeLength( char const * str, size_t len ) { return _Utf8_CalcUtf32Length( str, len ); }
+
+    static size_t _Unicode_CalcUtf8Length( wchar const * str, size_t len ) { return _Utf32_CalcUtf8Length( (char32 const *)str, len ); }
+    static size_t _Unicode_CalcUtf16Length( wchar const * str, size_t len ) { return _Utf32_CalcUtf16Length( (char32 const *)str, len ); }
+    static size_t _Unicode_CalcUtf32Length( wchar const * str, size_t len ) { return len; }
+
+    static size_t _Utf16_CalcUnicodeLength( char16 const * str, size_t len ) { return _Utf16_CalcUtf32Length( str, len ); }
+
+    static size_t _Utf32_CalcUnicodeLength( char32 const * str, size_t len ) { return len; }
+};
+
+///////////////////////////////////////////////////////////////////////////////////////////
+inline static void _Utf8_ToUnicode( UnicodeString * p, char const * str, size_t len, size_t newCap = 0 )
+{
+    WCharT<sizeof(wchar)>::_Utf8_ToUnicode( p, str, len, newCap );
+}
+
+inline static void _Unicode_ToUtf8( Utf8String * p, wchar const * str, size_t len, size_t newCap = 0 )
+{
+    WCharT<sizeof(wchar)>::_Unicode_ToUtf8( p, str, len, newCap );
+}
+inline static void _Unicode_ToUtf16( Utf16String * p, wchar const * str, size_t len, size_t newCap = 0 )
+{
+    WCharT<sizeof(wchar)>::_Unicode_ToUtf16( p, str, len, newCap );
+}
+inline static void _Unicode_ToUtf32( Utf32String * p, wchar const * str, size_t len, size_t newCap = 0 )
+{
+    WCharT<sizeof(wchar)>::_Unicode_ToUtf32( p, str, len, newCap );
+}
+
+inline static void _Utf16_ToUnicode( UnicodeString * p, char16 const * str, size_t len, size_t newCap = 0 )
+{
+    WCharT<sizeof(wchar)>::_Utf16_ToUnicode( p, str, len, newCap );
+}
+
+inline static void _Utf32_ToUnicode( UnicodeString * p, char32 const * str, size_t len, size_t newCap = 0 )
+{
+    WCharT<sizeof(wchar)>::_Utf32_ToUnicode( p, str, len, newCap );
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////
+inline static size_t _Utf8_CalcUnicodeLength( char const * str, size_t len )
+{
+    return WCharT<sizeof(wchar)>::_Utf8_CalcUnicodeLength( str, len );
+}
+
+inline static size_t _Unicode_CalcUtf8Length( wchar const * str, size_t len )
+{
+    return WCharT<sizeof(wchar)>::_Unicode_CalcUtf8Length( str, len );
+}
+inline static size_t _Unicode_CalcUtf16Length( wchar const * str, size_t len )
+{
+    return WCharT<sizeof(wchar)>::_Unicode_CalcUtf16Length( str, len );
+}
+inline static size_t _Unicode_CalcUtf32Length( wchar const * str, size_t len )
+{
+    return WCharT<sizeof(wchar)>::_Unicode_CalcUtf32Length( str, len );
+}
+
+inline static size_t _Utf16_CalcUnicodeLength( char16 const * str, size_t len )
+{
+    return WCharT<sizeof(wchar)>::_Utf16_CalcUnicodeLength( str, len );
+}
+
+inline static size_t _Utf32_CalcUnicodeLength( char32 const * str, size_t len )
+{
+    return WCharT<sizeof(wchar)>::_Utf32_CalcUnicodeLength( str, len );
+}
+
+// class UnicodeConverter methods -------------------------------------------------------------
+UnicodeConverter::UnicodeConverter( Utf8String const & utf8str )
+{
+    _p = &utf8str;
+    _type = ucUtf8;
+}
+
+UnicodeConverter::UnicodeConverter( UnicodeString const & wstr )
+{
+    _p = &wstr;
+    _type = ucUnicode;
+}
+
+UnicodeConverter::UnicodeConverter( Utf16String const & utf16str )
+{
+    _p = &utf16str;
+    _type = ucUtf16;
+}
+
+UnicodeConverter::UnicodeConverter( Utf32String const & utf32str )
+{
+    _p = &utf32str;
+    _type = ucUtf32;
+}
+
+Utf8String UnicodeConverter::toUtf8( size_t newCap ) const
+{
+    switch ( _type )
+    {
+    case ucUtf8:
+        return *_q<Utf8String>();
+        break;
+    case ucUnicode:
+        {
+            Utf8String s;
+            _Unicode_ToUtf8( &s, _q<UnicodeString>()->c_str(), _q<UnicodeString>()->length(), newCap );
+            return s;
+        }
+        break;
+    case ucUtf16:
+        {
+            Utf8String s;
+            _Utf16_ToUtf8( &s, _q<Utf16String>()->c_str(), _q<Utf16String>()->length(), newCap );
+            return s;
+        }
+        break;
+    case ucUtf32:
+        {
+            Utf8String s;
+            _Utf32_ToUtf8( &s, _q<Utf32String>()->c_str(), _q<Utf32String>()->length(), newCap );
+            return s;
+        }
+        break;
+    default:
+        return u8"";
+        break;
+    }
+}
+
+UnicodeString UnicodeConverter::toUnicode( size_t newCap ) const
+{
+    switch ( _type )
+    {
+    case ucUtf8:
+        {
+            UnicodeString s;
+            _Utf8_ToUnicode( &s, _q<Utf8String>()->c_str(), _q<Utf8String>()->length(), newCap );
+            return s;
+        }
+        break;
+    case ucUnicode:
+        return *_q<UnicodeString>();
+        break;
+    case ucUtf16:
+        {
+            UnicodeString s;
+            _Utf16_ToUnicode( &s, _q<Utf16String>()->c_str(), _q<Utf16String>()->length(), newCap );
+            return s;
+        }
+        break;
+    case ucUtf32:
+        {
+            UnicodeString s;
+            _Utf32_ToUnicode( &s, _q<Utf32String>()->c_str(), _q<Utf32String>()->length(), newCap );
+            return s;
+        }
+        break;
+    default:
+        return L"";
+        break;
+    }
+}
+
+Utf16String UnicodeConverter::toUtf16( size_t newCap ) const
+{
+    switch ( _type )
+    {
+    case ucUtf8:
+        {
+            Utf16String s;
+            _Utf8_ToUtf16( &s, _q<Utf8String>()->c_str(), _q<Utf8String>()->length(), newCap );
+            return s;
+        }
+        break;
+    case ucUnicode:
+        {
+            Utf16String s;
+            _Unicode_ToUtf16( &s, _q<UnicodeString>()->c_str(), _q<UnicodeString>()->length(), newCap );
+            return s;
+        }
+        break;
+    case ucUtf16:
+        return *_q<Utf16String>();
+        break;
+    case ucUtf32:
+        {
+            Utf16String s;
+            _Utf32_ToUtf16( &s, _q<Utf32String>()->c_str(), _q<Utf32String>()->length(), newCap );
+            return s;
+        }
+        break;
+    default:
+        return u"";
+        break;
+    }
+}
+
+Utf32String UnicodeConverter::toUtf32( size_t newCap ) const
+{
+    switch ( _type )
+    {
+    case ucUtf8:
+        {
+            Utf32String s;
+            _Utf8_ToUtf32( &s, _q<Utf8String>()->c_str(), _q<Utf8String>()->length(), newCap );
+            return s;
+        }
+        break;
+    case ucUnicode:
+        {
+            Utf32String s;
+            _Unicode_ToUtf32( &s, _q<UnicodeString>()->c_str(), _q<UnicodeString>()->length(), newCap );
+            return s;
+        }
+        break;
+    case ucUtf16:
+        {
+            Utf32String s;
+            _Utf16_ToUtf32( &s, _q<Utf16String>()->c_str(), _q<Utf16String>()->length(), newCap );
+            return s;
+        }
+        break;
+    case ucUtf32:
+        return *_q<Utf32String>();
+        break;
+    default:
+        return U"";
+        break;
+    }
+}
+
+size_t UnicodeConverter::calcUtf8Length() const
+{
+    switch ( _type )
+    {
+    case ucUtf8:
+        return _q<Utf8String>()->length();
+        break;
+    case ucUnicode:
+        return _Unicode_CalcUtf8Length( _q<UnicodeString>()->c_str(), _q<UnicodeString>()->length() );
+        break;
+    case ucUtf16:
+        return _Utf16_CalcUtf8Length( _q<Utf16String>()->c_str(), _q<Utf16String>()->length() );
+        break;
+    case ucUtf32:
+        return _Utf32_CalcUtf8Length( _q<Utf32String>()->c_str(), _q<Utf32String>()->length() );
+        break;
+    default:
+        return 0;
+        break;
+    }
+}
+
+size_t UnicodeConverter::calcUnicodeLength() const
+{
+    switch ( _type )
+    {
+    case ucUtf8:
+        return _Utf8_CalcUnicodeLength( _q<Utf8String>()->c_str(), _q<Utf8String>()->length() );
+        break;
+    case ucUnicode:
+        return _q<UnicodeString>()->length();
+        break;
+    case ucUtf16:
+        return _Utf16_CalcUnicodeLength( _q<Utf16String>()->c_str(), _q<Utf16String>()->length() );
+        break;
+    case ucUtf32:
+        return _Utf32_CalcUnicodeLength( _q<Utf32String>()->c_str(), _q<Utf32String>()->length() );
+        break;
+    default:
+        return 0;
+        break;
+    }
+}
+
+size_t UnicodeConverter::calcUtf16Length() const
+{
+    switch ( _type )
+    {
+    case ucUtf8:
+        return _Utf8_CalcUtf16Length( _q<Utf8String>()->c_str(), _q<Utf8String>()->length() );
+        break;
+    case ucUnicode:
+        return _Unicode_CalcUtf16Length( _q<UnicodeString>()->c_str(), _q<UnicodeString>()->length() );
+        break;
+    case ucUtf16:
+        return _q<Utf16String>()->length();
+        break;
+    case ucUtf32:
+        return _Utf32_CalcUtf16Length( _q<Utf32String>()->c_str(), _q<Utf32String>()->length() );
+        break;
+    default:
+        return 0;
+        break;
+    }
+}
+
+size_t UnicodeConverter::calcUtf32Length() const
+{
+    switch ( _type )
+    {
+    case ucUtf8:
+        return _Utf8_CalcUtf32Length( _q<Utf8String>()->c_str(), _q<Utf8String>()->length() );
+        break;
+    case ucUnicode:
+        return _Unicode_CalcUtf32Length( _q<UnicodeString>()->c_str(), _q<UnicodeString>()->length() );
+        break;
+    case ucUtf16:
+        return _Utf16_CalcUtf32Length( _q<Utf16String>()->c_str(), _q<Utf16String>()->length() );
+        break;
+    case ucUtf32:
+        return _q<Utf32String>()->length();
+        break;
+    default:
+        return 0;
+        break;
+    }
+}
+
 WINUX_FUNC_IMPL(AnsiString) LocalFromUtf8( AnsiString const & str )
 {
     ConvFrom<AnsiString> conv("UTF-8");
     return conv(str);
 }
-//ConvTo<AnsiString> LocalToUtf8("UTF-8");
+
 WINUX_FUNC_IMPL(AnsiString) LocalToUtf8( AnsiString const & str )
 {
     ConvTo<AnsiString> conv("UTF-8");

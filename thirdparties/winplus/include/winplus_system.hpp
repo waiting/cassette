@@ -58,7 +58,7 @@ WINPLUS_FUNC_DECL(std::vector<String::value_type const *>) CommandArgs( StringAr
 WINPLUS_FUNC_DECL(bool) ShutdownPrivilege( bool enable );
 
 /** \brief 设置文件/目录时间，如果想设置当前时间请传递-1，如果不想设置某个时间请传递0 */
-WINUX_FUNC_DECL(bool) SetFileTime( String const & filename, time_t ctime, time_t mtime, time_t atime );
+WINPLUS_FUNC_DECL(bool) SetFileTime( String const & filename, time_t ctime, time_t mtime, time_t atime );
 
 /** \brief Windows错误号转成错误字符串 */
 WINPLUS_FUNC_DECL(String) GetErrorStr( DWORD err );
@@ -94,7 +94,7 @@ public:
      *  \return DWORD */
     static DWORD ValueType( Mixed const & v );
 
-    /** \brief 只取值（由于REG_EXPAND_SZ映射为MT_COLLECTION的原因，导致REG_EXPAND_SZ字符串取用不变，这个静态方法则处理这种情况）
+    /** \brief 只取值（由于REG_EXPAND_SZ映射为MT_COLLECTION的原因，导致REG_EXPAND_SZ字符串取用不便，这个静态方法则处理这种情况）
      *
      *  \param v Mixed const & 由getValue()获取到的值
      *  \return winux::Mixed const & */
@@ -141,7 +141,7 @@ public:
      *  \param name 值名。如果为空串则读取KEY的默认值
      *  \param defval 如果读取失败则使用这个值返回
      *  \return Mixed */
-    Mixed getValue( String const & name, Mixed const & defval = Mixed() ) const;
+    Mixed getValue( String const & name, Mixed const & defval = mxNull ) const;
 
     /** \brief 设置指定名称的值
      *

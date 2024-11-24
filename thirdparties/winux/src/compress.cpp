@@ -3,6 +3,7 @@
 //
 #include "utilities.hpp"
 #include "smartptr.hpp"
+#include "strings.hpp"
 #include "filesys.hpp"
 #include "compress.hpp"
 
@@ -110,7 +111,7 @@ static void __ZipAll( Zip * z, String const & dirPath, String const & dstPath )
     DirIterator di(dirPath);
     while ( di.next() )
     {
-        if ( di.getName() == "." || di.getName() == ".." )
+        if ( di.getName() == TEXT(".") || di.getName() == TEXT("..") )
         {
             continue;
         }
@@ -304,5 +305,6 @@ ZRESULT Unzip::setUnzipBaseDir( String const & dirPath )
 {
     return SetUnzipBaseDir( _self->hzip, dirPath.c_str() );
 }
+
 
 } // namespace winux

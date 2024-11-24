@@ -230,8 +230,14 @@ WINPLUS_FUNC_IMPL(String) GetAppPathByHwnd( HWND hwnd, DWORD * pProcessId, DWORD
     {
         //dw = GetLastError();
         dw = (DWORD)fullName.size();
-        DllLoader dll("Kernel32.dll");
-        auto func = dll.func<BOOL (WINAPI *)( HANDLE, DWORD, LPSTR, PDWORD )>("QueryFullProcessImageNameA");
+        DllLoader dll(_T("Kernel32.dll"));
+        auto func = dll.func<BOOL (WINAPI *)( HANDLE, DWORD, LPTSTR, PDWORD )>(
+        #if defined(_UNICODE) || defined(UNICODE)
+            "QueryFullProcessImageNameW"
+        #else
+            "QueryFullProcessImageNameA"
+        #endif
+        );
         func && func.call( hProcess, 0, &fullName[0], &dw );
     }
     CloseHandle(hProcess);
@@ -364,7 +370,7 @@ static ULARGE_INTEGER __Time1970( void )
     return time1970;
 }
 
-WINUX_FUNC_IMPL(bool) SetFileTime( String const & filename, time_t ctime, time_t mtime, time_t atime )
+WINPLUS_FUNC_IMPL(bool) SetFileTime( String const & filename, time_t ctime, time_t mtime, time_t atime )
 {
     FILETIME cft = { 0 }, mft = { 0 }, aft = { 0 };
     ULARGE_INTEGER uli;
@@ -417,7 +423,7 @@ WINPLUS_FUNC_IMPL(String) GetErrorStr( DWORD err )
         NULL,
         err,
         0,
-        (LPSTR)&buf,
+        (LPTSTR)&buf,
         256,
         NULL
     );
@@ -775,12 +781,11 @@ static Mixed __RegValueToMixed( Buffer const & value, DWORD dwType, Mixed const 
     case REG_SZ: // MT_ANSI or MT_UNICODE
         {
             v.createString<tchar>();
-            size_t size = value.getSize();
-            if ( size > 0 )
+            size_t len = value.getSize() / sizeof(tchar);
+            if ( len > 0 )
             {
-                if ( value[size - 1] == '\0' ) size--;
-                //v._pStr->assign( value.get<char>(), size );
-                v.refString<tchar>() = value.toString<tchar>();
+                if ( value.get<tchar>()[len - 1] == 0 ) len--;
+                v.refString<tchar>().assign( value.get<tchar>(), len );
                 return v;
             }
         }
@@ -789,12 +794,11 @@ static Mixed __RegValueToMixed( Buffer const & value, DWORD dwType, Mixed const 
         {
             v.createCollection();
             String expandStr;
-            size_t size = value.getSize();
-            if ( size > 0 )
+            size_t len = value.getSize() / sizeof(tchar);
+            if ( len > 0 )
             {
-                if ( value[size - 1] == '\0' ) size--;
-                //expandStr.assign( value.get<char>(), size );
-                expandStr = value.toString<String::value_type>();
+                if ( value.get<tchar>()[len - 1] == 0 ) len--;
+                expandStr.assign( value.get<tchar>(), len );
                 v[REG_EXPAND_SZ] = expandStr;
                 return v;
             }
@@ -823,7 +827,7 @@ static Mixed __RegValueToMixed( Buffer const & value, DWORD dwType, Mixed const 
             TCHAR const * strlist = value.get<TCHAR>();
             while ( *strlist )
             {
-                size_t len = strlen(strlist);
+                size_t len = _tcslen(strlist);
                 v._pArr->push_back( String( strlist, len ) );
                 strlist += len + 1;
             }
@@ -899,11 +903,11 @@ static Buffer __RegValueFromMixed( Mixed const & v, DWORD * pdwType )
             GrowBuffer multiStrings;
             for ( auto it = v._pArr->begin(); it != v._pArr->end(); ++it )
             {
-                String str = it->toAnsi();
-                multiStrings.append( str.c_str(), str.length() + 1 );
+                String str = it->to<String>();
+                multiStrings.append( str.c_str(), ( str.length() + 1 ) * sizeof(String::value_type) );
             }
-            multiStrings.append('\0');
-            value = multiStrings;
+            multiStrings.appendType( _T('\0') );
+            value = std::move(multiStrings);
         }
         break;
     case Mixed::MT_COLLECTION:
@@ -1014,7 +1018,7 @@ bool Registry::Delete( String const & key, LPCTSTR lpValueName )
     }
     else
     {
-        auto p = strrchr( key.c_str(), '\\' );
+        auto p = _tcsrchr( key.c_str(), _T('\\') );
         if ( p && *( p + 1 ) ) // 不能是根键，eg: "HKLM", "HKLM\"
         {
             String parentKey( key.c_str(), p - key.c_str() );
@@ -1036,14 +1040,14 @@ bool Registry::Delete( String const & key, LPCTSTR lpValueName )
 bool Registry::ForceDelete( String const & key )
 {
     {
-        String szKey;
-        szKey.resize(256);
         Registry reg(key);
         if ( !reg ) return false;
+        String szKey;
+        szKey.resize(256);
         DWORD dw;
         for ( DWORD i = 0; ( dw = RegEnumKey( reg.key(), i, &szKey[0], (DWORD)szKey.size() ) ) != ERROR_NO_MORE_ITEMS; )
         {
-            bool b = ForceDelete( key + "\\" + szKey.c_str() );
+            bool b = ForceDelete( key + _T("\\") + szKey.c_str() );
             if ( !b ) i++;
         }
     }
@@ -1067,28 +1071,28 @@ Registry::Registry( String const & key, bool isCreateOnNotExists ) : _hkey(nullp
 {
     HKEY hkeyPredefined = nullptr;
     String::const_pointer strKey = key.c_str();
-    String::const_pointer str = strchr( strKey, '\\' );
+    String::const_pointer str = _tcschr( strKey, _T('\\') );
     if ( !str ) // 没搜到 '\\'
     {
         str = strKey + key.length();
     }
 
-    if ( !_strnicmp( strKey, "HKEY_CLASSES_ROOT", str - strKey ) || !_strnicmp( strKey, "HKCR", str - strKey ) )
+    if ( !_tcsnicmp( strKey, _T("HKEY_CLASSES_ROOT"), str - strKey ) || !_tcsnicmp( strKey, _T("HKCR"), str - strKey ) )
         hkeyPredefined = HKEY_CLASSES_ROOT;
-    else if ( !_strnicmp( strKey, "HKEY_CURRENT_CONFIG", str - strKey ) || !_strnicmp( strKey, "HKCC", str - strKey ) )
+    else if ( !_tcsnicmp( strKey, _T("HKEY_CURRENT_CONFIG"), str - strKey ) || !_tcsnicmp( strKey, _T("HKCC"), str - strKey ) )
         hkeyPredefined = HKEY_CURRENT_CONFIG;
-    else if ( !_strnicmp( strKey, "HKEY_CURRENT_USER", str - strKey ) || !_strnicmp( strKey, "HKCU", str - strKey ) )
+    else if ( !_tcsnicmp( strKey, _T("HKEY_CURRENT_USER"), str - strKey ) || !_tcsnicmp( strKey, _T("HKCU"), str - strKey ) )
         hkeyPredefined = HKEY_CURRENT_USER;
-    else if ( !_strnicmp( strKey, "HKEY_LOCAL_MACHINE", str - strKey ) || !_strnicmp( strKey, "HKLM", str - strKey ) )
+    else if ( !_tcsnicmp( strKey, _T("HKEY_LOCAL_MACHINE"), str - strKey ) || !_tcsnicmp( strKey, _T("HKLM"), str - strKey ) )
         hkeyPredefined = HKEY_LOCAL_MACHINE;
-    else if ( !_strnicmp( strKey, "HKEY_USERS", str - strKey ) || !_strnicmp( strKey, "HKU", str - strKey ) )
+    else if ( !_tcsnicmp( strKey, _T("HKEY_USERS"), str - strKey ) || !_tcsnicmp( strKey, _T("HKU"), str - strKey ) )
         hkeyPredefined = HKEY_USERS;
     else
     {
         hkeyPredefined = nullptr;
     }
 
-    if ( *str == '\\' ) str++; // skip '\\'
+    if ( *str == _T('\\') ) str++; // skip '\\'
 
     if ( hkeyPredefined != nullptr )
     {
@@ -1168,7 +1172,7 @@ bool Registry::enumValues( String * name, Mixed * pv ) const
         Buffer value;
         value.alloc(dwSize);
         _err = RegQueryValueEx( _hkey, name->c_str(), nullptr, &dwType, value.get<BYTE>(), &dwSize );
-        *pv = __RegValueToMixed( value, dwType, Mixed() );
+        *pv = __RegValueToMixed( value, dwType, mxNull );
         return true;
     }
     else
@@ -1209,5 +1213,6 @@ bool Registry::hasValue( String const & name ) const
     _err = RegQueryValueEx( _hkey, name.c_str(), nullptr, nullptr, nullptr, nullptr );
     return _err == ERROR_SUCCESS;
 }
+
 
 } // namespace winplus

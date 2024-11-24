@@ -1,6 +1,4 @@
-﻿/** 数据库相关支持类封装 */
-
-#ifndef __EIENDB_COMMON_HPP__
+﻿#ifndef __EIENDB_COMMON_HPP__
 #define __EIENDB_COMMON_HPP__
 
 #include "eiendb_base.hpp"
@@ -25,6 +23,8 @@ public:
     #endif
 
     virtual ~MemoryResult();
+
+    virtual bool free() override { return true; }
 
     /** \brief 添加一数据行，返回索引值 */
     template < typename _Ty >
@@ -59,10 +59,9 @@ public:
 
     virtual bool dataSeek( size_t index ) override;
     virtual bool fetchRow( winux::Mixed * fields, int type = 0 ) override;
-    virtual bool fetchRow( winux::MixedArray * fields ) override;
-    virtual bool fetchRow( winux::StringMixedMap * fields ) override;
+    virtual bool fetchArray( winux::MixedArray * fields ) override;
+    virtual bool fetchMap( winux::StringMixedMap * fields ) override;
     virtual winux::String fieldName( size_t fieldIndex ) override { return _fieldNames[fieldIndex]; }
-    virtual bool free() override { return true; }
     virtual size_t fieldsCount() override { return _fieldNames.size(); }
     virtual size_t rowsCount() override { return _dataRows.size(); }
     virtual winux::String fieldType( size_t fieldIndex ) override;
@@ -70,7 +69,7 @@ public:
 private:
     size_t _curRowIndex; // 当前行索引
     winux::StringArray _fieldNames; // 字段名称信息
-    std::vector<winux::MixedArray> _dataRows;// 作为内部数据
+    std::vector<winux::MixedArray> _dataRows; // 作为内部数据
 
     DISABLE_OBJECT_COPY(MemoryResult)
 };
@@ -78,26 +77,25 @@ private:
 /** \brief SQL脚本执行器。执行多条语句，保存结果和错误信息。 */
 class EIENDB_DLL SqlScript
 {
-private:
-    winux::StringArray _sqlArr;
-    winux::StringArray _errArr;
-    //std::vector< winux::SharedPointer<IDbResult> > _resArr;
-    IDbConnection * _cnn;
-
 public:
+    /** \brief 构造函数1
+     *
+     *  \param cnn 数据库连接 */
     SqlScript( IDbConnection * cnn );
-
-    /** \brief 加载SQL文本，返回识别的SQL条数 */
-    size_t loadSql( winux::String const & sqlText );
 
     /** \brief 加载SQL文件，返回识别的SQL条数 */
     size_t load( winux::IFile * sqlFile );
 
+    /** \brief SqlScript的进度回调函数指针类型 */
     typedef bool (* ProgressCallback)( SqlScript * script, size_t iCurSql, winux::String const & errStr, void * param );
 
     /** \brief 执行多条SQL，返回成功执行的SQL条数
      *
-     *  \param progress 回调函数指示执行进度，返回值false表示终止执行，返回值true继续执行 */
+     *  \param onErrorNext 是否错误时执行下条SQL
+     *  \param storeError 是否存下错误信息
+     *  \param progress 回调函数指示执行进度，返回值false表示终止执行，返回值true继续执行
+     *  \param param 回调函数的自定义参数
+     *  \return size_t */
     size_t exec(
         bool onErrorNext = false,
         bool storeError = true,
@@ -105,22 +103,22 @@ public:
         void * param = NULL
     );
 
+    /** \brief SQL语句数组 */
     winux::StringArray const & sqls() { return this->_sqlArr; }
+
+    /** \brief 错误信息数组 */
     winux::StringArray const & errors() { return this->_errArr; }
+
+private:
+    winux::StringArray _sqlArr;
+    winux::StringArray _errArr;
+    //std::vector< winux::SharedPointer<IDbResult> > _resArr;
+    IDbConnection * _cnn;
 };
 
 /** \brief 数据库备份器。把数据备份成SQL脚本，方便跨数据库转移。 */
 class EIENDB_DLL SqlBackup
 {
-private:
-    /** \brief '目标'数据库连接，要备份/恢复的数据库 */
-    IDbConnection * _cnn;
-    /** \brief '兼容到'数据库连接，用于跨数据库导出SQL脚本 */
-    IDbConnection * _compatible;
-    /** \brief 导入/导出文件的接口，注意读写权限 */
-    winux::IFile * _file;
-
-    winux::StringArray _tableNames;
 public:
     /** \brief 备份器构造函数
      *
@@ -134,8 +132,11 @@ public:
     /** \brief 备份进度种类 */
     enum BackupProgressType
     {
-        bptNone, bptBackupData, bptBackupStruct
+        bptNone, //!< 不在备份
+        bptBackupData, //!< 备份数据
+        bptBackupStruct //!< 备份结构
     };
+
     /** \brief 备份的进度数据 */
     struct BackupProgressData
     {
@@ -147,6 +148,8 @@ public:
         size_t rowsCount; //!< 行数 vaild if type=bptBackupData
         BackupProgressData() : type(bptNone), tblIndex(0), tblsCount(0), rowIndex(0), rowsCount(0) { }
     };
+
+    /** \brief SqlBackup的进度回调函数指针类型 */
     typedef bool (* ProgressCallback)( SqlBackup * backup, BackupProgressData * data, void * param );
 
     /** \brief 备份表结构 */
@@ -161,6 +164,16 @@ public:
     void backupDb( bool backupStructure = true, bool noDeleteFrom = false, ProgressCallback progress = NULL, void * param = NULL );
     /** \brief 恢复数据库 */
     bool resumeDb( bool onErrorNext = false, SqlScript::ProgressCallback progress = NULL, void * param = NULL );
+
+private:
+    /** \brief '目标'数据库连接，要备份/恢复的数据库 */
+    IDbConnection * _cnn;
+    /** \brief '兼容到'数据库连接，用于跨数据库导出SQL脚本 */
+    IDbConnection * _compatible;
+    /** \brief 导入/导出文件的接口，注意读写权限 */
+    winux::IFile * _file;
+    /** \brief 表名数组 */
+    winux::StringArray _tableNames;
 };
 
 /** \brief 数据库操作 */
@@ -172,11 +185,24 @@ public:
      *  MYSQL：
      *  {
      *      driver: "mysql",
-     *      host: 数据库ip地址,
+     *      host: 数据库IP地址[:端口号],
      *      user: 用户名,
      *      pwd: 密码,
      *      dbname: 数据库名,
      *      charset: 校验字符集
+     *  }
+     *  \n
+     *  PGSQL：
+     *  {
+     *      driver: "pgsql",
+     *      host: 数据库IP地址[:端口号][, ...],
+     *      user: 用户名,
+     *      pwd: 密码,
+     *      dbname: 数据库名,
+     *      charset: 校验字符集,
+     *      schema: PostgreSQL模式名，默认"public",
+     *      options: 传递到客户端命令行的选项，默认"",
+     *      single_row: 单行查询模式 0:默认多行模式 1:保持单行模式 2:一次单行模式
      *  }
      *  \n
      *  SQLITE：
@@ -200,13 +226,16 @@ public:
     winux::SharedPointer<IDbModifier> mdf( winux::String const & tableName );
     /** \brief 获取配置参数的引用 */
     winux::Mixed const & config() const { return _configParams; }
-    //winux::Mixed & config() { return _configParams; }
+    /** \brief 获取配置参数的引用 */
+    winux::Mixed & config() { return _configParams; }
+
 private:
     void _doCreateConnection();
     winux::Mixed _configParams;
     winux::SimplePointer<IDbConnection> _cnn;
 };
 
-}
+
+} // namespace eiendb
 
 #endif // __EIENDB_COMMON_HPP__

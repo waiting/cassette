@@ -14,7 +14,7 @@ static char THIS_FILE[] = __FILE__;
 // The one and only CassetteApp object
 CassetteApp g_theApp;
 // GDI+ initialize
-winplus::GdiplusInit g_initGdiplus;
+GdiplusInit g_initGdiplus;
 /////////////////////////////////////////////////////////////////////////////
 // CassetteApp
 
@@ -51,16 +51,16 @@ BOOL CassetteApp::InitInstance()
     Enable3dControlsStatic();   // Call this when linking to MFC statically
 #endif
 
-    winplus::StringArray argArr;
-    winplus::CommandArgumentArray(&argArr);
-    auto args = winplus::CommandArgs(&argArr);
+    StringArray argArr;
+    CommandArgumentArray(&argArr);
+    auto args = CommandArgs(&argArr);
 
     // 命令行解释
-    winplus::CommandLineVars cmd( (int)argArr.size(), &args[0], "-url", "", "--verbose" );
+    CommandLineVars cmd( (int)argArr.size(), &args[0], "-url", "", "--verbose" );
     // 解释URL
     if ( cmd.hasParam("-url") )
     {
-        winplus::Win32GUI_ShowConsole();
+        Win32GUI_ShowConsole();
 
         std::cout << cmd.getParam("-url") << std::endl;
 
@@ -70,7 +70,7 @@ BOOL CassetteApp::InitInstance()
     // 开启命令行窗口输出详细信息
     if ( cmd. hasFlag("--verbose") )
     {
-        winplus::Win32GUI_ShowConsole();
+        Win32GUI_ShowConsole();
     }
 
     // 单例运行
@@ -88,8 +88,8 @@ BOOL CassetteApp::InitInstance()
 
     if ( isSavePassword ) // 载入保存的用户和密码
     {
-        username = winplus::DecryptContent( winplus::Base64Decode(m_settings.username) ).c_str();
-        password = winplus::DecryptContent( winplus::Base64Decode(m_settings.password) ).c_str();
+        username = DecryptContent( Base64Decode(m_settings.username) ).c_str();
+        password = DecryptContent( Base64Decode(m_settings.password) ).c_str();
     }
 
     if ( isAutoLogin && !username.IsEmpty() && LoginUser( g_theApp.GetDatabase(), username, password, &m_loginedUser ) ) // 自动登录
@@ -111,8 +111,8 @@ BOOL CassetteApp::InitInstance()
                 m_settings.isSavePassword = isSavePassword != FALSE;
                 if ( isSavePassword ) // 保存用户和密码
                 {
-                    m_settings.username = winplus::Base64Encode( winplus::EncryptContent( (LPCSTR)username ) );
-                    m_settings.password = winplus::Base64Encode( winplus::EncryptContent( (LPCSTR)password ) );
+                    m_settings.username = Base64Encode( EncryptContent( AnsiString((LPCSTR)username) ) );
+                    m_settings.password = Base64Encode( EncryptContent( AnsiString((LPCSTR)password) ) );
                 }
                 else
                 {
@@ -154,23 +154,23 @@ int CassetteApp::ExitInstance()
 
 void CassetteApp::InitDatabaseSchema()
 {
-    winplus::AnsiString sql;
-    winplus::StringArray sqls;
+    AnsiString sql;
+    StringArray sqls;
     int nSQLs, i;
-    winplus::Resource ResSQL( IDR_SQL_DBSCHEMA, _T("SQL") );
+    Resource ResSQL( IDR_SQL_DBSCHEMA, _T("SQL") );
     if ( !ResSQL ) goto OccurDbError;
     sql.resize( ResSQL.getSize() );
     if ( sql.size() ) ResSQL.copyTo( &sql[0], (DWORD)sql.size() );
-    nSQLs = (int)winplus::StrSplit( sql, _T(";"), &sqls );
+    nSQLs = (int)StrSplit( sql, _T(";"), &sqls );
     try
     {
         for ( i = 0; i < nSQLs; ++i )
         {
-            if ( winplus::StrTrim(sqls[i]).empty() ) continue;
+            if ( StrTrim(sqls[i]).empty() ) continue;
             m_db->cnn()->exec( sqls[i].c_str() );
         }
     }
-    catch ( winplus::Error const & e )
+    catch ( Error const & e )
     {
         AfxMessageBox( e.what(), MB_ICONERROR );
     }
@@ -183,30 +183,30 @@ OccurDbError:
 
 void CassetteApp::OpenDatabase()
 {
-    winplus::String databasePath = ExplainCustomVars(m_settings.databasePath);
-    winplus::AnsiString encryptKey;
-    winplus::Resource objResDbKey;
+    String databasePath = ExplainCustomVars(m_settings.databasePath);
+    AnsiString encryptKey;
+    Resource objResDbKey;
     // 从资源加载KEY
     if ( objResDbKey.load( IDR_KEY_DB, _T("KEY") ) )
     {
-        winplus::AnsiString keyJson;
+        AnsiString keyJson;
         keyJson.assign( objResDbKey.getData<char>(), objResDbKey.getSize() );
-        encryptKey = winplus::Mixed().json(keyJson).get("key");
+        encryptKey = Mixed().json(keyJson).get("key");
     }
 
     // 判断数据库文件是否存在，不存在则需要初始化
-    bool isNeedInit = !winplus::DetectPath(databasePath);
+    bool isNeedInit = !DetectPath(databasePath);
 
     try
     {
-        m_db = new eiendb::Database( winplus::$c{
+        m_db = new eiendb::Database( $c{
             { "driver", "sqlite" },
             { "path", databasePath },
             { "dbkey", encryptKey },
             { "charset", "" }
         } );
     }
-    catch ( winplus::Error const & e )
+    catch ( Error const & e )
     {
         AfxMessageBox( e.what(), MB_ICONERROR );
     }
@@ -228,12 +228,12 @@ void CassetteApp::CloseDatabase()
 
 void CassetteApp::OpenWordslib()
 {
-    winplus::String wordslibPath = ExplainCustomVars(m_settings.wordslibPath);
+    String wordslibPath = ExplainCustomVars(m_settings.wordslibPath);
     try
     {
-        m_wordslib = new winplus::WordsLib(wordslibPath);
+        m_wordslib = new WordsLib(wordslibPath);
     }
-    catch ( winplus::WordsLibException const & e )
+    catch ( WordsLibException const & e )
     {
         AfxMessageBox( e.what() );
     }
@@ -268,20 +268,20 @@ bool CassetteApp::ResumeData( CString const & filename )
 
 void CassetteApp::LoadSettings( UINT flag )
 {
-    winplus::Ini settingsIni( winplus::ModulePath() + winplus::dirSep + winplus::LoadString(AFX_IDS_APP_TITLE) + TEXT(".ini") );
-    winplus::String sname = winplus::LoadString(AFX_IDS_APP_TITLE);
-    winplus::Ini::Section sec = settingsIni( sname.c_str() );
+    Ini settingsIni( ModulePath() + dirSep + LoadString(AFX_IDS_APP_TITLE) + TEXT(".ini") );
+    String sname = LoadString(AFX_IDS_APP_TITLE);
+    Ini::Section sec = settingsIni( sname.c_str() );
 
-    if ( flag & Setting_EnabledAutoRun ) winplus::Mixed::ParseBool( sec.get( _T("EnabledAutoRun"), _T("false") ), &m_settings.isEnabledAutoRun );
-    if ( flag & Setting_EnabledHotkey ) winplus::Mixed::ParseBool( sec.get( _T("EnabledHotkey"), _T("true") ), &m_settings.isEnabledHotkey );
-    if ( flag & Setting_EnabledHttpSrv ) winplus::Mixed::ParseBool( sec.get( _T("EnabledHttpSrv"), _T("false") ), &m_settings.isEnabledHttpSrv );
-    if ( flag & Setting_EnabledScheme ) winplus::Mixed::ParseBool( sec.get( _T("EnabledScheme"), _T("false") ), &m_settings.isEnabledScheme );
-    if ( flag & Setting_DatabasePath ) m_settings.databasePath = sec.get( _T("DatabasePath"), winplus::Format( _T("$ROOT$\\%s.db"), winplus::LoadString(AFX_IDS_APP_TITLE).c_str() ) );
+    if ( flag & Setting_EnabledAutoRun ) ParseBool( sec.get( _T("EnabledAutoRun"), _T("false") ), &m_settings.isEnabledAutoRun );
+    if ( flag & Setting_EnabledHotkey ) ParseBool( sec.get( _T("EnabledHotkey"), _T("true") ), &m_settings.isEnabledHotkey );
+    if ( flag & Setting_EnabledHttpSrv ) ParseBool( sec.get( _T("EnabledHttpSrv"), _T("false") ), &m_settings.isEnabledHttpSrv );
+    if ( flag & Setting_EnabledScheme ) ParseBool( sec.get( _T("EnabledScheme"), _T("false") ), &m_settings.isEnabledScheme );
+    if ( flag & Setting_DatabasePath ) m_settings.databasePath = sec.get( _T("DatabasePath"), Format( _T("$ROOT$\\%s.db"), LoadString(AFX_IDS_APP_TITLE).c_str() ) );
     if ( flag & Setting_BackupPath ) m_settings.backupPath = sec.get( _T("BackupPath"), _T("$ROOT$") );
     if ( flag & Setting_WordslibPath ) m_settings.wordslibPath = sec.get( _T("WordslibPath"), _T("$ROOT$\\words.wl") );
 
-    if ( flag & Setting_AutoLogin ) winplus::Mixed::ParseBool( sec.get( _T("AutoLogin"), _T("false") ), &m_settings.isAutoLogin );
-    if ( flag & Setting_SavePassword ) winplus::Mixed::ParseBool( sec.get( _T("SavePassword"), _T("false") ), &m_settings.isSavePassword );
+    if ( flag & Setting_AutoLogin ) ParseBool( sec.get( _T("AutoLogin"), _T("false") ), &m_settings.isAutoLogin );
+    if ( flag & Setting_SavePassword ) ParseBool( sec.get( _T("SavePassword"), _T("false") ), &m_settings.isSavePassword );
 
     if ( flag & Setting_Username ) m_settings.username = sec.get( _T("Username"), _T("") );
     if ( flag & Setting_Password ) m_settings.password = sec.get( _T("Password"), _T("") );
@@ -289,20 +289,20 @@ void CassetteApp::LoadSettings( UINT flag )
 
 void CassetteApp::SaveSettings( UINT flag )
 {
-    winplus::Ini settingsIni( winplus::ModulePath() + winplus::dirSep + winplus::LoadString(AFX_IDS_APP_TITLE) + TEXT(".ini") );
-    winplus::String sname = winplus::LoadString(AFX_IDS_APP_TITLE);
-    winplus::Ini::Section sec = settingsIni( sname.c_str() );
+    Ini settingsIni( ModulePath() + dirSep + LoadString(AFX_IDS_APP_TITLE) + TEXT(".ini") );
+    String sname = LoadString(AFX_IDS_APP_TITLE);
+    Ini::Section sec = settingsIni( sname.c_str() );
 
-    if ( flag & Setting_EnabledAutoRun ) sec.set( _T("EnabledAutoRun"), (winplus::String)winplus::Mixed(m_settings.isEnabledAutoRun) );
-    if ( flag & Setting_EnabledHotkey ) sec.set( _T("EnabledHotkey"), (winplus::String)winplus::Mixed(m_settings.isEnabledHotkey) );
-    if ( flag & Setting_EnabledHttpSrv ) sec.set( _T("EnabledHttpSrv"), (winplus::String)winplus::Mixed(m_settings.isEnabledHttpSrv) );
-    if ( flag & Setting_EnabledScheme ) sec.set( _T("EnabledScheme"), (winplus::String)winplus::Mixed(m_settings.isEnabledScheme) );
+    if ( flag & Setting_EnabledAutoRun ) sec.set( _T("EnabledAutoRun"), (String)Mixed(m_settings.isEnabledAutoRun) );
+    if ( flag & Setting_EnabledHotkey ) sec.set( _T("EnabledHotkey"), (String)Mixed(m_settings.isEnabledHotkey) );
+    if ( flag & Setting_EnabledHttpSrv ) sec.set( _T("EnabledHttpSrv"), (String)Mixed(m_settings.isEnabledHttpSrv) );
+    if ( flag & Setting_EnabledScheme ) sec.set( _T("EnabledScheme"), (String)Mixed(m_settings.isEnabledScheme) );
     if ( flag & Setting_DatabasePath ) sec.set( _T("DatabasePath"), m_settings.databasePath );
     if ( flag & Setting_BackupPath ) sec.set( _T("BackupPath"), m_settings.backupPath );
     if ( flag & Setting_WordslibPath ) sec.set( _T("WordslibPath"), m_settings.wordslibPath );
 
-    if ( flag & Setting_AutoLogin ) sec.set( _T("AutoLogin"), (winplus::String)winplus::Mixed(m_settings.isAutoLogin) );
-    if ( flag & Setting_SavePassword ) sec.set( _T("SavePassword"), (winplus::String)winplus::Mixed(m_settings.isSavePassword) );
+    if ( flag & Setting_AutoLogin ) sec.set( _T("AutoLogin"), (String)Mixed(m_settings.isAutoLogin) );
+    if ( flag & Setting_SavePassword ) sec.set( _T("SavePassword"), (String)Mixed(m_settings.isSavePassword) );
 
     if ( flag & Setting_Username ) sec.set( _T("Username"), m_settings.username );
     if ( flag & Setting_Password ) sec.set( _T("Password"), m_settings.password );
@@ -343,17 +343,17 @@ void CassetteApp::DoSettings( UINT flag )
 
 void CassetteApp::EnableAutoRun( bool isEnabled, bool isForce /*= false */ )
 {
-    winplus::String keyNameAutoRun = "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run";
-    winplus::String appName = winplus::LoadString(AFX_IDS_APP_TITLE);
+    String keyNameAutoRun = "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run";
+    String appName = LoadString(AFX_IDS_APP_TITLE);
 
     Registry regAutoRun(keyNameAutoRun);
     if ( isEnabled )
     {
         if ( isForce || !regAutoRun.hasValue(appName) )
         {
-            winplus::String appFullPath;
-            appFullPath = winplus::ModulePath( NULL, &appFullPath ) + winplus::dirSep + appFullPath;
-            if ( appFullPath.find(' ') != winplus::String::npos )
+            String appFullPath;
+            appFullPath = ModulePath( NULL, &appFullPath ) + dirSep + appFullPath;
+            if ( appFullPath.find(' ') != String::npos )
                 appFullPath = TEXT("\"") + appFullPath + TEXT("\"");
 
             regAutoRun.setValue( appName, appFullPath );
@@ -375,7 +375,7 @@ void CassetteApp::EnableHttpService( bool isEnabled )
 
 void CassetteApp::EnableScheme( bool isEnabled )
 {
-    winplus::AnsiString keyNameScheme = "HKEY_CLASSES_ROOT\\account";
+    AnsiString keyNameScheme = "HKEY_CLASSES_ROOT\\account";
     if ( isEnabled )
     {
         if ( !Registry::Exists(keyNameScheme) )
@@ -384,11 +384,11 @@ void CassetteApp::EnableScheme( bool isEnabled )
             regNameScheme.setValue( "", "Account URL Protocol" );
             regNameScheme.setValue( "URL Protocol", "" );
 
-            winplus::String appFullPath;
-            appFullPath = winplus::ModulePath( NULL, &appFullPath ) + winplus::dirSep + appFullPath;
+            String appFullPath;
+            appFullPath = ModulePath( NULL, &appFullPath ) + dirSep + appFullPath;
             Registry( regNameScheme.key(), "DefaultIcon", true ).setValue( "", appFullPath + ",0" );
 
-            if ( appFullPath.find(' ') != winplus::String::npos )
+            if ( appFullPath.find(' ') != String::npos )
                 appFullPath = TEXT("\"") + appFullPath + TEXT("\"");
 
             Registry( regNameScheme.key(), "shell\\open\\command", true ).setValue( "", appFullPath + " -url \"%1\"" );
@@ -405,16 +405,16 @@ void CassetteApp::EnableScheme( bool isEnabled )
 
 BOOL CassetteApp::DoSingletonRunning()
 {
-    //winplus::String sharedMemName = winplus::LoadString(IDS_SHAREDMEM_NAME);
+    String sharedMemName = LoadString(IDS_SHAREDMEM_NAME);
     //if ( m_sharedMem.open(sharedMemName) )
     //{
     //    HWND hwndMain = m_sharedMem->hMainWnd;
 
-    //    if ( winplus::Window_IsShow(hwndMain) )
+    //    if ( Window_IsShow(hwndMain) )
     //        SetForegroundWindow(hwndMain);
     //    else
     //    {
-    //        winplus::Window_Show(hwndMain);
+    //        Window_Show(hwndMain);
     //        SetForegroundWindow(hwndMain);
     //    }
     //    return FALSE;
@@ -424,18 +424,18 @@ BOOL CassetteApp::DoSingletonRunning()
     //    m_sharedMem.create(sharedMemName);
     //}
 
-    if ( !m_sharedMem.create(IDS_SHAREDMEM_NAME) ) return FALSE;
+    if ( !m_sharedMem.create(sharedMemName) ) return FALSE;
 
     HWND hwndMain = m_sharedMem->hMainWnd;
     if ( hwndMain != NULL )
     {
-        if ( winplus::Window_IsShow(hwndMain) )
+        if ( Window_IsShow(hwndMain) )
         {
             SetForegroundWindow(hwndMain);
         }
         else
         {
-            winplus::Window_Show(hwndMain);
+            Window_Show(hwndMain);
             SetForegroundWindow(hwndMain);
         }
         return FALSE;

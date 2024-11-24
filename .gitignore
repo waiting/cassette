@@ -5,7 +5,6 @@ objs/
 ipch/
 nouse/
 thirdparties-bak/
-thirdparties/
 *.opt
 *.ncb
 *.aps

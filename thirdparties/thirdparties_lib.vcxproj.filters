@@ -185,14 +185,14 @@
     <None Include="winux\include\is_x_funcs.inl">
       <Filter>头文件\winux</Filter>
     </None>
-    <None Include="winux\include\mixed_ref_specified_type.inl">
-      <Filter>头文件\winux</Filter>
-    </None>
     <None Include="winux\include\system_detection.inl">
       <Filter>头文件\winux</Filter>
     </None>
     <None Include="sqlite3secure\src\sqlite3.def">
       <Filter>源文件\sqlite3secure</Filter>
+    </None>
+    <None Include="winux\include\literal_str.inl">
+      <Filter>头文件\winux</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
@@ -218,9 +218,6 @@
       <Filter>源文件\winux</Filter>
     </ClCompile>
     <ClCompile Include="winux\src\md5.cpp">
-      <Filter>源文件\winux</Filter>
-    </ClCompile>
-    <ClCompile Include="winux\src\sha1.cpp">
       <Filter>源文件\winux</Filter>
     </ClCompile>
     <ClCompile Include="winux\src\smartptr.cpp">

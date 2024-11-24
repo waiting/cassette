@@ -203,7 +203,7 @@ unsigned int FormatZipMessage(ZRESULT code, TCHAR *buf,unsigned int len);
 // one or the other of them based on a dynamic choice. If the header file
 // for only one is present, then we will bind to that particular one.
 ZRESULT CloseZipZ(HZIP hz);
-unsigned int FormatZipMessageZ(ZRESULT code, char *buf,unsigned int len);
+unsigned int FormatZipMessageZ(ZRESULT code, TCHAR *buf,unsigned int len);
 bool IsZipHandleZ(HZIP hz);
 #ifdef __UNZIP_H__
 #undef CloseZip

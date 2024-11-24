@@ -34,7 +34,7 @@ public:
     /** \brief 构造函数 毫秒数 */
     DateTimeL( MilliSec const & utcMillisec );
     /** \brief 构造函数 格式 xxxx-xx-xxTyy:yy:yy.zzz */
-    DateTimeL( String const & dateTimeStr );
+    explicit DateTimeL( String const & dateTimeStr );
 
     short getYear() const { return _year; }
     short getMonth() const { return _month; }
@@ -59,7 +59,15 @@ public:
     time_t toUtcTime() const;
     uint64 toUtcTimeMs() const;
 
-    String toString() const;
+    template <
+    #if defined(_UNICODE) || defined(UNICODE)
+        typename _ChTy = wchar
+    #else
+        typename _ChTy = char
+    #endif
+    >
+    XString<_ChTy> toString() const;
+
     /** \brief 从当前时间构建DateTimeL */
     DateTimeL & fromCurrent();
     /** \brief 从struct tm结构构建DateTimeL */
@@ -69,6 +77,7 @@ public:
     static ulong GetSecondsFromDays( int days ) { return days * 86400UL; }
     static ulong GetSecondsFromHours( int hours ) { return hours * 3600UL; }
     static ulong GetSecondsFromMinutes( int minutes ) { return minutes * 60; }
+
 private:
     short _millisec;//!< 毫秒 [0~999]
     short _second;  //!< 秒 [0~59]
@@ -81,7 +90,13 @@ private:
     short _yday;    //!< 年第几日[1~366,1=January 1]
 };
 
+template <>
+WINUX_FUNC_DECL(XString<char>) DateTimeL::toString() const;
+template <>
+WINUX_FUNC_DECL(XString<wchar>) DateTimeL::toString() const;
+
 WINUX_FUNC_DECL(std::ostream &) operator << ( std::ostream & o, DateTimeL const & dt );
+WINUX_FUNC_DECL(std::wostream &) operator << ( std::wostream & o, DateTimeL const & dt );
 
 /** \brief 获取UTC时间毫秒数,UTC秒数可以直接除以1000,或者调用CRT的time(NULL) */
 WINUX_FUNC_DECL(uint64) GetUtcTimeMs( void );

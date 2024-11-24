@@ -8,131 +8,104 @@
 
 namespace winux
 {
-// 生成不同类型的字符/字符串字面量
-#define LITERAL_ITEM_SC( ty, name, pref, content ) \
-    static constexpr ty const *name##Str = pref##content; \
-    static constexpr ty const name##Char = name##Str[0];
+/** \brief C字符串转到XString
+ *
+ *  \param str C字符串。如果是nullptr则处理成空串""
+ *  \param len 长度。默认npos，表示遇到NUL字符结束 */
+template < typename _ChTy >
+inline static XString<_ChTy> CharSeqToString( _ChTy const * str, size_t len = npos )
+{
+    str = str ? str : winux::Literal<_ChTy>::nulStr;
+    return (ssize_t)len < 0 ? XString<_ChTy>(str) : XString<_ChTy>( str, len );
+}
 
-#define LITERAL_ITEM_S( ty, name, pref, content ) \
-    static constexpr ty const *name##Str = pref##content;
+/** \brief 字符转成16进制串形式 */
+template < typename _RetChTy, typename _ChTy = _RetChTy >
+inline static XString<_RetChTy> CharToHexStr( _ChTy ch, bool padZero = false )
+{
+    _RetChTy str[sizeof(ch) * 2 + 1] = { (_RetChTy)0 };
+    byte * pbyt = (byte*)&ch;
+    ssize_t i = sizeof(ch) - 1;
+    ssize_t j = 0;
+    bool hadNonZero = padZero;
+    for ( ; i >= 0; --i )
+    {
+        if ( pbyt[i] && !hadNonZero ) hadNonZero = true;
+        if ( hadNonZero )
+        {
+            str[j * 2] = Literal<_RetChTy>::hexadecLowerStr[((pbyt[i] & (byte)0xF0) >> 4)];
+            str[j * 2 + 1] = Literal<_RetChTy>::hexadecLowerStr[(pbyt[i] & (byte)0xF)];
+            j++;
+        }
+    }
+    if ( j == 0 )
+    {
+        str[0] = Literal<_RetChTy>::zeroChar;
+        str[1] = Literal<_RetChTy>::zeroChar;
+    }
+    return str;
+}
 
-#define LITERAL_ITEM_LIST( ty, pref ) \
-    LITERAL_ITEM_SC(ty, A, pref, "A") \
-    LITERAL_ITEM_SC(ty, B, pref, "B") \
-    LITERAL_ITEM_SC(ty, C, pref, "C") \
-    LITERAL_ITEM_SC(ty, D, pref, "D") \
-    LITERAL_ITEM_SC(ty, E, pref, "E") \
-    LITERAL_ITEM_SC(ty, F, pref, "F") \
-    LITERAL_ITEM_SC(ty, X, pref, "X") \
-    LITERAL_ITEM_SC(ty, Z, pref, "Z") \
-    LITERAL_ITEM_SC(ty, a, pref, "a") \
-    LITERAL_ITEM_SC(ty, b, pref, "b") \
-    LITERAL_ITEM_SC(ty, c, pref, "c") \
-    LITERAL_ITEM_SC(ty, d, pref, "d") \
-    LITERAL_ITEM_SC(ty, e, pref, "e") \
-    LITERAL_ITEM_SC(ty, f, pref, "f") \
-    LITERAL_ITEM_SC(ty, n, pref, "n") \
-    LITERAL_ITEM_SC(ty, r, pref, "r") \
-    LITERAL_ITEM_SC(ty, t, pref, "t") \
-    LITERAL_ITEM_SC(ty, v, pref, "v") \
-    LITERAL_ITEM_SC(ty, x, pref, "x") \
-    LITERAL_ITEM_SC(ty, z, pref, "z") \
-    LITERAL_ITEM_SC(ty, zero, pref, "0") \
-    LITERAL_ITEM_SC(ty, one, pref, "1") \
-    LITERAL_ITEM_SC(ty, two, pref, "2") \
-    LITERAL_ITEM_SC(ty, three, pref, "3") \
-    LITERAL_ITEM_SC(ty, four, pref, "4") \
-    LITERAL_ITEM_SC(ty, five, pref, "5") \
-    LITERAL_ITEM_SC(ty, six, pref, "6") \
-    LITERAL_ITEM_SC(ty, seven, pref, "7") \
-    LITERAL_ITEM_SC(ty, eight, pref, "8") \
-    LITERAL_ITEM_SC(ty, nine, pref, "9") \
-    LITERAL_ITEM_SC(ty, nul, pref, "\0") \
-    LITERAL_ITEM_SC(ty, bel, pref, "\a") \
-    LITERAL_ITEM_SC(ty, bs, pref, "\b") \
-    LITERAL_ITEM_SC(ty, ht, pref, "\t") \
-    LITERAL_ITEM_SC(ty, lf, pref, "\n") \
-    LITERAL_ITEM_SC(ty, vt, pref, "\v") \
-    LITERAL_ITEM_SC(ty, ff, pref, "\f") \
-    LITERAL_ITEM_SC(ty, cr, pref, "\r") \
-    LITERAL_ITEM_S(ty, empty, pref, "") \
-    LITERAL_ITEM_SC(ty, space, pref, " ") \
-    LITERAL_ITEM_SC(ty, under, pref, "_") \
-    LITERAL_ITEM_SC(ty, dollar, pref, "$") \
-    LITERAL_ITEM_SC(ty, slash, pref, "\\") \
-    LITERAL_ITEM_SC(ty, divide, pref, "/") \
-    LITERAL_ITEM_SC(ty, positive, pref, "+") \
-    LITERAL_ITEM_SC(ty, negative, pref, "-") \
-    LITERAL_ITEM_SC(ty, quote, pref, "\"") \
-    LITERAL_ITEM_SC(ty, apos, pref, "\'") \
-    LITERAL_ITEM_SC(ty, sharp, pref, "#") \
-    LITERAL_ITEM_SC(ty, caret, pref, "^") \
-    LITERAL_ITEM_SC(ty, pipe, pref, "|") \
-    LITERAL_ITEM_SC(ty, amp, pref, "&") \
-    LITERAL_ITEM_SC(ty, lt, pref, "<") \
-    LITERAL_ITEM_SC(ty, gt, pref, ">") \
-    LITERAL_ITEM_SC(ty, dbldivide, pref, "//") \
-    LITERAL_ITEM_S(ty, crlf, pref, "\r\n") \
-    LITERAL_ITEM_S(ty, slash_a, pref, "\\a") \
-    LITERAL_ITEM_S(ty, slash_b, pref, "\\b") \
-    LITERAL_ITEM_S(ty, slash_t, pref, "\\t") \
-    LITERAL_ITEM_S(ty, slash_n, pref, "\\n") \
-    LITERAL_ITEM_S(ty, slash_v, pref, "\\v") \
-    LITERAL_ITEM_S(ty, slash_f, pref, "\\f") \
-    LITERAL_ITEM_S(ty, slash_r, pref, "\\r") \
-    LITERAL_ITEM_S(ty, slash_x, pref, "\\x") \
-    LITERAL_ITEM_S(ty, cslashes, pref, "\n\r\t\v\a\\\'\"")
 
 template < typename _ChTy >
-struct Literal
-{
-    LITERAL_ITEM_LIST( char, );
-};
-
+size_t StrSplit( XString<_ChTy> const & str, XString<_ChTy> const & delimList, XStringArray<_ChTy> * arr, bool alwaysRetOneElem = false );
 template <>
-struct Literal<char>
-{
-    LITERAL_ITEM_LIST( char, );
-};
-
+WINUX_FUNC_DECL(size_t) StrSplit( XString<char> const & str, XString<char> const & delimList, XStringArray<char> * arr, bool alwaysRetOneElem );
 template <>
-struct Literal<wchar_t>
-{
-    LITERAL_ITEM_LIST( wchar_t, L );
-};
-
+WINUX_FUNC_DECL(size_t) StrSplit( XString<wchar> const & str, XString<wchar> const & delimList, XStringArray<wchar> * arr, bool alwaysRetOneElem );
 template <>
-struct Literal<char16_t>
-{
-    LITERAL_ITEM_LIST( char16_t, u );
-};
-
+WINUX_FUNC_DECL(size_t) StrSplit( XString<char16> const & str, XString<char16> const & delimList, XStringArray<char16> * arr, bool alwaysRetOneElem );
 template <>
-struct Literal<char32_t>
-{
-    LITERAL_ITEM_LIST( char32_t, U );
-};
-
-
-WINUX_FUNC_DECL(size_t) StrSplitA( AnsiString const & str, AnsiString const & delimList, AnsiStringArray * arr, bool alwaysRetOneElem = false );
-WINUX_FUNC_DECL(size_t) StrSplitW( UnicodeString const & str, UnicodeString const & delimList, UnicodeStringArray * arr, bool alwaysRetOneElem = false );
+WINUX_FUNC_DECL(size_t) StrSplit( XString<char32> const & str, XString<char32> const & delimList, XStringArray<char32> * arr, bool alwaysRetOneElem );
 /** \brief 字符串分割
  *
- *  delimList指示出分割符列表，分割符只能是一个字符，函数会把str内分割符间的内容(即使是空串)添加到arr中，返回个数。\n
- *  当alwaysRetOneElem==true时，即使str是空串时也会向arr返回一个数组元素，元素值是空串。
- *  \param str
- *  \param delimList
- *  \param arr
+ *  函数会把str内分割符间的内容(即使是空串)添加到arr中，返回个数。
+ *  \param str 待分割的内容
+ *  \param delimList 指示分割符列表，分割符只能是一个字符
+ *  \param arr 输出到的数组
+ *  \param alwaysRetOneElem 当为true时，即使str是空串时也会向arr返回一个数组元素，元素值是空串。
  *  \return size_t */
 #if defined(_UNICODE) || defined(UNICODE)
-inline size_t StrSplit( UnicodeString const & str, UnicodeString const & delimList, UnicodeStringArray * arr, bool alwaysRetOneElem = false ) { return StrSplitW( str, delimList, arr, alwaysRetOneElem ); }
+inline size_t StrSplit( UnicodeString const & str, UnicodeString const & delimList, UnicodeStringArray * arr, bool alwaysRetOneElem = false ) { return StrSplit<wchar>( str, delimList, arr, alwaysRetOneElem ); }
 #else
-inline size_t StrSplit( AnsiString const & str, AnsiString const & delimList, AnsiStringArray * arr, bool alwaysRetOneElem = false ) { return StrSplitA( str, delimList, arr, alwaysRetOneElem ); }
+inline size_t StrSplit( AnsiString const & str, AnsiString const & delimList, AnsiStringArray * arr, bool alwaysRetOneElem = false ) { return StrSplit<char>( str, delimList, arr, alwaysRetOneElem ); }
 #endif
 
 
-WINUX_FUNC_DECL(size_t) StrSplit2A( AnsiString const & str, AnsiString const & delim, AnsiStringArray * arr, bool alwaysRetOneElem = false );
-WINUX_FUNC_DECL(size_t) StrSplit2W( UnicodeString const & str, UnicodeString const & delim, UnicodeStringArray * arr, bool alwaysRetOneElem = false );
+template < typename _ChTy >
+XStringArray<_ChTy> StrSplit( XString<_ChTy> const & str, XString<_ChTy> const & delimList, bool alwaysRetOneElem = false );
+template <>
+WINUX_FUNC_DECL(XStringArray<char>) StrSplit( XString<char> const & str, XString<char> const & delimList, bool alwaysRetOneElem );
+template <>
+WINUX_FUNC_DECL(XStringArray<wchar>) StrSplit( XString<wchar> const & str, XString<wchar> const & delimList, bool alwaysRetOneElem );
+template <>
+WINUX_FUNC_DECL(XStringArray<char16>) StrSplit( XString<char16> const & str, XString<char16> const & delimList, bool alwaysRetOneElem );
+template <>
+WINUX_FUNC_DECL(XStringArray<char32>) StrSplit( XString<char32> const & str, XString<char32> const & delimList, bool alwaysRetOneElem );
+/** \brief 字符串分割
+ *
+ *  函数会把str内分割符间的内容(即使是空串)添加到arr中，返回个数。
+ *  \param str 待分割的内容
+ *  \param delimList 指示分割符列表，分割符只能是一个字符
+ *  \param alwaysRetOneElem 当为true时，即使str是空串时也会向arr返回一个数组元素，元素值是空串。
+ *  \return StringArray */
+#if defined(_UNICODE) || defined(UNICODE)
+inline UnicodeStringArray StrSplit( UnicodeString const & str, UnicodeString const & delimList, bool alwaysRetOneElem = false ) { return StrSplit<wchar>( str, delimList, alwaysRetOneElem ); }
+#else
+inline AnsiStringArray StrSplit( AnsiString const & str, AnsiString const & delimList, bool alwaysRetOneElem = false ) { return StrSplit<char>( str, delimList, alwaysRetOneElem ); }
+#endif
+
+
+template < typename _ChTy >
+size_t StrSplit2( XString<_ChTy> const & str, XString<_ChTy> const & delim, XStringArray<_ChTy> * arr, bool alwaysRetOneElem = false );
+template <>
+WINUX_FUNC_DECL(size_t) StrSplit2( XString<char> const & str, XString<char> const & delim, XStringArray<char> * arr, bool alwaysRetOneElem );
+template <>
+WINUX_FUNC_DECL(size_t) StrSplit2( XString<wchar> const & str, XString<wchar> const & delim, XStringArray<wchar> * arr, bool alwaysRetOneElem );
+template <>
+WINUX_FUNC_DECL(size_t) StrSplit2( XString<char16> const & str, XString<char16> const & delim, XStringArray<char16> * arr, bool alwaysRetOneElem );
+template <>
+WINUX_FUNC_DECL(size_t) StrSplit2( XString<char32> const & str, XString<char32> const & delim, XStringArray<char32> * arr, bool alwaysRetOneElem );
 /** \brief 字符串分割2
  *
  *  delim指示出分割字符串，函数会把str内分割字符串间的内容(即使是空串)添加到arr中，返回个数。\n
@@ -142,120 +115,261 @@ WINUX_FUNC_DECL(size_t) StrSplit2W( UnicodeString const & str, UnicodeString con
  *  \param arr
  *  \return size_t */
 #if defined(_UNICODE) || defined(UNICODE)
-inline size_t StrSplit2( UnicodeString const & str, UnicodeString const & delim, UnicodeStringArray * arr, bool alwaysRetOneElem = false ) { return StrSplit2W( str, delim, arr, alwaysRetOneElem ); }
+inline size_t StrSplit2( UnicodeString const & str, UnicodeString const & delim, UnicodeStringArray * arr, bool alwaysRetOneElem = false ) { return StrSplit2<wchar>( str, delim, arr, alwaysRetOneElem ); }
 #else
-inline size_t StrSplit2( AnsiString const & str, AnsiString const & delim, AnsiStringArray * arr, bool alwaysRetOneElem = false ) { return StrSplit2A( str, delim, arr, alwaysRetOneElem ); }
+inline size_t StrSplit2( AnsiString const & str, AnsiString const & delim, AnsiStringArray * arr, bool alwaysRetOneElem = false ) { return StrSplit2<char>( str, delim, arr, alwaysRetOneElem ); }
 #endif
 
 
-WINUX_FUNC_DECL(AnsiString) StrJoinA( AnsiString const & delim, AnsiStringArray const & arr );
-WINUX_FUNC_DECL(UnicodeString) StrJoinW( UnicodeString const & delim, UnicodeStringArray const & arr );
+template < typename _ChTy >
+XStringArray<_ChTy> StrSplit2( XString<_ChTy> const & str, XString<_ChTy> const & delim, bool alwaysRetOneElem = false );
+template <>
+WINUX_FUNC_DECL(XStringArray<char>) StrSplit2( XString<char> const & str, XString<char> const & delim, bool alwaysRetOneElem );
+template <>
+WINUX_FUNC_DECL(XStringArray<wchar>) StrSplit2( XString<wchar> const & str, XString<wchar> const & delim, bool alwaysRetOneElem );
+template <>
+WINUX_FUNC_DECL(XStringArray<char16>) StrSplit2( XString<char16> const & str, XString<char16> const & delim, bool alwaysRetOneElem );
+template <>
+WINUX_FUNC_DECL(XStringArray<char32>) StrSplit2( XString<char32> const & str, XString<char32> const & delim, bool alwaysRetOneElem );
+/** \brief 字符串分割2
+ *
+ *  delim指示出分割字符串，函数会把str内分割字符串间的内容(即使是空串)添加到arr中，返回个数。\n
+ *  当alwaysRetOneElem==true时，即使str是空串时也会向arr返回一个数组元素，元素值是空串。
+ *  \param str
+ *  \param delim
+ *  \return StringArray */
+#if defined(_UNICODE) || defined(UNICODE)
+inline UnicodeStringArray StrSplit2( UnicodeString const & str, UnicodeString const & delim, bool alwaysRetOneElem = false ) { return StrSplit2<wchar>( str, delim, alwaysRetOneElem ); }
+#else
+inline AnsiStringArray StrSplit2( AnsiString const & str, AnsiString const & delim, bool alwaysRetOneElem = false ) { return StrSplit2<char>( str, delim, alwaysRetOneElem ); }
+#endif
+
+
+template < typename _ChTy >
+XString<_ChTy> StrJoin( XString<_ChTy> const & delim, XStringArray<_ChTy> const & arr );
+template <>
+WINUX_FUNC_DECL(XString<char>) StrJoin( XString<char> const & delim, XStringArray<char> const & arr );
+template <>
+WINUX_FUNC_DECL(XString<wchar>) StrJoin( XString<wchar> const & delim, XStringArray<wchar> const & arr );
+template <>
+WINUX_FUNC_DECL(XString<char16>) StrJoin( XString<char16> const & delim, XStringArray<char16> const & arr );
+template <>
+WINUX_FUNC_DECL(XString<char32>) StrJoin( XString<char32> const & delim, XStringArray<char32> const & arr );
 /** \brief 字符串组合连接 */
 #if defined(_UNICODE) || defined(UNICODE)
-inline UnicodeString StrJoin( UnicodeString const & delim, UnicodeStringArray const & arr ) { return StrJoinW( delim, arr ); }
+inline UnicodeString StrJoin( UnicodeString const & delim, UnicodeStringArray const & arr ) { return StrJoin<wchar>( delim, arr ); }
 #else
-inline AnsiString StrJoin( AnsiString const & delim, AnsiStringArray const & arr ) { return StrJoinA( delim, arr ); }
+inline AnsiString StrJoin( AnsiString const & delim, AnsiStringArray const & arr ) { return StrJoin<char>( delim, arr ); }
 #endif
 
 
-WINUX_FUNC_DECL(AnsiString) StrJoinExA( AnsiString const & delim, AnsiStringArray const & arr, size_t start = 0, size_t elemCount = -1 );
-WINUX_FUNC_DECL(UnicodeString) StrJoinExW( UnicodeString const & delim, UnicodeStringArray const & arr, size_t start = 0, size_t elemCount = -1 );
+template < typename _ChTy >
+XString<_ChTy> StrJoinEx( XString<_ChTy> const & delim, XStringArray<_ChTy> const & arr, size_t start = 0, size_t elemCount = -1  );
+template <>
+WINUX_FUNC_DECL(XString<char>) StrJoinEx( XString<char> const & delim, XStringArray<char> const & arr, size_t start, size_t elemCount );
+template <>
+WINUX_FUNC_DECL(XString<wchar>) StrJoinEx( XString<wchar> const & delim, XStringArray<wchar> const & arr, size_t start, size_t elemCount );
+template <>
+WINUX_FUNC_DECL(XString<char16>) StrJoinEx( XString<char16> const & delim, XStringArray<char16> const & arr, size_t start, size_t elemCount );
+template <>
+WINUX_FUNC_DECL(XString<char32>) StrJoinEx( XString<char32> const & delim, XStringArray<char32> const & arr, size_t start, size_t elemCount );
 /** \brief 字符串组合连接。start表示开始位置，elemCount表示自开始位置的元素数，默认-1表示自开始位置的全部元素 */
 #if defined(_UNICODE) || defined(UNICODE)
-inline UnicodeString StrJoinEx( UnicodeString const & delim, UnicodeStringArray const & arr, size_t start = 0, size_t elemCount = -1 ) { return StrJoinExW( delim, arr, start, elemCount ); }
+inline UnicodeString StrJoinEx( UnicodeString const & delim, UnicodeStringArray const & arr, size_t start = 0, size_t elemCount = -1 ) { return StrJoinEx<wchar>( delim, arr, start, elemCount ); }
 #else
-inline AnsiString StrJoinEx( AnsiString const & delim, AnsiStringArray const & arr, size_t start = 0, size_t elemCount = -1 ) { return StrJoinExA( delim, arr, start, elemCount ); }
+inline AnsiString StrJoinEx( AnsiString const & delim, AnsiStringArray const & arr, size_t start = 0, size_t elemCount = -1 ) { return StrJoinEx<char>( delim, arr, start, elemCount ); }
 #endif
 
 
-WINUX_FUNC_DECL(AnsiString) StrInsertA( AnsiString const & str, size_t start, size_t end, AnsiString const & insert );
-WINUX_FUNC_DECL(UnicodeString) StrInsertW( UnicodeString const & str, size_t start, size_t end, UnicodeString const & insert );
+template < typename _ChTy >
+XString<_ChTy> StrInsert( XString<_ChTy> const & str, size_t start, size_t end, XString<_ChTy> const & insert );
+template <>
+WINUX_FUNC_DECL(XString<char>) StrInsert( XString<char> const & str, size_t start, size_t end, XString<char> const & insert );
+template <>
+WINUX_FUNC_DECL(XString<wchar>) StrInsert( XString<wchar> const & str, size_t start, size_t end, XString<wchar> const & insert );
+template <>
+WINUX_FUNC_DECL(XString<char16>) StrInsert( XString<char16> const & str, size_t start, size_t end, XString<char16> const & insert );
+template <>
+WINUX_FUNC_DECL(XString<char32>) StrInsert( XString<char32> const & str, size_t start, size_t end, XString<char32> const & insert );
 /** \brief 在指定位置插入字符串 */
 #if defined(_UNICODE) || defined(UNICODE)
-inline UnicodeString StrInsert( UnicodeString const & str, size_t start, size_t end, UnicodeString const & insert ) { return StrInsertW( str, start, end, insert ); }
+inline UnicodeString StrInsert( UnicodeString const & str, size_t start, size_t end, UnicodeString const & insert ) { return StrInsert<wchar>( str, start, end, insert ); }
 #else
-inline AnsiString StrInsert( AnsiString const & str, size_t start, size_t end, AnsiString const & insert ) { return StrInsertA( str, start, end, insert ); }
+inline AnsiString StrInsert( AnsiString const & str, size_t start, size_t end, AnsiString const & insert ) { return StrInsert<char>( str, start, end, insert ); }
 #endif
 
 
-WINUX_FUNC_DECL(AnsiString &) StrMakeReplaceA( AnsiString * str, AnsiString const & findText, AnsiString const & replaceText, size_t offset = 0 );
-WINUX_FUNC_DECL(UnicodeString &) StrMakeReplaceW( UnicodeString * str, UnicodeString const & findText, UnicodeString const & replaceText, size_t offset = 0 );
+template < typename _ChTy >
+XString<_ChTy> & StrMakeReplace( XString<_ChTy> * str, XString<_ChTy> const & findText, XString<_ChTy> const & replaceText, size_t offset = 0 );
+template <>
+WINUX_FUNC_DECL(XString<char> &) StrMakeReplace( XString<char> * str, XString<char> const & findText, XString<char> const & replaceText, size_t offset );
+template <>
+WINUX_FUNC_DECL(XString<wchar> &) StrMakeReplace( XString<wchar> * str, XString<wchar> const & findText, XString<wchar> const & replaceText, size_t offset );
+template <>
+WINUX_FUNC_DECL(XString<char16> &) StrMakeReplace( XString<char16> * str, XString<char16> const & findText, XString<char16> const & replaceText, size_t offset );
+template <>
+WINUX_FUNC_DECL(XString<char32> &) StrMakeReplace( XString<char32> * str, XString<char32> const & findText, XString<char32> const & replaceText, size_t offset );
 /** \brief 使字符串全文替换 */
 #if defined(_UNICODE) || defined(UNICODE)
-inline UnicodeString & StrMakeReplace( UnicodeString * str, UnicodeString const & findText, UnicodeString const & replaceText, size_t offset = 0 ) { return StrMakeReplaceW( str, findText, replaceText, offset ); }
+inline UnicodeString & StrMakeReplace( UnicodeString * str, UnicodeString const & findText, UnicodeString const & replaceText, size_t offset = 0 ) { return StrMakeReplace<wchar>( str, findText, replaceText, offset ); }
 #else
-inline AnsiString & StrMakeReplace( AnsiString * str, AnsiString const & findText, AnsiString const & replaceText, size_t offset = 0 ) { return StrMakeReplaceA( str, findText, replaceText, offset ); }
+inline AnsiString & StrMakeReplace( AnsiString * str, AnsiString const & findText, AnsiString const & replaceText, size_t offset = 0 ) { return StrMakeReplace<char>( str, findText, replaceText, offset ); }
 #endif
 
 
-WINUX_FUNC_DECL(AnsiString) StrTrimA( AnsiString const & str );
-WINUX_FUNC_DECL(UnicodeString) StrTrimW( UnicodeString const & str );
+template < typename _ChTy >
+XString<_ChTy> StrTrim( XString<_ChTy> const & str, size_t * leftSpaceCount = nullptr, size_t * rightSpaceCount = nullptr );
+template <>
+WINUX_FUNC_DECL(XString<char>) StrTrim( XString<char> const & str, size_t * leftSpaceCount, size_t * rightSpaceCount );
+template <>
+WINUX_FUNC_DECL(XString<wchar>) StrTrim( XString<wchar> const & str, size_t * leftSpaceCount, size_t * rightSpaceCount );
+template <>
+WINUX_FUNC_DECL(XString<char16>) StrTrim( XString<char16> const & str, size_t * leftSpaceCount, size_t * rightSpaceCount );
+template <>
+WINUX_FUNC_DECL(XString<char32>) StrTrim( XString<char32> const & str, size_t * leftSpaceCount, size_t * rightSpaceCount );
+
+template < typename _ChTy >
+XString<_ChTy> StrLTrim( XString<_ChTy> const & str, size_t * leftSpaceCount = nullptr );
+template <>
+WINUX_FUNC_DECL(XString<char>) StrLTrim( XString<char> const & str, size_t * leftSpaceCount );
+template <>
+WINUX_FUNC_DECL(XString<wchar>) StrLTrim( XString<wchar> const & str, size_t * leftSpaceCount );
+template <>
+WINUX_FUNC_DECL(XString<char16>) StrLTrim( XString<char16> const & str, size_t * leftSpaceCount );
+template <>
+WINUX_FUNC_DECL(XString<char32>) StrLTrim( XString<char32> const & str, size_t * leftSpaceCount );
+
+template < typename _ChTy >
+XString<_ChTy> StrRTrim( XString<_ChTy> const & str, size_t * rightSpaceCount = nullptr );
+template <>
+WINUX_FUNC_DECL(XString<char>) StrRTrim( XString<char> const & str, size_t * rightSpaceCount );
+template <>
+WINUX_FUNC_DECL(XString<wchar>) StrRTrim( XString<wchar> const & str, size_t * rightSpaceCount );
+template <>
+WINUX_FUNC_DECL(XString<char16>) StrRTrim( XString<char16> const & str, size_t * rightSpaceCount );
+template <>
+WINUX_FUNC_DECL(XString<char32>) StrRTrim( XString<char32> const & str, size_t * rightSpaceCount );
+
 /** \brief 祛除字符串首尾出现的空白字符
 *
 * \param str
 * \return String */
 #if defined(_UNICODE) || defined(UNICODE)
-inline UnicodeString StrTrim( UnicodeString const & str ) { return StrTrimW(str); }
+inline UnicodeString StrTrim( UnicodeString const & str, size_t * leftSpaceCount = nullptr, size_t * rightSpaceCount = nullptr ) { return StrTrim<wchar>( str, leftSpaceCount, rightSpaceCount ); }
+inline UnicodeString StrLTrim( UnicodeString const & str, size_t * leftSpaceCount = nullptr ) { return StrLTrim<wchar>( str, leftSpaceCount ); }
+inline UnicodeString StrRTrim( UnicodeString const & str, size_t * rightSpaceCount = nullptr ) { return StrRTrim<wchar>( str, rightSpaceCount ); }
 #else
-inline AnsiString StrTrim( AnsiString const & str ) { return StrTrimA(str); }
+inline AnsiString StrTrim( AnsiString const & str, size_t * leftSpaceCount = nullptr, size_t * rightSpaceCount = nullptr ) { return StrTrim<char>( str, leftSpaceCount, rightSpaceCount ); }
+inline AnsiString StrLTrim( AnsiString const & str, size_t * leftSpaceCount = nullptr ) { return StrLTrim<char>( str, leftSpaceCount ); }
+inline AnsiString StrRTrim( AnsiString const & str, size_t * rightSpaceCount = nullptr ) { return StrRTrim<char>( str, rightSpaceCount ); }
 #endif
 
 
-WINUX_FUNC_DECL(AnsiString &) StrMakeUpperA( AnsiString * str );
-WINUX_FUNC_DECL(UnicodeString &) StrMakeUpperW( UnicodeString * str );
+template < typename _ChTy >
+XString<_ChTy> & StrMakeUpper( XString<_ChTy> * str );
+template <>
+WINUX_FUNC_DECL(XString<char> &) StrMakeUpper( XString<char> * str );
+template <>
+WINUX_FUNC_DECL(XString<wchar> &) StrMakeUpper( XString<wchar> * str );
+template <>
+WINUX_FUNC_DECL(XString<char16> &) StrMakeUpper( XString<char16> * str );
+template <>
+WINUX_FUNC_DECL(XString<char32> &) StrMakeUpper( XString<char32> * str );
 /** \brief 使字符串大写 */
 #if defined(_UNICODE) || defined(UNICODE)
-inline UnicodeString & StrMakeUpper( UnicodeString * str ) { return StrMakeUpperW(str); }
+inline UnicodeString & StrMakeUpper( UnicodeString * str ) { return StrMakeUpper<wchar>(str); }
 #else
-inline AnsiString & StrMakeUpper( AnsiString * str ) { return StrMakeUpperA(str); }
+inline AnsiString & StrMakeUpper( AnsiString * str ) { return StrMakeUpper<char>(str); }
 #endif
 
-WINUX_FUNC_DECL(AnsiString) StrUpperA( AnsiString str );
-WINUX_FUNC_DECL(UnicodeString) StrUpperW( UnicodeString str );
+
+template < typename _ChTy >
+XString<_ChTy> StrUpper( XString<_ChTy> str );
+template <>
+WINUX_FUNC_DECL(XString<char>) StrUpper( XString<char> str );
+template <>
+WINUX_FUNC_DECL(XString<wchar>) StrUpper( XString<wchar> str );
+template <>
+WINUX_FUNC_DECL(XString<char16>) StrUpper( XString<char16> str );
+template <>
+WINUX_FUNC_DECL(XString<char32>) StrUpper( XString<char32> str );
 /** \brief 使字符串大写 */
 #if defined(_UNICODE) || defined(UNICODE)
-inline UnicodeString StrUpper( UnicodeString str ) { return StrUpperW(str); }
+inline UnicodeString StrUpper( UnicodeString str ) { return StrUpper<wchar>(str); }
 #else
-inline AnsiString StrUpper( AnsiString str ) { return StrUpperA(str); }
+inline AnsiString StrUpper( AnsiString str ) { return StrUpper<char>(str); }
 #endif
 
 
-WINUX_FUNC_DECL(AnsiString &) StrMakeLowerA( AnsiString * str );
-WINUX_FUNC_DECL(UnicodeString &) StrMakeLowerW( UnicodeString * str );
+template < typename _ChTy >
+XString<_ChTy> & StrMakeLower( XString<_ChTy> * str );
+template <>
+WINUX_FUNC_DECL(XString<char> &) StrMakeLower( XString<char> * str );
+template <>
+WINUX_FUNC_DECL(XString<wchar> &) StrMakeLower( XString<wchar> * str );
+template <>
+WINUX_FUNC_DECL(XString<char16> &) StrMakeLower( XString<char16> * str );
+template <>
+WINUX_FUNC_DECL(XString<char32> &) StrMakeLower( XString<char32> * str );
 /** \brief 使字符串小写 */
 #if defined(_UNICODE) || defined(UNICODE)
-inline UnicodeString & StrMakeLower( UnicodeString * str ) { return StrMakeLowerW(str); }
+inline UnicodeString & StrMakeLower( UnicodeString * str ) { return StrMakeLower<wchar>(str); }
 #else
-inline AnsiString & StrMakeLower( AnsiString * str ) { return StrMakeLowerA(str); }
+inline AnsiString & StrMakeLower( AnsiString * str ) { return StrMakeLower<char>(str); }
 #endif
 
-WINUX_FUNC_DECL(AnsiString) StrLowerA( AnsiString str );
-WINUX_FUNC_DECL(UnicodeString) StrLowerW( UnicodeString str );
+
+template < typename _ChTy >
+XString<_ChTy> StrLower( XString<_ChTy> str );
+template <>
+WINUX_FUNC_DECL(XString<char>) StrLower( XString<char> str );
+template <>
+WINUX_FUNC_DECL(XString<wchar>) StrLower( XString<wchar> str );
+template <>
+WINUX_FUNC_DECL(XString<char16>) StrLower( XString<char16> str );
+template <>
+WINUX_FUNC_DECL(XString<char32>) StrLower( XString<char32> str );
 /** \brief 使字符串小写 */
 #if defined(_UNICODE) || defined(UNICODE)
-inline UnicodeString StrLower( UnicodeString str ) { return StrLowerW(str); }
+inline UnicodeString StrLower( UnicodeString str ) { return StrLower<wchar>(str); }
 #else
-inline AnsiString StrLower( AnsiString str ) { return StrLowerA(str); }
+inline AnsiString StrLower( AnsiString str ) { return StrLower<char>(str); }
 #endif
 
 
-WINUX_FUNC_DECL(AnsiString) StrMultipleA( AnsiString const & str, int multiple );
-WINUX_FUNC_DECL(UnicodeString) StrMultipleW( UnicodeString const & str, int multiple );
+template < typename _ChTy >
+XString<_ChTy> StrMultiple( XString<_ChTy> const & str, size_t multiple );
+template <>
+WINUX_FUNC_DECL(XString<char>) StrMultiple( XString<char> const & str, size_t multiple );
+template <>
+WINUX_FUNC_DECL(XString<wchar>) StrMultiple( XString<wchar> const & str, size_t multiple );
+template <>
+WINUX_FUNC_DECL(XString<char16>) StrMultiple( XString<char16> const & str, size_t multiple );
+template <>
+WINUX_FUNC_DECL(XString<char32>) StrMultiple( XString<char32> const & str, size_t multiple );
 /** \brief 字符串倍数的出现 */
 #if defined(_UNICODE) || defined(UNICODE)
-inline UnicodeString StrMultiple( UnicodeString const & str, int multiple ) { return StrMultipleW( str, multiple ); }
+inline UnicodeString StrMultiple( UnicodeString const & str, size_t multiple ) { return StrMultiple<wchar>( str, multiple ); }
 #else
-inline AnsiString StrMultiple( AnsiString const & str, int multiple ) { return StrMultipleA( str, multiple ); }
+inline AnsiString StrMultiple( AnsiString const & str, size_t multiple ) { return StrMultiple<char>( str, multiple ); }
 #endif
 
 
-WINUX_FUNC_DECL(AnsiString) StrSubtractA( AnsiString str1, AnsiString const & str2 );
-WINUX_FUNC_DECL(UnicodeString) StrSubtractW( UnicodeString str1, UnicodeString const & str2 );
+template < typename _ChTy >
+XString<_ChTy> StrSubtract( XString<_ChTy> str1, XString<_ChTy> const & str2 );
+template <>
+WINUX_FUNC_DECL(XString<char>) StrSubtract( XString<char> str1, XString<char> const & str2 );
+template <>
+WINUX_FUNC_DECL(XString<wchar>) StrSubtract( XString<wchar> str1, XString<wchar> const & str2 );
+template <>
+WINUX_FUNC_DECL(XString<char16>) StrSubtract( XString<char16> str1, XString<char16> const & str2 );
+template <>
+WINUX_FUNC_DECL(XString<char32>) StrSubtract( XString<char32> str1, XString<char32> const & str2 );
 /** \brief 字符串相减，str1 - str2，即去掉str1里与str2相同的部分。限制：str1 >= str2。 */
 #if defined(_UNICODE) || defined(UNICODE)
-inline UnicodeString StrSubtract( UnicodeString str1, UnicodeString const & str2 ) { return StrSubtractW( str1, str2 ); }
+inline UnicodeString StrSubtract( UnicodeString str1, UnicodeString const & str2 ) { return StrSubtract<wchar>( str1, str2 ); }
 #else
-inline AnsiString StrSubtract( AnsiString str1, AnsiString const & str2 ) { return StrSubtractA( str1, str2 ); }
+inline AnsiString StrSubtract( AnsiString str1, AnsiString const & str2 ) { return StrSubtract<char>( str1, str2 ); }
 #endif
 
 
@@ -268,91 +382,148 @@ enum StrToXqFlags
     stqReadDigit = 8 //!< 读到一个正确的数字字符
 };
 
-WINUX_FUNC_DECL(uint64) StrToXqA( char const * nptr, char const ** endptr, int ibase, int flags );
-WINUX_FUNC_DECL(uint64) StrToXqW( wchar const * nptr, wchar const ** endptr, int ibase, int flags );
+template < typename _ChTy >
+uint64 StrToXq( _ChTy const * nptr, _ChTy const ** endptr, int ibase, int flags );
+template <>
+WINUX_FUNC_DECL(uint64) StrToXq( char const * nptr, char const ** endptr, int ibase, int flags );
+template <>
+WINUX_FUNC_DECL(uint64) StrToXq( wchar const * nptr, wchar const ** endptr, int ibase, int flags );
+template <>
+WINUX_FUNC_DECL(uint64) StrToXq( char16 const * nptr, char16 const ** endptr, int ibase, int flags );
+template <>
+WINUX_FUNC_DECL(uint64) StrToXq( char32 const * nptr, char32 const ** endptr, int ibase, int flags );
 /** \brief 字符串转换成64位的数字 */
 #if defined(_UNICODE) || defined(UNICODE)
-inline uint64 StrToXq( wchar const * nptr, wchar const ** endptr, int ibase, int flags ) { return StrToXqW( nptr, endptr, ibase, flags ); }
+inline uint64 StrToXq( wchar const * nptr, wchar const ** endptr, int ibase, int flags ) { return StrToXq<wchar>( nptr, endptr, ibase, flags ); }
 #else
-inline uint64 StrToXq( char const * nptr, char const ** endptr, int ibase, int flags ) { return StrToXqA( nptr, endptr, ibase, flags ); }
+inline uint64 StrToXq( char const * nptr, char const ** endptr, int ibase, int flags ) { return StrToXq<char>( nptr, endptr, ibase, flags ); }
 #endif
 
-WINUX_FUNC_DECL(uint64) StrToXqU16( char16 const * nptr, char16 const ** endptr, int ibase, int flags );
-WINUX_FUNC_DECL(uint64) StrToXqU32( char32 const * nptr, char32 const ** endptr, int ibase, int flags );
 
-
-WINUX_FUNC_DECL(int64) StrToInt64A( AnsiString const & numStr, int ibase );
-WINUX_FUNC_DECL(int64) StrToInt64W( UnicodeString const & numStr, int ibase );
+template < typename _ChTy >
+int64 StrToInt64( XString<_ChTy> const & numStr, int ibase );
+template <>
+WINUX_FUNC_DECL(int64) StrToInt64( XString<char> const & numStr, int ibase );
+template <>
+WINUX_FUNC_DECL(int64) StrToInt64( XString<wchar> const & numStr, int ibase );
+template <>
+WINUX_FUNC_DECL(int64) StrToInt64( XString<char16> const & numStr, int ibase );
+template <>
+WINUX_FUNC_DECL(int64) StrToInt64( XString<char32> const & numStr, int ibase );
 #if defined(_UNICODE) || defined(UNICODE)
-inline int64 StrToInt64( UnicodeString const & numStr, int ibase ) { return StrToInt64W( numStr, ibase ); }
+inline int64 StrToInt64( UnicodeString const & numStr, int ibase ) { return StrToInt64<wchar>( numStr, ibase ); }
 #else
-inline int64 StrToInt64( AnsiString const & numStr, int ibase ) { return StrToInt64A( numStr, ibase ); }
+inline int64 StrToInt64( AnsiString const & numStr, int ibase ) { return StrToInt64<char>( numStr, ibase ); }
 #endif
 
 
-WINUX_FUNC_DECL(uint64) StrToUint64A( AnsiString const & numStr, int ibase );
-WINUX_FUNC_DECL(uint64) StrToUint64W( UnicodeString const & numStr, int ibase );
+template < typename _ChTy >
+uint64 StrToUInt64( XString<_ChTy> const & numStr, int ibase );
+template <>
+WINUX_FUNC_DECL(uint64) StrToUInt64( XString<char> const & numStr, int ibase );
+template <>
+WINUX_FUNC_DECL(uint64) StrToUInt64( XString<wchar> const & numStr, int ibase );
+template <>
+WINUX_FUNC_DECL(uint64) StrToUInt64( XString<char16> const & numStr, int ibase );
+template <>
+WINUX_FUNC_DECL(uint64) StrToUInt64( XString<char32> const & numStr, int ibase );
 #if defined(_UNICODE) || defined(UNICODE)
-inline uint64 StrToUint64( UnicodeString const & numStr, int ibase ) { return StrToUint64W( numStr, ibase ); }
+inline uint64 StrToUInt64( UnicodeString const & numStr, int ibase ) { return StrToUInt64<wchar>( numStr, ibase ); }
 #else
-inline uint64 StrToUint64( AnsiString const & numStr, int ibase ) { return StrToUint64A( numStr, ibase ); }
+inline uint64 StrToUInt64( AnsiString const & numStr, int ibase ) { return StrToUInt64<char>( numStr, ibase ); }
 #endif
 
 
-WINUX_FUNC_DECL(AnsiString) AddSlashesA( AnsiString const & str, AnsiString const & charlist );
-WINUX_FUNC_DECL(UnicodeString) AddSlashesW( UnicodeString const & str, UnicodeString const & charlist );
+template < typename _ChTy >
+inline XString<_ChTy> AddSlashes( XString<_ChTy> const & str, XString<_ChTy> const & charlist );
+template <>
+WINUX_FUNC_DECL(XString<char>) AddSlashes( XString<char> const & str, XString<char> const & charlist );
+template <>
+WINUX_FUNC_DECL(XString<wchar>) AddSlashes( XString<wchar> const & str, XString<wchar> const & charlist );
+template <>
+WINUX_FUNC_DECL(XString<char16>) AddSlashes( XString<char16> const & str, XString<char16> const & charlist );
+template <>
+WINUX_FUNC_DECL(XString<char32>) AddSlashes( XString<char32> const & str, XString<char32> const & charlist );
 /** \brief 加反斜杠 */
 #if defined(_UNICODE) || defined(UNICODE)
-inline UnicodeString AddSlashes( UnicodeString const & str, UnicodeString const & charlist ) { return AddSlashesW( str, charlist ); }
+inline UnicodeString AddSlashes( UnicodeString const & str, UnicodeString const & charlist ) { return AddSlashes<wchar>( str, charlist ); }
 #else
-inline AnsiString AddSlashes( AnsiString const & str, AnsiString const & charlist ) { return AddSlashesA( str, charlist ); }
+inline AnsiString AddSlashes( AnsiString const & str, AnsiString const & charlist ) { return AddSlashes<char>( str, charlist ); }
 #endif
 
 
-inline AnsiString AddCSlashesA( AnsiString const & str ) { return AddSlashesA( str, Literal<AnsiString::value_type>::cslashesStr ); }
-inline UnicodeString AddCSlashesW( UnicodeString const & str ) { return AddSlashesW( str, Literal<UnicodeString::value_type>::cslashesStr ); }
+template < typename _ChTy >
+inline XString<_ChTy> AddCSlashes( XString<_ChTy> const & str ) { return AddSlashes<_ChTy>( str, Literal<_ChTy>::cslashesStr ); }
 /** \brief 加C-Style反斜杠 */
 #if defined(_UNICODE) || defined(UNICODE)
-inline UnicodeString AddCSlashes( UnicodeString const & str ) { return AddCSlashesW(str); }
+inline UnicodeString AddCSlashes( UnicodeString const & str ) { return AddCSlashes<wchar>(str); }
 #else
-inline AnsiString AddCSlashes( AnsiString const & str ) { return AddCSlashesA(str); }
+inline AnsiString AddCSlashes( AnsiString const & str ) { return AddCSlashes<char>(str); }
 #endif
 
 
-WINUX_FUNC_DECL(AnsiString) StripSlashesA( AnsiString const & str, AnsiString const & charlist );
-WINUX_FUNC_DECL(UnicodeString) StripSlashesW( UnicodeString const & str, UnicodeString const & charlist );
+template < typename _ChTy >
+XString<_ChTy> StripSlashes( XString<_ChTy> const & str, XString<_ChTy> const & charlist );
+template <>
+WINUX_FUNC_DECL(XString<char>) StripSlashes( XString<char> const & str, XString<char> const & charlist );
+template <>
+WINUX_FUNC_DECL(XString<wchar>) StripSlashes( XString<wchar> const & str, XString<wchar> const & charlist );
+template <>
+WINUX_FUNC_DECL(XString<char16>) StripSlashes( XString<char16> const & str, XString<char16> const & charlist );
+template <>
+WINUX_FUNC_DECL(XString<char32>) StripSlashes( XString<char32> const & str, XString<char32> const & charlist );
 /** \brief 去掉反斜杠 */
 #if defined(_UNICODE) || defined(UNICODE)
-inline UnicodeString StripSlashes( UnicodeString const & str, UnicodeString const & charlist ) { return StripSlashesW( str, charlist ); }
+inline UnicodeString StripSlashes( UnicodeString const & str, UnicodeString const & charlist ) { return StripSlashes<wchar>( str, charlist ); }
 #else
-inline AnsiString StripSlashes( AnsiString const & str, AnsiString const & charlist ) { return StripSlashesA( str, charlist ); }
+inline AnsiString StripSlashes( AnsiString const & str, AnsiString const & charlist ) { return StripSlashes<char>( str, charlist ); }
 #endif
 
 
-inline AnsiString StripCSlashesA( AnsiString const & str ) { return StripSlashesA( str, Literal<AnsiString::value_type>::cslashesStr ); }
-inline UnicodeString StripCSlashesW( UnicodeString const & str ) { return StripSlashesW( str, Literal<UnicodeString::value_type>::cslashesStr ); }
+template < typename _ChTy >
+inline XString<_ChTy> StripCSlashes( XString<_ChTy> const & str ) { return StripSlashes<_ChTy>( str, Literal<_ChTy>::cslashesStr ); }
 /** \brief 去掉C-Style反斜杠 */
 #if defined(_UNICODE) || defined(UNICODE)
-inline UnicodeString StripCSlashes( UnicodeString const & str ) { return StripCSlashesW(str); }
+inline UnicodeString StripCSlashes( UnicodeString const & str ) { return StripCSlashes<wchar>(str); }
 #else
-inline AnsiString StripCSlashes( AnsiString const & str ) { return StripCSlashesA(str); }
+inline AnsiString StripCSlashes( AnsiString const & str ) { return StripCSlashes<char>(str); }
 #endif
 
 
-WINUX_FUNC_DECL(AnsiString) AddQuotesA( AnsiString const & str, AnsiString::value_type quote = Literal<AnsiString::value_type>::quoteChar );
-WINUX_FUNC_DECL(UnicodeString) AddQuotesW( UnicodeString const & str, UnicodeString::value_type quote = Literal<UnicodeString::value_type>::quoteChar );
+template < typename _ChTy >
+XString<_ChTy> AddQuotes( XString<_ChTy> const & str, _ChTy quote = Literal<_ChTy>::quoteChar );
+template <>
+WINUX_FUNC_DECL(XString<char>) AddQuotes( XString<char> const & str, char quote );
+template <>
+WINUX_FUNC_DECL(XString<wchar>) AddQuotes( XString<wchar> const & str, wchar quote );
+template <>
+WINUX_FUNC_DECL(XString<char16>) AddQuotes( XString<char16> const & str, char16 quote );
+template <>
+WINUX_FUNC_DECL(XString<char32>) AddQuotes( XString<char32> const & str, char32 quote );
 /** \brief double引号 */
 #if defined(_UNICODE) || defined(UNICODE)
-inline UnicodeString AddQuotes( UnicodeString const & str, UnicodeString::value_type quote = Literal<UnicodeString::value_type>::quoteChar ) { return AddQuotesW( str, quote ); }
+inline UnicodeString AddQuotes( UnicodeString const & str, UnicodeString::value_type quote = Literal<UnicodeString::value_type>::quoteChar ) { return AddQuotes<wchar>( str, quote ); }
 #else
-inline AnsiString AddQuotes( AnsiString const & str, AnsiString::value_type quote = Literal<AnsiString::value_type>::quoteChar ) { return AddQuotesA( str, quote ); }
+inline AnsiString AddQuotes( AnsiString const & str, AnsiString::value_type quote = Literal<AnsiString::value_type>::quoteChar ) { return AddQuotes<char>( str, quote ); }
 #endif
 
 
-WINUX_FUNC_DECL(bool) StrGetLineA( AnsiString * line, AnsiString const & str, size_t * i, AnsiString * nl = nullptr );
-WINUX_FUNC_DECL(bool) StrGetLineW( UnicodeString * line, UnicodeString const & str, size_t * i, UnicodeString * nl = nullptr );
-/** \brief 获取字符串中的一行,支持unix，windows，mac平台的行分隔方式\n
- *  line 不包含换行符，i 指示起始位置，并获得处理到哪个位置。
+template < typename _ChTy >
+bool StrGetLine( XString<_ChTy> * line, XString<_ChTy> const & str, size_t * i, XString<_ChTy> * nl = nullptr );
+template <>
+WINUX_FUNC_DECL(bool) StrGetLine( XString<char> * line, XString<char> const & str, size_t * i, XString<char> * nl );
+template <>
+WINUX_FUNC_DECL(bool) StrGetLine( XString<wchar> * line, XString<wchar> const & str, size_t * i, XString<wchar> * nl );
+template <>
+WINUX_FUNC_DECL(bool) StrGetLine( XString<char16> * line, XString<char16> const & str, size_t * i, XString<char16> * nl );
+template <>
+WINUX_FUNC_DECL(bool) StrGetLine( XString<char32> * line, XString<char32> const & str, size_t * i, XString<char32> * nl );
+/** \brief 获取字符串中的一行。支持unix，windows，mac平台的行分隔方式\n
+ *
+ *  \param line 获取到的一行字符串。如果nl!=nullptr则不包含换行符，反之则包含。
+ *  \param str 要处理的字符串。
+ *  \param i 指示起始位置，并返回处理到哪个位置。
+ *  \param nl 如果nl!=nullptr则line不包含换行符，反之则包含。
  *
  *  如何统一处理3平台的文本文件：\n
  *  最好的办法是在该平台用文本模式打开该平台产生的文本文件，然后操作。\n
@@ -360,10 +531,59 @@ WINUX_FUNC_DECL(bool) StrGetLineW( UnicodeString * line, UnicodeString const & s
  *  由于行分隔不同，导致处理有一定困难。\n
  *  此函数正为此而存在。首先，你需要用二进制模式打开文件，然后读取全部数据，调用此函数取行即可。 */
 #if defined(_UNICODE) || defined(UNICODE)
-inline bool StrGetLine( UnicodeString * line, UnicodeString const & str, size_t * i, UnicodeString * nl = nullptr ) { return StrGetLineW( line, str, i, nl ); }
+inline bool StrGetLine( UnicodeString * line, UnicodeString const & str, size_t * i, UnicodeString * nl = nullptr ) { return StrGetLine<wchar>( line, str, i, nl ); }
 #else
-inline bool StrGetLine( AnsiString * line, AnsiString const & str, size_t * i, AnsiString * nl = nullptr ) { return StrGetLineA( line, str, i, nl ); }
+inline bool StrGetLine( AnsiString * line, AnsiString const & str, size_t * i, AnsiString * nl = nullptr ) { return StrGetLine<char>( line, str, i, nl ); }
 #endif
+
+
+template < typename _ChTy >
+bool StrGetLine( XString<_ChTy> * line, _ChTy const * str, size_t len, size_t * i, XString<_ChTy> * nl = nullptr );
+template <>
+WINUX_FUNC_DECL(bool) StrGetLine( XString<char> * line, char const * str, size_t len, size_t * i, XString<char> * nl );
+template <>
+WINUX_FUNC_DECL(bool) StrGetLine( XString<wchar> * line, wchar const * str, size_t len, size_t * i, XString<wchar> * nl );
+template <>
+WINUX_FUNC_DECL(bool) StrGetLine( XString<char16> * line, char16 const * str, size_t len, size_t * i, XString<char16> * nl );
+template <>
+WINUX_FUNC_DECL(bool) StrGetLine( XString<char32> * line, char32 const * str, size_t len, size_t * i, XString<char32> * nl );
+/** \brief 获取字符串中的一行。支持unix，windows，mac平台的行分隔方式\n
+ *
+ *  \param line 获取到的一行字符串。如果nl!=nullptr则不包含换行符，反之则包含。
+ *  \param str 要处理的字符串。
+ *  \param len 字符串长度。
+ *  \param i 指示起始位置，并返回处理到哪个位置。
+ *  \param nl 如果nl!=nullptr则line不包含换行符，反之则包含。
+ *
+ *  如何统一处理3平台的文本文件：\n
+ *  最好的办法是在该平台用文本模式打开该平台产生的文本文件，然后操作。\n
+ *  然而，现实不像想象的那么美好，多数情况下是处理不同平台下的文本文件，譬如在unix系平台下处理windows或mac的文本文件。\n
+ *  由于行分隔不同，导致处理有一定困难。\n
+ *  此函数正为此而存在。首先，你需要用二进制模式打开文件，然后读取全部数据，调用此函数取行即可。 */
+#if defined(_UNICODE) || defined(UNICODE)
+inline bool StrGetLine( UnicodeString * line, UnicodeString::value_type const * str, size_t len, size_t * i, UnicodeString * nl = nullptr ) { return StrGetLine<wchar>( line, str, len, i, nl ); }
+#else
+inline bool StrGetLine( AnsiString * line, AnsiString::value_type const * str, size_t len, size_t * i, AnsiString * nl = nullptr ) { return StrGetLine<char>( line, str, len, i, nl ); }
+#endif
+
+
+/** \brief 获取指定位置的行内容
+ *
+ *  \param content 内容
+ *  \param pos 位置索引
+ *  \param lineHead 返回line开头索引
+ *  \param lineTail 返回line尾部索引（+1则是END位置）
+ *  \param line 返回line */
+template < typename _ChTy >
+void GetLineByPos( XString<_ChTy> const & content, ssize_t pos, ssize_t * lineHead, ssize_t * lineTail, XString<_ChTy> * line = nullptr );
+template <>
+WINUX_FUNC_DECL(void) GetLineByPos( XString<char> const & content, ssize_t pos, ssize_t * lineHead, ssize_t * lineTail, XString<char> * line );
+template <>
+WINUX_FUNC_DECL(void) GetLineByPos( XString<wchar> const & content, ssize_t pos, ssize_t * lineHead, ssize_t * lineTail, XString<wchar> * line );
+template <>
+WINUX_FUNC_DECL(void) GetLineByPos( XString<char16> const & content, ssize_t pos, ssize_t * lineHead, ssize_t * lineTail, XString<char16> * line );
+template <>
+WINUX_FUNC_DECL(void) GetLineByPos( XString<char32> const & content, ssize_t pos, ssize_t * lineHead, ssize_t * lineTail, XString<char32> * line );
 
 
 /** \brief 整理标识符串的标记 */
@@ -372,32 +592,49 @@ enum CollateIdentifierStringFlag : winux::uint
     wordRaw = 0x00, //!< 不处理单词
     wordAllUpper = 0x01, //!< 单词大写
     wordAllLower = 0x02, //!< 单词小写
-    wordFirstCharUpper = 0x04, //!< 首字母大写
+    wordFirstCharUpper = 0x03, //!< 首字母大写
 
-    //nameRaw = 0x00,
-    nameSmallHump = 0x10, //!< 小驼峰
-    //nameBigHump = 0x20,
-    //nameShortLine = 0x40,
-    //nameUnderline = 0x80,
+    nameLowerCamelCase = 0x10 | wordFirstCharUpper, //!< 小驼峰 camelCase
+    nameUpperCamelCase = 0x20 | wordFirstCharUpper, //!< 大驼峰 CamelCase
+    namePascalCase = nameUpperCamelCase, //!< 帕斯卡命名 PascalCase
+    nameSnakeCase = 0x30 | wordAllLower, //!< snake_case
+    nameKebabCase = 0x40 | wordAllLower, //!< kebab-case
+    nameScreamingSnakeCase = 0x50 | wordAllUpper, //!< SCREAMING_SNAKE_CASE
 };
 
-WINUX_FUNC_DECL(AnsiString) CollateIdentifierToStringA( AnsiString const & identifier, AnsiString const & sep, winux::uint flags = wordFirstCharUpper );
-WINUX_FUNC_DECL(UnicodeString) CollateIdentifierToStringW( UnicodeString const & identifier, UnicodeString const & sep, winux::uint flags = wordFirstCharUpper );
+template < typename _ChTy >
+XString<_ChTy> CollateIdentifierToString( XString<_ChTy> const & identifier, XString<_ChTy> const & sep, winux::uint flags = wordFirstCharUpper );
+template <>
+WINUX_FUNC_DECL(XString<char>) CollateIdentifierToString( XString<char> const & identifier, XString<char> const & sep, winux::uint flags );
+template <>
+WINUX_FUNC_DECL(XString<wchar>) CollateIdentifierToString( XString<wchar> const & identifier, XString<wchar> const & sep, winux::uint flags );
+template <>
+WINUX_FUNC_DECL(XString<char16>) CollateIdentifierToString( XString<char16> const & identifier, XString<char16> const & sep, winux::uint flags );
+template <>
+WINUX_FUNC_DECL(XString<char32>) CollateIdentifierToString( XString<char32> const & identifier, XString<char32> const & sep, winux::uint flags );
 /** \brief 整理标识符为字符串 */
 #if defined(_UNICODE) || defined(UNICODE)
-inline UnicodeString CollateIdentifierToString( UnicodeString const & identifier, UnicodeString const & sep, winux::uint flags = wordFirstCharUpper ) { return CollateIdentifierToStringW( identifier, sep, flags ); }
+inline UnicodeString CollateIdentifierToString( UnicodeString const & identifier, UnicodeString const & sep, winux::uint flags = wordFirstCharUpper ) { return CollateIdentifierToString<wchar>( identifier, sep, flags ); }
 #else
-inline AnsiString CollateIdentifierToString( AnsiString const & identifier, AnsiString const & sep, winux::uint flags = wordFirstCharUpper ) { return CollateIdentifierToStringA( identifier, sep, flags ); }
+inline AnsiString CollateIdentifierToString( AnsiString const & identifier, AnsiString const & sep, winux::uint flags = wordFirstCharUpper ) { return CollateIdentifierToString<char>( identifier, sep, flags ); }
 #endif
 
 
-WINUX_FUNC_DECL(AnsiStringArray) CollateIdentifierToArrayA( AnsiString const & identifier, winux::uint flags = wordFirstCharUpper );
-WINUX_FUNC_DECL(UnicodeStringArray) CollateIdentifierToArrayW( UnicodeString const & identifier, winux::uint flags = wordFirstCharUpper );
+template < typename _ChTy >
+XStringArray<_ChTy> CollateIdentifierToArray( XString<_ChTy> const & identifier, winux::uint flags = wordFirstCharUpper );
+template <>
+WINUX_FUNC_DECL(XStringArray<char>) CollateIdentifierToArray( XString<char> const & identifier, winux::uint flags );
+template <>
+WINUX_FUNC_DECL(XStringArray<wchar>) CollateIdentifierToArray( XString<wchar> const & identifier, winux::uint flags );
+template <>
+WINUX_FUNC_DECL(XStringArray<char16>) CollateIdentifierToArray( XString<char16> const & identifier, winux::uint flags );
+template <>
+WINUX_FUNC_DECL(XStringArray<char32>) CollateIdentifierToArray( XString<char32> const & identifier, winux::uint flags );
 /** \brief 整理标识符为单词数组 */
 #if defined(_UNICODE) || defined(UNICODE)
-inline UnicodeStringArray CollateIdentifierToArray( UnicodeString const & identifier, winux::uint flags = wordFirstCharUpper ) { return CollateIdentifierToArrayW( identifier, flags ); }
+inline UnicodeStringArray CollateIdentifierToArray( UnicodeString const & identifier, winux::uint flags = wordFirstCharUpper ) { return CollateIdentifierToArray<wchar>( identifier, flags ); }
 #else
-inline AnsiStringArray CollateIdentifierToArray( AnsiString const & identifier, winux::uint flags = wordFirstCharUpper ) { return CollateIdentifierToArrayA( identifier, flags ); }
+inline AnsiStringArray CollateIdentifierToArray( AnsiString const & identifier, winux::uint flags = wordFirstCharUpper ) { return CollateIdentifierToArray<char>( identifier, flags ); }
 #endif
 
 
@@ -463,20 +700,29 @@ inline static size_t _Templ_KmpMatch( _ChTy const * str, size_t len, _ChTy const
 }
 
 /** \brief KMP字符串匹配算法：求子串next值 */
-WINUX_FUNC_DECL(std::vector<int>) KmpCalcNext( char const * substr, size_t sublen );
+template < typename _ChTy >
+inline std::vector<int> KmpCalcNext( _ChTy const * substr, size_t sublen )
+{
+    return _Templ_KmpCalcNext< int, _ChTy >( substr, sublen );
+}
 /** \brief KMP字符串匹配算法：传入已经求好的next进行匹配 */
-WINUX_FUNC_DECL(size_t) KmpMatchEx( char const * str, size_t len, char const * substr, size_t sublen, size_t pos, std::vector<int> const & next );
+template < typename _ChTy >
+inline size_t KmpMatchEx( _ChTy const * str, size_t len, _ChTy const * substr, size_t sublen, size_t pos, std::vector<int> const & next )
+{
+    return _Templ_KmpMatchEx< int, _ChTy >( str, len, substr, sublen, pos, next );
+}
 /** \brief KMP字符串匹配算法：匹配 */
-WINUX_FUNC_DECL(size_t) KmpMatch( char const * str, size_t len, char const * substr, size_t sublen, size_t pos );
+template < typename _ChTy >
+inline size_t KmpMatch( _ChTy const * str, size_t len, _ChTy const * substr, size_t sublen, size_t pos )
+{
+    return KmpMatchEx<_ChTy>( str, len, substr, sublen, pos, KmpCalcNext( substr, sublen ) );
+}
 
 
 /** \brief 用来使得String能够用operator<<来赋值 */
 template < typename _ChTy >
 class XStringWriter
 {
-    XString<_ChTy> * _str;
-    std::basic_ostringstream<_ChTy> * _sout;
-    bool _isAppend;
 public:
     /** \brief 构造函数1
      *
@@ -521,18 +767,26 @@ public:
     }
 
     template < typename _AnyType >
-    std::ostream & operator << ( _AnyType && t )
+    std::basic_ostream<_ChTy> & operator << ( _AnyType && t )
     {
-        assert( _sout != NULL );
         return *_sout << std::forward<_AnyType>(t);
     }
+
+private:
+    XString<_ChTy> * _str;
+    std::basic_ostringstream<_ChTy> * _sout;
+    bool _isAppend;
 };
 
 using StringWriter = XStringWriter<tchar>;
 using AnsiStringWriter = XStringWriter<char>;
 using UnicodeStringWriter = XStringWriter<wchar>;
+using UnicodeString16Writer = XStringWriter<char16>;
+using Utf16StringWriter = XStringWriter<char16>;
+using UnicodeString32Writer = XStringWriter<char32>;
+using Utf32StringWriter = XStringWriter<char32>;
 
-/** \brief KMP多项匹配/替换 */
+/** \brief 多项匹配/替换 */
 class WINUX_DLL MultiMatch
 {
 public:
@@ -549,6 +803,13 @@ public:
         MatchResult mr; //!< 匹配结果
         bool prevCharMatch; //!< 上一个字符是否匹配
         bool matched; //!< 是否完成匹配，完成匹配就不用再进行
+
+        void reset()
+        {
+            memset( this, 0, sizeof(*this) );
+            mr.pos = -1;
+            mr.item = -1;
+        }
     };
 
     //! \brief NEXT值数组类型
@@ -575,17 +836,17 @@ public:
     MultiMatch( StringArray const & matches, ReplaceFuncType replaceFunc, void * extra = NULL );
 
     /** \brief 构造函数3，要求匹配项和替换项 */
-    template < size_t _N >
-    MultiMatch( String (&matches)[_N], String (&replaces)[_N] ) : _replaceFunc(NULL), _extra(NULL)
+    template < size_t _Count >
+    MultiMatch( String (&matches)[_Count], String (&replaces)[_Count] ) : _replaceFunc(NULL), _extra(NULL)
     {
-        this->init( StringArray( matches, matches + _N ), StringArray( replaces, replaces + _N ) );
+        this->init( StringArray( matches, matches + _Count ), StringArray( replaces, replaces + _Count ) );
     }
 
     /** \brief 构造函数4，要求匹配项和替换函数，若不进行替换，则replaceFunc可为NULL */
-    template < size_t _N >
-    MultiMatch( String (&matches)[_N], ReplaceFuncType replaceFunc, void * extra = NULL ) : _replaceFunc(NULL), _extra(NULL)
+    template < size_t _Count >
+    MultiMatch( String (&matches)[_Count], ReplaceFuncType replaceFunc, void * extra = NULL ) : _replaceFunc(NULL), _extra(NULL)
     {
-        this->init( StringArray( matches, matches + _N ), replaceFunc, extra );
+        this->init( StringArray( matches, matches + _Count ), replaceFunc, extra );
     }
 
     /** \brief 初始化（匹配项，替换项） */
@@ -635,7 +896,7 @@ public:
      *  \return MatchResult(pos,item) 返回的pos考虑了offset值 */
     MatchResult greedSearch( String const & str, ssize_t offset = 0 ) const;
 
-    /** \brief 搜索任意一项匹配（非KMP算法）
+    /** \brief 搜索任意一项匹配（贪婪模式，非KMP算法）
      *
      *  \param str 字符串
      *  \param offset 偏移，表示从哪个位置开始搜
@@ -647,10 +908,11 @@ public:
      *  \param str 目标字符串
      *  \param offset 偏移，表示从哪个位置开始搜
      *  \param fnSearch 算法选择，请指定函数（search,greedSearch,commonSearch） */
-    String replace( String const & str, ssize_t offset = 0, SearchFuncType fnSearch = &MultiMatch::search ) const;
+    String replace( String const & str, ssize_t offset = 0, SearchFuncType fnSearch = &MultiMatch::commonSearch ) const;
 
 private:
     std::vector<KmpNextValueArray> _nextVals;
+    mutable MatchStates _states;
     StringArray _matchItems;
     StringArray _replaceItems;
     ReplaceFuncType _replaceFunc;
@@ -660,14 +922,16 @@ private:
 /** \brief 设置locale信息 */
 class WINUX_DLL Locale
 {
-    AnsiString _loc;
-    AnsiString _prevLoc;
-    static AnsiString _clsLc;
 public:
     static void Set( char const * lc ) { _clsLc = lc; }
     static char const * Get() { return _clsLc.c_str(); }
     Locale( char const * lc = NULL );
     ~Locale();
+
+private:
+    AnsiString _loc;
+    AnsiString _prevLoc;
+    static AnsiString _clsLc;
     DISABLE_OBJECT_COPY(Locale)
 };
 
@@ -701,7 +965,7 @@ WINUX_DLL UnicodeString FormatW( wchar const * fmt, ... );
 
 #if defined(_UNICODE) || defined(UNICODE)
 /** \brief 格式化字符串0 */
-inline UnicodeString FormatExVW( size_t cch, wchar const * fmt, va_list args ) { return FormatExVW( cch, fmt, args ); }
+inline UnicodeString FormatExV( size_t cch, wchar const * fmt, va_list args ) { return FormatExVW( cch, fmt, args ); }
 /** \brief 格式化字符串1 */
 WINUX_DLL UnicodeString FormatEx( size_t cch, wchar const * fmt, ... );
 /** \brief 格式化字符串2 */
@@ -718,6 +982,13 @@ WINUX_DLL AnsiString Format( char const * fmt, ... );
 /** \brief 填充based-zero字符串缓冲区包装类 */
 class WINUX_DLL SZInput
 {
+public:
+    explicit SZInput( char * psz, size_t count ) : _psz(psz), _type(szCharInput), _count(count) { }
+    explicit SZInput( wchar_t * pwsz, size_t count ) : _pwsz(pwsz), _type(szWCharInput), _count(count) { }
+    SZInput & operator = ( char const * pstr );
+    SZInput & operator = ( wchar_t const * pwstr );
+
+private:
     union
     {
         char * _psz;
@@ -725,28 +996,22 @@ class WINUX_DLL SZInput
     };
     enum { szCharInput, szWCharInput } _type;
     size_t _count;
-public:
-    explicit SZInput( char * psz, size_t count ) : _psz(psz), _type(szCharInput), _count(count) { }
-    explicit SZInput( wchar_t * pwsz, size_t count ) : _pwsz(pwsz), _type(szWCharInput), _count(count) { }
-    SZInput & operator = ( char const * pstr );
-    SZInput & operator = ( wchar_t const * pwstr );
-
 };
 
 #if defined(__GNUC__) || _MSC_VER >= 1600
-/* VC2010以上支持模板取数组大小 */
-template < typename _CHAR, uint _N >
-SZInput SZ( _CHAR (&sz)[_N] )
+/** \brief VC2010以上支持模板取数组大小 */
+template < typename _CHAR, uint _Count >
+SZInput SZ( _CHAR (&sz)[_Count] )
 {
-    return SZInput( sz, _N );
+    return SZInput( sz, _Count );
 }
 
 #else
-/* 否则使用宏定义 */
+/** \brief 否则使用宏定义 */
 #define SZ(sz) SZInput( sz, sizeof(sz) / sizeof(sz[0]) )
 
 #endif
-/* 如果操作对象是缓冲区指针，则使用SZP宏 */
+/** \brief 如果操作对象是缓冲区指针，则使用SZP宏 */
 #define SZP SZInput
 
 // ----------------------------------------------------------------------------------
@@ -755,14 +1020,14 @@ SZInput SZ( _CHAR (&sz)[_N] )
 class WINUX_DLL Conv
 {
 public:
-    Conv( char const * fromCode, char const * toCode );
+    Conv( AnsiString const & fromCode, AnsiString const & toCode );
     ~Conv();
 
     /** \brief 进行编码转换
      *
      *  \param srcBuf 需要转换的字符串缓冲区
      *  \param srcSize 缓冲区的大小(in bytes)
-     *  \param destBuf 转换得到的结果,函数自动分配内存,用户负责free()释放
+     *  \param destBuf 转换得到的结果，函数自动分配内存，用户负责Buffer.Free()释放
      *  \return size_t 输出到destBuf的字节数 */
     size_t convert( char const * srcBuf, size_t srcSize, char * * destBuf );
 
@@ -774,11 +1039,12 @@ public:
     _RetString convert( _String const & str )
     {
         typename _RetString::pointer buf;
-        size_t outBytes = this->convert( (char *)str.c_str(), ( str.length() + 1 ) * sizeof(typename _String::value_type), (char **)&buf );
-        _RetString s = (typename _RetString::pointer)buf;
-        free(buf);
+        size_t n = this->convert( (char *)str.c_str(), str.length() * sizeof(typename _String::value_type), (char **)&buf );
+        _RetString s( (typename _RetString::pointer)buf, n / sizeof(typename _RetString::value_type) );
+        Buffer::Free(buf);
         return s;
     }
+
 private:
     MembersWrapper<struct Conv_Data> _self;
 
@@ -790,7 +1056,7 @@ template < typename _ToString >
 class ConvTo : public Conv
 {
 public:
-    ConvTo( char const * toCode ) : Conv( "", toCode )
+    ConvTo( AnsiString const & toCode ) : Conv( "", toCode )
     {
     }
 
@@ -802,9 +1068,9 @@ public:
     _ToString operator () ( AnsiString const & str )
     {
         typename _ToString::value_type * buf;
-        Conv::convert( (char *)str.c_str(), (str.length() + 1) * sizeof(typename AnsiString::value_type), (char **)&buf );
-        _ToString s = buf;
-        free(buf);
+        size_t n = Conv::convert( (char *)str.c_str(), str.length() * sizeof(typename AnsiString::value_type), (char **)&buf );
+        _ToString s( buf, n / sizeof(typename _ToString::value_type) );
+        Buffer::Free(buf);
         return s;
     }
 };
@@ -814,7 +1080,7 @@ template < typename _FromString >
 class ConvFrom : public Conv
 {
 public:
-    ConvFrom( char const * fromCode ) : Conv( fromCode, "" )
+    ConvFrom( AnsiString const & fromCode ) : Conv( fromCode, "" )
     {
     }
 
@@ -826,12 +1092,43 @@ public:
     AnsiString operator () ( _FromString const & str )
     {
         AnsiString::value_type * buf;
-        Conv::convert( (char *)str.c_str(), (str.length() + 1) * sizeof(typename _FromString::value_type), (char **)&buf );
-        AnsiString s = buf;
-        free(buf);
+        size_t n = Conv::convert( (char *)str.c_str(), str.length() * sizeof(typename _FromString::value_type), (char **)&buf );
+        AnsiString s( buf, n / sizeof(AnsiString::value_type) );
+        Buffer::Free(buf);
         return s;
     }
+};
 
+/** \brief Unicode转换器。可以使UTF-8、UTF-16、UTF-32字符串相互自由转换，字节序为平台默认 */
+class WINUX_DLL UnicodeConverter
+{
+public:
+    UnicodeConverter( Utf8String const & utf8str );
+    UnicodeConverter( UnicodeString const & wstr );
+    UnicodeConverter( Utf16String const & utf16str );
+    UnicodeConverter( Utf32String const & utf32str );
+
+    Utf8String toUtf8( size_t newCap = 0 ) const;
+    UnicodeString toUnicode( size_t newCap = 0 ) const;
+    Utf16String toUtf16( size_t newCap = 0 ) const;
+    Utf32String toUtf32( size_t newCap = 0 ) const;
+
+    size_t calcUtf8Length() const;
+    size_t calcUnicodeLength() const;
+    size_t calcUtf16Length() const;
+    size_t calcUtf32Length() const;
+
+private:
+    template < typename _Ty >
+    _Ty const * _q() const { return reinterpret_cast<_Ty const *>(_p); }
+
+    void const * _p;
+    enum {
+        ucUtf8,
+        ucUnicode,
+        ucUtf16,
+        ucUtf32
+    } _type;
 };
 
 // UTF-8编码转换

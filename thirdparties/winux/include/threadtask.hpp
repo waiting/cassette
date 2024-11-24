@@ -76,7 +76,7 @@ struct TaskCtxT : public TaskCtx
     _Ty val;
 
     template < typename... _ArgType >
-    static SharedPointer<TaskCtxT> Create( _ArgType&& ... arg )
+    static SharedPointer<TaskCtxT> New( _ArgType&& ... arg )
     {
         SharedPointer<TaskCtxT> p( new TaskCtxT( std::forward<_ArgType>(arg)... ) );
         p->weakThis = p;
@@ -95,14 +95,14 @@ struct TaskCtxT : public TaskCtx
         {
             this->val = ivk->invoke();
         }
-        catch ( winux::Error const & e )
+        catch ( winux::Error const & /*e*/ )
         {
-            std::cout << e.what() << std::endl;
+            //std::cout << e.what() << std::endl;
             this->aborted = true;
         }
         catch ( ... )
         {
-            std::cout << "unknown" << std::endl;
+            //std::cout << "unknown" << std::endl;
             this->aborted = true;
         }
     }
@@ -118,7 +118,7 @@ template <>
 struct TaskCtxT<void> : public TaskCtx
 {
     template < typename... _ArgType >
-    static SharedPointer<TaskCtxT> Create( _ArgType&& ... arg )
+    static SharedPointer<TaskCtxT> New( _ArgType&& ... arg )
     {
         SharedPointer<TaskCtxT> p( new TaskCtxT( std::forward<_ArgType>(arg)... ) );
         p->weakThis = p;
@@ -136,14 +136,14 @@ struct TaskCtxT<void> : public TaskCtx
         {
             ivk->invoke();
         }
-        catch ( winux::Error const & e )
+        catch ( winux::Error const & /*e*/ )
         {
-            std::cout << e.what() << std::endl;
+            //std::cout << e.what() << std::endl;
             this->aborted = true;
         }
         catch ( ... )
         {
-            std::cout << "unknown" << std::endl;
+            //std::cout << "unknown" << std::endl;
             this->aborted = true;
         }
     }
@@ -167,7 +167,7 @@ public:
     /** \brief 构造函数1
      *
      *  \param threadCount 启动的线程数量 */
-    explicit ThreadPool( int threadCount ) : _mtxPool(true), _cdtPool(true), _poolStop(false), _taskChainCount(0)
+    explicit ThreadPool( size_t threadCount ) : _mtxPool(true), _cdtPool(true), _poolStop(false), _taskChainCount(0)
     {
         this->startup(threadCount);
     }
@@ -178,7 +178,7 @@ public:
     }
 
     /** \brief 启动指定数量的线程 */
-    ThreadPool & startup( int threadCount )
+    ThreadPool & startup( size_t threadCount )
     {
         _group.create( threadCount, [this] () {
             while ( !_poolStop )
@@ -256,13 +256,13 @@ public:
         return _queueTask.size();
     }
 
-    int incTaskChainCount()
+    size_t incTaskChainCount()
     {
         ScopeGuard guard(_mtxPool);
         return ++_taskChainCount;
     }
 
-    int decTaskChainCount()
+    size_t decTaskChainCount()
     {
         ScopeGuard guard(_mtxPool);
         return --_taskChainCount;
@@ -282,7 +282,7 @@ private:
     bool _poolStop; // 线程池停止
     ThreadGroup _group; // 线程组
     std::queue< SharedPointer<TaskCtx> > _queueTask; // 任务队列
-    int _taskChainCount; // 执行中的任务链数量
+    size_t _taskChainCount; // 执行中的任务链数量
 
     friend struct TaskCtx;
 
@@ -325,7 +325,7 @@ public:
     Task( ThreadPool * pool, _Fx fnRoutine, _ArgType&& ... argRoutine )
     {
         static_assert( std::is_same< ReturnType, typename FuncTraits<_Fx>::ReturnType >::value , "FuncTraits<_Fx>::ReturnType is not match Task<_Ty>." );
-        _taskCtx = TaskCtxT<ReturnType>::Create(pool, TaskCtx::taskPending);
+        _taskCtx = TaskCtxT<ReturnType>::New( pool, TaskCtx::taskPending );
         //cout << "start-task: " << _taskCtx.get() << endl;
 
         auto routine = MakeSimple( NewRunable( fnRoutine, std::forward<_ArgType>(argRoutine)... ) );
@@ -347,7 +347,7 @@ public:
     Task( SharedPointer< TaskCtxT<void> > prevTaskCtx, _Fx fnRoutine, _ArgType&& ... argRoutine )
     {
         static_assert( std::is_same< ReturnType, typename FuncTraits<_Fx>::ReturnType >::value , "FuncTraits<_Fx>::ReturnType is not match Task<_Ty>." );
-        _taskCtx = TaskCtxT<ReturnType>::Create(prevTaskCtx->pool, TaskCtx::taskPending);
+        _taskCtx = TaskCtxT<ReturnType>::New( prevTaskCtx->pool, TaskCtx::taskPending );
         _taskCtx->prevTask = prevTaskCtx.get();
         //cout << "then 2-1 " << endl;
 
@@ -374,7 +374,7 @@ public:
     Task( SharedPointer< TaskCtxT<void> > prevTaskCtx, _Fx fnRoutine, typename FuncTraits<_Fx>::ClassType * obj, _ArgType&& ... argRoutine )
     {
         static_assert( std::is_same< ReturnType, typename FuncTraits<_Fx>::ReturnType >::value , "FuncTraits<_Fx>::ReturnType is not match Task<_Ty>." );
-        _taskCtx = TaskCtxT<ReturnType>::Create(prevTaskCtx->pool, TaskCtx::taskPending);
+        _taskCtx = TaskCtxT<ReturnType>::New( prevTaskCtx->pool, TaskCtx::taskPending );
         _taskCtx->prevTask = prevTaskCtx.get();
         //cout << "then 2-2 " << endl;
 
@@ -401,7 +401,7 @@ public:
     Task( SharedPointer< TaskCtxT<_Ty2> > prevTaskCtx, _Fx fnRoutine, _ArgType&& ... argRoutine )
     {
         static_assert( std::is_same< ReturnType, typename FuncTraits<_Fx>::ReturnType >::value , "FuncTraits<_Fx>::ReturnType is not match Task<_Ty>." );
-        _taskCtx = TaskCtxT<ReturnType>::Create(prevTaskCtx->pool, TaskCtx::taskPending);
+        _taskCtx = TaskCtxT<ReturnType>::New( prevTaskCtx->pool, TaskCtx::taskPending );
         _taskCtx->prevTask = prevTaskCtx.get();
         //cout << "then 3-1 " << endl;
 
@@ -429,7 +429,7 @@ public:
     Task( SharedPointer< TaskCtxT<_Ty2> > prevTaskCtx, _Fx fnRoutine, typename FuncTraits<_Fx>::ClassType * obj, _ArgType&& ... argRoutine )
     {
         static_assert( std::is_same< ReturnType, typename FuncTraits<_Fx>::ReturnType >::value , "FuncTraits<_Fx>::ReturnType is not match Task<_Ty>." );
-        _taskCtx = TaskCtxT<ReturnType>::Create(prevTaskCtx->pool, TaskCtx::taskPending);
+        _taskCtx = TaskCtxT<ReturnType>::New( prevTaskCtx->pool, TaskCtx::taskPending );
         _taskCtx->prevTask = prevTaskCtx.get();
         //cout << "then 3-2 " << endl;
 

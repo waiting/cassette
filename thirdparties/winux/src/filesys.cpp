@@ -1,15 +1,14 @@
-﻿#include "system_detection.inl"
-
-#if defined(OS_WIN)
+﻿#if !defined(SAG_COM) && ( (defined(WIN64) || defined(_WIN64) || defined(__WIN64__)) || (defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)) )
 
 #else
 #define __USE_LARGEFILE64
 #endif
 
 #include "utilities.hpp"
+#include "encoding.hpp"
 #include "smartptr.hpp"
-#include "filesys.hpp"
 #include "strings.hpp"
+#include "filesys.hpp"
 #include "time.hpp"
 
 #include <stdio.h>
@@ -27,71 +26,59 @@
     #include <direct.h>
     #include <io.h>
     #include <process.h>
+    #include <tchar.h>
 #else
     #include <utime.h>
     #include <unistd.h>
     #include <errno.h>
+    #include <wchar.h>
 #endif
 
 #if defined(OS_WIN)
     #ifdef UNICODE
-    #define _tgetcwd _wgetcwd
-    #define _tchdir _wchdir
-    #define _ttoi _wtoi
-    #define _tcsrchr wcsrchr
+        #define _tgetcwd _wgetcwd
+        #define _tchdir _wchdir
+        #define _ttoi _wtoi
+        #define _tcsrchr wcsrchr
     #else
-    #define _tgetcwd _getcwd
-    #define _tchdir _chdir
-    #define _ttoi atoi
-    #define _tcsrchr strrchr
+        #define _tgetcwd _getcwd
+        #define _tchdir _chdir
+        #define _ttoi atoi
+        #define _tcsrchr strrchr
     #endif
 #else // LINUX
     #ifdef UNICODE
-    #define _tgetcwd wgetcwd
-    #define _tchdir wchdir
-    #define _ttoi wtoi
-    #define _tcsrchr wcsrchr
+        #define _tgetcwd wgetcwd
+        #define _tchdir wchdir
+        #define _ttoi wtoi
+        #define _tcsrchr wcsrchr
+        #define _tcsftime wcsftime
+        #define _fgetts fgetws
+        #define _tcslen wcslen
     #else
-    #define _tgetcwd getcwd
-    #define _tchdir chdir
-    #define _ttoi atoi
-    #define _tcsrchr strrchr
+        #define _tgetcwd getcwd
+        #define _tchdir chdir
+        #define _ttoi atoi
+        #define _tcsrchr strrchr
+        #define _tcsftime strftime
+        #define _fgetts fgets
+        #define _tcslen strlen
     #endif
-    // 别名
+    // Linux别名
     #define _getcwd getcwd
     #define _stat stat
     #define _stat64 stat64
-    #define _S_IFDIR __S_IFDIR
-    #define _rmdir rmdir
-    #define _unlink unlink
-    #define _utimbuf utimbuf
-    #define _utime utime
+    #define _fstat64 fstat64
     #define _mkdir mkdir
-    // linux别名
     #define _stricmp strcasecmp
     #define _wcsicmp wcscasecmp
-    #define _close close
-    #define _open open
-    #define _read read
-    #define _write write
-    #define _O_RDONLY O_RDONLY
-    #define _O_CREAT O_CREAT
-    #define _O_TRUNC O_TRUNC
-    #define _O_WRONLY O_WRONLY
-    #define _O_TEXT 0
-    #define _O_BINARY 0
-    #if defined(S_IREAD) && defined(S_IWRITE)
-        #define _S_IREAD S_IREAD
-        #define _S_IWRITE S_IWRITE
-    #else
-        #define _S_IREAD S_IRUSR
-        #define _S_IWRITE S_IWUSR
-    #endif
+    #define _utimbuf utimbuf
+    #define O_TEXT 0
+    #define O_BINARY 0
 #endif
 
 namespace winux
 {
-
 #include "is_x_funcs.inl"
 
 inline static String::size_type __StrRFindDirSep( String const & str )
@@ -170,11 +157,11 @@ WINUX_FUNC_IMPL(bool) IsAbsPath( String const & path )
 WINUX_FUNC_IMPL(String) NormalizePath( String const & path )
 {
     StringArray pathSubs;
-    size_t n = StrSplit( path, "/\\", &pathSubs );
+    size_t n = StrSplit( path, TEXT("/\\"), &pathSubs );
     size_t i, c = n;
     for ( i = 0; i < c; )
     {
-        if ( i > 0 && pathSubs[i - 1] != ".." && !IsAbsPath( pathSubs[i - 1] + DirSep ) && pathSubs[i] == ".." )
+        if ( i > 0 && pathSubs[i - 1] != TEXT("..") && !IsAbsPath( pathSubs[i - 1] + DirSep ) && pathSubs[i] == TEXT("..") )
         {
             size_t k;
             for ( k = i + 1; k < c; k++ )
@@ -184,7 +171,7 @@ WINUX_FUNC_IMPL(String) NormalizePath( String const & path )
             c -= 2;
             --i;
         }
-        else if ( pathSubs[i] == "." )
+        else if ( pathSubs[i] == TEXT(".") )
         {
             size_t k;
             for ( k = i + 1; k < c; k++ )
@@ -295,7 +282,7 @@ WINUX_FUNC_IMPL(String) GetCurrentDir( void )
         p = _tgetcwd( &buf[0], size );
     }
     while ( !p && errno == ERANGE );
-    return p ? p : Literal<String::value_type>::emptyStr;
+    return p ? p : Literal<String::value_type>::nulStr;
 }
 
 WINUX_FUNC_IMPL(bool) SetCurrentDir( String const & path )
@@ -306,10 +293,12 @@ WINUX_FUNC_IMPL(bool) SetCurrentDir( String const & path )
 WINUX_FUNC_IMPL(bool) IsDir( String const & path )
 {
     struct _stat st = { 0 };
-    int r = _stat( path.c_str(), &st );
+    int r;
 #if defined(OS_WIN)
-    return r == 0 && ( st.st_mode & _S_IFDIR );
+    r = _tstat( path.c_str(), &st );
+    return r == 0 && ( st.st_mode & S_IFDIR );
 #else
+    r = _stat( path.c_str(), &st );
     return r == 0 && S_ISDIR(st.st_mode);
 #endif
 }
@@ -318,34 +307,41 @@ WINUX_FUNC_IMPL(bool) DetectPath( String const & path, bool * isDir )
 {
     ASSIGN_PTR(isDir) = false;
     struct _stat st = { 0 };
-    int r = _stat( path.c_str(), &st );
+    int r;
+#if defined(OS_WIN)
+    r = _tstat( path.c_str(), &st );
+#else
+    r = _stat( path.c_str(), &st );
+#endif
     if ( r == 0 )
-        ASSIGN_PTR(isDir) = ( st.st_mode & _S_IFDIR ) != 0;
+        ASSIGN_PTR(isDir) = ( st.st_mode & S_IFDIR ) != 0;
     return !( r == -1 && errno == ENOENT );
 }
 
-WINUX_FUNC_IMPL(ulong) FileSize( String const & filename )
-{
-    struct _stat st = { 0 };
-    _stat( filename.c_str(), &st );
-    return st.st_size;
-}
-
-WINUX_FUNC_IMPL(uint64) FileSize64( String const & filename )
+WINUX_FUNC_IMPL(uint64) FileSize( String const & filename )
 {
 #if defined(CL_MINGW)
     struct __stat64 st = { 0 };
 #else
     struct _stat64 st = { 0 };
 #endif
+#if defined(OS_WIN)
+    _tstat64( filename.c_str(), &st );
+#else
     _stat64( filename.c_str(), &st );
+#endif
     return st.st_size;
 }
 
 WINUX_FUNC_IMPL(bool) FileTime( String const & filename, time_t * ctime, time_t * mtime, time_t * atime )
 {
     struct _stat64 st = { 0 };
-    bool r = 0 == _stat64( filename.c_str(), &st );
+    bool r;
+#if defined(OS_WIN)
+    r = 0 == _tstat64( filename.c_str(), &st );
+#else
+    r = 0 == _stat64( filename.c_str(), &st );
+#endif
     ASSIGN_PTR(ctime) = st.st_ctime;
     ASSIGN_PTR(mtime) = st.st_mtime;
     ASSIGN_PTR(atime) = st.st_atime;
@@ -355,21 +351,33 @@ WINUX_FUNC_IMPL(bool) FileTime( String const & filename, time_t * ctime, time_t 
 WINUX_FUNC_IMPL(time_t) FileCTime( String const & filename )
 {
     struct _stat64 st = { 0 };
+#if defined(OS_WIN)
+    _tstat64( filename.c_str(), &st );
+#else
     _stat64( filename.c_str(), &st );
+#endif
     return st.st_ctime;
 }
 
 WINUX_FUNC_IMPL(time_t) FileMTime( String const & filename )
 {
     struct _stat64 st = { 0 };
+#if defined(OS_WIN)
+    _tstat64( filename.c_str(), &st );
+#else
     _stat64( filename.c_str(), &st );
+#endif
     return st.st_mtime;
 }
 
 WINUX_FUNC_IMPL(time_t) FileATime( String const & filename )
 {
     struct _stat64 st = { 0 };
+#if defined(OS_WIN)
+    _tstat64( filename.c_str(), &st );
+#else
     _stat64( filename.c_str(), &st );
+#endif
     return st.st_atime;
 }
 
@@ -381,7 +389,11 @@ WINUX_FUNC_IMPL(bool) FileTouch( String const & filename, time_t time, time_t at
     tbuf.modtime = time;
     tbuf.actime = atime;
 
-    return 0 == _utime( filename.c_str(), &tbuf );
+#if defined(OS_WIN)
+    return 0 == _tutime( filename.c_str(), &tbuf );
+#else
+    return 0 == utime( filename.c_str(), &tbuf );
+#endif
 }
 
 WINUX_FUNC_IMPL(String) PathWithSep( String const & path )
@@ -389,7 +401,7 @@ WINUX_FUNC_IMPL(String) PathWithSep( String const & path )
     String r;
     if ( !path.empty() )
     {
-        String::value_type ch = path[path.length() - 1];
+        auto ch = path[path.length() - 1];
         if ( ch != '\\' && ch != '/' ) // 末尾不是分隔符
         {
             r = path + DirSep;
@@ -397,6 +409,7 @@ WINUX_FUNC_IMPL(String) PathWithSep( String const & path )
         else // 末尾是分隔符
         {
             r = path;
+            r[r.length() - 1] = DirSep[0];
         }
     }
     return r;
@@ -424,9 +437,14 @@ WINUX_FUNC_IMPL(String &) PathWithSep( String * path )
 {
     if ( !path->empty() )
     {
-        if ( (*path)[ path->length() - 1 ] != '\\' || (*path)[ path->length() - 1 ] == '/' ) // 末尾不是分隔符
+        auto ch = (*path)[path->length() - 1];
+        if ( ch != '\\' && ch != '/' ) // 末尾不是分隔符
         {
             *path += DirSep;
+        }
+        else // 末尾是分隔符
+        {
+            (*path)[path->length() - 1] = DirSep[0];
         }
     }
     return *path;
@@ -436,10 +454,8 @@ WINUX_FUNC_IMPL(String &) PathNoSep( String * path )
 {
     if ( !path->empty() )
     {
-        if ( (*path)[ path->length() - 1 ] != '\\' || (*path)[ path->length() - 1 ] == '/' ) // 末尾不是分隔符
-        {
-        }
-        else // 末尾是分隔符
+        auto ch = (*path)[path->length() - 1];
+        if ( ch == '\\' || ch == '/' ) // 末尾是分隔符
         {
             *path = path->substr( 0, path->length() - 1 );
         }
@@ -460,7 +476,7 @@ WINUX_FUNC_IMPL(void) FolderData( String const & path, StringArray * fileArr, St
     while ( iter.next() )
     {
         String const & name = iter.getName();
-        if ( name == "." || name == ".." ) continue;
+        if ( name == TEXT(".") || name == TEXT("..") ) continue;
 
         if ( iter.isDir() )
         {
@@ -521,6 +537,42 @@ WINUX_FUNC_IMPL(size_t) EnumFiles( String const & path, Mixed const & ext, Strin
     return filesCount;
 }
 
+WINUX_FUNC_IMPL(bool) UnlinkFile( String const & filePath )
+{
+#if defined(OS_WIN)
+    return _tunlink( filePath.c_str() ) == 0;
+#else
+    return unlink( filePath.c_str() ) == 0;
+#endif
+}
+
+WINUX_FUNC_IMPL(bool) RemoveDir( String const & dirPath )
+{
+#if defined(OS_WIN)
+    return _trmdir( dirPath.c_str() ) == 0;
+#else
+    return rmdir( dirPath.c_str() ) == 0;
+#endif
+}
+
+WINUX_FUNC_IMPL(bool) RemovePath( String const & path )
+{
+#if defined(OS_WIN)
+    return _tremove( path.c_str() ) == 0;
+#else
+    return remove( path.c_str() ) == 0;
+#endif
+}
+
+WINUX_FUNC_IMPL(bool) RenamePath( String const & oldPath, String const & newPath )
+{
+#if defined(OS_WIN)
+    return _trename( oldPath.c_str(), newPath.c_str() ) == 0;
+#else
+    return rename( oldPath.c_str(), newPath.c_str() ) == 0;
+#endif
+}
+
 WINUX_FUNC_IMPL(size_t) CommonDelete( String const & path )
 {
     size_t deletedCount = 0;
@@ -531,7 +583,7 @@ WINUX_FUNC_IMPL(size_t) CommonDelete( String const & path )
         StringArray::const_iterator it;
         for ( it = files.begin(); it != files.end(); ++it )
         {
-            if ( _unlink( CombinePath( path, *it ).c_str() ) == 0 ) // delete file success
+            if ( UnlinkFile( CombinePath( path, *it ) ) ) // delete file success
                 deletedCount++;
         }
 
@@ -540,12 +592,12 @@ WINUX_FUNC_IMPL(size_t) CommonDelete( String const & path )
             deletedCount += CommonDelete( CombinePath( path, *it ) );
         }
 
-        if ( _rmdir( path.c_str() ) == 0 ) // delete dir success
+        if ( RemoveDir(path) ) // delete dir success
             deletedCount++;
     }
     else
     {
-        if ( _unlink( path.c_str() ) == 0 )
+        if ( UnlinkFile(path) )
             deletedCount++;
     }
     return deletedCount;
@@ -554,7 +606,7 @@ WINUX_FUNC_IMPL(size_t) CommonDelete( String const & path )
 WINUX_FUNC_IMPL(bool) MakeDirExists( String const & path, int mode )
 {
     StringArray subPaths;
-    size_t n = StrSplit( path, "/\\", &subPaths );
+    size_t const n = StrSplit( path, TEXT("/\\"), &subPaths );
     size_t i;
     String existsPath;
     for ( i = 0; i < n; ++i )
@@ -564,7 +616,7 @@ WINUX_FUNC_IMPL(bool) MakeDirExists( String const & path, int mode )
         {
             existsPath += DirSep;
         }
-        else if ( i == 0 && subPath.length() > 1 && subPath[1] == ':' ) // 首项长度大于1,并且第二个为':',表明为windows平台绝对路径
+        else if ( i == 0 && subPath.length() > 1 && subPath[1] == ':' ) // 首项长度大于1，并且第二个为':'，表明为windows平台绝对路径
         {
             existsPath += subPath + DirSep;
         }
@@ -574,7 +626,7 @@ WINUX_FUNC_IMPL(bool) MakeDirExists( String const & path, int mode )
             if ( !DetectPath(existsPath) ) // 不存在则创建
             {
             #if defined(OS_WIN)
-                if ( _mkdir( existsPath.c_str() ) ) return false;
+                if ( _tmkdir( existsPath.c_str() ) ) return false;
             #else
                 if ( _mkdir( existsPath.c_str(), mode ) ) return false;
             #endif
@@ -586,19 +638,475 @@ WINUX_FUNC_IMPL(bool) MakeDirExists( String const & path, int mode )
     return true;
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////
+WINUX_FUNC_IMPL(FileEncoding) RecognizeFileEncoding( winux::Buffer const & content, size_t * pIndex, size_t limitSize )
+{
+    FileEncoding fileEncoding = feMultiByte;
+    size_t & i = *pIndex;
+    size_t k;
+    limitSize = limitSize < content.getSize() ? limitSize : content.getSize();
+    if ( i < limitSize )
+    {
+        if ( content[i] == 0xEF )
+        {
+            i++;
+            if ( i < limitSize )
+            {
+                if ( content[i] == 0xBB )
+                {
+                    i++;
+                    if ( i < limitSize )
+                    {
+                        if ( content[i] == 0xBF )
+                        {
+                            i++;
+                            fileEncoding = feUtf8Bom;
+                        }
+                    }
+                }
+            }
+        }
+        else if ( content[i] == 0xFF )
+        {
+            i++;
+            if ( i < limitSize )
+            {
+                if ( content[i] == 0xFE )
+                {
+                    i++;
+                    fileEncoding = feUtf16Le;
+                    if ( i < limitSize )
+                    {
+                        if ( content[i] == 0x00 )
+                        {
+                            i++;
+                            if ( i < limitSize )
+                            {
+                                if ( content[i] == 0x00 )
+                                {
+                                    i++;
+                                    fileEncoding = feUtf32Le;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        else if ( content[i] == 0xFE )
+        {
+            i++;
+            if ( i < limitSize )
+            {
+                if ( content[i] == 0xFF )
+                {
+                    i++;
+                    fileEncoding = feUtf16Be;
+                }
+            }
+        }
+        else if ( content[i] == 0x00 )
+        {
+            i++;
+            if ( i < limitSize )
+            {
+                if ( content[i] == 0x00 )
+                {
+                    i++;
+                    if ( i < limitSize )
+                    {
+                        if ( content[i] == 0xFE )
+                        {
+                            i++;
+                            if ( i < limitSize )
+                            {
+                                if ( content[i] == 0xFF )
+                                {
+                                    i++;
+                                    fileEncoding = feUtf32Be;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if ( fileEncoding == feMultiByte )
+    {
+        int bytesOfHighestBit1 = 0; // 最高位是1的字节数
+        for ( k = 0; k < limitSize; k++ )
+        {
+            if ( ( content[k] & 0x80 ) == 0x80 )
+            {
+                bytesOfHighestBit1++;
+
+                if ( bytesOfHighestBit1 == 1 )
+                {
+                    if ( ( content[k] & 0xF0 ) == 0xF0 )
+                    {
+                        k++;
+                        if ( k < limitSize )
+                        {
+                            if ( ( content[k] & 0xC0 ) == 0x80 )
+                            {
+                                k++;
+                                if ( k < limitSize )
+                                {
+                                    if ( ( content[k] & 0xC0 ) == 0x80 )
+                                    {
+                                        k++;
+                                        if ( k < limitSize )
+                                        {
+                                            if ( ( content[k] & 0xC0 ) == 0x80 )
+                                            {
+                                                fileEncoding = feUtf8;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    else if ( ( content[k] & 0xE0 ) == 0xE0 )
+                    {
+                        k++;
+                        if ( k < limitSize )
+                        {
+                            if ( ( content[k] & 0xC0 ) == 0x80 )
+                            {
+                                k++;
+                                if ( k < limitSize )
+                                {
+                                    if ( ( content[k] & 0xC0 ) == 0x80 )
+                                    {
+                                        fileEncoding = feUtf8;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    else if ( ( content[k] & 0xC0 ) == 0xC0 )
+                    {
+                        k++;
+                        if ( k < limitSize )
+                        {
+                            if ( ( content[k] & 0xC0 ) == 0x80 )
+                            {
+                                fileEncoding = feUtf8;
+                                break;
+                            }
+                        }
+                    }
+                }
+                else if ( bytesOfHighestBit1 == 2 )
+                {
+                    bytesOfHighestBit1 = 0;
+                }
+            }
+            else
+            {
+                bytesOfHighestBit1 = 0;
+            }
+        }
+    }
+    return fileEncoding;
+}
+
+// 调整字节序。b表示是否反序，配合IsLittleEndian()/IsBigEndian()使用
+template < typename _Ty >
+inline static _Ty _AdjustByteOrder( _Ty v, bool b )
+{
+    if ( b )
+    {
+        return InvertByteOrder(v);
+    }
+    else
+    {
+        return v;
+    }
+}
+
+template < typename _ChTy >
+inline static winux::XString<_ChTy> Impl_NewlineFromFile( _ChTy const * content, size_t len, bool b )
+{
+#if defined(OS_WIN)
+    winux::XString<_ChTy> r2;
+    for ( size_t i = 0; i < len; i++ )
+    {
+        if ( content[i] == _AdjustByteOrder( winux::Literal<_ChTy>::crChar, b ) )
+        {
+            i++;
+            if ( i < len )
+            {
+                if ( content[i] == _AdjustByteOrder( winux::Literal<_ChTy>::lfChar, b ) )
+                {
+                    r2 += _AdjustByteOrder( winux::Literal<_ChTy>::lfChar, b );
+                }
+                else
+                {
+                    r2 += _AdjustByteOrder( winux::Literal<_ChTy>::crChar, b );
+                    r2 += content[i];
+                }
+            }
+            else
+            {
+                r2 += _AdjustByteOrder( winux::Literal<_ChTy>::crChar, b );
+            }
+        }
+        else
+        {
+            r2 += content[i];
+        }
+    }
+    return r2;
+#elif defined(OS_DARWIN)
+    winux::XString<_ChTy> r2;
+    for ( size_t i = 0; i < len; i++ )
+    {
+        if ( content[i] == _AdjustByteOrder( winux::Literal<_ChTy>::crChar, b ) )
+        {
+            r2 += _AdjustByteOrder( winux::Literal<_ChTy>::lfChar, b );
+        }
+        else
+        {
+            r2 += content[i];
+        }
+    }
+    return r2;
+#else
+    return XString<_ChTy>( content, len );
+#endif
+}
+
+template < typename _ChTy >
+inline static winux::XString<_ChTy> Impl_NewlineToFile( _ChTy const * content, size_t len, bool b )
+{
+#if defined(OS_WIN)
+    winux::XString<_ChTy> r2;
+    for ( size_t i = 0; i < len; i++ )
+    {
+        if ( content[i] == _AdjustByteOrder( winux::Literal<_ChTy>::lfChar, b ) )
+        {
+            r2 += _AdjustByteOrder( winux::Literal<_ChTy>::crChar, b );
+            r2 += _AdjustByteOrder( winux::Literal<_ChTy>::lfChar, b );
+        }
+        else
+        {
+            r2 += content[i];
+        }
+    }
+    return r2;
+#elif defined(OS_DARWIN)
+    winux::XString<_ChTy> r2;
+    for ( size_t i = 0; i < len; i++ )
+    {
+        if ( content[i] == _AdjustByteOrder( winux::Literal<_ChTy>::lfChar, b ) )
+        {
+            r2 += _AdjustByteOrder( winux::Literal<_ChTy>::crChar, b );
+        }
+        else
+        {
+            r2 += content[i];
+        }
+    }
+    return r2;
+#else
+    return XString<_ChTy>( content, len );
+#endif
+}
+
+template <>
+WINUX_FUNC_IMPL(XString<char>) NewlineFromFile( char const * content, size_t len, bool b )
+{
+    return Impl_NewlineFromFile( content, len, b );
+}
+template <>
+WINUX_FUNC_IMPL(XString<wchar>) NewlineFromFile( wchar const * content, size_t len, bool b )
+{
+    return Impl_NewlineFromFile( content, len, b );
+}
+template <>
+WINUX_FUNC_IMPL(XString<char16>) NewlineFromFile( char16 const * content, size_t len, bool b )
+{
+    return Impl_NewlineFromFile( content, len, b );
+}
+template <>
+WINUX_FUNC_IMPL(XString<char32>) NewlineFromFile( char32 const * content, size_t len, bool b )
+{
+    return Impl_NewlineFromFile( content, len, b );
+}
+
+template <>
+WINUX_FUNC_IMPL(XString<char>) NewlineToFile( char const * content, size_t len, bool b )
+{
+    return Impl_NewlineToFile( content, len, b );
+}
+template <>
+WINUX_FUNC_IMPL(XString<wchar>) NewlineToFile( wchar const * content, size_t len, bool b )
+{
+    return Impl_NewlineToFile( content, len, b );
+}
+template <>
+WINUX_FUNC_IMPL(XString<char16>) NewlineToFile( char16 const * content, size_t len, bool b )
+{
+    return Impl_NewlineToFile( content, len, b );
+}
+template <>
+WINUX_FUNC_IMPL(XString<char32>) NewlineToFile( char32 const * content, size_t len, bool b )
+{
+    return Impl_NewlineToFile( content, len, b );
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+static String _ContentGetString( Buffer const & content, FileEncoding encoding, bool convertNewline )
+{
+    size_t i = 0;
+    // 编码未指定则自动识别
+    if ( encoding == feUnspec ) encoding = RecognizeFileEncoding( content, &i, 1024 );
+
+    switch ( encoding )
+    {
+    case winux::feMultiByte:
+        {
+            AnsiString str = convertNewline ? NewlineFromFile( content.get<char>() + i, content.size() - i, false ) : AnsiString( content.get<char>() + i, content.size() - i );
+        #if defined(_UNICODE) || defined(UNICODE)
+            return LocalToUnicode(str);
+        #else
+            return str;
+        #endif
+        }
+        break;
+    case winux::feUtf8:
+        {
+            AnsiString str = convertNewline ? NewlineFromFile( content.get<char>() + i, content.size() - i, false ) : AnsiString( content.get<char>() + i, content.size() - i );
+        #if defined(_UNICODE) || defined(UNICODE)
+            return UnicodeConverter(str).toUnicode();
+        #else
+            return LocalFromUtf8(str);
+        #endif
+        }
+        break;
+    case winux::feUtf8Bom:
+        {
+            if ( i == 0 ) i = 3; // skip BOM
+            AnsiString str = convertNewline ? NewlineFromFile( content.get<char>() + i, content.size() - i, false ) : AnsiString( content.get<char>() + i, content.size() - i );
+        #if defined(_UNICODE) || defined(UNICODE)
+            return UnicodeConverter(str).toUnicode();
+        #else
+            return LocalFromUtf8(str);
+        #endif
+        }
+        break;
+    case winux::feUtf16Le:
+        {
+            if ( i == 0 ) i = 2; // skip BOM
+            Utf16String str = convertNewline ?
+                NewlineFromFile( (Utf16String::value_type *)( content.get<winux::byte>() + i ), ( content.size() - i ) / sizeof(Utf16String::value_type), IsBigEndian() ) :
+                Utf16String( (Utf16String::value_type *)( content.get<winux::byte>() + i ), ( content.size() - i ) / sizeof(Utf16String::value_type) )
+            ;
+            if ( IsBigEndian() )
+            {
+                if ( str.length() > 0 ) InvertByteOrderArray( &str[0], str.length() );
+            }
+        #if defined(_UNICODE) || defined(UNICODE)
+            return UnicodeConverter(str).toUnicode();
+        #else
+            return UnicodeToLocal( UnicodeConverter(str).toUnicode() );
+        #endif
+        }
+        break;
+    case winux::feUtf16Be:
+        {
+            if ( i == 0 ) i = 2; // skip BOM
+            Utf16String str = convertNewline ?
+                NewlineFromFile( (Utf16String::value_type *)( content.get<winux::byte>() + i ), ( content.size() - i ) / sizeof(Utf16String::value_type), IsLittleEndian() ) :
+                Utf16String( (Utf16String::value_type *)( content.get<winux::byte>() + i ), ( content.size() - i ) / sizeof(Utf16String::value_type) )
+            ;
+            if ( IsLittleEndian() )
+            {
+                if ( str.length() > 0 ) InvertByteOrderArray( &str[0], str.length() );
+            }
+        #if defined(_UNICODE) || defined(UNICODE)
+            return UnicodeConverter(str).toUnicode();
+        #else
+            return UnicodeToLocal( UnicodeConverter(str).toUnicode() );
+        #endif
+        }
+        break;
+    case winux::feUtf32Le:
+        {
+            if ( i == 0 ) i = 4; // skip BOM
+            Utf32String str = convertNewline ?
+                NewlineFromFile( (Utf32String::value_type *)( content.get<winux::byte>() + i ), ( content.size() - i ) / sizeof(Utf32String::value_type), IsBigEndian() ) :
+                Utf32String( (Utf32String::value_type *)( content.get<winux::byte>() + i ), ( content.size() - i ) / sizeof(Utf32String::value_type) )
+            ;
+            if ( IsBigEndian() )
+            {
+                if ( str.length() > 0 ) InvertByteOrderArray( &str[0], str.length() );
+            }
+        #if defined(_UNICODE) || defined(UNICODE)
+            return UnicodeConverter(str).toUnicode();
+        #else
+            return UnicodeToLocal( UnicodeConverter(str).toUnicode() );
+        #endif
+        }
+        break;
+    case winux::feUtf32Be:
+        {
+            if ( i == 0 ) i = 4; // skip BOM
+            Utf32String str = convertNewline ?
+                NewlineFromFile( (Utf32String::value_type *)( content.get<winux::byte>() + i ), ( content.size() - i ) / sizeof(Utf32String::value_type), IsLittleEndian() ) :
+                Utf32String( (Utf32String::value_type *)( content.get<winux::byte>() + i ), ( content.size() - i ) / sizeof(Utf32String::value_type) )
+            ;
+            if ( IsLittleEndian() )
+            {
+                if ( str.length() > 0 ) InvertByteOrderArray( &str[0], str.length() );
+            }
+        #if defined(_UNICODE) || defined(UNICODE)
+            return UnicodeConverter(str).toUnicode();
+        #else
+            return UnicodeToLocal( UnicodeConverter(str).toUnicode() );
+        #endif
+        }
+        break;
+    }
+    return String();
+}
+
+WINUX_FUNC_IMPL(String) FileGetString( String const & filename, FileEncoding encoding )
+{
+    Buffer content = FileGetContentsEx( filename, false );
+    return _ContentGetString( content, encoding, true );
+}
+
 WINUX_FUNC_IMPL(AnsiString) FileGetContents( String const & filename, bool textMode )
 {
     AnsiString content;
     try
     {
-        SimpleHandle<int> fd( _open( filename.c_str(), _O_RDONLY | ( textMode ? _O_TEXT : _O_BINARY ) ), -1, _close );
+        SimpleHandle<int> fd(
+        #if defined(OS_WIN)
+            _topen(
+        #else
+            open(
+        #endif
+                filename.c_str(),
+                O_RDONLY | ( textMode ? O_TEXT : O_BINARY )
+            ),
+            -1,
+            close
+        );
         if ( fd )
         {
             int readBytes = 0, currRead = 0;
             char buf[4096];
             do
             {
-                if ( ( currRead = _read( fd.get(), buf, 4096 ) ) < 1 ) break;
+                if ( ( currRead = read( fd.get(), buf, 4096 ) ) < 1 ) break;
                 content.append( buf, currRead );
                 readBytes += currRead;
             } while ( currRead > 0 );
@@ -615,14 +1123,25 @@ WINUX_FUNC_IMPL(Buffer) FileGetContentsEx( String const & filename, bool textMod
     GrowBuffer content;
     try
     {
-        SimpleHandle<int> fd( _open( filename.c_str(), _O_RDONLY | ( textMode ? _O_TEXT : _O_BINARY ) ), -1, _close );
+        SimpleHandle<int> fd(
+        #if defined(OS_WIN)
+            _topen(
+        #else
+            open(
+        #endif
+                filename.c_str(),
+                O_RDONLY | ( textMode ? O_TEXT : O_BINARY )
+            ),
+            -1,
+            close
+        );
         if ( fd )
         {
             int readBytes = 0, currRead = 0;
             char buf[4096];
             do
             {
-                if ( ( currRead = _read( fd.get(), buf, 4096 ) ) < 1 ) break;
+                if ( ( currRead = read( fd.get(), buf, 4096 ) ) < 1 ) break;
                 content.append( buf, currRead );
                 readBytes += currRead;
             } while ( currRead > 0 );
@@ -634,27 +1153,140 @@ WINUX_FUNC_IMPL(Buffer) FileGetContentsEx( String const & filename, bool textMod
     return content;
 }
 
+static void _ContentPutString( GrowBuffer * output, String const & content, FileEncoding encoding, bool convertNewline )
+{
+    switch ( encoding )
+    {
+    case winux::feUnspec:
+    case winux::feMultiByte:
+        {
+        #if defined(_UNICODE) || defined(UNICODE)
+            AnsiString str = UnicodeToLocal(content);
+            output->appendString( convertNewline ? NewlineToFile( str.c_str(), str.length(), false ) : str );
+        #else
+            output->appendString( convertNewline ? NewlineToFile( content.c_str(), content.length(), false ) : content );
+        #endif
+        }
+        break;
+    case winux::feUtf8:
+        {
+        #if defined(_UNICODE) || defined(UNICODE)
+            AnsiString str = UnicodeConverter(content).toUtf8();
+            output->appendString( convertNewline ? NewlineToFile( str.c_str(), str.length(), false ) : str );
+        #else
+            AnsiString str = LocalToUtf8(content);
+            output->appendString( convertNewline ? NewlineToFile( str.c_str(), str.length(), false ) : str );
+        #endif
+        }
+        break;
+    case winux::feUtf8Bom:
+        {
+        #if defined(_UNICODE) || defined(UNICODE)
+            AnsiString str = UnicodeConverter(content).toUtf8();
+            output->appendType( { '\xef', '\xbb', '\xbf' } );
+            output->appendString( convertNewline ? NewlineToFile( str.c_str(), str.length(), false ) : str );
+        #else
+            AnsiString str = LocalToUtf8(content);
+            output->appendType( { '\xef', '\xbb', '\xbf' } );
+            output->appendString( convertNewline ? NewlineToFile( str.c_str(), str.length(), false ) : str );
+        #endif
+        }
+        break;
+    case winux::feUtf16Le:
+        {
+        #if defined(_UNICODE) || defined(UNICODE)
+            Utf16String str = UnicodeConverter(content).toUtf16();
+        #else
+            Utf16String str = UnicodeConverter( LocalToUnicode(content) ).toUtf16();
+        #endif
+            if ( IsBigEndian() )
+            {
+                if ( str.length() > 0 ) InvertByteOrderArray( &str[0], str.length() );
+            }
+            output->appendType( { '\xff', '\xfe' } );
+            output->appendString( convertNewline ? NewlineToFile( str.c_str(), str.length(), IsBigEndian() ) : str );
+        }
+        break;
+    case winux::feUtf16Be:
+        {
+        #if defined(_UNICODE) || defined(UNICODE)
+            Utf16String str = UnicodeConverter(content).toUtf16();
+        #else
+            Utf16String str = UnicodeConverter( LocalToUnicode(content) ).toUtf16();
+        #endif
+            if ( IsLittleEndian() )
+            {
+                if ( str.length() > 0 ) InvertByteOrderArray( &str[0], str.length() );
+            }
+            output->appendType( { '\xfe', '\xff' } );
+            output->appendString( convertNewline ? NewlineToFile( str.c_str(), str.length(), IsLittleEndian() ) : str );
+        }
+        break;
+    case winux::feUtf32Le:
+        {
+        #if defined(_UNICODE) || defined(UNICODE)
+            Utf32String str = UnicodeConverter(content).toUtf32();
+        #else
+            Utf32String str = UnicodeConverter( LocalToUnicode(content) ).toUtf32();
+        #endif
+            if ( IsBigEndian() )
+            {
+                if ( str.length() > 0 ) InvertByteOrderArray( &str[0], str.length() );
+            }
+            output->appendType( { '\xff', '\xfe', '\0', '\0' } );
+            output->appendString( convertNewline ? NewlineToFile( str.c_str(), str.length(), IsBigEndian() ) : str );
+        }
+        break;
+    case winux::feUtf32Be:
+        {
+        #if defined(_UNICODE) || defined(UNICODE)
+            Utf32String str = UnicodeConverter(content).toUtf32();
+        #else
+            Utf32String str = UnicodeConverter( LocalToUnicode(content) ).toUtf32();
+        #endif
+            if ( IsLittleEndian() )
+            {
+                if ( str.length() > 0 ) InvertByteOrderArray( &str[0], str.length() );
+            }
+            output->appendType( { '\0', '\0', '\xfe', '\xff' } );
+            output->appendString( convertNewline ? NewlineToFile( str.c_str(), str.length(), IsLittleEndian() ) : str );
+        }
+        break;
+    }
+}
+
+WINUX_FUNC_IMPL(bool) FilePutString( String const & filename, String const & content, FileEncoding encoding )
+{
+    GrowBuffer output;
+    _ContentPutString( &output, content, encoding, true );
+    return FilePutContentsEx( filename, output, false );
+}
+
 WINUX_FUNC_IMPL(bool) FilePutContents( String const & filename, AnsiString const & content, bool textMode )
 {
     bool r = false;
     try
     {
         SimpleHandle<int> fd(
-            _open(
+        #if defined(OS_WIN)
+            _topen(
+        #else
+            open(
+        #endif
                 filename.c_str(),
-                _O_CREAT | _O_TRUNC | _O_WRONLY | ( textMode ? _O_TEXT : _O_BINARY ),
+                O_CREAT | O_TRUNC | O_WRONLY | ( textMode ? O_TEXT : O_BINARY ),
             #if defined(_MSC_VER) || defined(WIN32)
-                _S_IREAD | _S_IWRITE
+                S_IREAD | S_IWRITE
             #else
                 S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH
             #endif
             ),
             -1,
-            _close
+            close
         );
         if ( fd )
         {
-            int writtenBytes = _write( fd.get(), content.c_str(), (uint)content.size() );
+            int writtenBytes = write( fd.get(), content.c_str(), (uint)content.size() );
             if ( writtenBytes == (int)content.size() )
                 r = true;
         }
@@ -683,21 +1315,25 @@ WINUX_FUNC_IMPL(bool) FilePutContentsEx( String const & filename, Buffer const &
     try
     {
         SimpleHandle<int> fd(
-            _open(
+        #if defined(OS_WIN)
+            _topen(
+        #else
+            open(
+        #endif
                 filename.c_str(),
-                _O_CREAT | _O_TRUNC | _O_WRONLY | ( textMode ? _O_TEXT : _O_BINARY ),
+                O_CREAT | O_TRUNC | O_WRONLY | ( textMode ? O_TEXT : O_BINARY ),
             #if defined(_MSC_VER) || defined(WIN32)
-                _S_IREAD | _S_IWRITE
+                S_IREAD | S_IWRITE
             #else
                 S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH
             #endif
             ),
             -1,
-            _close
+            close
         );
         if ( fd )
         {
-            int writtenBytes = _write( fd.get(), content.getBuf(), (uint)content.getSize() );
+            int writtenBytes = write( fd.get(), content.getBuf(), (uint)content.getSize() );
             if ( writtenBytes == (int)content.getSize() )
                 r = true;
         }
@@ -720,43 +1356,132 @@ WINUX_FUNC_IMPL(bool) FilePutContentsEx( String const & filename, Buffer const &
     return r;
 }
 
-WINUX_FUNC_IMPL(void) WriteLog( String const & s )
+WINUX_FUNC_IMPL(String) BackupFile( String const & filePath, String const & bakDir, String const & fmt )
 {
-    String exeFile;
-    String exePath = FilePath( GetExecutablePath(), &exeFile );
-    File out( exePath + DirSep + FileTitle(exeFile) + ".log", "at" );
-    time_t tt = GetUtcTime();
-    struct tm * t = gmtime(&tt);
-    char sz[32] = "";
-    strftime( sz, 32, "%a, %d %b %Y %H:%M:%S GMT", t );
-    String log;
-    StringWriter(&log) << Format( "[pid:%d]", getpid() ) << sz << " - \"" << AddCSlashes(s) << "\"" << std::endl;
-    out.puts(log);
-}
+    String r;
 
-WINUX_FUNC_IMPL(void) WriteBinLog( void const * data, size_t size )
-{
-    String exeFile;
-    String exePath = FilePath( GetExecutablePath(), &exeFile );
-    File out( exePath + DirSep + FileTitle(exeFile) + ".binlog", "ab" );
-    out.write( data, size );
+    // 文件内容
+    Buffer fileContent = FileGetContentsEx( filePath, false );
+    // 文件sha1
+    Buffer fileSha1 = Sha1(fileContent);
+
+    String fileName, fileTitle, extName;
+    String dirPath = FilePath( filePath, &fileName );
+    fileTitle = FileTitle( fileName, &extName );
+
+    // 计算备份目录路径并使之存在
+    String bakDirPath = IsAbsPath(bakDir) ? bakDir : CombinePath( dirPath, bakDir );
+    if ( !DetectPath(bakDirPath) ) MakeDirExists(bakDirPath);
+
+    // 计算备份文件路径
+    for ( size_t v = 0; ; v++ ) // 文件版本编号
+    {
+        String bakFileName;
+        size_t i = 0;
+        while ( i < fmt.length() )
+        {
+            winux::String::value_type ch = fmt[i];
+            if ( ch == '%' )
+            {
+                if ( i + 1 < fmt.length() )
+                {
+                    i++; // skip '%'
+                    switch ( fmt[i] )
+                    {
+                    case 'f':
+                        bakFileName += fileTitle;
+                        i++;
+                        break;
+                    case 'e':
+                        bakFileName += extName;
+                        i++;
+                        break;
+                    case 'E':
+                        bakFileName += extName.empty() ? TEXT("") : TEXT(".") + extName;
+                        i++;
+                        break;
+                    case 'v':
+                        bakFileName += Format( TEXT("%u"), v );
+                        i++;
+                        break;
+                    case '%':
+                        bakFileName += '%';
+                        i++;
+                        break;
+                    }
+                }
+                else
+                {
+                    bakFileName += ch;
+                    i++;
+                }
+            }
+            else
+            {
+                bakFileName += ch;
+                i++;
+            }
+        }
+
+        String bakFilePath = CombinePath( bakDirPath, bakFileName );
+        // 备份文件是否存在
+        if ( DetectPath(bakFilePath) ) // 存在检查sha1
+        {
+            Buffer bakSha1 = Sha1( FileGetContentsEx( bakFilePath, false ) );
+            if ( fileSha1 == bakSha1 )
+            {
+                r = bakFilePath;
+                break;
+            }
+        }
+        else // 如果不存在，直接备份
+        {
+            if ( FilePutContentsEx( bakFilePath, fileContent, false ) ) r = bakFilePath;
+            break;
+        }
+    }
+
+    return r;
 }
 
 
 // class DirIterator ---------------------------------------------------------------
 #if defined(OS_WIN)
-DirIterator::DirIterator( String const & path )
-: _path(path), _findFile( FindFirstFile( CombinePath( path, "*" ).c_str(), &_wfd ), INVALID_HANDLE_VALUE, FindClose ), _first(true)
+DirIterator::DirIterator( String const & path, String const & pattern )
+: _path(path), _findFile( FindFirstFile( CombinePath( path, pattern ).c_str(), &_wfd ), INVALID_HANDLE_VALUE, FindClose ), _first(true)
 {
 
 }
 #else
-DirIterator::DirIterator( String const & path )
-: _path(path), _findFile( opendir( path.empty() ? "." : path.c_str() ), (DIR*)NULL, closedir )
+DirIterator::DirIterator( String const & path, String const & pattern )
+: _path(path), _curr(-1)
 {
-
+    int rc;
+    memset( &_findFile, 0, sizeof(_findFile) );
+    #if defined(__USE_LARGEFILE64)
+    rc = glob64( CombinePath( path, pattern ).c_str(), 0, nullptr, &_findFile );
+    #else
+    rc = glob( CombinePath( path, pattern ).c_str(), 0, nullptr, &_findFile );
+    #endif
+    if ( rc == 0 )
+    {
+        _curr = 0;
+    }
 }
 #endif
+
+DirIterator::~DirIterator()
+{
+#if defined(OS_WIN)
+
+#else
+    #if defined(__USE_LARGEFILE64)
+    globfree64(&_findFile);
+    #else
+    globfree(&_findFile);
+    #endif
+#endif
+}
 
 bool DirIterator::next()
 {
@@ -787,15 +1512,15 @@ bool DirIterator::next()
         }
     }
 #else
-    struct dirent * d;
-    if ( !_findFile ) return false;
-    if ( ( d = readdir( _findFile.get() ) ) )
+    if ( _curr < _findFile.gl_pathc )
     {
-        _name = d->d_name;
+        _path = FilePath( _findFile.gl_pathv[_curr], &_name );
+        _curr++;
         return true;
     }
     else
     {
+        _curr = 0;
         return false;
     }
 #endif
@@ -832,6 +1557,14 @@ size_t IFile::read( void * buf, size_t size )
     throw FileSysError( FileSysError::fseNotImplemented, "This method is not implemented" );
 }
 
+Buffer IFile::read( size_t size )
+{
+    Buffer buf;
+    buf.alloc(size);
+    this->read( buf.getBuf(), buf.getSize() );
+    return buf;
+}
+
 size_t IFile::write( void const * data, size_t size )
 {
     throw FileSysError( FileSysError::fseNotImplemented, "This method is not implemented" );
@@ -839,7 +1572,7 @@ size_t IFile::write( void const * data, size_t size )
 
 size_t IFile::write( Buffer const & buf )
 {
-    throw FileSysError( FileSysError::fseNotImplemented, "This method is not implemented" );
+    return this->write( buf.getBuf(), buf.getSize() );
 }
 
 bool IFile::rewind()
@@ -847,7 +1580,7 @@ bool IFile::rewind()
     throw FileSysError( FileSysError::fseNotImplemented, "This method is not implemented" );
 }
 
-bool IFile::seek( offset_t offset )
+bool IFile::seek( offset_t offset, SeekType origin )
 {
     throw FileSysError( FileSysError::fseNotImplemented, "This method is not implemented" );
 }
@@ -857,14 +1590,19 @@ size_t IFile::tell()
     throw FileSysError( FileSysError::fseNotImplemented, "This method is not implemented" );
 }
 
-winux::String IFile::getLine()
+String IFile::getLine()
 {
     throw FileSysError( FileSysError::fseNotImplemented, "This method is not implemented" );
 }
 
 int IFile::puts( String const & str )
 {
-    throw FileSysError( FileSysError::fseNotImplemented, "This method is not implemented" );
+#if defined(_UNICODE) || defined(_UNICODE)
+    AnsiString data = StringToLocal(str);
+    return (int)this->write( data.c_str(), data.length() );
+#else
+    return (int)this->write( str.c_str(), str.length() * sizeof(str[0]) );
+#endif
 }
 
 bool IFile::eof()
@@ -877,19 +1615,160 @@ size_t IFile::size()
     throw FileSysError( FileSysError::fseNotImplemented, "This method is not implemented" );
 }
 
-void * IFile::buffer( size_t * size )
+void * IFile::entire( size_t * size )
 {
-    throw FileSysError( FileSysError::fseNotImplemented, "This method is not implemented" );
+    //throw FileSysError( FileSysError::fseNotImplemented, "This method is not implemented" );
+    *size = 0;
+    return nullptr;
 }
 
-AnsiString IFile::buffer()
+String IFile::entire( FileEncoding encoding, bool convertNewline )
 {
-    throw FileSysError( FileSysError::fseNotImplemented, "This method is not implemented" );
+    size_t len;
+    void * buf = this->entire(&len);
+    return _ContentGetString( Buffer( buf, len, true ), encoding, convertNewline );
 }
 
-// class File ----------------------------------------------------------------------------
-File::File( String const & filename, String const & mode, bool autoload )
-: _fp(NULL), _autoload(autoload), _fileSize(0), _loadedSize(0)
+// class MemoryFile -----------------------------------------------------------------------
+MemoryFile::MemoryFile() : _p(nullptr)
+{
+}
+
+MemoryFile::MemoryFile( void const * data, size_t size, bool isPeek ) : _p(nullptr)
+{
+    _buf.setBuf( data, size, isPeek );
+    _p = _buf.begin();
+}
+
+MemoryFile::MemoryFile( Buffer const & buf, bool isPeek ) : _p(nullptr)
+{
+    _buf.setBuf( buf.getBuf(), buf.getSize(), isPeek || buf.isPeek() );
+    _p = _buf.begin();
+}
+
+MemoryFile::MemoryFile( AnsiString const & content, bool isPeek ) : _p(nullptr)
+{
+    _buf.setBuf( content.c_str(), content.size(), isPeek );
+    _p = _buf.begin();
+}
+
+bool MemoryFile::open( String const & content, String const & mode )
+{
+    _buf.setBuf( content.c_str(), sizeof(String::value_type) * content.size(), mode.find('r') != String::npos );
+    _p = _buf.begin();
+    return true;
+}
+
+bool MemoryFile::close()
+{
+    _buf.free();
+    _p = nullptr;
+    return true;
+}
+
+size_t MemoryFile::read( void * buf, size_t size )
+{
+    size_t remainingSize = _buf.end() - _p;
+    if ( size > remainingSize ) // 获取大小大于剩余大小，以剩余大小为准
+    {
+        memcpy( buf, _p, remainingSize );
+        _p += remainingSize;
+        return remainingSize;
+    }
+    else
+    {
+        memcpy( buf, _p, size );
+        _p += size;
+        return size;
+    }
+}
+
+size_t MemoryFile::write( void const * data, size_t size )
+{
+    size_t remainingSize = _buf.end() - _p;
+    if ( size > remainingSize ) // 欲写入大小大于剩余大小
+    {
+        _buf.append( nullptr, size - remainingSize );
+        _p = _buf.end() - size;
+        memcpy( _p, data, size );
+        _p += size;
+    }
+    else
+    {
+        memcpy( _p, data, size );
+        _p += size;
+    }
+    return size;
+}
+
+bool MemoryFile::rewind()
+{
+    _p = _buf.begin();
+    return _p != nullptr;
+}
+
+bool MemoryFile::seek( offset_t offset, SeekType origin )
+{
+    if ( _p != nullptr )
+    {
+        switch ( origin )
+        {
+        case winux::seekSet:
+            _p = _buf.begin() + offset;
+            break;
+        case winux::seekCur:
+            _p = _p + offset;
+            break;
+        case winux::seekEnd:
+            _p = _buf.end() + offset;
+            break;
+        }
+        return _p < _buf.end();
+    }
+    return false;
+}
+
+size_t MemoryFile::tell()
+{
+    return _p - _buf.begin();
+}
+
+String MemoryFile::getLine()
+{
+    String line;
+    size_t i = _p - _buf.begin();
+    StrGetLine( &line, _buf.getBuf<String::value_type>(), _buf.getSize() / sizeof(String::value_type), &i );
+    _p = _buf.begin() + i;
+    return line;
+}
+
+int MemoryFile::puts( String const & str )
+{
+    return (int)this->write( str.c_str(), str.length() * sizeof(str[0]) );
+}
+
+bool MemoryFile::eof()
+{
+    return _p == nullptr || _p >= _buf.end();
+}
+
+size_t MemoryFile::size()
+{
+    return _buf.getSize();
+}
+
+void * MemoryFile::entire( size_t * size )
+{
+    ASSIGN_PTR(size) = _buf.getSize();
+    return _buf.getBuf();
+}
+
+// class File ---------------------------------------------------------------------------------
+File::File() : _fp(nullptr)
+{
+}
+
+File::File( String const & filename, String const & mode ) : _fp(nullptr)
 {
     this->open( filename, mode );
 }
@@ -899,42 +1778,27 @@ File::~File()
     this->close();
 }
 
-void File::_loadData()
-{
-    if ( _fp )
-    {
-        _buf.alloc(_fileSize);
-        _loadedSize = this->read( _buf.getBuf(), _buf.getSize() );
-        this->rewind();
-    }
-}
-
 bool File::open( String const & filename, String const & mode )
 {
     this->close();
-    _filename = filename;
-    if ( !_filename.empty() )
+    if ( !filename.empty() )
     {
-        _fp = fopen( _filename.c_str(), mode.c_str() );
-        if ( mode.find('w') == String::npos )
-        {
-            _fileSize = FileSize(_filename);
-            if ( _autoload ) this->_loadData();
-        }
-        return _fp != NULL;
+    #if defined(OS_WIN)
+        _fp = _tfopen( filename.c_str(), mode.c_str() );
+    #else
+        _fp = fopen( filename.c_str(), mode.c_str() );
+    #endif
+        return _fp != nullptr;
     }
     return false;
 }
 
 bool File::close()
 {
-    if ( _fp != NULL )
+    if ( _fp != nullptr )
     {
         fclose(_fp);
-        _fp = NULL;
-        _fileSize = 0;
-        _loadedSize = 0;
-        _buf.free();
+        _fp = nullptr;
         return true;
     }
     return false;
@@ -942,59 +1806,53 @@ bool File::close()
 
 size_t File::read( void * buf, size_t size )
 {
-    assert( _fp != NULL );
+    if ( _fp == nullptr ) return 0;
     return fread( buf, 1, size, _fp );
 }
 
 size_t File::write( void const * data, size_t size )
 {
-    assert( _fp != NULL );
+    if ( _fp == nullptr ) return 0;
     return fwrite( data, 1, size, _fp );
-}
-
-size_t File::write( Buffer const & buf )
-{
-    return this->write( buf.getBuf(), buf.getSize() );
 }
 
 bool File::rewind()
 {
-    assert( _fp != NULL );
+    if ( _fp == nullptr ) return false;
     ::rewind(_fp);
     return true;
 }
 
-bool File::seek( offset_t offset )
+bool File::seek( offset_t offset, SeekType origin )
 {
-    assert( _fp != NULL );
-    return !fseek( _fp, (long)offset, SEEK_SET );
+    if ( _fp == nullptr ) return false;
+    return !fseek( _fp, (long)offset, (int)origin );
 }
 
 size_t File::tell()
 {
-    assert( _fp != NULL );
+    if ( _fp == nullptr ) return 0;
     return ftell(_fp);
 }
 
 winux::String File::getLine()
 {
-    assert( _fp != NULL );
     String line;
-    size_t const N = 4096;
-    String::value_type sz[N];
+    if ( _fp == nullptr ) return line;
+    size_t const NBUF = 512;
+    String::value_type sz[NBUF];
     bool hasLineSep = false;
     do
     {
-        memset( sz, 0, N * sizeof(String::value_type) );
-        if ( fgets( sz, N, _fp ) )
+        memset( sz, 0, NBUF * sizeof(String::value_type) );
+        if ( _fgetts( sz, NBUF, _fp ) )
         {
-            String::size_type len = strlen(sz); // 获得读取到的字符串长度
+            String::size_type len = _tcslen(sz); // 获得读取到的字符串长度
             hasLineSep = sz[len - 1] == Literal<String::value_type>::lfChar; // 判断是否读取到换行符
             if ( hasLineSep )
             {
                 line.append( sz, len );
                 return line;
-                //line.clear();
             }
             else
             {
@@ -1006,50 +1864,61 @@ winux::String File::getLine()
             break;
         }
     } while ( !hasLineSep );
-
     return line;
-}
-
-int File::puts( String const & str )
-{
-    return (int)this->write( str.c_str(), str.length() * sizeof(str[0]) );
 }
 
 bool File::eof()
 {
-    assert( _fp != NULL );
+    if ( _fp == nullptr ) return true;
     return feof(_fp) != 0;
 }
 
 size_t File::size()
 {
-    return _fileSize;
+    if ( _fp == nullptr ) return 0;
+    struct _stat64 st;
+    int rc = _fstat64( this->getFd(), &st );
+    if ( rc < 0 ) st.st_size = 0;
+    return (size_t)st.st_size;
 }
 
-void * File::buffer( size_t * size )
+void * File::entire( size_t * size )
 {
-    *size = _loadedSize;
-    return _buf.getBuf();
+    size_t fileSize = this->size();
+
+    thread_local Buffer buf; // 用于加载文件数据的缓冲区
+
+    buf.alloc(fileSize);
+    *size = this->read( buf.getBuf(), buf.getSize() );
+    this->rewind();
+
+    return buf.getBuf();
 }
 
-AnsiString File::buffer()
+int File::getFd() const
 {
-    size_t len;
-    AnsiString::value_type * s = (AnsiString::value_type *)this->buffer(&len);
-    if ( !s || len < 1 )
-    {
-        return AnsiString();
-    }
-    return AnsiString( s, len );
+    return fileno(_fp);
 }
 
-// class BlockOutFile -------------------------------------------------------------------------
+#if defined(OS_WIN)
+HANDLE File::getOsHandle() const
+{
+    return (HANDLE)_get_osfhandle( this->getFd() );
+}
+#else
+int File::getOsHandle() const
+{
+    return this->getFd();
+}
+#endif
+
+// class BlockOutFile ---------------------------------------------------------------------
 BlockOutFile::BlockOutFile( String const & filename, bool isTextMode, size_t blockSize )
-: File( "", "", false )
 {
     _fileno = 1;
     _isTextMode = isTextMode;
     _blockSize = blockSize;
+    _writtenSize = 0;
     // 分析文件路径
     _dirname = FilePath( filename, &_basename );
     _filetitle = FileTitle( _basename, &_extname );
@@ -1061,8 +1930,8 @@ bool BlockOutFile::nextBlock()
 {
     this->close(); // 关闭先前的那块
     bool r = this->open(
-        CombinePath( _dirname, _filetitle + "_" + (String)Mixed(_fileno) + "." + _extname ),
-        ( _isTextMode ? "w" : "wb" )
+        CombinePath( _dirname, _filetitle + TEXT("_") + (String)Mixed(_fileno) + TEXT(".") + _extname ),
+        ( _isTextMode ? TEXT("w") : TEXT("wb") )
     );
     if ( r )
     {
@@ -1073,32 +1942,16 @@ bool BlockOutFile::nextBlock()
 
 size_t BlockOutFile::write( void const * data, size_t size )
 {
-    _loadedSize += size;
-    if ( _loadedSize > _blockSize )
+    _writtenSize += size;
+    if ( _writtenSize > _blockSize )
     {
         this->nextBlock();
-        _loadedSize = size;
+        _writtenSize = size;
     }
     return File::write( data, size );
 }
 
-size_t BlockOutFile::write( Buffer const & buf )
-{
-    return this->write( buf.getBuf(), buf.getSize() );
-}
-
-int BlockOutFile::puts( String const & str )
-{
-    _loadedSize += (int)str.length();
-    if ( _loadedSize > _blockSize )
-    {
-        this->nextBlock();
-        _loadedSize = (int)str.length();
-    }
-    return File::puts(str);
-}
-
-// class BlockInFile --------------------------------------------------------------------
+// class BlockInFile ----------------------------------------------------------------------
 
 // 找并提取下划线数字部分
 static bool __FindAndExtractDigit( String const & str, String * part1, String * partDigit )
@@ -1128,8 +1981,7 @@ static bool __FindAndExtractDigit( String const & str, String * part1, String * 
     return false;
 }
 
-BlockInFile::BlockInFile( String const & filename, bool isTextMode )
-: File( "", "", false ), _index(0), _isTextMode(isTextMode)
+BlockInFile::BlockInFile( String const & filename, bool isTextMode ) : _index(0), _isTextMode(isTextMode)
 {
     // 分析文件路径
     _dirname = FilePath( filename, &_basename );
@@ -1143,7 +1995,7 @@ BlockInFile::BlockInFile( String const & filename, bool isTextMode )
         int i;
         for ( i = 1; i <= maxFileNo; ++i )
         {
-            String curFileName = CombinePath( _dirname, _filetitle + (String)Mixed(i) + "." + _extname );
+            String curFileName = CombinePath( _dirname, _filetitle + (String)Mixed(i) + TEXT(".") + _extname );
             if ( DetectPath(curFileName) )
             {
                 _blockFiles.push_back(curFileName);
@@ -1152,7 +2004,7 @@ BlockInFile::BlockInFile( String const & filename, bool isTextMode )
         bool flag = true;
         for ( ; flag; ++i )
         {
-            String curFileName = CombinePath( _dirname, _filetitle + (String)Mixed(i) + "." + _extname );
+            String curFileName = CombinePath( _dirname, _filetitle + (String)Mixed(i) + TEXT(".") + _extname );
             if ( ( flag = DetectPath(curFileName) ) )
             {
                 _blockFiles.push_back(curFileName);
@@ -1166,7 +2018,7 @@ BlockInFile::BlockInFile( String const & filename, bool isTextMode )
         _filetitle = fileTitle;
         for ( ; flag; ++i )
         {
-            String curFileName = CombinePath( _dirname, _filetitle + "_" + (String)Mixed(i) + "." + _extname );
+            String curFileName = CombinePath( _dirname, _filetitle + TEXT("_") + (String)Mixed(i) + TEXT(".") + _extname );
             if ( ( flag = DetectPath(curFileName) ) )
             {
                 _blockFiles.push_back(curFileName);
@@ -1183,12 +2035,23 @@ bool BlockInFile::nextBlock()
     {
         return false;
     }
-    bool r = this->open( _blockFiles[_index], ( _isTextMode ? "r" : "rb" ) );
+    bool r = this->open( _blockFiles[_index], ( _isTextMode ? TEXT("r") : TEXT("rb") ) );
     if ( r )
     {
         _index++;
     }
     return r;
+}
+
+String BlockInFile::getLine()
+{
+    String line;
+    // 若文件未结束，并且行尾不是换行符，继续读行
+    while ( !this->eof() && ( line.length() == 0 || line[line.length() - 1] != Literal<String::value_type>::lfChar ) )
+    {
+        line += File::getLine();
+    }
+    return line;
 }
 
 bool BlockInFile::eof()
@@ -1201,4 +2064,5 @@ bool BlockInFile::eof()
     return r;
 }
 
-}
+
+} // namespace winux

@@ -22,9 +22,8 @@ inline bool IsDigit( int c )
     return c >= '0' && c <= '9';
 }
 
-WordsLib::WordsLib( String const & filename ) throw(WordsLibException)
-:
-_file(INVALID_HANDLE_VALUE),
+WordsLib::WordsLib( AnsiString const & filename ) throw(WordsLibException) :
+    _file(INVALID_HANDLE_VALUE),
     _fileMapping(NULL),
     filesize(0),
     _dataOffset(0),
@@ -33,19 +32,19 @@ _file(INVALID_HANDLE_VALUE),
     _dataSize(0),
     _curIndex(-1)
 {
-    _file = CreateFile( filename.c_str(), /*FILE_ALL_ACCESS*/GENERIC_READ, /*FILE_SHARE_READ*/0, NULL, OPEN_EXISTING, 0, NULL );
+    _file = CreateFileA( filename.c_str(), /*FILE_ALL_ACCESS*/GENERIC_READ, /*FILE_SHARE_READ*/0, NULL, OPEN_EXISTING, 0, NULL );
     if ( _file == INVALID_HANDLE_VALUE )
     {
         DWORD dwErr = GetLastError();
-        throw WordsLibException( ( GetErrorStr(dwErr) + "词库文件`" + filename + "`未找到" ).c_str() );
+        throw WordsLibException( StringToLocal( GetErrorStr(dwErr) ) + "词库文件`" + filename + "`未找到" );
     }
 
     filesize = (uint)GetFileSize( _file, NULL );
     _fileMapping = CreateFileMapping( _file, NULL, PAGE_READONLY, 0, 0, NULL );
 
-    this->readHeaders();// 读取头信息
+    this->readHeaders(); // 读取头信息
 
-    if ( this->type != TEXT("equal") )
+    if ( this->type != "equal" )
     {
         throw WordsLibException("不支持的词库");
     }
@@ -54,7 +53,6 @@ _file(INVALID_HANDLE_VALUE),
     _dataSize = filesize - _dataOffset;
     _p = (LPBYTE)MapViewOfFile( _fileMapping, FILE_MAP_READ, 0, 0, 0 );
     _data = _p + _dataOffset;
-
 }
 
 WordsLib::~WordsLib()
@@ -86,24 +84,24 @@ void WordsLib::readHeaders()
         }
     }
     i += 2; // inc "\r\n"
-    AnsiString headers;
-    headers.resize(i);
-    CopyMemory( &headers[0], s, i );
+    AnsiString headerStr;
+    headerStr.resize(i);
+    CopyMemory( &headerStr[0], s, i );
 
     _dataOffset = i + 2; // skip "\r\n"
 
     UnmapViewOfFile(p);
 
     // 解析
-    header.clear();
-    StringStringMap tmpHeader;
+    this->header.clear();
+    decltype(this->header) tmpHeader;
     AnsiStringArray arrHeaders;
-    int count = (int)StrSplit2( headers, "\r\n", &arrHeaders );
+    int count = (int)StrSplit2( headerStr, AnsiString("\r\n"), &arrHeaders );
 
     for ( i = 0; i < count; ++i )
     {
         AnsiStringArray kv;
-        int c = (int)StrSplit( arrHeaders[i], ":", &kv );
+        int c = (int)StrSplit( arrHeaders[i], AnsiString(":"), &kv );
         if ( c > 1 )
         {
             AnsiString k = StrTrim(kv[0]);
@@ -118,15 +116,15 @@ void WordsLib::readHeaders()
         }
     }
     // 检测编码
-    encoding = isset( tmpHeader, "encoding" ) ? Mixed(tmpHeader["encoding"]) : Mixed("");
-    _strlwr(&encoding[0]);
-    if ( encoding == "utf-8" )
+    this->encoding = isset( tmpHeader, "encoding" ) ? tmpHeader["encoding"] : "";
+    if ( this->encoding.length() > 0 ) _strlwr(&this->encoding[0]);
+    if ( this->encoding == "utf-8" )
     {
         // utf-8编码
         auto it = tmpHeader.begin();
         for ( ; it != tmpHeader.end(); ++it )
         {
-            header[Utf8ToString(it->first)] = Utf8ToString(it->second);
+            this->header[it->first] = it->second;
         }
     }
     else // 当作本地编码处理
@@ -134,26 +132,25 @@ void WordsLib::readHeaders()
         auto it = tmpHeader.begin();
         for ( ; it != tmpHeader.end(); ++it )
         {
-            header[LocalToString(it->first)] = LocalToString(it->second);
+            this->header[it->first] = it->second;
         }
     }
 
     // 赋值给变量
-    name = this->getHeader( TEXT("name"), TEXT("") );
-    desc = this->getHeader( TEXT("desc"), TEXT("") );
-    type = this->getHeader( TEXT("type"), TEXT("equal") );
-    compress = this->getHeader( TEXT("compress"), TEXT("none") );
-    itemsize = Mixed( this->getHeader( TEXT("itemsize"), TEXT("32") ) );
-    wordscount = Mixed( this->getHeader( TEXT("wordscount"), TEXT("0") ) );
-
+    this->name = this->getHeader( "name", "" );
+    this->desc = this->getHeader( "desc", "" );
+    this->type = this->getHeader( "type", "equal" );
+    this->compress = this->getHeader( "compress", "none" );
+    this->itemsize = Mixed( this->getHeader( "itemsize", "32" ) );
+    this->wordscount = Mixed( this->getHeader( "wordscount", "0" ) );
 }
 
-String WordsLib::getHeader( String const & key, String const & defval )
+AnsiString WordsLib::getHeader( AnsiString const & key, AnsiString const & defval )
 {
-    return isset( header, key ) && header[key] != TEXT("") ? header[key] : defval;
+    return isset( this->header, key ) && this->header[key] != "" ? this->header[key] : defval;
 }
 
-String WordsLib::prev() const
+AnsiString WordsLib::prev() const
 {
     if ( _curIndex > -1 )
         _curIndex--;
@@ -161,39 +158,40 @@ String WordsLib::prev() const
     return this->at(_curIndex);
 }
 
-String WordsLib::next() const
+AnsiString WordsLib::next() const
 {
-    if ( _curIndex < wordscount )
+    if ( _curIndex < this->wordscount )
         _curIndex++;
 
     return this->at(_curIndex);
 }
 
-String WordsLib::at( int i ) const
+AnsiString WordsLib::at( int i ) const
 {
-    if ( i < 0 || i > wordscount - 1 )
+    if ( i < 0 || i > this->wordscount - 1 )
     {
-        return TEXT("");
+        return "";
     }
-    String word;
-    word.resize(itemsize);
-    CopyMemory( &word[0], _data + i * itemsize, itemsize );
+
+    AnsiString word;
+    word.resize(this->itemsize);
+    CopyMemory( &word[0], _data + i * this->itemsize, this->itemsize );
     return word.c_str();
 }
 
-String WordsLib::seek( int index ) const
+AnsiString WordsLib::seek( int index ) const
 {
     index = index < -1 ? -1 : index;
-    index = index > wordscount ? wordscount : index;
+    index = index > this->wordscount ? this->wordscount : index;
     _curIndex = index;
     return this->at(_curIndex);
 }
 
-int WordsLib::find( String const & word, int first, int last ) const
+int WordsLib::find( AnsiString const & word, int first, int last ) const
 {
     while ( first <= last )
     {
-        int mid = first + (last - first) / 2;
+        int mid = first + ( last - first ) / 2;
         int cmp = this->at(mid).compare(word);
         if ( cmp == 0 )
         {
@@ -208,11 +206,10 @@ int WordsLib::find( String const & word, int first, int last ) const
             last = mid - 1;
         }
     }
-
     return -1;
 }
 
-int WordsLib::findEx( String const & word, int first, int last, int * count ) const
+int WordsLib::findEx( AnsiString const & word, int first, int last, int * count ) const
 {
     count && ( *count = 0 );
     // 首先,先搜匹配word的一个词的位置
@@ -238,7 +235,7 @@ int WordsLib::findEx( String const & word, int first, int last, int * count ) co
     // 搜到
     if ( posMatch != -1 )
     {
-        String text;
+        AnsiString text;
         int pos;
         // 向前
         this->seek(posMatch);
@@ -266,14 +263,14 @@ int WordsLib::findEx( String const & word, int first, int last, int * count ) co
         this->seek(posMatch);
         pos = posMatch;
         int nextCount = 0;
-        if ( pos < wordscount - 1 )
+        if ( pos < this->wordscount - 1 )
         {
             text = this->next();
             pos++;
             while ( StrMatch( word, text ) == 0 )
             {
                 nextCount++;
-                if ( pos < wordscount - 1 )
+                if ( pos < this->wordscount - 1 )
                 {
                     text = this->next();
                     pos++;
@@ -292,29 +289,65 @@ int WordsLib::findEx( String const & word, int first, int last, int * count ) co
     return posMatch;
 }
 
-int WordsLib::splitWords( String const & text, StringArray * arrWords ) const
+// 多字节字符串里读取一个完整字符
+inline static int __MbsOneChar( char const * & p, char ch[5], bool isUtf8 )
 {
-    TCHAR const * p = text.c_str();
-    String str = TEXT("");
-    String strMat = TEXT("");
-    int haveMatch = -1;
-    int first, last;
-    int cch = 0, i = 0;
-    first = 0;
-    last = this->wordscount - 1;
-    while ( *p )
+    int cch = 0;
+
+    if ( isUtf8 )
     {
-        TCHAR ch[4] = {0};
-        ch[0] = *p;
-        cch = 1;
-    #ifndef UNICODE
+        ch[0] = *p++;
+        cch++;
+        if ( ( ch[0] & 0xF0 ) == 0b11110000 )
+        {
+            ch[1] = *p++;
+            cch++;
+            ch[2] = *p++;
+            cch++;
+            ch[3] = *p++;
+            cch++;
+        }
+        else if ( ( ch[0] & 0xE0 ) == 0b11100000 )
+        {
+            ch[1] = *p++;
+            cch++;
+            ch[2] = *p++;
+            cch++;
+        }
+        else if ( ( ch[0] & 0xC0 ) == 0b11000000 )
+        {
+            ch[1] = *p++;
+            cch++;
+        }
+    }
+    else // Local code
+    {
+        ch[0] = *p++;
+        cch++;
         if ( ch[0] & 0x80 )
         {
-            p++;
-            ch[1] = *p;
-            cch = 2;
+            ch[1] = *p++;
+            cch++;
         }
-    #endif
+    }
+
+    return cch;
+}
+
+int WordsLib::splitWords( AnsiString const & text, AnsiStringArray * arrWords ) const
+{
+    auto const * p = text.c_str();
+    AnsiString str = "";
+    AnsiString strMat = "";
+    int haveMatch = -1;
+    int cch = 0;
+    int first = 0;
+    int last = this->wordscount - 1;
+    bool isUtf8 = this->encoding == "utf-8";
+    while ( *p )
+    {
+        char ch[5] = { 0 };
+        cch = __MbsOneChar( p, ch, isUtf8 );
         str += ch;
 
         int pos = -1, count = 0;
@@ -325,39 +358,44 @@ int WordsLib::splitWords( String const & text, StringArray * arrWords ) const
             last = pos + count - 1;
             haveMatch = pos;
             strMat = str;
-            p++;
+            //p++;
         }
         else // 搜不到
         {
             if ( haveMatch != -1 )
             {
+                // 退回去
+                //p -= cch - 1;
+                p -= cch;
                 if ( this->at(haveMatch) == strMat )
                 {
                     arrWords->push_back(strMat);
                 }
                 haveMatch = -1;
-                // 退回去
-                p -= cch - 1;
             }
             else
             {
-                String ansiStr = TEXT("");
+                AnsiString ansiStr = "";
                 while ( *p && ( IsAlpha(*p) || IsDigit(*p) || *p == '_' || *p == '.' ) )
                 {
                     ansiStr += *p;
                     p++;
                 }
                 if ( ansiStr.empty() )
-                    p++;
+                {
+                    //p++;
+                }
                 else
+                {
                     arrWords->push_back(ansiStr);
+                }
             }
             first = 0;
             last = this->wordscount - 1;
-            str = TEXT("");
+            str = "";
         }
-        i++;
     }
+
     // 结束循环再判断一次
     if ( haveMatch != -1 )
     {
@@ -371,29 +409,21 @@ int WordsLib::splitWords( String const & text, StringArray * arrWords ) const
     return (int)arrWords->size();
 }
 
-int WordsLib::splitWords2( String const & text, StringArray * arrWords ) const
+int WordsLib::splitWords2( AnsiString const & text, AnsiStringArray * arrWords ) const
 {
-    TCHAR const * p = text.c_str();
-    TCHAR const * q = p;
-    String str = TEXT("");
-    String strMat = TEXT("");
+    auto const * p = text.c_str();
+    auto const * q = p;
+    AnsiString str = "";
+    AnsiString strMat = "";
     int haveMatch = -1;
     int cch = 0;
     int first = 0;
     int last = this->wordscount - 1;
+    bool isUtf8 = this->encoding == "utf-8";
     while ( *p )
     {
-        TCHAR ch[4] = {0};
-        ch[0] = *p;
-        cch = 1;
-    #ifndef UNICODE
-        if ( ch[0] & 0x80 )
-        {
-            p++;
-            ch[1] = *p;
-            cch = 2;
-        }
-    #endif
+        char ch[5] = { 0 };
+        cch = __MbsOneChar( p, ch, isUtf8 );
         str += ch;
 
         int pos = -1, count = 0;
@@ -404,17 +434,18 @@ int WordsLib::splitWords2( String const & text, StringArray * arrWords ) const
             last = pos + count - 1;
             haveMatch = pos;
             strMat = str;
-            p++;
+            //p++;
         }
         else // 搜不到
         {
             if ( haveMatch != -1 )
             {
                 // 退回去
-                p -= cch - 1;
+                //p -= cch - 1;
+                p -= cch;
                 if ( this->at(haveMatch) == strMat )
                 {
-                    String s( q, p - strMat.length() );
+                    AnsiString s( q, p - strMat.length() );
                     s = StrTrim(s);
                     if ( !s.empty() ) arrWords->push_back(s);
                     q = p;
@@ -424,7 +455,7 @@ int WordsLib::splitWords2( String const & text, StringArray * arrWords ) const
             }
             else
             {
-                String ansiStr = TEXT("");
+                AnsiString ansiStr = "";
                 while ( *p && ( IsAlpha(*p) || IsDigit(*p) /*|| *p == '_' */|| *p == '.' ) )
                 {
                     ansiStr += *p;
@@ -432,11 +463,11 @@ int WordsLib::splitWords2( String const & text, StringArray * arrWords ) const
                 }
                 if ( ansiStr.empty() )
                 {
-                    p++;
+                    //p++;
                 }
                 else
                 {
-                    String s( q, p - ansiStr.length() );
+                    AnsiString s( q, p - ansiStr.length() );
                     s = StrTrim(s);
                     if ( !s.empty() ) arrWords->push_back(s);
                     q = p;
@@ -445,7 +476,7 @@ int WordsLib::splitWords2( String const & text, StringArray * arrWords ) const
             }
             first = 0;
             last = this->wordscount - 1;
-            str = TEXT("");
+            str = "";
         }
     }
 
@@ -454,7 +485,7 @@ int WordsLib::splitWords2( String const & text, StringArray * arrWords ) const
     {
         if ( this->at(haveMatch) == strMat )
         {
-            String s( q, p - strMat.length() );
+            AnsiString s( q, p - strMat.length() );
             s = StrTrim(s);
             if ( !s.empty() ) arrWords->push_back(s);
             q = p;
@@ -466,7 +497,7 @@ int WordsLib::splitWords2( String const & text, StringArray * arrWords ) const
     return (int)arrWords->size();
 }
 
-int WordsLib::StrMatch( String const & str1, String const & str2 )
+int WordsLib::StrMatch( AnsiString const & str1, AnsiString const & str2 )
 {
     size_t len1 = str1.length();
     size_t len2 = str2.length();

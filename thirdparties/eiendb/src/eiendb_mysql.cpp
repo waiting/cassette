@@ -1,16 +1,17 @@
-﻿
-#include "eiendb_common.hpp"
+﻿#include "eiendb_common.hpp"
 #include "eiendb_mysql.hpp"
 
-#ifdef HAVE_MYSQL_DRIVER
-#include "mysql.h"
+#ifdef HAVE_DB_MYSQL
+#include <mysql.h>
 #endif
 
 namespace eiendb
 {
+#ifdef HAVE_DB_MYSQL
+
 #include "is_x_funcs.inl"
 
-#define TRY_LOAD_LINE( ifile, i, line ) ( i < line.length() || ( i = 0, ( ( line = ifile->getLine() ).length() || !ifile->eof() && ( line = ifile->getLine() ).length() ) ) )
+#define TRY_LOAD_LINE( ifile, i, line ) ( i < line.length() || ( i = 0, ( line = ifile->getLine() ).length() ) )
 
 static winux::String __MysqlLoadSqlFile_String( winux::IFile * ifile, winux::String::size_type & i, winux::String & line )
 {
@@ -63,7 +64,7 @@ static size_t __MysqlLoadSqlFile( winux::IFile * ifile, winux::StringArray * arr
         winux::String::value_type ch = line[i];
         if ( i == 0 && ch == '-' ) // 一行开头
         {
-            i++;
+            i++; // skip first '-'
             if ( TRY_LOAD_LINE( ifile, i, line ) )
             {
                 ch = line[i];
@@ -97,152 +98,6 @@ static size_t __MysqlLoadSqlFile( winux::IFile * ifile, winux::StringArray * arr
         }
         else
         {
-            if ( sql.empty() )
-            {
-                if ( IsSpace(ch) )
-                {
-                }
-                else
-                {
-                    sql += ch;
-                }
-            }
-            else
-            {
-                sql += ch;
-            }
-            i++;
-        }
-    }
-
-    if ( winux::StrTrim(sql).length() > 0 )
-    {
-        arrSql->push_back(sql);
-        sql.clear();
-        nSql++;
-    }
-    return nSql;
-}
-
-static winux::String __MysqlLoadSql_String( winux::String const & sqlText, winux::String::size_type & i )
-{
-    winux::String::value_type quote = sqlText[i];
-    winux::String s;
-
-    i++; // skip quote
-    s += quote;
-
-    while ( i < sqlText.length() )
-    {
-        winux::String::value_type ch = sqlText[i];
-        if ( ch == quote ) // 匹配引号结束
-        {
-            s += ch;
-            i++;
-            break;
-        }
-        else if ( ch == '\\' ) // 转义字符
-        {
-            s += ch;
-            i++;
-            while ( i < sqlText.length() )
-            {
-                s += sqlText[i];
-                i++;
-                break;
-            }
-        }
-        else // 其他字符
-        {
-            s += ch;
-            i++;
-        }
-    }
-
-    return s;
-}
-
-static size_t __MysqlLoadSql( winux::String const & sqlText, winux::StringArray * arrSql, IDbConnection * cnn )
-{
-    winux::String sql;
-    size_t nSql = 0;
-
-    winux::String::size_type i = 0;
-    bool lineHeadStart = true;
-    while ( i < sqlText.length() )
-    {
-        winux::String::value_type ch = sqlText[i];
-        if ( ch == '\r' || ch == '\n' )
-        {
-            if ( ch == '\r' )
-            {
-                // 当前字符是'\r'时，检测下一个字符是否为'\n'，如果是，则当作整体换行标记
-                if ( i + 1 < sqlText.length() && sqlText[i + 1] == '\n' )
-                {
-                    i++; // skip '\r'
-                    ch = sqlText[i];
-                }
-            }
-
-            // 换行标记 \r or \n or \r\n
-            ++i; // skip '\r' or '\n'
-
-            // add '\n' into sql
-            if ( !sql.empty() )
-            {
-                sql += '\n';
-            }
-            lineHeadStart = true;
-        }
-        else if ( lineHeadStart && ch == '-' ) // 一行开头
-        {
-            lineHeadStart = false;
-            i++; // skip first '-'
-            if ( i < sqlText.length() )
-            {
-                ch = sqlText[i];
-                if ( ch == '-' ) // "--"开头时作为注释行跳过
-                {
-                    ++i; // skip second '-'
-                    // skip a line
-                    while ( i < sqlText.length() )
-                    {
-                        if ( sqlText[i] == '\r' || sqlText[i] == '\n' )
-                        {
-                            break;
-                        }
-                        ++i;
-                    }
-                }
-                else
-                {
-                    sql += '-';
-                    sql += ch;
-                    i++;
-                }
-            }
-            else
-            {
-                break;
-            }
-        }
-        else if ( ch == '\'' || ch == '\"' )
-        {
-            lineHeadStart = false;
-            sql += __MysqlLoadSql_String( sqlText, i );
-        }
-        else if ( ch == ';' )
-        {
-            lineHeadStart = false;
-            sql += ch;
-            arrSql->push_back(sql);
-            sql.clear();
-            nSql++;
-            i++;
-        }
-        else
-        {
-            lineHeadStart = false;
             // 当sql不为空时，空白字符才予加入
             if ( sql.empty() )
             {
@@ -269,7 +124,7 @@ static size_t __MysqlLoadSql( winux::String const & sqlText, winux::StringArray 
 }
 
 // 字符集编码串处理。因为mysql识别的字符编码串和HTML的有一定区别，在此进行转换，统一用HTML式的
-static inline winux::String HtmlCharsetToMySqlCharset( winux::String const & charset )
+static inline winux::String HtmlCharsetToMysqlCharset( winux::String const & charset )
 {
     thread_local winux::StringStringMap::value_type ps[] = {
         //winux::StringStringMap::value_type( "gbk", "gbk" ),
@@ -288,11 +143,17 @@ static inline winux::String HtmlCharsetToMySqlCharset( winux::String const & cha
 }
 
 // class MysqlConnection ----------------------------------------------------------------------------------------------
-MysqlConnection::MysqlConnection( winux::String const & host, winux::String const & user, winux::String const & pwd, winux::String const & dbName, winux::String const & linkCharset, bool doConnect )
-: _mysql(nullptr), _port(0), _user(user), _pwd(pwd), _dbName(dbName), _linkCharset(linkCharset)
+MysqlConnection::MysqlConnection(
+    winux::String const & host,
+    winux::String const & user,
+    winux::String const & pwd,
+    winux::String const & dbName,
+    winux::String const & linkCharset,
+    bool doConnect
+) : _mysql(nullptr), _port(0), _user(user), _pwd(pwd), _dbName(dbName), _linkCharset(linkCharset)
 {
     // 解析端口号
-    winux::String::size_type pos = host.find(':');
+    size_t pos = host.find(':');
     if ( pos != winux::String::npos )
     {
         _hostAddr = host.substr( 0, pos );
@@ -318,26 +179,25 @@ bool MysqlConnection::connect()
     this->close();
     _mysql = mysql_init(nullptr);
     if ( !_mysql ) return false;
-    MYSQL * cnn = mysql_real_connect( _mysql, _hostAddr.c_str(), _user.c_str(), _pwd.c_str(), _dbName.c_str(), _port, NULL, 0 );
-    if ( _mysql != cnn ) // 连接失败
+    MYSQL * cnn = mysql_real_connect( (MYSQL *)_mysql, _hostAddr.c_str(), _user.c_str(), _pwd.c_str(), _dbName.c_str(), _port, nullptr, 0 );
+    bool r = _mysql == cnn;
+    if ( !r ) // 连接失败
     {
         winux::String err = this->error();
         int errNo = this->errNo();
-        (void)errNo;
         this->close();
-        throw MysqlDbError( errNo, err.c_str() );
-        return false;
+        throw MysqlDbError( errNo, err );
     }
     // 设置连接校验编码
     this->setLinkCharset(_linkCharset);
-    return true;
+    return r;
 }
 
 bool MysqlConnection::close()
 {
     if ( _mysql != nullptr )
     {
-        mysql_close(_mysql);
+        mysql_close( (MYSQL *)_mysql );
         _mysql = nullptr;
         return true;
     }
@@ -348,7 +208,7 @@ void MysqlConnection::alive()
 {
     if ( _mysql != nullptr )
     {
-        int rc = mysql_ping(_mysql);
+        int rc = mysql_ping( (MYSQL *)_mysql );
         if ( rc != 0 )
         {
             this->connect();
@@ -369,7 +229,7 @@ bool MysqlConnection::setLinkCharset( winux::String const & charset )
 
     if ( !charset.empty() )
     {
-        return 0 == mysql_set_character_set( _mysql, HtmlCharsetToMySqlCharset(_linkCharset).c_str() );
+        return 0 == mysql_set_character_set( (MYSQL *)_mysql, HtmlCharsetToMysqlCharset(_linkCharset).c_str() );
     }
     return false;
 }
@@ -378,17 +238,17 @@ bool MysqlConnection::selectDb( winux::String const & database )
 {
     _dbName = database;
     if ( _mysql == nullptr ) throw MysqlDbError( 0, "MySQL no valid connection" );
-    return 0 == mysql_select_db( _mysql, _dbName.c_str() );
+    return 0 == mysql_select_db( (MYSQL *)_mysql, _dbName.c_str() );
 }
 
 bool MysqlConnection::createDb( winux::String const & database )
 {
     if ( _mysql == nullptr ) throw MysqlDbError( 0, "MySQL no valid connection" );
     winux::String sql = "CREATE DATABASE " + this->symbolQuotes(database);
-    if ( !_linkCharset.empty() ) sql += " DEFAULT CHARSET=" + HtmlCharsetToMySqlCharset(_linkCharset);
+    if ( !_linkCharset.empty() ) sql += " DEFAULT CHARSET=" + HtmlCharsetToMysqlCharset(_linkCharset);
     {
     }
-    if ( mysql_real_query( _mysql, sql.c_str(), (winux::ulong)sql.length() ) )
+    if ( mysql_real_query( (MYSQL *)_mysql, sql.c_str(), (winux::ulong)sql.length() ) )
         return false;
     return this->selectDb(database);
 }
@@ -397,31 +257,31 @@ bool MysqlConnection::dropDb( winux::String const & database )
 {
     if ( _mysql == nullptr ) throw MysqlDbError( 0, "MySQL no valid connection" );
     winux::String sql = "DROP DATABASE " + this->symbolQuotes(database);
-    return 0 == mysql_real_query( _mysql, sql.c_str(), (winux::ulong)sql.length() );
+    return 0 == mysql_real_query( (MYSQL *)_mysql, sql.c_str(), (winux::ulong)sql.length() );
 }
 
 size_t MysqlConnection::affectedRows()
 {
     if ( _mysql == nullptr ) throw MysqlDbError( 0, "MySQL no valid connection" );
-    return (winux::ulong)mysql_affected_rows(_mysql);
+    return (winux::ulong)mysql_affected_rows( (MYSQL *)_mysql );
 }
 
 size_t MysqlConnection::insertId()
 {
     if ( _mysql == nullptr ) throw MysqlDbError( 0, "MySQL no valid connection" );
-    return (winux::ulong)mysql_insert_id(_mysql);
+    return (winux::ulong)mysql_insert_id( (MYSQL *)_mysql );
 }
 
 int MysqlConnection::errNo()
 {
     if ( _mysql == nullptr ) throw MysqlDbError( 0, "MySQL no valid connection" );
-    return mysql_errno(_mysql);
+    return mysql_errno( (MYSQL *)_mysql );
 }
 
 winux::String MysqlConnection::error()
 {
     if ( _mysql == nullptr ) throw MysqlDbError( 0, "MySQL no valid connection" );
-    char const * s = mysql_error(_mysql);
+    char const * s = mysql_error( (MYSQL *)_mysql );
     return s ? s : "";
 }
 
@@ -436,8 +296,11 @@ winux::String MysqlConnection::escape( void const * buf, size_t size, winux::Str
     winux::String r;
     if ( size > 0 )
     {
-        r.resize( size * 2 );
-        mysql_real_escape_string( _mysql, &r[0], (char const *)buf, (winux::ulong)size );
+        winux::Buffer szBuf;
+        szBuf.alloc( size * 2 + 1, false );
+        winux::ulong n = mysql_real_escape_string( (MYSQL *)_mysql, szBuf.get<char>(), (char const *)buf, (winux::ulong)size );
+        szBuf._setSize(n);
+        r = szBuf.toString<winux::String::value_type>();
     }
     else
     {
@@ -446,19 +309,19 @@ winux::String MysqlConnection::escape( void const * buf, size_t size, winux::Str
 
     if ( !addQuote.empty() )
     {
-        return addQuote + r.c_str() + addQuote;
+        return addQuote + r + addQuote;
     }
 
-    return r.c_str();
+    return r;
 }
 
 bool MysqlConnection::exec( winux::String const & sql )
 {
     if ( _mysql == nullptr ) throw MysqlDbError( 0, "MySQL no valid connection" );
-    int rc = mysql_real_query( _mysql, sql.c_str(), (winux::ulong)sql.length() );
+    int rc = mysql_real_query( (MYSQL *)_mysql, sql.c_str(), (winux::ulong)sql.length() );
     if ( rc ) // 语句出错
     {
-        throw MysqlDbError( this->errNo(), this->error().c_str() );
+        throw MysqlDbError( this->errNo(), this->error() );
         return false;
     }
     else
@@ -469,7 +332,6 @@ bool MysqlConnection::exec( winux::String const & sql )
 
 bool MysqlConnection::exec( winux::SharedPointer<IDbStatement> stmt )
 {
-    if ( _mysql == nullptr ) throw MysqlDbError( 0, "MySQL no valid connection" );
     MysqlStatement * pStmt = static_cast<MysqlStatement *>( stmt.get() );
     return this->exec( pStmt->getSql() );
 }
@@ -477,97 +339,97 @@ bool MysqlConnection::exec( winux::SharedPointer<IDbStatement> stmt )
 winux::SharedPointer<IDbResult> MysqlConnection::query( winux::String const & sql )
 {
     if ( _mysql == nullptr ) throw MysqlDbError( 0, "MySQL no valid connection" );
-    return winux::SharedPointer<IDbResult>( new MysqlResult( winux::SharedPointer<MysqlStatement>( new MysqlStatement( this, sql ) ) ) );
+    return winux::SharedPointer<IDbResult>( new MysqlResult( winux::MakeShared( new MysqlStatement( this, sql ) ) ) );
 }
 
 winux::SharedPointer<IDbResult> MysqlConnection::query( winux::SharedPointer<IDbStatement> stmt )
 {
     if ( _mysql == nullptr ) throw MysqlDbError( 0, "MySQL no valid connection" );
-    winux::SharedPointer<MysqlStatement> stmt2 = stmt.ensureCast<MysqlStatement>();
-    return winux::SharedPointer<IDbResult>( new MysqlResult(stmt2) );
+    return winux::SharedPointer<IDbResult>( new MysqlResult( stmt.ensureCast<MysqlStatement>() ) );
 }
 
 winux::SharedPointer<IDbResult> MysqlConnection::listDbs()
 {
     if ( _mysql == nullptr ) throw MysqlDbError( 0, "MySQL no valid connection" );
     winux::String fields[] = { "Databases" };
-    MemoryResult * p = new MemoryResult(fields);
+    auto p = winux::MakeShared( new MemoryResult(fields) );
 
-    MYSQL_RES * res = mysql_list_dbs( _mysql, NULL );
+    MYSQL_RES * res = mysql_list_dbs( (MYSQL *)_mysql, nullptr );
     if ( res != nullptr )
     {
         MYSQL_ROW row;
         while ( ( row = mysql_fetch_row(res) ) )
         {
-            winux::String f[] = { row[0] ? row[0] : "" };
+            winux::String f[] = { winux::CharSeqToString(row[0]) };
             p->addRow(f);
         }
         mysql_free_result(res);
     }
 
-    return winux::SharedPointer<IDbResult>(p);
+    return p;
 }
 
 winux::SharedPointer<IDbResult> MysqlConnection::listFields( winux::String const & tableName )
 {
     if ( _mysql == nullptr ) throw MysqlDbError( 0, "MySQL no valid connection" );
+    // 弃用 DESCRIBE `table1`;
     winux::String fields[] = { "Fields" };
-    MemoryResult * p = new MemoryResult(fields);
-
-    winux::SharedPointer<IDbResult> rs = this->query( "SHOW COLUMNS FROM " + this->symbolQuotes(tableName) );
+    auto p = winux::MakeShared( new MemoryResult(fields) );
+    auto rs = this->query( "SHOW COLUMNS FROM " + this->symbolQuotes(tableName) );
     winux::MixedArray f;
-    while ( rs->fetchRow(&f) )
+    while ( rs->fetchArray(&f) )
     {
-        winux::String ff[] = { (winux::String)f[0] };
+        winux::String ff[] = { f[0].toString<winux::tchar>() };
         p->addRow(ff);
     }
-
-    return winux::SharedPointer<IDbResult>(p);
+    return p;
 }
 
 winux::SharedPointer<IDbResult> MysqlConnection::listTables()
 {
     if ( _mysql == nullptr ) throw MysqlDbError( 0, "MySQL no valid connection" );
     winux::String fields[] = { "Tables" };
-    MemoryResult * p = new MemoryResult(fields);
-
-    winux::SharedPointer<IDbResult> rs = this->query( "SHOW FULL TABLES WHERE Table_type='BASE TABLE'" );
+    auto p = winux::MakeShared( new MemoryResult(fields) );
+    auto rs = this->query("SHOW FULL TABLES WHERE Table_type='BASE TABLE'");
     winux::MixedArray f;
-    while ( rs->fetchRow(&f) )
+    while ( rs->fetchArray(&f) )
     {
-        winux::String ff[] = { (winux::String)f[0] };
+        winux::String ff[] = { f[0].toString<winux::tchar>() };
         p->addRow(ff);
     }
-
-    return winux::SharedPointer<IDbResult>(p);
+    return p;
 }
 
 winux::String MysqlConnection::tableDdl( winux::String const & tableName )
 {
-    winux::SharedPointer<IDbResult> rs = this->query( "SHOW CREATE TABLE " + this->symbolQuotes(tableName) );
+    auto rs = this->query( "SHOW CREATE TABLE " + this->symbolQuotes(tableName) );
     winux::String ddl;
     winux::MixedArray f;
-    while ( rs->fetchRow(&f) )
+    while ( rs->fetchArray(&f) )
     {
-        ddl += (winux::String)f[1];
+        ddl += f[1].toString<winux::tchar>();
         ddl += ";\n";
     }
     return ddl;
 }
 
-winux::String MysqlConnection::symbolQuotes( winux::String const & str )
+winux::String MysqlConnection::symbolQuotes( winux::String const & str, bool periodAsSeparator )
 {
-    return "`" + str + "`";
+    if ( periodAsSeparator )
+    {
+        winux::StringArray arr;
+        winux::StrSplit( str, ".", &arr );
+        return "`" + winux::StrJoin( "`.`", arr ) + "`";
+    }
+    else
+    {
+        return "`" + str + "`";
+    }
 }
 
-size_t MysqlConnection::loadSql( winux::String const & sqlText, winux::StringArray * arrSql )
+size_t MysqlConnection::loadSqlFile( winux::IFile * sqlFile, winux::StringArray * arrSql )
 {
-    return __MysqlLoadSql( sqlText, arrSql, this );
-}
-
-size_t MysqlConnection::loadSqlFile( winux::IFile * sqlScriptFile, winux::StringArray * arrSql )
-{
-    return __MysqlLoadSqlFile( sqlScriptFile, arrSql, this );
+    return __MysqlLoadSqlFile( sqlFile, arrSql, this );
 }
 
 size_t MysqlConnection::getPrimaryKey( winux::String const & tableName, winux::StringArray * arrKeyColumn )
@@ -595,18 +457,12 @@ size_t MysqlConnection::getPrimaryKey( winux::String const & tableName, winux::S
     winux::SharedPointer<IDbResult> rs = this->query( "SELECT COLUMN_NAME FROM information_schema.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA=" + this->escape(_dbName) + " AND TABLE_NAME=" + this->escape(tableName) + " AND CONSTRAINT_NAME='PRIMARY' ORDER BY ORDINAL_POSITION;" );
     arrKeyColumn->clear();
     winux::MixedArray f;
-    while ( rs->fetchRow(&f) )
+    while ( rs->fetchArray(&f) )
     {
         arrKeyColumn->push_back(f[0]);
     }
 
     return arrKeyColumn->size();
-}
-
-winux::SharedPointer<IDbStatement> MysqlConnection::buildStmt( winux::String const & sql )
-{
-    if ( _mysql == nullptr ) throw MysqlDbError( 0, "MySQL no valid connection" );
-    return winux::SharedPointer<IDbStatement>( new MysqlStatement( this, sql ) );
 }
 
 winux::SharedPointer<IDbStatement> MysqlConnection::buildStmt( winux::String const & sql, winux::Mixed const & params )
@@ -615,418 +471,43 @@ winux::SharedPointer<IDbStatement> MysqlConnection::buildStmt( winux::String con
     return winux::SharedPointer<IDbStatement>( new MysqlStatement( this, sql, params ) );
 }
 
-winux::SharedPointer<IDbStatement> MysqlConnection::buildStmt( winux::String const & sql, winux::MixedArray const & params )
-{
-    if ( _mysql == nullptr ) throw MysqlDbError( 0, "MySQL no valid connection" );
-    return winux::SharedPointer<IDbStatement>( new MysqlStatement( this, sql, params ) );
-}
+// class MysqlStatement ---------------------------------------------------------------------
 
-winux::SharedPointer<IDbStatement> MysqlConnection::buildStmt( winux::String const & sql, winux::StringMixedMap const & params )
-{
-    if ( _mysql == nullptr ) throw MysqlDbError( 0, "MySQL no valid connection" );
-    return winux::SharedPointer<IDbStatement>( new MysqlStatement( this, sql, params ) );
-}
 
-// class MysqlStatement ------------------------------------------------------------------------------------
-MysqlStatement::MysqlStatement( MysqlConnection * cnn ) : _cnn(cnn), _isGeneratedSql(false), _isNameBinding(false)
-{
-
-}
-
-MysqlStatement::MysqlStatement( MysqlConnection * cnn, winux::String const & sql ) : _cnn(cnn), _isGeneratedSql(false), _isNameBinding(false)
-{
-    this->build(sql);
-}
-
-MysqlStatement::MysqlStatement( MysqlConnection * cnn, winux::String const & sql, winux::Mixed const & params ) : _cnn(cnn), _isGeneratedSql(false), _isNameBinding(false)
-{
-    this->build( sql, params );
-}
-
-MysqlStatement::MysqlStatement( MysqlConnection * cnn, winux::String const & sql, winux::MixedArray const & params ) : _cnn(cnn), _isGeneratedSql(false), _isNameBinding(false)
-{
-    this->build( sql, params );
-}
-
-MysqlStatement::MysqlStatement( MysqlConnection * cnn, winux::String const & sql, winux::StringMixedMap const & params ) : _cnn(cnn), _isGeneratedSql(false), _isNameBinding(false)
-{
-    this->build( sql, params );
-}
-
-MysqlStatement::~MysqlStatement()
-{
-
-}
-
-bool MysqlStatement::build( winux::String const & sql )
-{
-    if ( !*_cnn ) throw MysqlDbError( 0, "MySQL no valid connection" );
-
-    this->_orgSql = sql;
-    this->_generateSql();
-    return true;
-}
-
-bool MysqlStatement::build( winux::String const & sql, winux::Mixed const & params )
-{
-    if ( !*_cnn ) throw MysqlDbError( 0, "MySQL no valid connection" );
-
-    this->_orgSql = sql;
-
-    bool r = true;
-    if ( params.isArray() )
-    {
-        size_t i, count = params.getCount();
-        for ( i = 0; i < count; ++i )
-        {
-            bool bindOk = this->bind( i + 1, params[i] );
-            if ( r && !bindOk ) r = false;
-        }
-    }
-    else if ( params.isCollection() )
-    {
-        size_t i, count = params.getCount();
-        for ( i = 0; i < count; ++i )
-        {
-            winux::Mixed::MixedMixedMap::value_type const & pr = params.getPair(i);
-            bool bindOk = this->bind( (winux::String)pr.first, pr.second );
-            if ( r && !bindOk ) r = false;
-        }
-    }
-    else //只是一个值，作为bind(1,val)处理
-    {
-        bool bindOk = this->bind( 1, params );
-        if ( r && !bindOk ) r = false;
-    }
-
-    this->_generateSql();
-    return r;
-
-}
-
-bool MysqlStatement::build( winux::String const & sql, winux::MixedArray const & params )
-{
-    if ( !*_cnn ) throw MysqlDbError( 0, "MySQL no valid connection" );
-
-    this->_orgSql = sql;
-
-    size_t i;
-    bool r = true;
-    for ( i = 0; i < params.size(); ++i )
-    {
-        bool bindOk = this->bind( i + 1, params[i] );
-        if ( r && !bindOk ) r = false;
-    }
-    this->_generateSql();
-    return r;
-}
-
-bool MysqlStatement::build( winux::String const & sql, winux::StringMixedMap const & params )
-{
-    if ( !*_cnn ) throw MysqlDbError( 0, "MySQL no valid connection" );
-
-    this->_orgSql = sql;
-
-    winux::StringMixedMap::const_iterator it;
-    bool r = true;
-    for ( it = params.begin(); it != params.end(); ++it )
-    {
-        bool bindOk = this->bind( it->first, it->second );
-        if ( r && !bindOk ) r = false;
-    }
-    this->_generateSql();
-    return r;
-}
-
-bool MysqlStatement::bind( size_t paramIndex, winux::Mixed const & val )
-{
-    this->_isNameBinding = false;
-    // 把绑定的参数记下（参数索引，参数值）,以便之后语句更改重绑定
-    bool isFound = false;
-    std::vector< std::pair< size_t, winux::Mixed > >::iterator it;
-    for ( it = _bindingParams.begin(); it != _bindingParams.end(); ++it )
-    {
-        if ( it->first == paramIndex )
-        {
-            isFound = true;
-            it->second = val;
-            break;
-        }
-    }
-    if ( !isFound )
-    {
-        _bindingParams.push_back( std::pair< size_t, winux::Mixed >( paramIndex, val ) );
-    }
-
-    _isGeneratedSql = false;
-    return true;
-}
-
-bool MysqlStatement::bind( winux::String const & paramName, winux::Mixed const & val )
-{
-    this->_isNameBinding = true;
-    bool isFound = false;
-    std::vector< std::pair< winux::String, winux::Mixed > >::iterator it;
-    for ( it = _bindingNameParams.begin(); it != _bindingNameParams.end(); ++it )
-    {
-        if ( it->first == paramName )
-        {
-            isFound = true;
-            it->second = val;
-            break;
-        }
-    }
-    if ( !isFound )
-    {
-        _bindingNameParams.push_back( std::pair< winux::String, winux::Mixed >( paramName, val ) );
-    }
-
-    _isGeneratedSql = false;
-    return true;
-}
-
-winux::String const & MysqlStatement::getSql()
-{
-    this->_generateSql();
-    return _sql;
-}
-
-static void __IndexParamGenerateSql( winux::String const & sql, winux::String * outSql, MysqlStatement * stmt )
-{
-    outSql->clear();
-    winux::String::value_type symbolQuote = stmt->getCnn()->symbolQuotes("")[0];
-    size_t i = 0, start = 0;
-    size_t paramIndex = 1;
-    while ( i < sql.length() )
-    {
-        winux::String::value_type ch = sql[i];
-        if ( ch == '\'' || ch == '\"' ) // 字符串
-        {
-            winux::String::value_type quote = ch;
-            ++i; // skip ' or "
-            while ( i < sql.length() )
-            {
-                ch = sql[i];
-                if ( ch == '\\' ) // 转义字符
-                {
-                    ++i; // skip '\\'
-                    while ( i < sql.length() )
-                    {
-                        ++i;
-                        break;
-                    }
-                }
-                else if ( ch == quote ) // 结束字符串
-                {
-                    ++i;
-                    break;
-                }
-                else
-                {
-                    ++i;
-                }
-            }
-        }
-        else if ( ch == symbolQuote ) // 标识符
-        {
-            ++i;
-            // skip `
-            while ( i < sql.length() )
-            {
-                ch = sql[i];
-                if ( ch == symbolQuote ) // 结束标识符
-                {
-                    ++i;
-                    break;
-                }
-                else
-                {
-                    ++i;
-                }
-            }
-        }
-        else if ( ch == '?' ) // 参数占位符
-        {
-            *outSql += sql.substr( start, i - start );
-            *outSql += MixedToEscapedStr( stmt->getParam(paramIndex), stmt->getCnn() );
-            ++paramIndex;
-            start = i + 1;
-            ++i;
-        }
-        else
-        {
-            ++i;
-        }
-    }
-    *outSql += sql.substr(start);
-}
-
-static void __NameParamGenerateSql( winux::String const & sql, winux::String * outSql, MysqlStatement * stmt )
-{
-    outSql->clear();
-    winux::String::value_type symbolQuote = stmt->getCnn()->symbolQuotes("")[0];
-    size_t i = 0, start = 0;
-    while ( i < sql.length() )
-    {
-        winux::String::value_type ch = sql[i];
-        if ( ch == '\'' || ch == '\"' ) // 字符串
-        {
-            winux::String::value_type quote = ch;
-            ++i; // skip ' or "
-            while ( i < sql.length() )
-            {
-                ch = sql[i];
-                if ( ch == '\\' ) // 转义字符
-                {
-                    ++i; // skip '\\'
-                    while ( i < sql.length() )
-                    {
-                        ++i;
-                        break;
-                    }
-                }
-                else if ( ch == quote ) // 结束字符串
-                {
-                    ++i;
-                    break;
-                }
-                else
-                {
-                    ++i;
-                }
-            }
-        }
-        else if ( ch == symbolQuote ) // 标识符
-        {
-            ++i;
-            // skip `
-            while ( i < sql.length() )
-            {
-                ch = sql[i];
-                if ( ch == symbolQuote ) // 结束标识符
-                {
-                    ++i;
-                    break;
-                }
-                else
-                {
-                    ++i;
-                }
-            }
-        }
-        else if ( ch == ':' ) // 参数占位串
-        {
-            size_t pos = i; // 占位串开始位置
-            ++i; // skip :
-            winux::String paramName = ":";
-            while ( i < sql.length() )
-            {
-                ch = sql[i];
-                if ( IsWordNoDollar(ch) || IsDigit(ch) ) // 是否为合法标识符字符
-                {
-                    paramName += ch;
-                    ++i;
-                }
-                else
-                {
-                    break;
-                }
-            }
-
-            *outSql += sql.substr( start, pos - start );
-            *outSql += MixedToEscapedStr( stmt->getParam(paramName), stmt->getCnn() );
-
-            start = i;
-            ++i;
-        }
-        else
-        {
-            ++i;
-        }
-    }
-    *outSql += sql.substr(start);
-}
-
-void MysqlStatement::_generateSql()
-{
-    if ( !_isGeneratedSql )
-    {
-        if ( _isNameBinding )
-        {
-            __NameParamGenerateSql( _orgSql, &_sql, this );
-        }
-        else
-        {
-            __IndexParamGenerateSql( _orgSql, &_sql, this );
-        }
-        _isGeneratedSql = true;
-    }
-
-}
-
-winux::Mixed const & MysqlStatement::getParam( size_t paramIndex ) const
-{
-    thread_local winux::Mixed undefined;
-    std::vector< std::pair< size_t, winux::Mixed > >::const_iterator it;
-    for ( it = _bindingParams.begin(); it != _bindingParams.end(); ++it )
-    {
-        if ( paramIndex == it->first )
-        {
-            return it->second;
-        }
-    }
-    return undefined;
-}
-
-winux::Mixed const & MysqlStatement::getParam( winux::String const & paramName ) const
-{
-    thread_local winux::Mixed undefined;
-    std::vector< std::pair< winux::String, winux::Mixed > >::const_iterator it;
-    for ( it = _bindingNameParams.begin(); it != _bindingNameParams.end(); ++it )
-    {
-        if ( paramName == it->first )
-        {
-            return it->second;
-        }
-    }
-    return undefined;
-}
-
-// class MysqlResult ----------------------------------------------------------------------------------------
-MysqlResult::MysqlResult( winux::SharedPointer<MysqlStatement> stmt ) : _mysqlRes(NULL), _stmt(stmt)
+// class MysqlResult ------------------------------------------------------------------------
+MysqlResult::MysqlResult( winux::SharedPointer<MysqlStatement> stmt ) : _mysqlRes(nullptr), _stmt(stmt)
 {
     if ( !_stmt || !*_stmt.get() ) throw MysqlDbError( 0, "Invalid statement object" );
 
-    // 执行mysql_real_query()
+    // 执行 mysql_real_query()
     winux::String sql = _stmt->getSql();
-    int rc = mysql_real_query( *_stmt->getCnn(), sql.c_str(), (winux::ulong)sql.length() );
+    int rc = mysql_real_query( (MYSQL *)(DbHandle)*_stmt->getCnn(), sql.c_str(), (winux::ulong)sql.length() );
     // query()执行后3种情况，a. sql错误，执行错误。b. 执行无错，没有数据。c. 执行无错，有数据。
-    if ( rc == 0 ) //执行无错
+    if ( rc == 0 ) // 执行无错
     {
-        winux::uint n = mysql_field_count( *_stmt->getCnn() );
+        winux::uint n = mysql_field_count( (MYSQL *)(DbHandle)*_stmt->getCnn() );
         if ( n > 0 ) // 有结果集
         {
-            _mysqlRes = mysql_store_result( *_stmt->getCnn() );
+            _mysqlRes = mysql_store_result( (MYSQL *)(DbHandle)*_stmt->getCnn() );
             if ( _mysqlRes != nullptr )
             {
                 // 取得字段名，类型
-                winux::uint i;
-                for ( i = 0; i < n; ++i )
+                for ( winux::uint i = 0; i < n; ++i )
                 {
-                    MYSQL_FIELD * field = mysql_fetch_field_direct( _mysqlRes, i );
+                    MYSQL_FIELD * field = mysql_fetch_field_direct( (MYSQL_RES *)_mysqlRes, i );
                     _fieldNames.push_back(field->name);
                     _fieldTypes.push_back( (winux::uint)field->type );
                     _fieldFlags.push_back(field->flags);
                 }
             }
         }
-        //else // 没有结果集,可能执行的是UPDATE INSERT ALTER等语句
+        //else // 没有结果集，可能执行的是UPDATE INSERT ALTER等语句
         //{
         //}
     }
     else
     {
-        throw MysqlDbError( _stmt->getCnn()->errNo(), _stmt->getCnn()->error().c_str() );
+        throw MysqlDbError( _stmt->getCnn()->errNo(), _stmt->getCnn()->error() );
     }
 }
 
@@ -1039,7 +520,7 @@ bool MysqlResult::free()
 {
     if ( _mysqlRes != nullptr )
     {
-        mysql_free_result(_mysqlRes);
+        mysql_free_result( (MYSQL_RES *)_mysqlRes );
         _mysqlRes = nullptr;
         return true;
     }
@@ -1058,7 +539,7 @@ bool MysqlResult::dataSeek( size_t index )
 
     if ( _mysqlRes == nullptr ) throw MysqlDbError( 0, "The MySQL result set is NULL" );
 
-    mysql_data_seek( _mysqlRes, index );
+    mysql_data_seek( (MYSQL_RES *)_mysqlRes, index );
     if ( cnn->errNo() )
     {
         return false;
@@ -1068,12 +549,12 @@ bool MysqlResult::dataSeek( size_t index )
 
 #define IS_UNSIGNED_FIELD(f) ( ((f) & BinVal(00100000)) != 0 )
 
-// 把字段值赋给winux::Mixed,当前必须能获取数据行才能调用
+// 把字段值赋给winux::Mixed，当前必须能获取数据行才能调用
 inline static void __FieldValueAssignToMixed( winux::Mixed & m, winux::uint type, winux::uint flag, char const * data, winux::ulong len )
 {
-    if ( data == NULL && len == 0 )//数据是NULL值
+    if ( data == nullptr && len == 0 ) // 数据是NULL值
     {
-        m = winux::Mixed();
+        m = winux::mxNull;
     }
     else
     {
@@ -1085,7 +566,7 @@ inline static void __FieldValueAssignToMixed( winux::Mixed & m, winux::uint type
         case MYSQL_TYPE_TINY: // 1字节数字
             {
                 winux::ulong v = 0;
-                winux::Mixed::ParseULong( data, &v );
+                winux::ParseULong( data, &v );
                 if ( IS_UNSIGNED_FIELD(flag) )
                 {
                     m = (winux::byte)v;
@@ -1099,7 +580,7 @@ inline static void __FieldValueAssignToMixed( winux::Mixed & m, winux::uint type
         case MYSQL_TYPE_SHORT:
             {
                 winux::ulong v = 0;
-                winux::Mixed::ParseULong( data, &v );
+                winux::ParseULong( data, &v );
                 if ( IS_UNSIGNED_FIELD(flag) )
                 {
                     m = (winux::ushort)v;
@@ -1113,7 +594,7 @@ inline static void __FieldValueAssignToMixed( winux::Mixed & m, winux::uint type
         case MYSQL_TYPE_LONG:
             {
                 winux::ulong v = 0;
-                winux::Mixed::ParseULong( data, &v );
+                winux::ParseULong( data, &v );
                 if ( IS_UNSIGNED_FIELD(flag) )
                 {
                     m = (winux::ulong)v;
@@ -1126,20 +607,20 @@ inline static void __FieldValueAssignToMixed( winux::Mixed & m, winux::uint type
             break;
         case MYSQL_TYPE_FLOAT:
             {
-                double v = 0;
-                winux::Mixed::ParseDouble( data, &v );
-                m = (float)v;
+                float v = 0;
+                winux::ParseFloat( data, &v );
+                m = v;
             }
             break;
         case MYSQL_TYPE_DOUBLE:
             {
                 double v = 0;
-                winux::Mixed::ParseDouble( data, &v );
+                winux::ParseDouble( data, &v );
                 m = v;
             }
             break;
         case MYSQL_TYPE_NULL:
-            m = winux::Mixed();
+            m = winux::mxNull;
             break;
         case MYSQL_TYPE_TIMESTAMP: // 时间戳类型作字符串输出
             m = data;
@@ -1147,7 +628,7 @@ inline static void __FieldValueAssignToMixed( winux::Mixed & m, winux::uint type
         case MYSQL_TYPE_LONGLONG: // 64位数字
             {
                 winux::uint64 v = 0;
-                winux::Mixed::ParseUInt64( data, &v );
+                winux::ParseUInt64( data, &v );
                 if ( IS_UNSIGNED_FIELD(flag) )
                 {
                     m = (winux::uint64)v;
@@ -1161,7 +642,7 @@ inline static void __FieldValueAssignToMixed( winux::Mixed & m, winux::uint type
         case MYSQL_TYPE_INT24:
             {
                 winux::ulong v = 0;
-                winux::Mixed::ParseULong( data, &v );
+                winux::ParseULong( data, &v );
                 if ( IS_UNSIGNED_FIELD(flag) )
                 {
                     m = (winux::uint)v;
@@ -1204,19 +685,55 @@ inline static void __FieldValueAssignToMixed( winux::Mixed & m, winux::uint type
             m = data;
             break;
         default:
-            m = winux::Mixed();
+            m = winux::mxNull;
             break;
         }
     }
-
 }
 
-bool MysqlResult::fetchRow( winux::MixedArray * fields )
+bool MysqlResult::fetchRow( winux::Mixed * fields, int type )
 {
     if ( _mysqlRes == nullptr ) throw MysqlDbError( 0, "The MySQL result set is NULL" );
 
     MYSQL_ROW row;
-    if ( ( row = mysql_fetch_row(_mysqlRes) ) )
+    if ( ( row = mysql_fetch_row( (MYSQL_RES *)_mysqlRes ) ) )
+    {
+        if ( fields != nullptr )
+        {
+            if ( type == 0 )
+            {
+                // 获取字段数
+                size_t n = _fieldNames.size();
+                fields->createCollection();
+                winux::ulong * lens = mysql_fetch_lengths( (MYSQL_RES *)_mysqlRes );
+                for ( size_t i = 0; i < n; ++i )
+                {
+                    __FieldValueAssignToMixed( (*fields)[ _fieldNames[i] ], _fieldTypes[i], _fieldFlags[i], row[i], lens[i] );
+                }
+            }
+            else if ( type == 1 )
+            {
+                // 获取字段数
+                size_t n = _fieldNames.size();
+                fields->createArray(n);
+                winux::ulong * lens = mysql_fetch_lengths( (MYSQL_RES *)_mysqlRes );
+                for ( size_t i = 0; i < n; ++i )
+                {
+                    __FieldValueAssignToMixed( (*fields)[i], _fieldTypes[i], _fieldFlags[i], row[i], lens[i] );
+                }
+            }
+        }
+        return true;
+    }
+    return false;
+}
+
+bool MysqlResult::fetchArray( winux::MixedArray * fields )
+{
+    if ( _mysqlRes == nullptr ) throw MysqlDbError( 0, "The MySQL result set is NULL" );
+
+    MYSQL_ROW row;
+    if ( ( row = mysql_fetch_row( (MYSQL_RES *)_mysqlRes ) ) )
     {
         if ( fields != nullptr )
         {
@@ -1224,9 +741,8 @@ bool MysqlResult::fetchRow( winux::MixedArray * fields )
             // 获取字段数
             size_t n = _fieldNames.size();
             fields->resize(n);
-            winux::ulong * lens = mysql_fetch_lengths(_mysqlRes);
-            size_t i;
-            for ( i = 0; i < n; ++i )
+            winux::ulong * lens = mysql_fetch_lengths( (MYSQL_RES *)_mysqlRes );
+            for ( size_t i = 0; i < n; ++i )
             {
                 __FieldValueAssignToMixed( (*fields)[i], _fieldTypes[i], _fieldFlags[i], row[i], lens[i] );
             }
@@ -1236,21 +752,20 @@ bool MysqlResult::fetchRow( winux::MixedArray * fields )
     return false;
 }
 
-bool MysqlResult::fetchRow( winux::StringMixedMap * fields )
+bool MysqlResult::fetchMap( winux::StringMixedMap * fields )
 {
     if ( _mysqlRes == nullptr ) throw MysqlDbError( 0, "The MySQL result set is NULL" );
 
     MYSQL_ROW row;
-    if ( ( row = mysql_fetch_row(_mysqlRes) ) )
+    if ( ( row = mysql_fetch_row( (MYSQL_RES *)_mysqlRes ) ) )
     {
         if ( fields != nullptr )
         {
             fields->clear();
             // 获取字段数
             size_t n = _fieldNames.size();
-            winux::ulong * lens = mysql_fetch_lengths(_mysqlRes);
-            size_t i;
-            for ( i = 0; i < n; ++i )
+            winux::ulong * lens = mysql_fetch_lengths( (MYSQL_RES *)_mysqlRes );
+            for ( size_t i = 0; i < n; ++i )
             {
                 __FieldValueAssignToMixed( (*fields)[ _fieldNames[i] ], _fieldTypes[i], _fieldFlags[i], row[i], lens[i] );
             }
@@ -1260,53 +775,13 @@ bool MysqlResult::fetchRow( winux::StringMixedMap * fields )
     return false;
 }
 
-bool MysqlResult::fetchRow( winux::Mixed * fields, int type )
-{
-    if ( _mysqlRes == nullptr ) throw MysqlDbError( 0, "The MySQL result set is NULL" );
-
-    MYSQL_ROW row;
-    if ( ( row = mysql_fetch_row(_mysqlRes) ) )
-    {
-        if ( fields != nullptr )
-        {
-            if ( type == 0 )
-            {
-                // 获取字段数
-                size_t n = _fieldNames.size();
-                fields->createCollection();
-                winux::ulong * lens = mysql_fetch_lengths(_mysqlRes);
-                size_t i;
-                for ( i = 0; i < n; ++i )
-                {
-                    __FieldValueAssignToMixed( fields->operator [] (_fieldNames[i]), _fieldTypes[i], _fieldFlags[i], row[i], lens[i] );
-                }
-            }
-            else if ( type == 1 )
-            {
-                // 获取字段数
-                size_t n = _fieldNames.size();
-                fields->createArray(n);
-                winux::ulong * lens = mysql_fetch_lengths(_mysqlRes);
-                size_t i;
-                for ( i = 0; i < n; ++i )
-                {
-                    __FieldValueAssignToMixed( fields->operator [] (i), _fieldTypes[i], _fieldFlags[i], row[i], lens[i] );
-                }
-            }
-        }
-        return true;
-    }
-    return false;
-
-}
-
 winux::String MysqlResult::fieldName( size_t fieldIndex )
 {
     if ( fieldIndex < this->fieldsCount() )
     {
         return _fieldNames[fieldIndex];
     }
-    return winux::Literal<winux::String::value_type>::emptyStr;
+    return winux::Literal<winux::String::value_type>::nulStr;
 }
 
 size_t MysqlResult::fieldsCount()
@@ -1318,7 +793,7 @@ size_t MysqlResult::rowsCount()
 {
     if ( _mysqlRes == nullptr ) throw MysqlDbError( 0, "The MySQL result set is NULL" );
 
-    return (size_t)mysql_num_rows(_mysqlRes);
+    return (size_t)mysql_num_rows( (MYSQL_RES *)_mysqlRes );
 }
 
 static winux::String __MySqlFieldTypeStr( enum enum_field_types type )
@@ -1418,7 +893,7 @@ winux::String MysqlResult::fieldType( size_t fieldIndex )
     {
         return __MySqlFieldTypeStr( (enum_field_types)_fieldTypes[fieldIndex] );
     }
-    return winux::Literal<winux::String::value_type>::emptyStr;
+    return winux::Literal<winux::String::value_type>::nulStr;
 }
 
 bool MysqlResult::reset()
@@ -1437,29 +912,6 @@ MysqlModifier::~MysqlModifier()
 
 }
 
-void MysqlModifier::_getTableInfo()
-{
-    if ( !_cnn || !*_cnn ) throw MysqlDbError( 0, "MySQL no valid connection" );
+#endif // HAVE_DB_MYSQL
 
-    // DESCRIBE `table1`;
-    winux::SharedPointer<IDbStatement> stmt = _cnn->buildStmt( "DESCRIBE " + _cnn->symbolQuotes(_tableName) );
-    winux::SharedPointer<MysqlStatement> stmt2 = stmt.ensureCast<MysqlStatement>();
-
-    MysqlResult rs(stmt2);
-    winux::MixedArray row;
-    //bool isHasPrimaryKey = false;
-    while ( rs.fetchRow(&row) )
-    {
-        _fieldNames.push_back(row[0]);
-/*
-        if ( !isHasPrimaryKey && (winux::AnsiString)(row[3]) == "PRI" )
-        {
-            _prkName = (winux::String)row[0];
-            isHasPrimaryKey = true;
-        }*/
-    }
-
-    _cnn->getPrimaryKey( _tableName, &_prkColumn );
-}
-
-}
+} // namespace eiendb

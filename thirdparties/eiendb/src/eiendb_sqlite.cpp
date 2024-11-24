@@ -1,15 +1,15 @@
-﻿
-#include "sqlite3.h"
-#include "eiendb_common.hpp"
+﻿#include "eiendb_common.hpp"
 #include "eiendb_sqlite.hpp"
+
+#ifdef HAVE_DB_SQLITE
+#include "sqlite3.h"
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <string.h>
-/////////////////////
-//#include <iostream>
 
 #if defined(_MSC_VER) || defined(WIN32)
 #pragma warning( disable: 4018 )
@@ -23,9 +23,11 @@
 
 namespace eiendb
 {
+#ifdef HAVE_DB_SQLITE
+
 #include "is_x_funcs.inl"
 
-#define TRY_LOAD_LINE( ifile, i, line ) ( i < line.length() || ( i = 0, ( ( line = ifile->getLine() ).length() || !ifile->eof() && ( line = ifile->getLine() ).length() ) ) )
+#define TRY_LOAD_LINE( ifile, i, line ) ( i < line.length() || ( i = 0, ( line = ifile->getLine() ).length() ) )
 
 static winux::String __SqliteLoadSqlFile_String( winux::IFile * ifile, winux::String::size_type & i, winux::String & line )
 {
@@ -87,7 +89,7 @@ static size_t __SqliteLoadSqlFile( winux::IFile * ifile, winux::StringArray * ar
         winux::String::value_type ch = line[i];
         if ( i == 0 && ch == '-' ) // 一行开头
         {
-            i++;
+            i++; // skip first '-'
             if ( TRY_LOAD_LINE( ifile, i, line ) )
             {
                 ch = line[i];
@@ -121,161 +123,6 @@ static size_t __SqliteLoadSqlFile( winux::IFile * ifile, winux::StringArray * ar
         }
         else
         {
-            if ( sql.empty() )
-            {
-                if ( IsSpace(ch) )
-                {
-                }
-                else
-                {
-                    sql += ch;
-                }
-            }
-            else
-            {
-                sql += ch;
-            }
-            i++;
-        }
-    }
-
-    if ( winux::StrTrim(sql).length() > 0 )
-    {
-        arrSql->push_back(sql);
-        sql.clear();
-        nSql++;
-    }
-    return nSql;
-}
-
-static winux::String __SqliteLoadSql_String( winux::String const & sqlText, winux::String::size_type & i )
-{
-    winux::String::value_type quote = sqlText[i];
-    winux::String s;
-
-    i++; // skip quote
-    s += quote;
-
-    while ( i < sqlText.length() )
-    {
-        winux::String::value_type ch = sqlText[i];
-        if ( ch == quote )
-        {
-            s += ch;
-            i++;
-            // 判断后面还有字符没有
-            if ( i < sqlText.length() ) // 还有字符
-            {
-                // 判断引号之后是不是还连着一个引号
-                ch = sqlText[i];
-                if ( ch == quote )
-                {
-                    s += ch;
-                    i++;
-                }
-                else // 后面是其他字符
-                {
-                    // 结束字符串解析
-                    break;
-                }
-            }
-            else // 没有字符了
-            {
-                // 结束字符串解析
-                break;
-            }
-        }
-        else
-        {
-            s += ch;
-            i++;
-        }
-    }
-
-    return s;
-}
-
-static size_t __SqliteLoadSql( winux::String const & sqlText, winux::StringArray * arrSql, IDbConnection * cnn )
-{
-    winux::String sql;
-    size_t nSql = 0;
-
-    winux::String::size_type i = 0;
-    bool lineHeadStart = true;
-    while ( i < sqlText.length() )
-    {
-        winux::String::value_type ch = sqlText[i];
-        if ( ch == '\r' || ch == '\n' )
-        {
-            if ( ch == '\r' )
-            {
-                // 当前字符是'\r'时，检测下一个字符是否为'\n'，如果是，则当作整体换行标记
-                if ( i + 1 < sqlText.length() && sqlText[i + 1] == '\n' )
-                {
-                    i++; // skip '\r'
-                    ch = sqlText[i];
-                }
-            }
-
-            // 换行标记 \r or \n or \r\n
-            ++i; // skip '\r' or '\n'
-
-            // add '\n' into sql
-            if ( !sql.empty() )
-            {
-                sql += '\n';
-            }
-            lineHeadStart = true;
-        }
-        else if ( lineHeadStart && ch == '-' ) // 一行开头
-        {
-            lineHeadStart = false;
-            i++; // skip first '-'
-            if ( i < sqlText.length() )
-            {
-                ch = sqlText[i];
-                if ( ch == '-' ) // "--"开头时作为注释行跳过
-                {
-                    ++i; // skip second '-'
-                    // skip a line
-                    while ( i < sqlText.length() )
-                    {
-                        if ( sqlText[i] == '\r' || sqlText[i] == '\n' )
-                        {
-                            break;
-                        }
-                        ++i;
-                    }
-                }
-                else
-                {
-                    sql += '-';
-                    sql += ch;
-                    i++;
-                }
-            }
-            else
-            {
-                break;
-            }
-        }
-        else if ( ch == '\'' || ch == '\"' )
-        {
-            lineHeadStart = false;
-            sql += __SqliteLoadSql_String( sqlText, i );
-        }
-        else if ( ch == ';' )
-        {
-            lineHeadStart = false;
-            sql += ch;
-            arrSql->push_back(sql);
-            sql.clear();
-            nSql++;
-            i++;
-        }
-        else
-        {
-            lineHeadStart = false;
             // 当sql不为空时，空白字符才予加入
             if ( sql.empty() )
             {
@@ -301,7 +148,7 @@ static size_t __SqliteLoadSql( winux::String const & sqlText, winux::StringArray
     return nSql;
 }
 
-/* 通过PRAGMA table_info(tablename)获取表的字段类型说明,再根据辨别规则甄别。see 数据类型声明亲缘性对照表.txt */
+// 通过PRAGMA table_info(tablename)获取表的字段类型说明，再根据辨别规则甄别。see TypeAffinityTable.txt
 // 辨别类型亲缘性（affinity），以便类型转换和构造
 static winux::String __GetTypeAffinity( winux::String typeDeclare )
 {
@@ -325,6 +172,7 @@ static winux::String __GetTypeAffinity( winux::String typeDeclare )
     return TEXT("numeric");
 }
 
+// class SqliteConnection -------------------------------------------------------------------
 SqliteConnection::SqliteConnection( winux::String const & path, winux::AnsiString const & dbKey, winux::String linkCharset, bool doConnect )
 : _db(nullptr), _path(path), _linkCharset(linkCharset), _dbKey(dbKey)
 {
@@ -456,6 +304,13 @@ size_t SqliteConnection::affectedRows()
     return (size_t)sqlite3_changes(_db);
 }
 
+size_t SqliteConnection::insertId()
+{
+    if ( _db == nullptr ) throw SqliteDbError( 0, "SQLite no valid connection" );
+
+    return (size_t)sqlite3_last_insert_rowid(_db);
+}
+
 int SqliteConnection::errNo()
 {
     if ( _db == nullptr ) throw SqliteDbError( 0, "SQLite no valid connection" );
@@ -470,6 +325,7 @@ winux::String SqliteConnection::error()
     return sqliteStrToString( sqlite3_errmsg(_db) );
 }
 
+// 只是简单的引号double。内部不会进行utf8换码
 winux::String SqliteConnection::escape( winux::String const & str, winux::String const & addQuote )
 {
     winux::String r;
@@ -518,6 +374,7 @@ winux::String SqliteConnection::escape( winux::String const & str, winux::String
     return r;
 }
 
+// 将二进制数据转换成X'******'的形式
 winux::String SqliteConnection::escape( void const * buf, size_t size, winux::String const & addQuote )
 {
     winux::String r;
@@ -542,6 +399,7 @@ winux::String SqliteConnection::escape( void const * buf, size_t size, winux::St
     return r;
 }
 
+// 执行SQL语句查询并返回结果集
 winux::SharedPointer<IDbResult> SqliteConnection::query( winux::String const & sql )
 {
     return winux::SharedPointer<IDbResult>( new SqliteResult( winux::SharedPointer<SqliteStatement>( new SqliteStatement( this, sql ) ) ) );
@@ -553,6 +411,7 @@ winux::SharedPointer<IDbResult> SqliteConnection::query( winux::SharedPointer<ID
     return winux::SharedPointer<IDbResult>( new SqliteResult(stmt2) );
 }
 
+// 执行SQL语句不需要返回结果集，返回bool代表是否成功
 bool SqliteConnection::exec( winux::String const & sql )
 {
     if ( _db == nullptr ) throw SqliteDbError( 0, "SQLite no valid connection" );
@@ -586,13 +445,6 @@ bool SqliteConnection::exec( winux::SharedPointer<IDbStatement> stmt )
     return false;
 }
 
-size_t SqliteConnection::insertId()
-{
-    if ( _db == nullptr ) throw SqliteDbError( 0, "SQLite no valid connection" );
-
-    return (size_t)sqlite3_last_insert_rowid(_db);
-}
-
 winux::SharedPointer<IDbResult> SqliteConnection::listDbs()
 {
     winux::String fields[] = { "Databases" };
@@ -610,22 +462,23 @@ winux::SharedPointer<IDbResult> SqliteConnection::listDbs()
     return winux::SharedPointer<IDbResult>(p);
 }
 
+// 执行 PRAGMA table_info(tablename)
 winux::SharedPointer<IDbResult> SqliteConnection::listFields( winux::String const & tableName )
 {
     winux::String fields[] = { "Fields" };
-    MemoryResult * p = new MemoryResult(fields);
-    winux::String sql = winux::Format( TEXT("PRAGMA table_info(%s);"), tableName.c_str() );
-    winux::SharedPointer<IDbResult> rs = this->query(sql);
+    auto p = winux::MakeShared( new MemoryResult(fields) );
+    winux::String sql = "PRAGMA table_info(" + this->symbolQuotes(tableName) + ");";
+    auto rs = this->query(sql);
     winux::MixedArray f;
-    while ( rs->fetchRow(&f) )
+    while ( rs->fetchArray(&f) )
     {
         winux::String values[] = { f[1] };
         p->addRow(values);
     }
-
-    return winux::SharedPointer<IDbResult>(p);
+    return p;
 }
 
+// 执行 SELECT name FROM sqlite_master WHERE type = 'table' AND substr( name, 1, 7 ) <> 'sqlite_' ORDER BY name;
 winux::SharedPointer<IDbResult> SqliteConnection::listTables()
 {
     winux::String fields[] = { "Tables" };
@@ -633,7 +486,7 @@ winux::SharedPointer<IDbResult> SqliteConnection::listTables()
     winux::String sql = TEXT("SELECT name FROM sqlite_master WHERE type = \'table\' AND substr( name, 1, 7 ) <> \'sqlite_\' ORDER BY name;");
     winux::SharedPointer<IDbResult> rs = this->query(sql);
     winux::MixedArray f;
-    while ( rs->fetchRow(&f) )
+    while ( rs->fetchArray(&f) )
     {
         winux::String values[] = { f[0] };
         p->addRow(values);
@@ -642,7 +495,7 @@ winux::SharedPointer<IDbResult> SqliteConnection::listTables()
     return winux::SharedPointer<IDbResult>(p);
 }
 
-static inline winux::String __ReplaceCrlfToLf( winux::String const & str )
+inline static winux::String __ReplaceCrlfToLf( winux::String const & str )
 {
     thread_local winux::MultiMatch mmReplaceCrlfToLf( { "\r\n" }, { "\n" } );
     return mmReplaceCrlfToLf.replace(str);
@@ -656,7 +509,7 @@ winux::String SqliteConnection::tableDdl( winux::String const & tableName )
     winux::SharedPointer<IDbResult> rs = this->query(stmt);
     winux::MixedArray f;
     winux::String ddl;
-    while ( rs->fetchRow(&f) )
+    while ( rs->fetchArray(&f) )
     {
         ddl += __ReplaceCrlfToLf(f[0]);
         ddl += ";\n";
@@ -664,19 +517,23 @@ winux::String SqliteConnection::tableDdl( winux::String const & tableName )
     return ddl;
 }
 
-winux::String SqliteConnection::symbolQuotes( winux::String const & str )
+winux::String SqliteConnection::symbolQuotes( winux::String const & str, bool periodAsSeparator )
 {
-    return "[" + str + "]";
+    if ( periodAsSeparator )
+    {
+        winux::StringArray arr;
+        winux::StrSplit( str, ".", &arr );
+        return "[" + winux::StrJoin( "].[", arr ) + "]";
+    }
+    else
+    {
+        return "[" + str + "]";
+    }
 }
 
-size_t SqliteConnection::loadSql( winux::String const & sqlText, winux::StringArray * arrSql )
+size_t SqliteConnection::loadSqlFile( winux::IFile * sqlFile, winux::StringArray * arrSql )
 {
-    return __SqliteLoadSql( sqlText, arrSql, this );
-}
-
-size_t SqliteConnection::loadSqlFile( winux::IFile * sqlScriptFile, winux::StringArray * arrSql )
-{
-    return __SqliteLoadSqlFile( sqlScriptFile, arrSql, this );
+    return __SqliteLoadSqlFile( sqlFile, arrSql, this );
 }
 
 size_t SqliteConnection::getPrimaryKey( winux::String const & tableName, winux::StringArray * arrKeyColumn )
@@ -688,7 +545,7 @@ size_t SqliteConnection::getPrimaryKey( winux::String const & tableName, winux::
     SqliteResult res(stmt2);
     winux::StringMixedMap f;
     std::map< int, winux::String > keyColumn;
-    while ( res.fetchRow(&f) )
+    while ( res.fetchMap(&f) )
     {
         winux::String fieldname = f["name"];
         int pk = f["pk"];
@@ -706,22 +563,7 @@ size_t SqliteConnection::getPrimaryKey( winux::String const & tableName, winux::
     return arrKeyColumn->size();
 }
 
-winux::SharedPointer<IDbStatement> SqliteConnection::buildStmt( winux::String const & sql )
-{
-    return winux::SharedPointer<IDbStatement>( new SqliteStatement( this, sql ) );
-}
-
 winux::SharedPointer<IDbStatement> SqliteConnection::buildStmt( winux::String const & sql, winux::Mixed const & params )
-{
-    return winux::SharedPointer<IDbStatement>( new SqliteStatement( this, sql, params ) );
-}
-
-winux::SharedPointer<IDbStatement> SqliteConnection::buildStmt( winux::String const & sql, winux::MixedArray const & params )
-{
-    return winux::SharedPointer<IDbStatement>( new SqliteStatement( this, sql, params ) );
-}
-
-winux::SharedPointer<IDbStatement> SqliteConnection::buildStmt( winux::String const & sql, winux::StringMixedMap const & params )
 {
     return winux::SharedPointer<IDbStatement>( new SqliteStatement( this, sql, params ) );
 }
@@ -741,7 +583,7 @@ winux::String SqliteConnection::sqliteStrToString( char const * s )
         }
         else
         {
-            winux::Conv conv( "utf-8", _linkCharset.c_str() );
+            winux::Conv conv( "utf-8", _linkCharset );
             return conv.convert< winux::String, winux::AnsiString >(s);
         }
     }
@@ -761,7 +603,7 @@ winux::AnsiString SqliteConnection::stringToSqliteStr( winux::String const & s )
     }
     else
     {
-        winux::Conv conv( _linkCharset.c_str(), "utf-8" );
+        winux::Conv conv( _linkCharset, "utf-8" );
         return conv.convert< winux::AnsiString, winux::String >(s);
     }
 }
@@ -771,22 +613,7 @@ SqliteStatement::SqliteStatement( SqliteConnection * cnn ) : _cnn(cnn), _stmt(NU
 {
 }
 
-SqliteStatement::SqliteStatement( SqliteConnection * cnn, winux::String const & sql ) : _cnn(cnn), _stmt(NULL)
-{
-    this->build(sql);
-}
-
 SqliteStatement::SqliteStatement( SqliteConnection * cnn, winux::String const & sql, winux::Mixed const & params ) : _cnn(cnn), _stmt(NULL)
-{
-    this->build( sql, params );
-}
-
-SqliteStatement::SqliteStatement( SqliteConnection * cnn, winux::String const & sql, winux::MixedArray const & params ) : _cnn(cnn), _stmt(NULL)
-{
-    this->build( sql, params );
-}
-
-SqliteStatement::SqliteStatement( SqliteConnection * cnn, winux::String const & sql, winux::StringMixedMap const & params ) : _cnn(cnn), _stmt(NULL)
 {
     this->build( sql, params );
 }
@@ -795,24 +622,6 @@ SqliteStatement::~SqliteStatement()
 {
     this->_free();
 }
-
-/*SqliteStatement::SqliteStatement( SqliteStatement & other ) : _cnn(other._cnn), _stmt(NULL)
-{
-    this->operator = (other);
-}
-
-SqliteStatement & SqliteStatement::operator = ( SqliteStatement & other )
-{
-    if ( this != &other )
-    {
-        this->free();
-        this->_cnn = other._cnn;
-        this->_stmt = other._stmt;
-        this->_sql = other._sql;
-        other._stmt = NULL;
-    }
-    return *this;
-}*/
 
 void SqliteStatement::_free()
 {
@@ -823,7 +632,7 @@ void SqliteStatement::_free()
     }
 }
 
-bool SqliteStatement::build( winux::String const & sql )
+bool SqliteStatement::build( winux::String const & sql, winux::Mixed const & params )
 {
     this->_free();
 
@@ -833,79 +642,42 @@ bool SqliteStatement::build( winux::String const & sql )
     winux::AnsiString sqlUtf8 = _cnn->stringToSqliteStr(sql);
     int rc = sqlite3_prepare_v2( *_cnn, sqlUtf8.c_str(), (int)sqlUtf8.length(), &_stmt, nullptr );
 
-    if ( rc != SQLITE_OK ) throw SqliteDbError( _cnn->errNo(), _cnn->error() );
-
-    return rc == SQLITE_OK;
-}
-
-bool SqliteStatement::build( winux::String const & sql, winux::Mixed const & params )
-{
-    if ( this->build(sql) )
+    bool r = rc == SQLITE_OK;
+    if ( !r )
     {
-        if ( params.isArray() )
+        throw SqliteDbError( _cnn->errNo(), _cnn->error() );
+    }
+    else
+    {
+        if ( params.isNull() )
+        {
+        }
+        else if ( params.isArray() )
         {
             size_t i, count = params.getCount();
-            bool r = true;
             for ( i = 0; i < count; ++i )
             {
                 bool bindOk = this->bind( i + 1, params[i] );
                 if ( r && !bindOk ) r = false;
             }
-            return r;
         }
         else if ( params.isCollection() )
         {
             size_t i, count = params.getCount();
-            bool r = true;
             for ( i = 0; i < count; ++i )
             {
-                winux::Mixed::MixedMixedMap::value_type const & pr = params.getPair(i);
-                bool bindOk = this->bind( (winux::String)pr.first, pr.second );
+                auto & pr = params.getPair(i);
+                bool bindOk = this->bind( pr.first.toString<winux::String::value_type>(), pr.second );
                 if ( r && !bindOk ) r = false;
             }
-            return r;
         }
-        else //只是一个值，作为bind(1,val)处理
+        else // 只是一个值，作为bind(1,val)处理
         {
-            bool r = true;
             bool bindOk = this->bind( 1, params );
             if ( r && !bindOk ) r = false;
-            return r;
         }
     }
-    return false;
-}
-
-bool SqliteStatement::build( winux::String const & sql, winux::MixedArray const & params )
-{
-    if ( this->build(sql) )
-    {
-        size_t i;
-        bool r = true;
-        for ( i = 0; i < params.size(); ++i )
-        {
-            bool bindOk = this->bind( i + 1, params[i] );
-            if ( r && !bindOk ) r = false;
-        }
-        return r;
-    }
-    return false;
-}
-
-bool SqliteStatement::build( winux::String const & sql, winux::StringMixedMap const & params )
-{
-    if ( this->build(sql) )
-    {
-        winux::StringMixedMap::const_iterator it;
-        bool r = true;
-        for ( it = params.begin(); it != params.end(); ++it )
-        {
-            bool bindOk = this->bind( it->first, it->second );
-            if ( r && !bindOk ) r = false;
-        }
-        return r;
-    }
-    return false;
+    return r;
 }
 
 bool SqliteStatement::bind( size_t paramIndex, winux::Mixed const & val )
@@ -956,8 +728,7 @@ bool SqliteStatement::bind( size_t paramIndex, winux::Mixed const & val )
 
     // 把绑定的参数记下（参数索引，参数值），以便之后语句更改重绑定
     bool isFound = false;
-    std::vector< std::pair< size_t, winux::Mixed > >::iterator it;
-    for ( it = _bindingParams.begin(); it != _bindingParams.end(); ++it )
+    for ( auto it = _bindingParams.begin(); it != _bindingParams.end(); ++it )
     {
         if ( it->first == paramIndex )
         {
@@ -968,7 +739,7 @@ bool SqliteStatement::bind( size_t paramIndex, winux::Mixed const & val )
     }
     if ( !isFound )
     {
-        _bindingParams.push_back( std::pair< size_t, winux::Mixed >( paramIndex, val ) );
+        _bindingParams.push_back( std::make_pair( paramIndex, val ) );
     }
     return rc == SQLITE_OK;
 }
@@ -986,14 +757,12 @@ SqliteResult::SqliteResult( winux::SharedPointer<SqliteStatement> stmt ) : _stmt
 {
     if ( !_stmt || !*_stmt.get() ) throw SqliteDbError( 0, "Invalid statement object" );
 
-    // prepare()后可以直接调用:
-    // column_name, column_origin_name, column_count, column_decltype
+    // stmt prepare 后可以直接调用: column_name(), column_origin_name(), column_count(), column_decltype().
 
     // 取得字段数
     int n = sqlite3_column_count(*_stmt.get());
-    int i;
     // 在得到数据之前，可以获取字段名
-    for ( i = 0; i < n; ++i )
+    for ( int i = 0; i < n; ++i )
     {
         _fieldNames.push_back( this->_stmt->getCnn()->sqliteStrToString( sqlite3_column_name( *_stmt.get(), i ) ) );
     }
@@ -1037,58 +806,9 @@ static void __FieldValueAssignToMixed( winux::Mixed & m, SqliteStatement * stmt,
         }
         break;
     case SQLITE_NULL:
-        m = winux::Mixed();
+        m = winux::mxNull;
         break;
     }
-}
-
-bool SqliteResult::fetchRow( winux::MixedArray * fields )
-{
-    if ( _first )
-        _first = false;
-    else
-        _hasRow = ( ( _retCode = sqlite3_step(*_stmt.get()) ) == SQLITE_ROW );
-
-    if ( _hasRow )
-    {
-        if ( fields != nullptr )
-        {
-            fields->clear();
-            size_t n = this->fieldsCount();
-            fields->resize(n);
-            size_t i;
-            for ( i = 0; i < n; ++i )
-            {
-                __FieldValueAssignToMixed( fields->operator [] (i), _stmt.get(), (int)i );
-            }
-        }
-        return true;
-    }
-    return false;
-}
-
-bool SqliteResult::fetchRow( winux::StringMixedMap * fields )
-{
-    if ( _first )
-        _first = false;
-    else
-        _hasRow = ( ( _retCode = sqlite3_step(*_stmt.get()) ) == SQLITE_ROW );
-
-    if ( _hasRow )
-    {
-        if ( fields != nullptr )
-        {
-            fields->clear();
-            size_t n = this->fieldsCount();
-            size_t i;
-            for ( i = 0; i < n; ++i )
-            {
-                __FieldValueAssignToMixed( fields->operator [] (_fieldNames[i]), _stmt.get(), (int)i );
-            }
-        }
-        return true;
-    }
-    return false;
 }
 
 bool SqliteResult::fetchRow( winux::Mixed * fields, int type )
@@ -1109,7 +829,7 @@ bool SqliteResult::fetchRow( winux::Mixed * fields, int type )
                 size_t i;
                 for ( i = 0; i < n; ++i )
                 {
-                    __FieldValueAssignToMixed( fields->operator [] (_fieldNames[i]), _stmt.get(), (int)i );
+                    __FieldValueAssignToMixed( (*fields)[ _fieldNames[i] ], _stmt.get(), (int)i );
                 }
             }
             else if ( type == 1 )
@@ -1119,8 +839,57 @@ bool SqliteResult::fetchRow( winux::Mixed * fields, int type )
                 size_t i;
                 for ( i = 0; i < n; ++i )
                 {
-                    __FieldValueAssignToMixed( fields->operator [] (i), _stmt.get(), (int)i );
+                    __FieldValueAssignToMixed( (*fields)[i], _stmt.get(), (int)i );
                 }
+            }
+        }
+        return true;
+    }
+    return false;
+}
+
+bool SqliteResult::fetchArray( winux::MixedArray * fields )
+{
+    if ( _first )
+        _first = false;
+    else
+        _hasRow = ( ( _retCode = sqlite3_step(*_stmt.get()) ) == SQLITE_ROW );
+
+    if ( _hasRow )
+    {
+        if ( fields != nullptr )
+        {
+            fields->clear();
+            size_t n = this->fieldsCount();
+            fields->resize(n);
+            size_t i;
+            for ( i = 0; i < n; ++i )
+            {
+                __FieldValueAssignToMixed( (*fields)[i], _stmt.get(), (int)i );
+            }
+        }
+        return true;
+    }
+    return false;
+}
+
+bool SqliteResult::fetchMap( winux::StringMixedMap * fields )
+{
+    if ( _first )
+        _first = false;
+    else
+        _hasRow = ( ( _retCode = sqlite3_step(*_stmt.get()) ) == SQLITE_ROW );
+
+    if ( _hasRow )
+    {
+        if ( fields != nullptr )
+        {
+            fields->clear();
+            size_t n = this->fieldsCount();
+            size_t i;
+            for ( i = 0; i < n; ++i )
+            {
+                __FieldValueAssignToMixed( (*fields)[ _fieldNames[i] ], _stmt.get(), (int)i );
             }
         }
         return true;
@@ -1157,15 +926,14 @@ size_t SqliteResult::rowsCount()
     if ( pos != winux::String::npos )
     {
         winux::SharedPointer<SqliteStatement> stmtRowsCount( new SqliteStatement( _stmt->getCnn(), TEXT("select count(*) ") + _stmt->getSql().substr(pos) ) );
-        std::vector< std::pair< size_t, winux::Mixed > >::iterator it;
-        for ( it = _stmt->_bindingParams.begin(); it != _stmt->_bindingParams.end(); ++it )
+        for ( auto it = _stmt->_bindingParams.begin(); it != _stmt->_bindingParams.end(); ++it )
         {
             stmtRowsCount->bind( it->first, it->second );
         }
 
         SqliteResult res(stmtRowsCount);
         winux::MixedArray f;
-        if ( res.fetchRow(&f) )
+        if ( res.fetchArray(&f) )
         {
             return f[0];
         }
@@ -1182,8 +950,7 @@ bool SqliteResult::reset()
 }
 
 // class SqliteModifier ------------------------------------------------------------------------------------
-SqliteModifier::SqliteModifier( SqliteConnection * cnn, winux::String const & tableName )
-: DbModifier( cnn, tableName )
+SqliteModifier::SqliteModifier( SqliteConnection * cnn, winux::String const & tableName ) : DbModifier( cnn, tableName )
 {
     this->_getTableInfo();
 }
@@ -1193,29 +960,6 @@ SqliteModifier::~SqliteModifier()
 
 }
 
-void SqliteModifier::_getTableInfo()
-{
-    if ( !_cnn || !*_cnn ) throw SqliteDbError( 0, "SQLite no valid connection" );
+#endif // HAVE_DB_SQLITE
 
-    winux::String sql = winux::Format( "PRAGMA table_info(%s);", _cnn->symbolQuotes(_tableName).c_str() );
-
-    winux::SharedPointer<IDbStatement> stmt = _cnn->buildStmt(sql);
-    winux::SharedPointer<SqliteStatement> stmt2 = stmt.ensureCast<SqliteStatement>();
-
-    SqliteResult res(stmt2);
-    
-    winux::StringMixedMap f;
-    while ( res.fetchRow(&f) )
-    {
-        winux::String fieldname = f["name"];
-        _fieldNames.push_back(fieldname);
-/*
-        if ( (bool)f["pk"] )
-        {
-            _prkName = fieldname;
-        }*/
-    }
-    _cnn->getPrimaryKey( _tableName, &_prkColumn );
-}
-
-}
+} // namespace eiendb

@@ -3,11 +3,29 @@
 //
 #include "utilities.hpp"
 #include "smartptr.hpp"
-#include "filesys.hpp"
 #include "strings.hpp"
+#include "filesys.hpp"
 #include "archives.hpp"
 
 #include "eienexpr.hpp"
+
+#if defined(OS_WIN) // IS_WINDOWS
+    #include <mbstring.h>
+    #include <tchar.h>
+#else
+    #include <wchar.h>
+    #ifdef UNICODE
+    #define _vsntprintf vswprintf
+    #define _tcsstr wcsstr
+    #define _tcstol wcstol
+    #define _tcstoul wcstoul
+    #else
+    #define _vsntprintf vsnprintf
+    #define _tcsstr strstr
+    #define _tcstol strtol
+    #define _tcstoul strtoul
+    #endif
+#endif
 
 namespace winux
 {
@@ -59,20 +77,20 @@ inline static bool IsNumberString( winux::String const & str )
     return n < 11; // 数字小于11位才算数字串
 }
 
-inline static char NumberStringToChar( const char * number, int base )
+inline static tchar NumberStringToChar( const tchar * number, int base )
 {
-    char * endptr;
-    return (char)strtol( number, &endptr, base );
+    tchar * endptr;
+    return (tchar)_tcstol( number, &endptr, base );
 }
 
-inline static winux::ulong NumberStringToNumber( const char * number, int base )
+inline static winux::ulong NumberStringToNumber( const tchar * number, int base )
 {
-    char * endptr;
-    return (winux::ulong)strtoul( number, &endptr, base );
+    tchar * endptr;
+    return (winux::ulong)_tcstoul( number, &endptr, base );
 }
 
 // class Configure -----------------------------------------------------------------------------
-String const Configure::ConfigVarsSlashChars = "\n\r\t\v\a\\\'\"$()";
+String const Configure::ConfigVarsSlashChars = TEXT("\n\r\t\v\a\\\'\"$()");
 
 Configure::Configure()
 {
@@ -86,8 +104,8 @@ Configure::Configure( String const & configFile )
 
 int Configure::_FindConfigRef( String const & str, int offset, int * length, String * name )
 {
-    String ldelim = "$(";
-    String rdelim = ")";
+    String ldelim = TEXT("$(");
+    String rdelim = TEXT(")");
     *length = 0;
     int pos1 = (int)str.find( ldelim, offset );
     if ( pos1 == -1 ) return -1;
@@ -100,10 +118,10 @@ int Configure::_FindConfigRef( String const & str, int offset, int * length, Str
 
 String Configure::_expandVarNoStripSlashes( String const & name, StringArray * chains ) const
 {
-    if ( !this->has(name) ) return "";
+    if ( !this->has(name) ) return TEXT("");
     chains->push_back(name);
     String configVal = _rawParams.at(name);
-    String res = "";
+    String res;
     int len;
     String varName;
     int offset = 0;
@@ -112,7 +130,7 @@ String Configure::_expandVarNoStripSlashes( String const & name, StringArray * c
     {
         res += configVal.substr( offset, pos - offset );
         offset = pos + len;
-        res += !ValueIsInArray( *chains, varName ) ? _expandVarNoStripSlashes( varName, chains ) : "";
+        res += !ValueIsInArray( *chains, varName ) ? _expandVarNoStripSlashes( varName, chains ) : TEXT("");
     }
     res += configVal.substr(offset);
     chains->pop_back();
@@ -122,7 +140,7 @@ String Configure::_expandVarNoStripSlashes( String const & name, StringArray * c
 inline static bool __GetLine( IFile * f, String * line )
 {
     String tmpLine = f->getLine();
-    *line = tmpLine.empty() ? "" : ( tmpLine[tmpLine.length() - 1] == '\n' ? tmpLine.substr( 0, tmpLine.length() - 1 ) : tmpLine );
+    *line = tmpLine.empty() ? TEXT("") : ( tmpLine[tmpLine.length() - 1] == '\n' ? tmpLine.substr( 0, tmpLine.length() - 1 ) : tmpLine );
     return !tmpLine.empty();
 }
 
@@ -133,7 +151,7 @@ int Configure::_load( String const & configFile, StringStringMap * rawParams, St
     int varsCount = 0;
     try
     {
-        File fin( configFile, "r", false );
+        File fin( configFile, TEXT("r") );
         if ( !fin ) return varsCount;
         String line;
         while ( __GetLine( &fin, &line ) )
@@ -151,18 +169,18 @@ int Configure::_load( String const & configFile, StringStringMap * rawParams, St
                 if ( pos == -1 )
                 {
                     commandName = tmp.substr(1); // 偏移1是为了 skip '@'
-                    commandParam = "";
+                    commandParam = TEXT("");
                 }
                 else
                 {
                     commandName = tmp.substr( 1, pos - 1 );
                     commandParam = tmp.substr( pos + 1 );
                 }
-                if ( commandName == "import" ) // 导入外部配置
+                if ( commandName == TEXT("import") ) // 导入外部配置
                 {
                     String dirPath = FilePath(configFile);
                     String confPath = commandParam;
-                    confPath = IsAbsPath(confPath) ? confPath : ( dirPath.empty() ? "" : dirPath + DirSep ) + confPath;
+                    confPath = IsAbsPath(confPath) ? confPath : CombinePath( dirPath, confPath );
                     if ( !ValueIsInArray( *loadFileChains, RealPath(confPath), true ) )
                     {
                         varsCount += _load( confPath, rawParams, loadFileChains );
@@ -173,7 +191,7 @@ int Configure::_load( String const & configFile, StringStringMap * rawParams, St
 
             int delimPos = (int)line.find('=');
             if ( delimPos == -1 ) // 找不到'='分隔符,就把整行当成参数名
-                (*rawParams)[line] = "";
+                (*rawParams)[line] = TEXT("");
             else
                 (*rawParams)[ line.substr( 0, delimPos ) ] = line.substr( delimPos + 1 );
 
@@ -205,7 +223,7 @@ String Configure::get( String const & name, bool stripslashes, bool expand ) con
     }
     else
     {
-        value = this->has(name) ? _rawParams.at(name) : "";
+        value = this->has(name) ? _rawParams.at(name) : TEXT("");
     }
 
     if ( stripslashes )
@@ -216,7 +234,7 @@ String Configure::get( String const & name, bool stripslashes, bool expand ) con
 
 String Configure::operator [] ( String const & name ) const
 {
-    return this->has(name) ? StripSlashes( _rawParams.at(name), ConfigVarsSlashChars ) : "";
+    return this->has(name) ? StripSlashes( _rawParams.at(name), ConfigVarsSlashChars ) : TEXT("");
 }
 
 String Configure::operator () ( String const & name ) const
@@ -328,9 +346,9 @@ enum ConfigureSettings_ParseContext
 // 一个值类型标记flag
 enum OneValueType
 {
-    ovtAuto,
-    ovtString,
-    ovtExpr
+    ovtAuto, // 0:自动判断数字或字符串
+    ovtString, // 1:字符串
+    ovtExpr // 2:表达式串
 };
 
 static void ConfigureSettings_ParseCollection( std::vector<ConfigureSettings_ParseContext> & cpc, winux::String const & str, int & i, Expression * exprCtx, winux::Mixed * collAsVal,  winux::Mixed * collAsExpr );
@@ -440,7 +458,7 @@ static void ConfigureSettings_ParseString( std::vector<ConfigureSettings_ParseCo
 {
     winux::String::value_type quote = str[i];
 
-    v->assign("");
+    v->assign( TEXT("") );
     winux::String & result = *v;
 
     i++; // skip left quote
@@ -470,7 +488,8 @@ static void ConfigureSettings_ParseString( std::vector<ConfigureSettings_ParseCo
 static void ConfigureSettings_ParseName( std::vector<ConfigureSettings_ParseContext> & cpc, winux::String const & str, int & i, winux::String * v )
 {
     int start = i;
-    v->assign("");
+
+    v->assign( TEXT("") );
     winux::String & result = *v;
 
     while ( i < (int)str.length() )
@@ -506,7 +525,7 @@ static void ConfigureSettings_ParseExpr( std::vector<ConfigureSettings_ParseCont
     i++; // skip '('
     int brackets = 1; // 括号配对。0时表示一个表达式结束
 
-    v->assign("");
+    v->assign( TEXT("") );
 
     while ( i < (int)str.length() )
     {
@@ -535,7 +554,7 @@ static void ConfigureSettings_ParseExpr( std::vector<ConfigureSettings_ParseCont
         }
         else if ( ch == ')' )
         {
-            if (--brackets < 1)
+            if ( --brackets < 1 )
             {
                 i++; // skip ')'
                 break;
@@ -558,8 +577,8 @@ static void _StoreValue( winux::String const & oneValue, OneValueType oneValueTy
 {
     if ( oneValue.empty() )
     {
-        arr.add("");
-        arrExpr.add("\"\"");
+        arr.add( TEXT("") );
+        arrExpr.add( TEXT("\"\"") );
     }
     else
     {
@@ -586,13 +605,13 @@ static void _StoreValue( winux::String const & oneValue, OneValueType oneValueTy
             else
             {
                 arr.add(oneValue);
-                arrExpr.add("\"" + AddCSlashes(oneValue) + "\"");
+                arrExpr.add( TEXT("\"") + AddCSlashes(oneValue) + TEXT("\"") );
             }
             break;
         case ovtString:
             {
                 arr.add(oneValue);
-                arrExpr.add("\"" + AddCSlashes(oneValue) + "\"");
+                arrExpr.add( TEXT("\"") + AddCSlashes(oneValue) + TEXT("\"") );
             }
             break;
         case ovtExpr:
@@ -610,7 +629,7 @@ static void _StoreValue( winux::String const & oneValue, OneValueType oneValueTy
                 }
 
                 arr.add(r);
-                arrExpr.add("(" + oneValue + ")");
+                arrExpr.add( TEXT("(") + oneValue + TEXT(")") );
             }
         }
     }
@@ -628,7 +647,7 @@ static void ConfigureSettings_ParseValue( std::vector<ConfigureSettings_ParseCon
     winux::String oneValue; // 单个值串
     OneValueType oneValueType = ovtAuto; // 值串类型 0:自动判断数字或字符串  1:字符串  2:表达式串
 
-    oneValue.assign("");
+    oneValue.assign( TEXT("") );
 
     while ( i < (int)str.length() )
     {
@@ -639,13 +658,13 @@ static void ConfigureSettings_ParseValue( std::vector<ConfigureSettings_ParseCon
             if ( !oneValue.empty() )
             {
                 _StoreValue( oneValue, oneValueType, exprCtx, arr, arrExpr );
-                oneValue.assign("");
+                oneValue.assign( TEXT("") );
                 oneValueType = ovtAuto;
             }
             else if ( oneValue.empty() && arr._pArr->size() == 0 ) // 遇到了结束分号却依旧没有读取到值，就加个空Mixed作值
             {
                 _StoreValue( oneValue, oneValueType, exprCtx, arr, arrExpr );
-                oneValue.assign("");
+                oneValue.assign( TEXT("") );
                 oneValueType = ovtAuto;
             }
 
@@ -657,7 +676,7 @@ static void ConfigureSettings_ParseValue( std::vector<ConfigureSettings_ParseCon
             if ( !oneValue.empty() )
             {
                 _StoreValue( oneValue, oneValueType, exprCtx, arr, arrExpr );
-                oneValue.assign("");
+                oneValue.assign( TEXT("") );
                 oneValueType = ovtAuto;
             }
 
@@ -700,7 +719,7 @@ static void ConfigureSettings_ParseValue( std::vector<ConfigureSettings_ParseCon
             arr.add(value);
             arrExpr.add(valExpr);
 
-            oneValue.assign("");
+            oneValue.assign( TEXT("") );
             oneValueType = ovtAuto;
 
             // 如果是"}\n"，也说明值结束
@@ -732,7 +751,7 @@ static void ConfigureSettings_ParseValue( std::vector<ConfigureSettings_ParseCon
     if ( !oneValue.empty() )
     {
         _StoreValue( oneValue, oneValueType, exprCtx, arr, arrExpr );
-        oneValue.assign("");
+        oneValue.assign( TEXT("") );
         oneValueType = ovtAuto;
     }
 
@@ -742,7 +761,7 @@ static void ConfigureSettings_ParseValue( std::vector<ConfigureSettings_ParseCon
     }
     else if ( arr.getCount() == 0 )
     {
-        value->assign("");
+        value->assign( TEXT("") );
     }
     else
     {
@@ -755,7 +774,7 @@ static void ConfigureSettings_ParseValue( std::vector<ConfigureSettings_ParseCon
     }
     else if ( arrExpr.getCount() == 0 )
     {
-        valExpr->assign("");
+        valExpr->assign( TEXT("") );
     }
     else
     {
@@ -816,7 +835,7 @@ static void ConfigureSettings_ParseCollection( std::vector<ConfigureSettings_Par
                     exprCtx->getVarContext()->set( name, value );
                     (*collAsExpr)[name] = valExpr;
 
-                    name.assign("");
+                    name.assign( TEXT("") );
                     value.free();
                     valExpr.free();
                     currIsName = true;
@@ -824,10 +843,10 @@ static void ConfigureSettings_ParseCollection( std::vector<ConfigureSettings_Par
                 }
                 else if ( hasName )
                 {
-                    exprCtx->getVarContext()->set( name, winux::Mixed() );
+                    exprCtx->getVarContext()->set( name, winux::mxNull );
                     (*collAsExpr)[name] = valExpr;
 
-                    name.assign("");
+                    name.assign( TEXT("") );
                     value.free();
                     valExpr.free();
                     currIsName = true;
@@ -845,7 +864,7 @@ static void ConfigureSettings_ParseCollection( std::vector<ConfigureSettings_Par
     }
     else if ( hasName )
     {
-        exprCtx->getVarContext()->set( name, winux::Mixed() );
+        exprCtx->getVarContext()->set( name, winux::mxNull );
         (*collAsExpr)[name] = valExpr;
     }
 
@@ -856,7 +875,7 @@ size_t ConfigureSettings::_load( String const & settingsFile, winux::Mixed * col
     String settingsFileRealPath = RealPath(settingsFile);
     loadFileChains->push_back(settingsFileRealPath);
 
-    String settingsContent = FileGetContents( settingsFileRealPath, true );
+    String settingsContent = FileGetString( settingsFileRealPath, feMultiByte );
     {
         std::vector<ConfigureSettings_ParseContext> cpc;
         cpc.push_back(cpcCollection);
@@ -1057,7 +1076,7 @@ inline static String __JudgeAddQuotes( String const & valStr )
     }
     if ( it != valStr.end() )
     {
-        return "\"" + AddQuotes(valStr) + "\"";
+        return TEXT("\"") + AddQuotes( valStr, Literal<String::value_type>::quoteChar ) + TEXT("\"");
     }
     else
     {
@@ -1069,13 +1088,13 @@ CsvWriter::CsvWriter( IFile * outputFile ) : _outputFile(outputFile)
 {
 }
 
-void CsvWriter::write( Mixed const & records, Mixed const & columnHeaders /*= Mixed() */ )
+void CsvWriter::write( Mixed const & records, Mixed const & columnHeaders )
 {
     if ( columnHeaders.isArray() )
     {
         this->writeRecord(columnHeaders);
     }
-    if ( records.isArray() ) //多条记录
+    if ( records.isArray() ) // 多条记录
     {
         size_t i, n = records.getCount();
         for ( i = 0; i < n; i++ )
@@ -1094,43 +1113,43 @@ void CsvWriter::writeRecord( Mixed const & record )
     if ( record.isArray() ) // 多个列
     {
         size_t i, n = record.getCount();
-        String strRecord = "";
+        String strRecord;
         for ( i = 0; i < n; i++ )
         {
-            if ( i != 0 ) strRecord += ",";
+            if ( i != 0 ) strRecord += TEXT(",");
             strRecord += __JudgeAddQuotes(record[i]);
         }
-        _outputFile->puts( strRecord + "\n" );
+        _outputFile->puts( strRecord + TEXT("\n") );
     }
     else if ( record.isCollection() )
     {
         size_t i, n = record.getCount();
-        String strRecord = "";
+        String strRecord;
         for ( i = 0; i < n; i++ )
         {
-            if ( i != 0 ) strRecord += ",";
+            if ( i != 0 ) strRecord += TEXT(",");
             strRecord += __JudgeAddQuotes( record.getPair(i).second );
         }
-        _outputFile->puts( strRecord + "\n" );
+        _outputFile->puts( strRecord + TEXT("\n") );
     }
     else // 只有1列
     {
-        _outputFile->puts( (String)__JudgeAddQuotes(record) + "\n" );
+        _outputFile->puts( (String)__JudgeAddQuotes(record) + TEXT("\n") );
     }
 }
 
-// class CsvReader ------------------------------------------------------------------------
-CsvReader::CsvReader( IFile * inputFile, bool hasColumnHeaders /*= false */ )
+// class CsvReader ----------------------------------------------------------------------------
+CsvReader::CsvReader( IFile * inputFile, bool hasColumnHeaders )
 {
-    if ( inputFile ) this->read( inputFile->buffer(), hasColumnHeaders );
+    if ( inputFile ) this->read( inputFile->entire(), hasColumnHeaders );
 }
 
-CsvReader::CsvReader( String const & content, bool hasColumnHeaders /*= false */ )
+CsvReader::CsvReader( String const & content, bool hasColumnHeaders )
 {
     if ( !content.empty() ) this->read( content, hasColumnHeaders );
 }
 
-void CsvReader::read( String const & content, bool hasColumnHeaders /*= false */ )
+void CsvReader::read( String const & content, bool hasColumnHeaders )
 {
     int i = 0;
     if ( hasColumnHeaders )
@@ -1147,7 +1166,7 @@ void CsvReader::read( String const & content, bool hasColumnHeaders /*= false */
     _records.createArray();
     while ( i < (int)content.length() )
     {
-        Mixed & record = _records[ _records.add( Mixed() ) ];
+        Mixed & record = _records[ _records.add(mxNull) ];
         _readRecord( content, i, record );
     }
 }
@@ -1155,17 +1174,17 @@ void CsvReader::read( String const & content, bool hasColumnHeaders /*= false */
 void CsvReader::_readRecord( String const & str, int & i, Mixed & record )
 {
     record.createArray();
-    String valStr = "";
+    String valStr;
     while ( i < (int)str.length() )
     {
         String::value_type ch = str[i];
-        if ( ch == '\n' ) //结束一条记录
+        if ( ch == '\n' ) // 结束一条记录
         {
             record.add(valStr);
             i++; // skip '\n'
             break;
         }
-        else if ( ch == ',' ) //结束一个值
+        else if ( ch == ',' ) // 结束一个值
         {
             record.add(valStr);
             valStr.clear();
@@ -1173,14 +1192,14 @@ void CsvReader::_readRecord( String const & str, int & i, Mixed & record )
         }
         else if ( ch == '\"' )
         {
-            //去除之前可能的空白
+            // 去除之前可能的空白
             if ( StrTrim(valStr).empty() )
             {
-                valStr.clear(); //去除之前可能获得的空白字符
+                valStr.clear(); // 去除之前可能获得的空白字符
                 _readString( str, i, valStr );
                 //record.add(valStr);
                 //valStr.clear();
-                //跳过','以避免再次加入这个值,或者跳过换行符
+                // 跳过','以避免再次加入这个值,或者跳过换行符
                 //while ( i < (int)str.length() && str[i] != ',' && str[i] != '\n' ) i++;
             }
             else
@@ -1230,197 +1249,87 @@ void CsvReader::_readString( String const & str, int & i, String & valStr )
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////
 
-template < typename _Ty >
-inline static _Ty _ByteOrder( _Ty v, bool b )
-{
-    if ( b )
-    {
-        return InvertByteOrder(v);
-    }
-    else
-    {
-        return v;
-    }
-}
-
-template < typename _ChTy >
-winux::XString<_ChTy> _NewlineFromFile( winux::XString<_ChTy> const & content, bool b )
-{
-#if defined(OS_WIN)
-    winux::XString<_ChTy> r2;
-    for ( size_t i = 0; i < content.length(); i++ )
-    {
-        if ( content[i] == _ByteOrder( winux::Literal<_ChTy>::crChar, b ) )
-        {
-            i++;
-            if ( i < content.length() )
-            {
-                if ( content[i] == _ByteOrder( winux::Literal<_ChTy>::lfChar, b ) )
-                {
-                    r2 += _ByteOrder( winux::Literal<_ChTy>::lfChar, b );
-                }
-                else
-                {
-                    r2 += _ByteOrder( winux::Literal<_ChTy>::crChar, b );
-                    r2 += content[i];
-                }
-            }
-            else
-            {
-                r2 += _ByteOrder( winux::Literal<_ChTy>::crChar, b );
-            }
-        }
-        else
-        {
-            r2 += content[i];
-        }
-    }
-    return r2;
-#elif defined(OS_DARWIN)
-    winux::XString<_ChTy> r2;
-    for ( size_t i = 0; i < content.length(); i++ )
-    {
-        if ( content[i] == _ByteOrder( winux::Literal<_ChTy>::crChar, b ) )
-        {
-            r2 += _ByteOrder( winux::Literal<_ChTy>::lfChar, b );
-        }
-        else
-        {
-            r2 += content[i];
-        }
-    }
-    return r2;
-#else
-    return content;
-#endif
-}
-
-template < typename _ChTy >
-winux::XString<_ChTy> _NewlineToFile( winux::XString<_ChTy> const & content, bool b )
-{
-#if defined(OS_WIN)
-    winux::XString<_ChTy> r2;
-    for ( size_t i = 0; i < content.length(); i++ )
-    {
-        if ( content[i] == _ByteOrder( winux::Literal<_ChTy>::lfChar, b ) )
-        {
-            r2 += _ByteOrder( winux::Literal<_ChTy>::crChar, b );
-            r2 += _ByteOrder( winux::Literal<_ChTy>::lfChar, b );
-        }
-        else
-        {
-            r2 += content[i];
-        }
-    }
-    return r2;
-#elif defined(OS_DARWIN)
-    winux::XString<_ChTy> r2;
-    for ( size_t i = 0; i < content.length(); i++ )
-    {
-        if ( content[i] == _ByteOrder( winux::Literal<_ChTy>::lfChar, b ) )
-        {
-            r2 += _ByteOrder( winux::Literal<_ChTy>::crChar, b );
-        }
-        else
-        {
-            r2 += content[i];
-        }
-    }
-    return r2;
-#else
-    return content;
-#endif
-}
-
-// class TextArchive ----------------------------------------------------------------------
+// class TextArchive --------------------------------------------------------------------------
 void TextArchive::saveEx( winux::Buffer const & content, winux::AnsiString const & encoding, winux::GrowBuffer * output, FileEncoding fileEncoding )
 {
     switch ( fileEncoding )
     {
-    case MultiByte:
+    case feMultiByte:
         {
-            winux::Conv conv{ encoding.c_str(), this->_mbsEncoding.c_str() };
+            winux::Conv conv{ encoding, this->_mbsEncoding };
             char * buf;
             size_t n = conv.convert( content.getBuf<char>(), content.getSize(), &buf );
-            winux::AnsiString res( buf, n );
-            free(buf);
-            output->append( _NewlineToFile( res, false ) );
+            output->appendString( NewlineToFile( buf, n, false ) );
+            Buffer::Free(buf);
         }
         break;
-    case Utf8:
+    case feUtf8:
         {
-            winux::Conv conv{ encoding.c_str(), "UTF-8" };
+            winux::Conv conv{ encoding, "UTF-8" };
             char * buf;
             size_t n = conv.convert( content.getBuf<char>(), content.getSize(), &buf );
-            winux::AnsiString res( buf, n );
-            free(buf);
-            output->append( _NewlineToFile( res, false ) );
+            output->appendString( NewlineToFile( buf, n, false ) );
+            Buffer::Free(buf);
         }
         break;
-    case Utf8Bom:
+    case feUtf8Bom:
         {
-            winux::Conv conv{ encoding.c_str(), "UTF-8" };
+            winux::Conv conv{ encoding, "UTF-8" };
             char * buf;
             size_t n = conv.convert( content.getBuf<char>(), content.getSize(), &buf );
-            winux::AnsiString res( buf, n );
-            free(buf);
             // write BOM
-            output->append( { '\xef', '\xbb', '\xbf' } );
-            output->append( _NewlineToFile( res, false ) );
+            output->appendType( { '\xef', '\xbb', '\xbf' } );
+            output->appendString( NewlineToFile( buf, n, false ) );
+            Buffer::Free(buf);
         }
         break;
-    case Utf16Le:
+    case feUtf16Le:
         {
-            winux::Conv conv{ encoding.c_str(), "UTF-16LE" };
+            winux::Conv conv{ encoding, "UTF-16LE" };
             char * buf;
             size_t n = conv.convert( content.getBuf<char>(), content.getSize(), &buf );
-            winux::Utf16String res( (winux::Utf16String::value_type *)buf, n / sizeof(winux::Utf16String::value_type) );
-            free(buf);
             // write BOM
-            output->append( { '\xff', '\xfe' } );
-            winux::Utf16String res2 = _NewlineToFile( res, IsBigEndian() );
-            output->append( res2.c_str(), res2.length() * sizeof(winux::Utf16String::value_type) );
+            output->appendType( { '\xff', '\xfe' } );
+            winux::Utf16String res2 = NewlineToFile( (winux::Utf16String::value_type *)buf, n / sizeof(winux::Utf16String::value_type), IsBigEndian() );
+            Buffer::Free(buf);
+            output->appendString(res2);
         }
         break;
-    case Utf16Be:
+    case feUtf16Be:
         {
-            winux::Conv conv{ encoding.c_str(), "UTF-16BE" };
+            winux::Conv conv{ encoding, "UTF-16BE" };
             char * buf;
             size_t n = conv.convert( content.getBuf<char>(), content.getSize(), &buf );
-            winux::Utf16String res( (winux::Utf16String::value_type *)buf, n / sizeof(winux::Utf16String::value_type) );
-            free(buf);
             // write BOM
-            output->append( { '\xfe', '\xff' } );
-            winux::Utf16String res2 = _NewlineToFile( res, IsLittleEndian() );
-            output->append( res2.c_str(), res2.length() * sizeof(winux::Utf16String::value_type) );
+            output->appendType( { '\xfe', '\xff' } );
+            winux::Utf16String res2 = NewlineToFile( (winux::Utf16String::value_type *)buf, n / sizeof(winux::Utf16String::value_type), IsLittleEndian() );
+            Buffer::Free(buf);
+            output->appendString(res2);
         }
         break;
-    case Utf32Le:
+    case feUtf32Le:
         {
-            winux::Conv conv{ encoding.c_str(), "UTF-32LE" };
+            winux::Conv conv{ encoding, "UTF-32LE" };
             char * buf;
             size_t n = conv.convert( content.getBuf<char>(), content.getSize(), &buf );
-            winux::Utf32String res( (winux::Utf32String::value_type *)buf, n / sizeof(winux::Utf32String::value_type) );
-            free(buf);
             // write BOM
-            output->append( { '\xff', '\xfe', '\0', '\0' } );
-            winux::Utf32String res2 = _NewlineToFile( res, IsBigEndian() );
-            output->append( res2.c_str(), res2.length() * sizeof(winux::Utf32String::value_type) );
+            output->appendType( { '\xff', '\xfe', '\0', '\0' } );
+            winux::Utf32String res2 = NewlineToFile( (winux::Utf32String::value_type *)buf, n / sizeof(winux::Utf32String::value_type), IsBigEndian() );
+            Buffer::Free(buf);
+            output->appendString(res2);
         }
         break;
-    case Utf32Be:
+    case feUtf32Be:
         {
-            winux::Conv conv{ encoding.c_str(), "UTF-32BE" };
+            winux::Conv conv{ encoding, "UTF-32BE" };
             char * buf;
             size_t n = conv.convert( content.getBuf<char>(), content.getSize(), &buf );
-            winux::Utf32String res( (winux::Utf32String::value_type *)buf, n / sizeof(winux::Utf32String::value_type) );
-            free(buf);
             // write BOM
-            output->append( { '\0', '\0', '\xfe', '\xff' } );
-            winux::Utf32String res2 = _NewlineToFile( res, IsLittleEndian() );
-            output->append( res2.c_str(), res2.length() * sizeof(winux::Utf32String::value_type) );
+            output->appendType( { '\0', '\0', '\xfe', '\xff' } );
+            winux::Utf32String res2 = NewlineToFile( (winux::Utf32String::value_type *)buf, n / sizeof(winux::Utf32String::value_type), IsLittleEndian() );
+            Buffer::Free(buf);
+            output->appendString(res2);
         }
         break;
     }
@@ -1430,16 +1339,16 @@ void TextArchive::_processContent( winux::Buffer const & content, bool isConvert
 {
     switch ( _fileEncoding )
     {
-    case MultiByte:
+    case feMultiByte:
         {
-            winux::XString<char> strContent = _NewlineFromFile( content.toAnsi(), false );
+            winux::XString<char> strContent = NewlineFromFile( content.get<char>(), content.size(), false );
             if ( isConvert )
             {
-                winux::Conv conv{ this->_mbsEncoding.c_str(), encoding.c_str() };
+                winux::Conv conv{ this->_mbsEncoding, encoding };
                 char * buf;
                 size_t n = conv.convert( (char const *)strContent.c_str(), strContent.length() * sizeof(char), &buf );
                 this->_pureContent.setBuf( buf, n, false );
-                free(buf);
+                Buffer::Free(buf);
                 this->setContentEncoding(encoding);
             }
             else
@@ -1449,16 +1358,16 @@ void TextArchive::_processContent( winux::Buffer const & content, bool isConvert
             }
         }
         break;
-    case Utf8:
+    case feUtf8:
         {
-            winux::XString<char> strContent = _NewlineFromFile( content.toAnsi(), false );
+            winux::XString<char> strContent = NewlineFromFile( content.get<char>(), content.size(), false );
             if ( isConvert )
             {
-                winux::Conv conv{ "UTF-8", encoding.c_str() };
+                winux::Conv conv{ "UTF-8", encoding };
                 char * buf;
                 size_t n = conv.convert( (char const *)strContent.c_str(), strContent.length() * sizeof(char), &buf );
                 this->_pureContent.setBuf( buf, n, false );
-                free(buf);
+                Buffer::Free(buf);
                 this->setContentEncoding(encoding);
             }
             else
@@ -1468,16 +1377,16 @@ void TextArchive::_processContent( winux::Buffer const & content, bool isConvert
             }
         }
         break;
-    case Utf8Bom:
+    case feUtf8Bom:
         {
-            winux::XString<char> strContent = _NewlineFromFile( content.toAnsi(), false );
+            winux::XString<char> strContent = NewlineFromFile( content.get<char>(), content.size(), false );
             if ( isConvert )
             {
-                winux::Conv conv{ "UTF-8", encoding.c_str() };
+                winux::Conv conv{ "UTF-8", encoding };
                 char * buf;
                 size_t n = conv.convert( (char const *)strContent.c_str(), strContent.length() * sizeof(char), &buf );
                 this->_pureContent.setBuf( buf, n, false );
-                free(buf);
+                Buffer::Free(buf);
                 this->setContentEncoding(encoding);
             }
             else
@@ -1487,16 +1396,16 @@ void TextArchive::_processContent( winux::Buffer const & content, bool isConvert
             }
         }
         break;
-    case Utf16Le:
+    case feUtf16Le:
         {
-            winux::XString<char16> strContent = _NewlineFromFile( content.toString<char16>(), IsBigEndian() );
+            winux::XString<char16> strContent = NewlineFromFile( content.get<char16>(), content.size() / sizeof(char16), IsBigEndian() );
             if ( isConvert )
             {
-                winux::Conv conv{ "UTF-16LE", encoding.c_str() };
+                winux::Conv conv{ "UTF-16LE", encoding };
                 char * buf;
                 size_t n = conv.convert( (char const *)strContent.c_str(), strContent.length() * sizeof(char16), &buf );
                 this->_pureContent.setBuf( buf, n, false );
-                free(buf);
+                Buffer::Free(buf);
                 this->setContentEncoding(encoding);
             }
             else
@@ -1506,16 +1415,16 @@ void TextArchive::_processContent( winux::Buffer const & content, bool isConvert
             }
         }
         break;
-    case Utf16Be:
+    case feUtf16Be:
         {
-            winux::XString<char16> strContent = _NewlineFromFile( content.toString<char16>(), IsLittleEndian() );
+            winux::XString<char16> strContent = NewlineFromFile( content.get<char16>(), content.size() / sizeof(char16), IsLittleEndian() );
             if ( isConvert )
             {
-                winux::Conv conv{ "UTF-16BE", encoding.c_str() };
+                winux::Conv conv{ "UTF-16BE", encoding };
                 char * buf;
                 size_t n = conv.convert( (char const *)strContent.c_str(), strContent.length() * sizeof(char16), &buf );
                 this->_pureContent.setBuf( buf, n, false );
-                free(buf);
+                Buffer::Free(buf);
                 this->setContentEncoding(encoding);
             }
             else
@@ -1525,16 +1434,16 @@ void TextArchive::_processContent( winux::Buffer const & content, bool isConvert
             }
         }
         break;
-    case Utf32Le:
+    case feUtf32Le:
         {
-            winux::XString<char32> strContent = _NewlineFromFile( content.toString<char32>(), IsBigEndian() );
+            winux::XString<char32> strContent = NewlineFromFile( content.get<char32>(), content.size() / sizeof(char32), IsBigEndian() );
             if ( isConvert )
             {
-                winux::Conv conv{ "UTF-32LE", encoding.c_str() };
+                winux::Conv conv{ "UTF-32LE", encoding };
                 char * buf;
                 size_t n = conv.convert( (char const *)strContent.c_str(), strContent.length() * sizeof(char32), &buf );
                 this->_pureContent.setBuf( buf, n, false );
-                free(buf);
+                Buffer::Free(buf);
                 this->setContentEncoding(encoding);
             }
             else
@@ -1544,16 +1453,16 @@ void TextArchive::_processContent( winux::Buffer const & content, bool isConvert
             }
         }
         break;
-    case Utf32Be:
+    case feUtf32Be:
         {
-            winux::XString<char32> strContent = _NewlineFromFile( content.toString<char32>(), IsLittleEndian() );
+            winux::XString<char32> strContent = NewlineFromFile( content.get<char32>(), content.size() / sizeof(char32), IsLittleEndian() );
             if ( isConvert )
             {
-                winux::Conv conv{ "UTF-32BE", encoding.c_str() };
+                winux::Conv conv{ "UTF-32BE", encoding };
                 char * buf;
                 size_t n = conv.convert( (char const *)strContent.c_str(), strContent.length() * sizeof(char32), &buf );
                 this->_pureContent.setBuf( buf, n, false );
-                free(buf);
+                Buffer::Free(buf);
                 this->setContentEncoding(encoding);
             }
             else
@@ -1568,177 +1477,8 @@ void TextArchive::_processContent( winux::Buffer const & content, bool isConvert
 
 void TextArchive::_recognizeEncode( winux::Buffer const & content, size_t * pI )
 {
-    this->_fileEncoding = MultiByte;
-    size_t & i = *pI;
-    size_t k;
-    if ( i < content.getSize() )
-    {
-        if ( content[i] == 0xEF )
-        {
-            i++;
-            if ( i < content.getSize() )
-            {
-                if ( content[i] == 0xBB )
-                {
-                    i++;
-                    if ( i < content.getSize() )
-                    {
-                        if ( content[i] == 0xBF )
-                        {
-                            i++;
-                            this->_fileEncoding = Utf8Bom;
-                        }
-                    }
-                }
-            }
-        }
-        else if ( content[i] == 0xFF )
-        {
-            i++;
-            if ( i < content.getSize() )
-            {
-                if ( content[i] == 0xFE )
-                {
-                    i++;
-                    this->_fileEncoding = Utf16Le;
-                    if ( i < content.getSize() )
-                    {
-                        if ( content[i] == 0x00 )
-                        {
-                            i++;
-                            if ( i < content.getSize() )
-                            {
-                                if ( content[i] == 0x00 )
-                                {
-                                    i++;
-                                    this->_fileEncoding = Utf32Le;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        else if ( content[i] == 0xFE )
-        {
-            i++;
-            if ( i < content.getSize() )
-            {
-                if ( content[i] == 0xFF )
-                {
-                    i++;
-                    this->_fileEncoding = Utf16Be;
-                }
-            }
-        }
-        else if ( content[i] == 0x00 )
-        {
-            i++;
-            if ( i < content.getSize() )
-            {
-                if ( content[i] == 0x00 )
-                {
-                    i++;
-                    if ( i < content.getSize() )
-                    {
-                        if ( content[i] == 0xFE )
-                        {
-                            i++;
-                            if ( i < content.getSize() )
-                            {
-                                if ( content[i] == 0xFF )
-                                {
-                                    i++;
-                                    this->_fileEncoding = Utf32Be;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    if ( this->_fileEncoding == MultiByte )
-    {
-        int bytesOfHighestBit1 = 0; // 最高位是1的字节数
-        for ( k = 0; k < content.getSize(); k++ )
-        {
-            if ( ( content[k] & 0x80 ) == 0x80 )
-            {
-                bytesOfHighestBit1++;
-
-                if ( bytesOfHighestBit1 == 1 )
-                {
-                    if ( ( content[k] & 0xF0 ) == 0xF0 )
-                    {
-                        k++;
-                        if ( k < content.getSize() )
-                        {
-                            if ( ( content[k] & 0xC0 ) == 0x80 )
-                            {
-                                k++;
-                                if ( k < content.getSize() )
-                                {
-                                    if ( ( content[k] & 0xC0 ) == 0x80 )
-                                    {
-                                        k++;
-                                        if ( k < content.getSize() )
-                                        {
-                                            if ( ( content[k] & 0xC0 ) == 0x80 )
-                                            {
-                                                this->_fileEncoding = Utf8;
-                                                break;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    else if ( ( content[k] & 0xE0 ) == 0xE0 )
-                    {
-                        k++;
-                        if ( k < content.getSize() )
-                        {
-                            if ( ( content[k] & 0xC0 ) == 0x80 )
-                            {
-                                k++;
-                                if ( k < content.getSize() )
-                                {
-                                    if ( ( content[k] & 0xC0 ) == 0x80 )
-                                    {
-                                        this->_fileEncoding = Utf8;
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    else if ( ( content[k] & 0xC0 ) == 0xC0 )
-                    {
-                        k++;
-                        if ( k < content.getSize() )
-                        {
-                            if ( ( content[k] & 0xC0 ) == 0x80 )
-                            {
-                                this->_fileEncoding = Utf8;
-                                break;
-                            }
-                        }
-                    }
-                }
-                else if ( bytesOfHighestBit1 == 2 )
-                {
-                    bytesOfHighestBit1 = 0;
-                }
-            }
-            else
-            {
-                bytesOfHighestBit1 = 0;
-            }
-        }
-    }
+    this->_fileEncoding = RecognizeFileEncoding( content, pI, 1024 );
 }
+
 
 } // namespace winux

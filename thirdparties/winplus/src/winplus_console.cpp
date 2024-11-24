@@ -11,37 +11,44 @@ WINPLUS_FUNC_IMPL(String) MakesureTextWidth( String const & text, int text_width
 {
     if ( text.length() > text_width )
     {
-        return text.substr( 0, text_width - ellipsis ) + String( ellipsis, '.' );
+        return text.substr( 0, text_width - ellipsis ) + String( ellipsis, TEXT('.') );
     }
     else
     {
         if ( left_align )
         {
-            return text + String( text_width - text.length(), ' ' );
+            return text + String( text_width - text.length(), TEXT(' ') );
         }
         else
         {
-            return String( text_width - text.length(), ' ' ) + text;
+            return String( text_width - text.length(), TEXT(' ') ) + text;
         }
     }
 }
 
 WINPLUS_FUNC_IMPL(void) PrintBarEx( String const & text, int text_width, int screen_width, WORD clr, int bar_blocks )
 {
-    std::cout << " ";
-    std::cout << MakesureTextWidth( text, text_width, false, 2 );
-    std::cout << " ";
+#if defined(_UNICODE) || defined(UNICODE)
+    std::wcout
+#else
+    std::cout
+#endif
+        << TEXT(" ") << MakesureTextWidth( text, text_width, false, 2 ) << TEXT(" ");
     int i;
     int bar_width = screen_width - text_width - 1 - 1 - 1;
     int real_blocks = bar_width / 2;
     String tmp;
     for ( i = 0; i < real_blocks && i < bar_blocks; ++i )
     {
-        tmp += "■";
+        tmp += TEXT("■");
     }
 
-    std::cout << ConsoleColor( clr, tmp );
-    std::cout << std::endl;
+#if defined(_UNICODE) || defined(UNICODE)
+    std::wcout
+#else
+    std::cout
+#endif
+        << ConsoleColor( clr, tmp ) << std::endl;
 }
 
 WINPLUS_FUNC_IMPL(void) Win32GUI_ShowConsole()
@@ -95,5 +102,6 @@ WINPLUS_FUNC_IMPL(void) Win32GUI_ShowConsole()
     //// point to console as well
     //std::ios::sync_with_stdio();
 }
+
 
 } // namespace winplus

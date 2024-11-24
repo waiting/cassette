@@ -1,7 +1,7 @@
-﻿
-#include "eiendb_common.hpp"
+﻿#include "eiendb_common.hpp"
 #include "eiendb_mysql.hpp"
 #include "eiendb_sqlite.hpp"
+#include "eiendb_pgsql.hpp"
 #include <algorithm>
 #include <math.h>
 
@@ -24,7 +24,7 @@ bool MemoryResult::dataSeek( size_t index )
     return _curRowIndex >= 0 && _curRowIndex < this->rowsCount();
 }
 
-bool MemoryResult::fetchRow( winux::MixedArray * fields )
+bool MemoryResult::fetchArray( winux::MixedArray * fields )
 {
     if ( _curRowIndex >= 0 && _curRowIndex < this->rowsCount() )
     {
@@ -35,7 +35,7 @@ bool MemoryResult::fetchRow( winux::MixedArray * fields )
     return false;
 }
 
-bool MemoryResult::fetchRow( winux::StringMixedMap * fields )
+bool MemoryResult::fetchMap( winux::StringMixedMap * fields )
 {
     if ( _curRowIndex >= 0 && _curRowIndex < this->rowsCount() )
     {
@@ -125,12 +125,6 @@ SqlScript::SqlScript( IDbConnection * cnn ) : _cnn(cnn)
 
 }
 
-size_t SqlScript::loadSql( winux::String const & sqlText )
-{
-    _sqlArr.clear();
-    return _cnn->loadSql( sqlText, &_sqlArr );
-}
-
 size_t SqlScript::load( winux::IFile * sqlFile )
 {
     _sqlArr.clear();
@@ -216,7 +210,7 @@ void SqlBackup::backupTableData( winux::String const & tableName, bool noDeleteF
     {
         winux::SharedPointer<IDbResult> resAllRecords = _cnn->query( "SELECT COUNT(*) FROM " + _cnn->symbolQuotes(tableName) + ";" );
         winux::MixedArray row;
-        if ( resAllRecords->fetchRow(&row) ) nAllRecords = row[0];
+        if ( resAllRecords->fetchArray(&row) ) nAllRecords = row[0];
     }
 
     // 总页数
@@ -252,7 +246,7 @@ void SqlBackup::backupTableData( winux::String const & tableName, bool noDeleteF
         winux::MixedArray f;
         winux::StringArray valueArr;
 
-        while ( res->fetchRow(&f) )
+        while ( res->fetchArray(&f) )
         {
             valueArr.clear();
             for ( winux::MixedArray::const_iterator it = f.begin(); it != f.end(); ++it )
@@ -282,14 +276,13 @@ void SqlBackup::backupDb( bool backupStructure, bool noDeleteFrom, ProgressCallb
     _file->puts("-- \n");
     _file->puts("--  Author: WT\n");
     _file->puts("--      QQ: 162057326\n");
-    _file->puts("-- WebSite: www.fastdo.net\n");
+    _file->puts("-- WebSite: fastdo.net\n");
     _file->puts("-- ------------------------------------------------------\n");
 
     winux::SharedPointer<IDbResult> res = _cnn->listTables();
     _tableNames.clear();
     winux::MixedArray f;
-    while ( res->fetchRow(&f) )
-        _tableNames.push_back(f[0]);
+    while ( res->fetchArray(&f) ) _tableNames.push_back(f[0]);
 
     if ( backupStructure )
     {
@@ -345,14 +338,20 @@ winux::SharedPointer<IDbModifier> Database::mdf( winux::String const & tableName
         winux::StrMakeLower(&driver);
         if ( driver == "mysql" )
         {
-        #ifdef HAVE_MYSQL_DRIVER
+        #ifdef HAVE_DB_MYSQL
             return winux::SharedPointer<IDbModifier>( new MysqlModifier( static_cast<MysqlConnection *>( this->_cnn.get() ), tableName ) );
         #endif
         }
         else if ( driver == "sqlite" )
         {
-        #ifdef HAVE_SQLITE_DRIVER
+        #ifdef HAVE_DB_SQLITE
             return winux::SharedPointer<IDbModifier>( new SqliteModifier( static_cast<SqliteConnection *>( this->_cnn.get() ), tableName ) );
+        #endif
+        }
+        else if ( driver == "pgsql" )
+        {
+        #ifdef HAVE_DB_PGSQL
+            return winux::SharedPointer<IDbModifier>( new PgsqlModifier( static_cast<PgsqlConnection *>( this->_cnn.get() ), tableName ) );
         #endif
         }
     }
@@ -367,9 +366,7 @@ void Database::_doCreateConnection()
     }
     else if ( _configParams.isString() )
     {
-        winux::Mixed jsonConfig;
-        jsonConfig.json(_configParams);
-        _configParams = jsonConfig;
+        _configParams = winux::Json(_configParams);
     }
     else
     {
@@ -381,7 +378,7 @@ void Database::_doCreateConnection()
     if ( !_configParams.has("driver") )
     {
         // 没有找到参数`driver`，也就是数据库驱动程序的名称
-        throw DbError( DbError::dbeConfigParamsError, "The parameter `driver`, which is the name of the database driver, was not found" );
+        throw DbError( DbError::dbeConfigParamsError, "The `driver` parameter, which is the name of the database driver, was not found" );
         return;
     }
 
@@ -393,7 +390,7 @@ void Database::_doCreateConnection()
         throw DbError( DbError::dbeConfigParamsError, "The database driver name is empty" );
         return;
     }
-#ifdef HAVE_MYSQL_DRIVER
+#ifdef HAVE_DB_MYSQL
     else if ( driver == "mysql" ) // MYSQL
     {
         if ( !_configParams.has("host") )
@@ -421,18 +418,17 @@ void Database::_doCreateConnection()
             throw DbError( DbError::dbeConfigParamsError, "The `charset` parameter was not found, it is used by the MySQL driver" );
             return;
         }
-        winux::SimplePointer<IDbConnection> dbCnn( new MysqlConnection(
+
+        _cnn = winux::MakeSimple( new MysqlConnection(
             _configParams["host"],
             _configParams["user"],
             _configParams["pwd"],
             _configParams["dbname"],
             _configParams["charset"]
         ) );
-
-        _cnn = dbCnn;
     }
 #endif
-#ifdef HAVE_SQLITE_DRIVER
+#ifdef HAVE_DB_SQLITE
     else if ( driver == "sqlite" ) // SQLITE
     {
         if ( !_configParams.has("path") )
@@ -451,13 +447,64 @@ void Database::_doCreateConnection()
             return;
         }
 
-        winux::SimplePointer<IDbConnection> dbCnn( new SqliteConnection(
+        _cnn = winux::MakeSimple( new SqliteConnection(
             _configParams["path"],
             _configParams["dbkey"],
             _configParams["charset"]
         ) );
+    }
+#endif
+#ifdef HAVE_DB_PGSQL
+    else if ( driver == "pgsql" )
+    {
+        if ( !_configParams.has("host") )
+        {
+            throw DbError( DbError::dbeConfigParamsError, "The `host` parameter was not found, it is used by the PostgreSQL driver" );
+            return;
+        }
+        if ( !_configParams.has("user") )
+        {
+            throw DbError( DbError::dbeConfigParamsError, "The `user` parameter was not found, it is used by the PostgreSQL driver" );
+            return;
+        }
+        if ( !_configParams.has("pwd") )
+        {
+            throw DbError( DbError::dbeConfigParamsError, "The `pwd` parameter was not found, it is used by the PostgreSQL driver" );
+            return;
+        }
+        if ( !_configParams.has("dbname") )
+        {
+            throw DbError( DbError::dbeConfigParamsError, "The `dbname` parameter was not found, it is used by the PostgreSQL driver" );
+            return;
+        }
+        if ( !_configParams.has("charset") )
+        {
+            throw DbError( DbError::dbeConfigParamsError, "The `charset` parameter was not found, it is used by the PostgreSQL driver" );
+            return;
+        }
+        if ( !_configParams.has("schema") )
+        {
+            _configParams["schema"] = "public";
+        }
+        if ( !_configParams.has("options") )
+        {
+            _configParams["options"] = "";
+        }
+        if ( !_configParams.has("single_row") )
+        {
+            // _configParams["single_row"] = 0;
+        }
 
-        _cnn = dbCnn;
+        _cnn = winux::MakeSimple( new PgsqlConnection(
+            _configParams["host"],
+            _configParams["user"],
+            _configParams["pwd"],
+            _configParams["dbname"],
+            _configParams["charset"],
+            _configParams["schema"],
+            _configParams["options"],
+            &_configParams
+        ) );
     }
 #endif
     else

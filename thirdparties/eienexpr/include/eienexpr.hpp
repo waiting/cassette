@@ -34,18 +34,18 @@ class EIENEXPR_DLL ExprError : public winux::Error
 public:
     enum
     {
-        eeNone,                ///< 无错误
-        eeExprParseError,      ///< 表达式解析错误
-        eeStringParseError,    ///< 字符串解析出错
-        eeOperandTypeError,    ///< 操作数类型出错
-        eeValueTypeError,      ///< 值类型出错
-        eeFuncParamTypeError,  ///< 函数参数类型错误
-        eeFuncParamCountError, ///< 函数参数个数错误
-        eeVarCtxNotFound,      ///< 未关联变量场景
-        eeVarNotFound,         ///< 变量未定义
-        eeFuncNotFound,        ///< 函数未定义
-        eeEvaluateFailed,      ///< 计算失败
-        eeOutOfArrayBound      ///< 超出数组边界
+        eeNone,                //!< 无错误
+        eeExprParseError,      //!< 表达式解析错误
+        eeStringParseError,    //!< 字符串解析出错
+        eeOperandTypeError,    //!< 操作数类型出错
+        eeValueTypeError,      //!< 值类型出错
+        eeFuncParamTypeError,  //!< 函数参数类型错误
+        eeFuncParamCountError, //!< 函数参数个数错误
+        eeVarCtxNotFound,      //!< 未关联变量场景
+        eeVarNotFound,         //!< 变量未定义
+        eeFuncNotFound,        //!< 函数未定义
+        eeEvaluateFailed,      //!< 计算失败
+        eeOutOfArrayBound      //!< 超出数组边界
     };
 
     ExprError( int errNo, winux::AnsiString const & err ) throw() : winux::Error( errNo, err ) { }
@@ -57,8 +57,8 @@ class EIENEXPR_DLL ExprAtom
 public:
     enum ExprAtomType
     {
-        eatOperator, ///< 操作符
-        eatOperand   ///< 操作数
+        eatOperator, //!< 操作符
+        eatOperand   //!< 操作数
     };
 
     ExprAtom();
@@ -89,20 +89,20 @@ class EIENEXPR_DLL ExprOperator : public ExprAtom
 {
 public:
     // 操作符函数类型
-    typedef bool (* OperatorFunction)( Expression * e, ExprOperand * arOperands[], short n, winux::SimplePointer<ExprOperand> * outRetValue, void * data );
+    typedef bool (* OperatorFunction)( Expression const * e, ExprOperand * arOperands[], short n, winux::SimplePointer<ExprOperand> * outRetValue, void * data );
 
     /** \brief 仅是文本上判断是否有解析为操作符的可能性 */
-    static bool Possibility( ExprPackage * package, winux::String const & str );
+    static bool Possibility( ExprPackage const * package, winux::String const & str );
 
-    ExprOperator( winux::String const & oprStr = "", bool isUnary = false, bool isRight = false, short level = 0, OperatorFunction oprFn = NULL );
+    ExprOperator( winux::String const & oprStr = TEXT(""), bool isUnary = false, bool isRight = false, short level = 0, OperatorFunction oprFn = NULL );
     virtual ~ExprOperator();
 
-    virtual ExprAtom * clone() const;
-    virtual winux::String toString() const;
+    virtual ExprAtom * clone() const override;
+    virtual winux::String toString() const override;
 
     /** \brief 操作符优先关系(低于:-1, 高于:1, 错误:-2)
      *
-     *  看优先级别,如果本算符级别大于opr算符级别,则返回1,小于则返回-1
+     *  看优先级别。如果本算符级别大于opr算符级别，则返回1，小于则返回-1
      *  (`以opr算符在本算符左边为依据: a opr b this_opr c`)若相同，则看opr的结合性，左结合返回-1，右结合返回1 */
     int nexus( ExprOperator const & opr ) const;
 
@@ -143,30 +143,22 @@ class EIENEXPR_DLL ExprOperand : public ExprAtom
 public:
     enum ExprOperandType
     {
-        eotLiteral,    ///< 普通的字面值
-        eotIdentifier, ///< 标识符（变量）
-        eotReference,  ///< 内部引用
-        eotFunction,   ///< 函数
-        eotExpression  ///< 子表达式
+        eotLiteral,    //!< 普通的字面值
+        eotIdentifier, //!< 标识符（变量）
+        eotReference,  //!< 内部引用
+        eotFunction,   //!< 函数
+        eotExpression  //!< 子表达式
     };
 
     ExprOperand();
     virtual ~ExprOperand();
     /** \brief 计算，结果不一定是值，还可以是其他操作数 */
-    virtual bool evaluate( winux::SimplePointer<ExprOperand> * result ) = 0;
+    virtual bool evaluate( winux::SimplePointer<ExprOperand> * result ) const = 0;
     /** \brief 把操作数计算成可用的值，如果不能算，则抛出异常 */
-    winux::Mixed val();
-
-    /** \brief 计算，直到结果是指定的操作数或Literal。
-     *
-     *  计算到遇到Literal为止。
-     *  如果types[]不指定类型，则计算到Literal就返回true。
-     *  如果types[]指定类型，则计算到指定类型就返回true，否则返回false。
-     *  计算失败返回false。*/
-    //bool evaluateUntil( ExprOperandType const * types, int n, winux::SimplePointer<ExprOperand> * result );
+    winux::Mixed val() const;
 
     /** \brief 求值取得Reference或Identifier，获取内部的Mixed指针 */
-    bool evaluateMixedPtr( winux::Mixed ** ppv );
+    bool evaluateMixedPtr( winux::Mixed ** ppv ) const;
 
     /** \brief 取得操作数类型 */
     ExprOperandType getOperandType() const;
@@ -185,17 +177,18 @@ public:
     ExprLiteral( winux::Mixed const & val );
     virtual ~ExprLiteral();
 
-    virtual ExprAtom * clone() const;
-    virtual winux::String toString() const;
-    virtual bool evaluate( winux::SimplePointer<ExprOperand> * result );
+    virtual ExprAtom * clone() const override;
+    virtual winux::String toString() const override;
+    virtual bool evaluate( winux::SimplePointer<ExprOperand> * result ) const override;
 
-    winux::Mixed::MixedType getValueType() const;
-    winux::Mixed const & getValue() const;
-    winux::Mixed & getValue();
-    void setValue( winux::Mixed const & val );
+    winux::Mixed::MixedType getValueType() const { return this->_val._type; }
+    winux::Mixed const & getValue() const { return this->_val; }
+    winux::Mixed & getValue() { return this->_val; }
+    void setValue( winux::Mixed const & val ) { this->_val = val; }
 
     /** \brief 判断是否有解析为数字的可能性 */
-    static bool NumberPossibility( winux::String const & str, bool * isFloat = NULL, bool * isExp = NULL/*, bool * isMinus = NULL*/ );
+    static bool NumberPossibility( winux::String const & str, bool * isFloat = NULL, bool * isExp = NULL );
+
 protected:
     winux::Mixed _val;
 
@@ -209,9 +202,9 @@ public:
     ExprIdentifier( Expression * exprObj, winux::String const & name );
     virtual ~ExprIdentifier();
 
-    virtual ExprAtom * clone() const;
-    virtual winux::String toString() const;
-    virtual bool evaluate( winux::SimplePointer<ExprOperand> * result );
+    virtual ExprAtom * clone() const override;
+    virtual winux::String toString() const override;
+    virtual bool evaluate( winux::SimplePointer<ExprOperand> * result ) const override;
 
     winux::String const & getName() const { return _name; }
 
@@ -243,9 +236,9 @@ public:
     ExprReference( winux::Mixed & ref, winux::String const & syntax );
     virtual ~ExprReference();
 
-    virtual ExprAtom * clone() const;
-    virtual winux::String toString() const;
-    virtual bool evaluate( winux::SimplePointer<ExprOperand> * result );
+    virtual ExprAtom * clone() const override;
+    virtual winux::String toString() const override;
+    virtual bool evaluate( winux::SimplePointer<ExprOperand> * result ) const override;
 
     winux::Mixed & getRef() const { return *this->_ref; }
 protected:
@@ -259,7 +252,7 @@ class EIENEXPR_DLL ExprFunc : public ExprOperand
 {
 public:
     // 函数类型
-    typedef bool (* FuncFunction)( Expression * e, std::vector<Expression *> & params, winux::SimplePointer<ExprOperand> * outRetValue, void * data );
+    typedef bool (* FuncFunction)( Expression * e, std::vector<Expression *> const & params, winux::SimplePointer<ExprOperand> * outRetValue, void * data );
     // 字符串=>函数映射
     typedef std::map< winux::String, FuncFunction > StringFuncMap;
 
@@ -268,14 +261,14 @@ public:
     ExprFunc( ExprFunc const & other );
     ExprFunc & operator = ( ExprFunc const & other );
 
-    virtual ExprAtom * clone() const;
-    virtual winux::String toString() const;
-    virtual bool evaluate( winux::SimplePointer<ExprOperand> * result );
+    virtual ExprAtom * clone() const override;
+    virtual winux::String toString() const override;
+    virtual bool evaluate( winux::SimplePointer<ExprOperand> * result ) const override;
 
 //protected:
-    Expression * _exprObj;  ///< 所属表达式对象
-    winux::String _funcName; ///< 函数名
-    std::vector<Expression *> _params; ///< 参数，也是表达式
+    Expression * _exprObj;  //!< 所属表达式对象
+    winux::String _funcName; //!< 函数名
+    std::vector<Expression *> _params; //!< 参数，也是表达式
 
     /** \brief 释放参数内存 */
     void _clear();
@@ -295,9 +288,9 @@ public:
     Expression( Expression const & other );
     Expression & operator = ( Expression const & other );
 
-    virtual ExprAtom * clone() const;
-    virtual winux::String toString() const;
-    virtual bool evaluate( winux::SimplePointer<ExprOperand> * result );
+    virtual ExprAtom * clone() const override;
+    virtual winux::String toString() const override;
+    virtual bool evaluate( winux::SimplePointer<ExprOperand> * result ) const override;
 
     winux::String toSuffixString() const;
 
@@ -333,7 +326,7 @@ public:
     Expression * _parent; //!< 父表达式
     void * _data; //!< 外部数据
 
-    /** \brief 添加一个原子，atom必须是new的或者clone()的 */
+    /** \brief 添加一个原子到后缀式中，atom必须是new的或者clone()的 */
     void _addAtom( ExprAtom * atom );
 
     friend class ExprIdentifier;
@@ -414,6 +407,7 @@ protected:
 class EIENEXPR_DLL ExprPackage
 {
 public:
+    /** \brief 构造函数0 */
     ExprPackage();
 
     /** \brief 仅从文本上判断是否有解析为操作符的可能性 */
@@ -463,11 +457,7 @@ public:
 
     void parse( Expression * e, winux::String const & str );
 
-    //winux::String const & error() const { return _errStr; }
-    //int errNo() const { return _errNo; }
 private:
-    //int _errNo;
-    //winux::String _errStr;
     enum ExprParseContext
     {
         epcExpr, epcFuncParams, epcString, epcStrAntiSlashes

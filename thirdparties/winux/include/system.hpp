@@ -26,6 +26,10 @@ public:
     typedef pid_t HProcess;
 #endif
 
+/** \brief 获取当前进程ID */
+WINUX_FUNC_DECL(uint) GetPid();
+/** \brief 获取当前线程ID */
+WINUX_FUNC_DECL(uint) GetTid();
 
 WINUX_FUNC_DECL(size_t) CommandLineToArgvA( AnsiString const & cmd, AnsiStringArray * argv );
 WINUX_FUNC_DECL(size_t) CommandLineToArgvW( UnicodeString const & cmd, UnicodeStringArray * argv );
@@ -42,11 +46,11 @@ inline size_t CommandLineToArgv( AnsiString const & cmd, AnsiStringArray * argv 
 
 /** \brief 新建子进程执行指定命令，并用管道重定向了标准设备
  *
- *  \param cmd winux::String const &
- *  \param hStdinWritePipe HPipe *
- *  \param hStdoutReadPipe HPipe *
- *  \param hStderrReadPipe HPipe *
- *  \param closeStdinIfStdinWritePipeIsNull bool 指示当不准备重定向标准输入时是否关闭它，这样子进程就不会等待输入而卡死
+ *  \param cmd 要运行的程序和命令，如果是内置命令则需要加上cmd.exe或bash等可执行文件名在前
+ *  \param hStdinWritePipe STDIN的写端管道，如果传入变量接收这个句柄则表示重定向标准输入，如果不想重定向则传入nullptr
+ *  \param hStdoutReadPipe STDOUT的读端管道，如果传入变量接收这个句柄则表示重定向标准输出，如果不想重定向则传入nullptr
+ *  \param hStderrReadPipe STDERR的读端管道，如果传入变量接收这个句柄则表示重定向标准错误，如果不想重定向则传入nullptr
+ *  \param closeStdinIfStdinWritePipeIsNull 指示当不准备重定向标准输入时是否关闭它，这样子进程就不会等待输入而卡死
  *  \return HProcess 子进程的进程句柄 */
 WINUX_FUNC_DECL(HProcess) ExecCommandEx(
     String const & cmd,
@@ -58,12 +62,12 @@ WINUX_FUNC_DECL(HProcess) ExecCommandEx(
 
 /** \brief 新建子进程执行指定命令，等待子进程结束，并把字符串重定向了标准设备
  *
- *  \param cmd winux::String const &
- *  \param stdinStr winux::String const &
- *  \param stdoutStr winux::String *
- *  \param stderrStr winux::String *
- *  \param closeStdinIfStdinStrEmpty bool
- *  \return int */
+ *  \param cmd 要运行的程序和命令，如果是内置命令则需要加上cmd.exe或bash等可执行文件名在前
+ *  \param stdinStr 要传入标准输入的内容，如果为空串则不重定向标准输入
+ *  \param stdoutStr 要读取的标准输出的内容，如果为空则不重定向标准输出
+ *  \param stderrStr 要读取的标准错误的内容，如果为空则不重定向标准错误
+ *  \param closeStdinIfStdinStrEmpty 指示当不准备重定向标准输入时是否关闭它，这样子进程就不会等待输入而卡死
+ *  \return int 子进程main()的返回值，Linux上此值仅为0~255 */
 WINUX_FUNC_DECL(int) ExecCommand(
     String const & cmd,
     String const & stdinStr,
@@ -72,10 +76,16 @@ WINUX_FUNC_DECL(int) ExecCommand(
     bool closeStdinIfStdinStrEmpty = true
 );
 
-/** \brief 执行命令，返回标准输出内容 */
+/** \brief 执行命令，返回标准输出内容
+ *
+ *  \param cmd 要运行的程序和命令，如果是内置命令则需要加上cmd.exe或bash等可执行文件名在前
+ *  \param stdinStr 要传入标准输入的内容，如果为空串则不重定向标准输入
+ *  \param stderrStr 要读取的标准错误的内容，如果为空则不重定向标准错误
+ *  \param closeStdinIfStdinStrEmpty 指示当不准备重定向标准输入时是否关闭它，这样子进程就不会等待输入而卡死
+ *  \return String 标准输出的内容 */
 WINUX_FUNC_DECL(String) GetExec(
     String const & cmd,
-    String const & stdinStr = "",
+    String const & stdinStr = TEXT(""),
     String * stderrStr = NULL,
     bool closeStdinIfStdinStrEmpty = true
 );
@@ -103,11 +113,11 @@ public:
      *  \param [in] optionSymbols 选项赋值符号（逗号分割的String类型、或者Array类型）。默认是'='和':' */
     CommandLineVars(
         int argc,
-        char const ** argv,
+        winux::tchar const ** argv,
         Mixed const & desiredParams,
         Mixed const & desiredOptions,
         Mixed const & desiredFlags,
-        Mixed const & optionSymbols = "=,:"
+        Mixed const & optionSymbols = TEXT("=,:")
     );
 
     /** \brief 获取参数个数 */
@@ -129,9 +139,9 @@ public:
     bool hasValue( String const & value ) const { return _values.has(value); }
 
     /** \brief 获取指定名字的参数 */
-    Mixed const & getParam( String const & name, Mixed const & defValue = "" ) const { return this->hasParam(name) ? _params[name] : defValue; }
+    Mixed const & getParam( String const & name, Mixed const & defValue = TEXT("") ) const { return this->hasParam(name) ? _params[name] : defValue; }
     /** \brief 获取指定名字的选项 */
-    Mixed const & getOption( String const & name, Mixed const & defValue = "" ) const { return this->hasOption(name) ? _options[name] : defValue; }
+    Mixed const & getOption( String const & name, Mixed const & defValue = TEXT("") ) const { return this->hasOption(name) ? _options[name] : defValue; }
     /** \brief 获取指定索引的旗标 */
     Mixed const & getFlag( size_t i ) const { return _flags[i]; }
     /** \brief 获取指定索引的值 */
@@ -160,21 +170,21 @@ public:
     {
         CommandLineVars * p = const_cast<CommandLineVars *>(this);
         return $c{
-            { "params", p->getParams() },
-            { "options", p->getOptions() },
-            { "flags", p->getFlags() },
-            { "values", p->getValues() },
+            { TEXT("params"), p->getParams() },
+            { TEXT("options"), p->getOptions() },
+            { TEXT("flags"), p->getFlags() },
+            { TEXT("values"), p->getValues() },
         };
     }
 
     /** \brief 获取argc */
     int getArgc() const { return _argc; }
     /** \brief 获取argv */
-    char const ** getArgv() const { return _argv; }
+    winux::tchar const ** getArgv() const { return _argv; }
 
 private:
     int _argc; // main()命令行参数个数
-    char const ** _argv; // main()命令行参数
+    winux::tchar const ** _argv; // main()命令行参数
 
     StringArray _desiredParams; // 要识别的参数名
     StringArray _desiredOptions; // 要识别的选项名
@@ -206,7 +216,6 @@ public:
 /** \brief 作用域范围保护 */
 class WINUX_DLL ScopeGuard
 {
-    ILockObj & _lockObj;
 public:
     ScopeGuard( ILockObj & lockObj ) : _lockObj(lockObj)
     {
@@ -216,24 +225,28 @@ public:
     {
         _lockObj.unlock();
     }
+
+private:
+    ILockObj & _lockObj;
     DISABLE_OBJECT_COPY(ScopeGuard)
 };
 
-/** \brief 互斥锁
+/** \brief 原生互斥锁
  *
  *  Windows平台用win32api实现，Linux用pthread实现 */
-class WINUX_DLL MutexLockObj : public ILockObj
+class WINUX_DLL MutexNative : public ILockObj
 {
 public:
-    MutexLockObj();
-    virtual ~MutexLockObj();
+    MutexNative();
+    virtual ~MutexNative();
     virtual bool tryLock() override;
     virtual bool lock() override;
     virtual bool unlock() override;
+
 private:
     MembersWrapper<struct MutexLockObj_Data> _self;
 
-    DISABLE_OBJECT_COPY(MutexLockObj)
+    DISABLE_OBJECT_COPY(MutexNative)
 };
 
 /** \brief Dll加载器错误 */
@@ -316,17 +329,148 @@ public:
     }
 
     String dllModuleFile; //!< DLL模块文件
+
 private:
     ModuleHandle _hDllModule;
-    String _errStr;
+    AnsiString _errStr;
 
     DISABLE_OBJECT_COPY(DllLoader)
+};
+
+/** \brief 文件映射旗标 */
+enum FileMappingFlag
+{
+    fmfUnspec = 0,      //!< 未指定
+    fmfReadOnly = 1,    //!< 只读
+    fmfWriteCopy = 2,   //!< 写时拷贝
+    fmfReadWrite = 3,   //!< 读写
+    fmfExecuteReadOnly = 5, //!< 只读执行
+    fmfExecuteWriteCopy = 6, //!< 写时拷贝执行
+    fmfExecuteReadWrite = 7, //!< 读写执行
+};
+
+/** \brief 文件映射。可以用来读写大文件 */
+class FileMapping
+{
+public:
+    /** \brief 构造函数0 */
+    FileMapping();
+
+    /** \brief 构造函数1 加载一个文件进行映射
+     *
+     *  \param filePath 文件路径
+     *  \param flag 旗标 */
+    FileMapping( String const & filePath, FileMappingFlag flag = fmfWriteCopy );
+
+    /** \brief 构造函数2 加载一个文件进行映射
+     *
+     *  \param file 文件
+     *  \param isPeekFile 是否窥探文件。即外部管理文件资源，自身不持有管理权
+     *  \param flag 旗标 */
+    FileMapping(
+    #if defined(OS_WIN)
+        HANDLE file,
+    #else
+        int file,
+    #endif
+        bool isPeekFile,
+        FileMappingFlag flag
+    );
+
+    /** \brief 析构函数 */
+    virtual ~FileMapping();
+
+    /** \brief 加载文件并创建映射
+     *
+     *  \param filePath 文件路径
+     *  \param flag 旗标
+     *  \return bool */
+    bool create( String const & filePath, FileMappingFlag flag );
+
+    /** \brief 加载文件并创建映射
+     *
+     *  \param file 文件
+     *  \param isPeekFile 是否窥探文件。即外部管理文件资源，自身不持有管理权
+     *  \param flag 旗标
+     *  \return bool */
+    bool create(
+    #if defined(OS_WIN)
+        HANDLE file,
+    #else
+        int file,
+    #endif
+        bool isPeekFile,
+        FileMappingFlag flag
+    );
+
+    /** \brief 销毁映射卸载文件 */
+    void destroy();
+
+    /** \brief 加载文件 */
+    bool loadFile( String const & filePath, FileMappingFlag flag );
+
+    /** \brief 加载文件 */
+    bool loadFile(
+    #if defined(OS_WIN)
+        HANDLE file,
+    #else
+        int file,
+    #endif
+        bool isPeekFile,
+        FileMappingFlag flag
+    );
+
+    /** \brief 获取文件大小 */
+    size_t getFileSize() const;
+
+    /** \brief 卸载文件 */
+    void unloadFile();
+
+    /** \brief 映射
+     *
+     *  \param flag 旗标
+     *  \param size 映射大小。0表示以文件大小为准
+     *  \param offset 偏移位置
+     *  \return bool */
+    bool map( FileMappingFlag flag = fmfUnspec, size_t size = 0, offset_t offset = 0 );
+
+    /** \brief 收回映射 */
+    void unmap();
+
+    /** \brief 暴露指针 */
+    void * get() const { return _p; }
+
+    /** \brief 暴露指针 */
+    template < typename _Ty >
+    _Ty * get() const { return reinterpret_cast<_Ty *>(_p); }
+
+    /** \brief 获取数据大小 */
+    size_t size() const { return _size; }
+
+    operator bool() const;
+
+private:
+    // 零初始化
+    void _zeroInit();
+
+#if defined(OS_WIN)
+    HANDLE _file;
+    HANDLE _fileMapping;
+#else
+    int _file;
+#endif
+    void * _p; // 内存地址
+    size_t _size; // 映射的大小
+    FileMappingFlag _flag; // 记下创建标记
+    bool _isPeekFile; // 是否为使用外部文件资源，即不管理文件资源
+
+    DISABLE_OBJECT_COPY(FileMapping)
 };
 
 /** \brief 共享内存，可以跨进程访问。常用于进程间通讯
  *
  *  Windows基于FileMapping\n
- *  Linux基于shm**() */
+ *  Linux基于shm_open() and mmap() */
 class WINUX_DLL SharedMemory
 {
 public:
@@ -335,18 +479,18 @@ public:
 
     /** \brief 构造函数1
      *
-     *  \param shmKey 共享内存的KEY，请指定一个数字
+     *  \param shmName 共享内存的名字
      *  \param size 共享内存的大小 */
-    SharedMemory( int shmKey, size_t size );
+    SharedMemory( String const & shmName, size_t size );
 
     virtual ~SharedMemory();
 
     /** \brief 创建共享内存
      *
-     *  \param shmKey 共享内存的KEY，请指定一个数字
+     *  \param shmName 共享内存的名字
      *  \param size 共享内存的大小
      *  \return bool */
-    bool create( int shmKey, size_t size );
+    bool create( String const & shmName, size_t size );
 
     /** \brief 销毁共享内存 */
     void destroy();
@@ -358,9 +502,11 @@ public:
     void unlock();
 
     /** \brief 获取数据指针（自动lock()） */
-    void * get();
+    void * get() { return _data ? _data : this->lock(); }
+
 
 private:
+    String _shmName;
 #if defined(OS_WIN)
     HANDLE _shm;
 #else
@@ -382,27 +528,26 @@ public:
 
     /** \brief 构造函数1
      *
-     *  \param shmKey 共享内存的KEY，请指定一个数字
+     *  \param shmName 共享内存的名字
      *  \param size 共享内存的大小，如果是-1则取_PodType的大小 */
-    SharedMemoryT( int shmKey, size_t size = -1 )
+    SharedMemoryT( String const & shmName, size_t size = -1 )
     {
-        this->create( shmKey, size );
+        this->create( shmName, size );
     }
 
     /** \brief 创建共享内存
      *
-     *  \param shmKey 共享内存的KEY，请指定一个数字
+     *  \param shmName 共享内存的名字
      *  \param size 共享内存的大小，如果是-1则取_PodType的大小
      *  \return bool */
-    bool create( int shmKey, size_t size = -1 )
+    bool create( String const & shmName, size_t size = -1 )
     {
-        return SharedMemory::create( shmKey, size == -1 ? sizeof(_PodType) : size );
+        return SharedMemory::create( shmName, size == -1 ? sizeof(_PodType) : size );
     }
 
-    _PodType * operator -> ()
-    {
-        return reinterpret_cast<_PodType *>( this->get() );
-    }
+    _PodType * get() { return reinterpret_cast<_PodType *>( this->SharedMemory::get() ); }
+
+    _PodType * operator -> () { return this->get(); }
 };
 
 } // namespace winux

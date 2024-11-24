@@ -345,7 +345,7 @@ AnsiString MD5::hexdigest() const
 
 Buffer MD5::digestres() const
 {
-    return Buffer( digest, sizeof(digest), false );
+  return Buffer( digest, sizeof(digest), false );
 }
 
 AnsiString MD5::toString() const
