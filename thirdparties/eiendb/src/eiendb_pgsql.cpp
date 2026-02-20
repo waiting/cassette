@@ -773,19 +773,8 @@ struct PgsqlConnection_Data
 {
     internal::PgConnWrapper cnn;    // PostgreSQL连接包装
     internal::PgResultWrapper result; // PostgreSQL结果集
-    winux::String host;             // 主机（可多个，逗号分隔）
-    winux::String port;             // 端口（可多个，逗号分隔）
-    winux::String user;             // 用户名
-    winux::String pwd;              // 密码
-    winux::String dbName;           // 数据库名
-    winux::String linkCharset;      // 连接校验字符集
-    winux::String schema;           // 模式名
-    winux::String options;          // 发送给服务器的命令行选项 eg. "-c geqo=off"
-    size_t affectedRows;            // 受影响的行数
-    size_t insertId;                // 最后插入的ID
-    winux::Mixed * dbConfig;        // 数据库特有配置 { single_row(单行查询模式): 0=默认多行模式 1=保持单行模式 2=一次单行模式 }
 
-    PgsqlConnection_Data() : cnn( nullptr, false ), result( nullptr, false ), affectedRows(0), insertId(0), dbConfig(nullptr)
+    PgsqlConnection_Data() : cnn( nullptr, false ), result( nullptr, false )
     {
     }
 };
@@ -802,9 +791,8 @@ PgsqlConnection::PgsqlConnection(
     winux::Mixed * dbConfig,
     bool doConnect
 )
+: _affectedRows(0), _insertId(0), _dbConfig(nullptr)
 {
-    _self.create(); //
-
     // 解析主机、端口
     winux::StringArray hostArr, portArr;
     for ( auto && hostStr : winux::StrSplit( host, "," ) )
@@ -821,15 +809,15 @@ PgsqlConnection::PgsqlConnection(
             portArr.push_back("");
         }
     }
-    _self->host = winux::StrJoin( ",", hostArr );
-    _self->port = winux::StrJoin( ",", portArr );
-    _self->user = user;
-    _self->pwd = pwd;
-    _self->dbName = dbName;
-    _self->linkCharset = winux::StrLower(linkCharset);
-    _self->schema = schema;
-    _self->options = options;
-    _self->dbConfig = dbConfig;
+    this->_host = winux::StrJoin( ",", hostArr );
+    this->_port = winux::StrJoin( ",", portArr );
+    this->_user = user;
+    this->_pwd = pwd;
+    this->_dbName = dbName;
+    this->_linkCharset = winux::StrLower(linkCharset);
+    this->_schema = schema;
+    this->_options = options;
+    this->_dbConfig = dbConfig;
 
     doConnect && this->connect();
 }
@@ -837,14 +825,12 @@ PgsqlConnection::PgsqlConnection(
 PgsqlConnection::~PgsqlConnection()
 {
     this->close();
-
-    _self.destroy(); //
 }
 
 bool PgsqlConnection::connect()
 {
     this->close();
-    bool r = _self->cnn.setDbLogin( _self->host.c_str(), _self->port.c_str(), _self->options.c_str(), nullptr, _self->dbName.c_str(), _self->user.c_str(), _self->pwd.c_str() );
+    bool r = _self->cnn.setDbLogin( this->_host.c_str(), this->_port.c_str(), this->_options.c_str(), nullptr, this->_dbName.c_str(), this->_user.c_str(), this->_pwd.c_str() );
     if ( !r )
     {
         winux::String err = this->error();
@@ -853,7 +839,7 @@ bool PgsqlConnection::connect()
         throw PgsqlDbError( errNo, err );
     }
     // 设置连接校验编码
-    this->setLinkCharset(_self->linkCharset);
+    this->setLinkCharset(this->_linkCharset);
     return r;
 }
 
@@ -874,7 +860,7 @@ void PgsqlConnection::alive()
 bool PgsqlConnection::selectDb( winux::String const & database )
 {
     this->close();
-    _self->dbName = database;
+    this->_dbName = database;
     return this->connect();
 }
 
@@ -897,12 +883,12 @@ bool PgsqlConnection::dropDb( winux::String const & database )
 
 size_t PgsqlConnection::affectedRows()
 {
-    return _self->affectedRows;
+    return this->_affectedRows;
 }
 
 size_t PgsqlConnection::insertId()
 {
-    return _self->insertId;
+    return this->_insertId;
 }
 
 int PgsqlConnection::errNo()
@@ -913,8 +899,7 @@ int PgsqlConnection::errNo()
 winux::String PgsqlConnection::error()
 {
     winux::String err = _self->cnn.error();
-    winux::String err2 = _self->result.error();
-    return err.length() > 0 ? err : err2;
+    return err.length() > 0 ? err : _self->result.error();
 }
 
 inline static bool __JudgeSingleRowMode( winux::Mixed * dbConfig )
@@ -935,13 +920,13 @@ inline static bool __JudgeSingleRowMode( winux::Mixed * dbConfig )
 winux::SharedPointer<IDbResult> PgsqlConnection::query( winux::String const & sql )
 {
     if ( _self->cnn._cnn == nullptr ) throw PgsqlDbError( this->errNo(), "PostgreSQL no valid connection" );
-    return winux::MakeShared( new PgsqlResult( winux::MakeShared( new PgsqlStatement( this, sql ) ), __JudgeSingleRowMode(_self->dbConfig) ) );
+    return winux::MakeShared( new PgsqlResult( winux::MakeShared( new PgsqlStatement( this, sql ) ), __JudgeSingleRowMode(this->_dbConfig) ) );
 }
 
 winux::SharedPointer<IDbResult> PgsqlConnection::query( winux::SharedPointer<IDbStatement> stmt )
 {
     if ( _self->cnn._cnn == nullptr ) throw PgsqlDbError( this->errNo(), "PostgreSQL no valid connection" );
-    return winux::MakeShared( new PgsqlResult( stmt.ensureCast<PgsqlStatement>(), __JudgeSingleRowMode(_self->dbConfig) ) );
+    return winux::MakeShared( new PgsqlResult( stmt.ensureCast<PgsqlStatement>(), __JudgeSingleRowMode(this->_dbConfig) ) );
 }
 
 bool PgsqlConnection::exec( winux::String const & sql )
@@ -953,7 +938,7 @@ bool PgsqlConnection::exec( winux::String const & sql )
     case PGRES_COMMAND_OK:
     case PGRES_TUPLES_OK:
     case PGRES_SINGLE_TUPLE:
-        _self->affectedRows = winux::Mixed( PQcmdTuples(_self->result._res) );
+        this->_affectedRows = winux::Mixed( PQcmdTuples(_self->result._res) );
         return true;
     default:
         return false;
@@ -999,12 +984,12 @@ winux::SharedPointer<IDbResult> PgsqlConnection::listFields( winux::String const
     }
     if ( schemaComp.empty() )
     {
-        schemaComp = _self->schema;
+        schemaComp = this->_schema;
     }
 
     return this->query(
         "SELECT column_name FROM information_schema.columns WHERE"
-        " table_catalog=" + this->escape(_self->dbName) + 
+        " table_catalog=" + this->escape(this->_dbName) + 
         " AND table_schema=" + this->escape(schemaComp) + 
         " AND table_name=" + this->escape(tableComp) + 
         " ORDER BY ordinal_position;"
@@ -1013,7 +998,7 @@ winux::SharedPointer<IDbResult> PgsqlConnection::listFields( winux::String const
 
 winux::SharedPointer<IDbResult> PgsqlConnection::listTables()
 {
-    return this->query( "SELECT * FROM pg_tables WHERE tableowner=" + this->escape(_self->dbName) + " AND schemaname=" + this->escape(_self->schema) + ";" );
+    return this->query( "SELECT * FROM pg_tables WHERE tableowner=" + this->escape(this->_dbName) + " AND schemaname=" + this->escape(this->_schema) + ";" );
 }
 
 winux::String PgsqlConnection::tableDdl( winux::String const & tableName )
@@ -1034,7 +1019,7 @@ winux::String PgsqlConnection::tableDdl( winux::String const & tableName )
     }
     if ( schemaComp.empty() )
     {
-        schemaComp = _self->schema;
+        schemaComp = this->_schema;
     }
 
     winux::String ddl = "CREATE TABLE " + this->symbolQuotes(schemaComp) + "." + this->symbolQuotes(tableComp) + " (\n";
@@ -1059,7 +1044,7 @@ FROM information_schema.columns col
 WHERE table_catalog=? AND table_schema=? AND table_name=?
 ORDER BY ordinal_position;)";
 
-    PgsqlResult resCols( winux::MakeShared( new PgsqlStatement( this, sqlCols, { _self->dbName, schemaComp, tableComp } ) ) );
+    PgsqlResult resCols( winux::MakeShared( new PgsqlStatement( this, sqlCols, { this->_dbName, schemaComp, tableComp } ) ) );
     winux::Mixed row;
     bool nofirst = false;
     while ( resCols.fetchRow(&row) )
@@ -1132,7 +1117,7 @@ LEFT JOIN pg_catalog.pg_constraint con ON con.conname=ictu.constraint_name AND c
 WHERE
     table_catalog=? AND table_schema=? AND table_name=?
 ORDER BY con.contype;)";
-    PgsqlResult resCons( winux::MakeShared( new PgsqlStatement( this, sqlCons, { _self->dbName, schemaComp, tableComp } ) ) );
+    PgsqlResult resCons( winux::MakeShared( new PgsqlStatement( this, sqlCons, { this->_dbName, schemaComp, tableComp } ) ) );
     while ( resCons.fetchRow(&row) )
     {
         //winux::ColorOutputLine( 14, row.myJson() );
@@ -1162,7 +1147,7 @@ WHERE
     AND x.indrelid=?::regclass
 ;)";
 
-    PgsqlResult resIdxes( winux::MakeShared( new PgsqlStatement( this, sqlIdxes, this->symbolQuotes( winux::StrJoin( ".", { _self->dbName, schemaComp, tableComp } ) ) ) ) );
+    PgsqlResult resIdxes( winux::MakeShared( new PgsqlStatement( this, sqlIdxes, this->symbolQuotes( winux::StrJoin( ".", { this->_dbName, schemaComp, tableComp } ) ) ) ) );
     while ( resIdxes.fetchRow(&row) )
     {
         //winux::ColorOutputLine( 15, row.myJson() );
@@ -1214,13 +1199,13 @@ size_t PgsqlConnection::getPrimaryKey( winux::String const & tableName, winux::S
     }
     if ( schemaComp.empty() )
     {
-        schemaComp = _self->schema;
+        schemaComp = this->_schema;
     }
 
     auto rs = this->query(
         "SELECT ikcu.column_name FROM information_schema.key_column_usage ikcu"
         " LEFT JOIN pg_catalog.pg_constraint con ON con.conname=ikcu.constraint_name AND con.conrelid=(ikcu.table_catalog || '.' || ikcu.table_schema || '.' || ikcu.table_name)::regclass"
-        " WHERE table_catalog=" + this->escape(_self->dbName) + 
+        " WHERE table_catalog=" + this->escape(this->_dbName) + 
         " AND table_schema=" + this->escape(schemaComp) + 
         " AND table_name=" + this->escape(tableComp) + 
         " AND con.contype='p' ORDER BY ordinal_position;"
@@ -1255,50 +1240,43 @@ PgsqlConnection::operator DbHandle() const
 struct PgsqlResult_Data
 {
     internal::PgResultWrapper result; // 结果集包装
-    winux::SharedPointer<PgsqlStatement> stmt;
-    size_t curRowIndex; // 多行模式的当前行
-    size_t rowsCount; // 多行模式的行数
-    bool singleRow; // 是否单行模式
-    bool hadFetch; // 是否完成fetch。单行模式必须fetch完成才可以进行下次查询
 
-    PgsqlResult_Data() : result( nullptr, false ), curRowIndex(-1), rowsCount(0), singleRow(false), hadFetch(true)
+    PgsqlResult_Data() : result( nullptr, false )
     {
     }
 };
 
 // class PgsqlResult ------------------------------------------------------------------------
-PgsqlResult::PgsqlResult( winux::SharedPointer<PgsqlStatement> stmt, bool singleRow )
+PgsqlResult::PgsqlResult( winux::SharedPointer<PgsqlStatement> stmt, bool singleRow ) : _curRowIndex(-1), _rowsCount(0), _singleRow(false), _hadFetch(true)
 {
-    _self.create(); //
+    this->_stmt = stmt;
+    if ( !this->_stmt || !*this->_stmt.get() ) throw PgsqlDbError( 0, "Invalid statement object" );
 
-    _self->stmt = stmt;
-    if ( !_self->stmt || !*_self->stmt.get() ) throw PgsqlDbError( 0, "Invalid statement object" );
-
-    _self->singleRow = singleRow;
-    if ( _self->singleRow ) // 单行模式
+    this->_singleRow = singleRow;
+    if ( this->_singleRow ) // 单行模式
     {
-        if ( _self->stmt->getCnn()->_self->cnn.sendQuery( _self->stmt->getSql() ) )
+        if ( this->_stmt->getCnn()->_self->cnn.sendQuery( this->_stmt->getSql() ) )
         {
-            _self->stmt->getCnn()->_self->cnn.setSingleRowMode();
-            _self->hadFetch = false; // 未完成fetch
+            this->_stmt->getCnn()->_self->cnn.setSingleRowMode();
+            this->_hadFetch = false; // 未完成fetch
         }
         else
         {
-            throw PgsqlDbError( _self->stmt->getCnn()->errNo(), _self->stmt->getCnn()->error() );
+            throw PgsqlDbError( this->_stmt->getCnn()->errNo(), this->_stmt->getCnn()->error() );
         }
     }
     else // 多行模式
     {
-        _self->result = _self->stmt->getCnn()->_self->cnn.exec( _self->stmt->getSql() );
+        _self->result = this->_stmt->getCnn()->_self->cnn.exec( this->_stmt->getSql() );
         ExecStatusType est = _self->result.status();
         switch ( est )
         {
         case PGRES_TUPLES_OK:
             // 受影响行数
-            _self->stmt->getCnn()->_self->affectedRows = winux::Mixed( PQcmdTuples(_self->result._res) );
+            this->_stmt->getCnn()->_affectedRows = winux::Mixed( PQcmdTuples(_self->result._res) );
 
-            _self->curRowIndex = 0;
-            _self->rowsCount = (size_t)_self->result.ntuples();
+            this->_curRowIndex = 0;
+            this->_rowsCount = (size_t)_self->result.ntuples();
             break;
         case PGRES_FATAL_ERROR:
             throw PgsqlDbError( est, _self->result.error() );
@@ -1310,32 +1288,28 @@ PgsqlResult::PgsqlResult( winux::SharedPointer<PgsqlStatement> stmt, bool single
 PgsqlResult::~PgsqlResult()
 {
     this->free();
-
-    _self.destroy(); //
 }
 
 bool PgsqlResult::free()
 {
-    PgsqlResult_Data * resSelf = _self.get();
     // 单行模式下，未提取全部数据需要全部提取，否则不能开启新查询
-    if ( resSelf->singleRow && resSelf->hadFetch == false )
+    if ( this->_singleRow && this->_hadFetch == false )
     {
         do
         {
-            resSelf->result = _self->stmt->getCnn()->_self->cnn.getResult();
+            _self->result = this->_stmt->getCnn()->_self->cnn.getResult();
         }
-        while ( resSelf->result._res != nullptr );
-        resSelf->hadFetch = true;
+        while ( _self->result._res != nullptr );
+        this->_hadFetch = true;
     }
-
-    resSelf->result.clear();
+    _self->result.clear();
     return true;
 }
 
 bool PgsqlResult::dataSeek( size_t index )
 {
-    if ( index >= _self->rowsCount ) return false;
-    _self->curRowIndex = index;
+    if ( index >= this->_rowsCount ) return false;
+    this->_curRowIndex = index;
     return true;
 }
 
@@ -1504,13 +1478,18 @@ inline static void __FieldsAssignMixed( winux::Mixed * fields, int type, interna
 template < typename _FieldsType >
 inline static bool __Fetch(
     PgsqlResult_Data * resSelf,
+    bool singleRow,
+    bool * hadFetch,
+    size_t * curRowIndex,
+    size_t rowsCount,
     PgsqlConnection_Data * cnnSelf,
+    size_t * affectedRows,
     _FieldsType * fields,
     int type,
     void (*fx)( _FieldsType * fields, int type, internal::PgResultWrapper & result, size_t rowIndex )
 )
 {
-    if ( resSelf->singleRow ) // 单行模式
+    if ( singleRow ) // 单行模式
     {
         resSelf->result = cnnSelf->cnn.getResult();
         ExecStatusType est = resSelf->result.status();
@@ -1519,7 +1498,7 @@ inline static bool __Fetch(
         case PGRES_SINGLE_TUPLE:
             {
                 // 受影响行数
-                cnnSelf->affectedRows = winux::Mixed( PQcmdTuples(resSelf->result._res) );
+                *affectedRows = winux::Mixed( PQcmdTuples(resSelf->result._res) );
                 fx( fields, type, resSelf->result, 0 );
                 return true;
             }
@@ -1527,11 +1506,10 @@ inline static bool __Fetch(
         case PGRES_TUPLES_OK:
             {
                 // 受影响行数
-                cnnSelf->affectedRows = winux::Mixed( PQcmdTuples(resSelf->result._res) );
-
+                *affectedRows = winux::Mixed( PQcmdTuples(resSelf->result._res) );
                 // 继续获取一个PGresult*(nullptr)
                 resSelf->result = cnnSelf->cnn.getResult();
-                resSelf->hadFetch = true;
+                *hadFetch = true;
                 return false;
             }
             break;
@@ -1544,9 +1522,9 @@ inline static bool __Fetch(
         {
         case PGRES_TUPLES_OK:
             {
-                if ( resSelf->curRowIndex >= resSelf->rowsCount ) return false;
-                fx( fields, type, resSelf->result, resSelf->curRowIndex );
-                resSelf->curRowIndex++;
+                if ( *curRowIndex >= rowsCount ) return false;
+                fx( fields, type, resSelf->result, *curRowIndex );
+                (*curRowIndex)++;
                 return true;
             }
             break;
@@ -1557,17 +1535,20 @@ inline static bool __Fetch(
 
 bool PgsqlResult::fetchRow( winux::Mixed * fields, int type )
 {
-    return __Fetch( _self.get(), _self->stmt->getCnn()->_self.get(), fields, type, __FieldsAssignMixed );
+    auto * cnn = this->_stmt->getCnn();
+    return __Fetch( _self.get(), this->_singleRow, &this->_hadFetch, &this->_curRowIndex, this->_rowsCount, cnn->_self.get(), &cnn->_affectedRows, fields, type, __FieldsAssignMixed );
 }
 
 bool PgsqlResult::fetchArray( winux::MixedArray * fields )
 {
-    return __Fetch( _self.get(), _self->stmt->getCnn()->_self.get(), fields, 1, __FieldsAssignArray );
+    auto * cnn = this->_stmt->getCnn();
+    return __Fetch( _self.get(), this->_singleRow, &this->_hadFetch, &this->_curRowIndex, this->_rowsCount, cnn->_self.get(), &cnn->_affectedRows, fields, 1, __FieldsAssignArray );
 }
 
 bool PgsqlResult::fetchMap( winux::StringMixedMap * fields )
 {
-    return __Fetch( _self.get(), _self->stmt->getCnn()->_self.get(), fields, 0, __FieldsAssignMap );
+    auto * cnn = this->_stmt->getCnn();
+    return __Fetch( _self.get(), this->_singleRow, &this->_hadFetch, &this->_curRowIndex, this->_rowsCount, cnn->_self.get(), &cnn->_affectedRows, fields, 0, __FieldsAssignMap );
 }
 
 winux::String PgsqlResult::fieldName( size_t fieldIndex )
@@ -1592,16 +1573,16 @@ winux::String PgsqlResult::fieldType( size_t fieldIndex )
 
 bool PgsqlResult::reset()
 {
-    if ( _self->singleRow ) // 单行模式
+    if ( this->_singleRow ) // 单行模式
     {
-        if ( _self->stmt->getCnn()->_self->cnn.sendQuery( _self->stmt->getSql() ) )
+        if ( this->_stmt->getCnn()->_self->cnn.sendQuery( this->_stmt->getSql() ) )
         {
-            _self->stmt->getCnn()->_self->cnn.setSingleRowMode();
+            this->_stmt->getCnn()->_self->cnn.setSingleRowMode();
             return true;
         }
         else
         {
-            throw PgsqlDbError( _self->stmt->getCnn()->errNo(), _self->stmt->getCnn()->error() );
+            throw PgsqlDbError( this->_stmt->getCnn()->errNo(), this->_stmt->getCnn()->error() );
         }
     }
     else // 多行模式
@@ -1630,8 +1611,8 @@ bool PgsqlModifier::_execInsertInto( winux::SharedPointer<IDbStatement> stmt )
 {
     bool r = DbModifier::_execInsertInto(stmt);
 
-    PgsqlConnection_Data & cnnSelf = *static_cast<PgsqlConnection *>(this->_cnn)->_self.get();
-    cnnSelf.insertId = 0;
+    auto * cnn = static_cast<PgsqlConnection *>(this->_cnn);
+    cnn->_insertId = 0;
     if ( r )
     {
         winux::StringArray arrComp;
@@ -1650,16 +1631,16 @@ bool PgsqlModifier::_execInsertInto( winux::SharedPointer<IDbStatement> stmt )
         }
         if ( schemaComp.empty() )
         {
-            schemaComp = cnnSelf.schema;
+            schemaComp = cnn->_schema;
         }
 
         winux::String sql = "SELECT pg_sequence_last_value(pg_get_serial_sequence(?, column_name)::regclass) FROM information_schema.columns WHERE table_catalog=? AND table_schema=? AND table_name=? AND column_default LIKE 'nextval%';";
-        winux::String fullName = _cnn->symbolQuotes( cnnSelf.dbName, false ) + "." + _cnn->symbolQuotes( schemaComp, false ) + "." + _cnn->symbolQuotes( tableComp, false );
-        PgsqlResult res( _cnn->buildStmt( sql, { fullName, cnnSelf.dbName, schemaComp, tableComp } ).ensureCast<PgsqlStatement>() );
+        winux::String fullName = _cnn->symbolQuotes( cnn->_dbName, false ) + "." + _cnn->symbolQuotes( schemaComp, false ) + "." + _cnn->symbolQuotes( tableComp, false );
+        PgsqlResult res( _cnn->buildStmt( sql, { fullName, cnn->_dbName, schemaComp, tableComp } ).ensureCast<PgsqlStatement>() );
         winux::MixedArray arr;
         if ( res.fetchArray(&arr) )
         {
-            cnnSelf.insertId = arr[0];
+            cnn->_insertId = arr[0];
         }
     }
     return r;

@@ -22,6 +22,7 @@
 #include <queue>
 #include <functional>
 #include <algorithm>
+#include <atomic>
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
@@ -68,11 +69,11 @@ namespace winux
     #define countof(arr) ( sizeof(arr) / sizeof(arr[0]) )
 #endif
 
-#if !defined(TEXT)
-    #if defined(UNICODE) || defined(_UNICODE)
-        #define TEXT(__x) L##__x
+#if !defined($T)
+    #if defined(_UNICODE) || defined(UNICODE)
+        #define $T(__x) L##__x
     #else
-        #define TEXT(__x) __x
+        #define $T(__x) __x
     #endif
 #endif
 
@@ -188,6 +189,7 @@ public: \
     } \
 protected: \
     evtname##HandlerFunction _##evtname##Handler; \
+public: \
     virtual void on##evtname paramtypes \
     { \
         if ( this->_##evtname##Handler ) this->_##evtname##Handler calledparams; \
@@ -203,6 +205,7 @@ public: \
     } \
 protected: \
     evtname##HandlerFunction _##evtname##Handler; \
+public: \
     virtual ret on##evtname paramtypes
 
 
@@ -239,7 +242,7 @@ typedef long long int64;
 typedef long long longlong;
 #endif
 
-#if defined(UNICODE) || defined(_UNICODE)
+#if defined(_UNICODE) || defined(UNICODE)
 typedef wchar tchar;
 #else
 typedef char tchar;
@@ -313,7 +316,7 @@ template <> struct Bin0<0>
 // 二进制数 macro包装
 #define BinVal(x) winux::Bin0<0##x>::val
 
-// 引用参数包装
+/** \brief 引用参数包装 */
 template < typename _Ty >
 class RefParam
 {
@@ -422,19 +425,34 @@ inline ArrayAssigner<_Ty, _Alloc> Assign( std::vector<_Ty, _Alloc> * a )
     return ArrayAssigner<_Ty, _Alloc>(a);
 }
 
-/** \brief 成员包装
- *
- *  此类的构造函数/析构函数不能直接调用create()/destroy()，因为目标类的实现未知，所以无法创建或销毁。\n
- *  必须要在使用本包装的类中的构造函数/析构函数中分别调用它们。\n
- *  operator=和拷贝构造也是类似。因为目标类的实现未知，所以无法依靠自动生成的函数来自动调用。必须重写使用本包装的类中的operator=和拷贝构造函数 */
+/** \brief 成员隐藏（By pointer） */
 template < typename _TargetCls >
-class MembersWrapper
+class Members
 {
 public:
-    MembersWrapper() : _p(nullptr) { }
+    Members() : _p(nullptr)
+    {
+        this->_create();
+    }
 
+    template < typename... _ArgType >
+    Members( _ArgType&&... arg ) : _p(nullptr)
+    {
+        this->_create( std::forward<_ArgType>(arg)... );
+    }
+
+    ~Members()
+    {
+        this->_destroy();
+    }
+
+    Members( Members const & other ) : _p(nullptr)
+    {
+        this->_create();
+        *_p = *other._p;
+    }
     /** \brief 拷贝赋值，必须保证create()已经调用 */
-    MembersWrapper & operator = ( MembersWrapper const & other )
+    Members & operator = ( Members const & other )
     {
         if ( &other != this )
         {
@@ -444,17 +462,17 @@ public:
     }
 
 #ifndef MOVE_SEMANTICS_DISABLED
-    MembersWrapper( MembersWrapper && other )
+    Members( Members && other ) : _p(nullptr)
     {
         _p = other._p;
         other._p = nullptr;
     }
-    /** \brief 移动赋值，不用保证create()已经调用 */
-    MembersWrapper & operator = ( MembersWrapper && other )
+    /** \brief 移动赋值，必须保证create()已经调用 */
+    Members & operator = ( Members && other )
     {
         if ( &other != this )
         {
-            this->destroy();
+            this->_destroy();
             _p = other._p;
             other._p = nullptr;
         }
@@ -462,24 +480,10 @@ public:
     }
 #endif
 
-    /** \brief 必须在使用者类的析构函数里最后一个调用 */
-    void destroy()
+    _TargetCls * get()
     {
-        if ( _p )
-        {
-            delete (_TargetCls *)_p;
-            _p = nullptr;
-        }
+        return _p;
     }
-
-    /** \brief 必须在使用者类的构造函数里第一个调用 */
-    template < typename... _ArgType >
-    void create( _ArgType&&... arg )
-    {
-        this->destroy();
-        _p = new _TargetCls( std::forward<_ArgType>(arg)... );
-    }
-
     _TargetCls * get() const
     {
         return _p;
@@ -509,10 +513,146 @@ public:
     }
 
 private:
-    _TargetCls * _p;
+    /** \brief 必须在使用者类的析构函数里最后一个调用 */
+    void _destroy()
+    {
+        if ( _p )
+        {
+            delete (_TargetCls *)_p;
+            _p = nullptr;
+        }
+    }
 
-    MembersWrapper( MembersWrapper const & other ) = delete;
+    /** \brief 必须在使用者类的构造函数里第一个调用 */
+    template < typename... _ArgType >
+    void _create( _ArgType&&... arg )
+    {
+        this->_destroy();
+        _p = new _TargetCls( std::forward<_ArgType>(arg)... );
+    }
+
+    _TargetCls * _p;
 };
+
+/** \brief Plain成员隐藏（By plain block） */
+template < typename _TargetCls, size_t _MembersSize >
+class PlainMembers
+{
+public:
+    PlainMembers()
+    {
+        this->_create<sizeof(_TargetCls)>();
+    }
+
+    template < typename... _ArgType >
+    PlainMembers( _ArgType&&... arg )
+    {
+        this->_create<sizeof(_TargetCls)>( std::forward<_ArgType>(arg)... );
+    }
+
+    ~PlainMembers()
+    {
+        this->_destroy();
+    }
+
+    PlainMembers( PlainMembers const & other )
+    {
+        this->_create<sizeof(_TargetCls)>();
+        *this->get() = *other.get();
+    }
+    /** \brief 拷贝赋值，必须保证create()已经调用 */
+    PlainMembers & operator = ( PlainMembers const & other )
+    {
+        if ( &other != this )
+        {
+            *this->get() = *other.get();
+        }
+        return *this;
+    }
+
+#ifndef MOVE_SEMANTICS_DISABLED
+    PlainMembers( PlainMembers && other )
+    {
+        this->_create<sizeof(_TargetCls)>();
+        *this->get() = std::move( *other.get() );
+    }
+    /** \brief 移动赋值，必须保证create()已经调用 */
+    PlainMembers & operator = ( PlainMembers && other )
+    {
+        if ( &other != this )
+        {
+            *this->get() = std::move( *other.get() );
+        }
+        return *this;
+    }
+#endif
+
+    _TargetCls * get()
+    {
+        return reinterpret_cast<_TargetCls*>((char*)_block);
+    }
+    _TargetCls * get() const
+    {
+        return reinterpret_cast<_TargetCls*>((char*)_block);
+    }
+
+    _TargetCls * operator -> ()
+    {
+        return this->get();
+    }
+    _TargetCls const * operator -> () const
+    {
+        return this->get();
+    }
+
+    operator _TargetCls & ()
+    {
+        return *this->get();
+    }
+    operator _TargetCls const & () const
+    {
+        return *this->get();
+    }
+
+    operator bool() const
+    {
+        return _MembersSize >= sizeof(_TargetCls);
+    }
+
+private:
+    /** \brief 必须在使用者类的析构函数里最后一个调用 */
+    void _destroy()
+    {
+        this->get()->~_TargetCls();
+    }
+
+    /** \brief 必须在使用者类的构造函数里第一个调用 */
+    template < size_t _TargetClsSize, typename... _ArgType >
+    void _create( _ArgType&&... arg )
+    {
+        static_assert( !( _TargetClsSize > _MembersSize ), "Error: sizeof(_TargetCls) > _MembersSize, _MembersSize is too small" );
+        new(_block) _TargetCls( std::forward<_ArgType>(arg)... );
+    }
+
+    char _block[_MembersSize];
+};
+
+/** \brief 静态New()支持 */
+template < typename _Ty >
+class EnableStaticNew
+{
+public:
+    template < typename... _ArgType >
+    static _Ty * New( _ArgType&&... arg )
+    {
+        return new _Ty( std::forward<_ArgType>(arg)... );
+    }
+};
+
+#define FRIEND_ENABLE_STATIC_NEW \
+    template < typename _Ty0 > \
+    friend class winux::EnableStaticNew
+
 
 // 一些函数模板和函数 ------------------------------------------------------------------------
 /** \brief 计算字符串长度 */
@@ -858,7 +998,9 @@ public:
      *  \attention 如果新的容量小于数据大小，多余的数据会被丢弃 */
     void realloc( size_t newCapacity );
 
-    /** \brief 把窥探模式变为拷贝模式，如果copyCapacity为true时连容量也一起拷贝，否则只拷贝数据。 */
+    /** \brief 把窥探模式变为拷贝模式，如果copyCapacity为true时连容量也一起拷贝，否则只拷贝数据。
+     *
+     *  \return 如果本来就不是窥探模式则直接返回false，由窥探模式切到拷贝则返回true */
     bool peekCopy( bool copyCapacity = false );
 
     /** \brief 使Buffer对象不再管理内存资源 */
@@ -881,6 +1023,13 @@ public:
     template < typename _Ty >
     _Ty * get() const { return reinterpret_cast<_Ty *>(_buf); }
 
+    /** \brief 暴露缓冲区指定位置指针 */
+    winux::byte * getAt( ssize_t i ) const { return reinterpret_cast<winux::byte *>(_buf) + i; }
+
+    /** \brief 暴露缓冲区指定位置指针 */
+    template < typename _Ty >
+    _Ty * getAt( ssize_t i ) const { return reinterpret_cast<_Ty *>(_buf) + i; }
+
     /** \brief 获取指定索引的字节 */
     winux::byte & operator [] ( size_t i ) { return reinterpret_cast<winux::byte *>(_buf)[i]; }
     /** \brief 获取指定索引的字节 */
@@ -895,8 +1044,16 @@ public:
     /** \brief 获取数据大小 */
     size_t getSize() const { return _dataSize; }
 
-    /** \brief 获取数据大小 */
+    /** \brief 获取数据字节大小 */
     size_t size() const { return _dataSize; }
+
+    /** \brief 获取大小 */
+    template < typename _Ty >
+    size_t size() const { return _dataSize / sizeof(_Ty); }
+
+    /** \brief 获取大小 */
+    template < typename _Ty >
+    size_t count() const { return _dataSize / sizeof(_Ty); }
 
     /** \brief 设置数据大小，不能超过容量大小（不建议外部调用） */
     void _setSize( size_t dataSize ) { _dataSize = ( dataSize > _capacity ? _capacity : dataSize ); }
@@ -1927,7 +2084,7 @@ public:
     void assign( Collection const & coll, bool caseInsensitive = false );
 
     // JSON相关操作 ----------------------------------------------------------------------------
-    String myJson( bool autoKeyQuotes = true, String const & spacer = TEXT(""), String const & newline = TEXT("") ) const;
+    String myJson( bool autoKeyQuotes = true, String const & spacer = $T(""), String const & newline = $T("") ) const;
     String json() const;
     Mixed & json( String const & jsonStr );
 

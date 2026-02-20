@@ -120,9 +120,9 @@ WINUX_FUNC_IMPL(bool) JsonSetByteOrderForUtf16( bool isLittleEndian )
 }
 
 #if defined(_UNICODE) || defined(UNICODE)
-thread_local String __convertToCharsetForUtf16 = IsBigEndian() ? TEXT("UTF-16BE") : TEXT("UTF-16LE");
+thread_local String __convertToCharsetForUtf16 = IsBigEndian() ? $T("UTF-16BE") : $T("UTF-16LE");
 #else
-thread_local String __convertToCharsetForUtf16 = TEXT("");
+thread_local String __convertToCharsetForUtf16 = $T("");
 #endif
 WINUX_FUNC_IMPL(String) JsonSetConvertToCharsetForUtf16( String const & charset )
 {
@@ -318,7 +318,7 @@ bool JsonParseString( std::vector<JsonParseContext> & jpc, String const & json, 
 {
     String::value_type quote = json[i]; // 记下是什么引号
 
-    strVal->assign( TEXT("") ); // 初始化字符串
+    strVal->assign( $T("") ); // 初始化字符串
 
     String * str = &strVal->ref<String>();
     ++i; // skip quote
@@ -402,7 +402,6 @@ bool JsonParseArray( std::vector<JsonParseContext> & jpc, String const & json, i
     jpc.pop_back();
 
     return true;
-
 }
 
 // 解析一个对象(map)
@@ -459,7 +458,7 @@ bool JsonParseObject( std::vector<JsonParseContext> & jpc, String const & json, 
                 }
                 else
                 {
-                    key.assign( TEXT("") );
+                    key.assign( $T("") );
                     for ( ; i < (int)json.length(); ++i )
                     {
                         ch = json[i];
@@ -501,7 +500,6 @@ bool JsonParseObject( std::vector<JsonParseContext> & jpc, String const & json, 
     jpc.pop_back();
 
     return true;
-
 }
 
 // 解析一个标识符，这个标识符可能是个常量或者未定义
@@ -523,11 +521,11 @@ bool JsonParseIdentifier( std::vector<JsonParseContext> & jpc, String const & js
     }
 
     // 常量辨别
-    if ( identifier == TEXT("false") )
+    if ( identifier == $T("false") )
     {
         *val = false;
     }
-    else if ( identifier == TEXT("true") )
+    else if ( identifier == $T("true") )
     {
         *val = true;
     }

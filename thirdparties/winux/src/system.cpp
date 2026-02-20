@@ -27,7 +27,7 @@ namespace winux
 {
 #include "is_x_funcs.inl"
 
-WINUX_FUNC_IMPL(uint) GetPid()
+WINUX_FUNC_IMPL(uint) GetPid( void )
 {
 #if defined(OS_WIN)
     return (uint)GetCurrentProcessId();
@@ -36,7 +36,7 @@ WINUX_FUNC_IMPL(uint) GetPid()
 #endif
 }
 
-WINUX_FUNC_IMPL(uint) GetTid()
+WINUX_FUNC_IMPL(uint) GetTid( void )
 {
 #if defined(OS_WIN)
     return (uint)GetCurrentThreadId();
@@ -307,7 +307,7 @@ WINUX_FUNC_IMPL(HProcess) ExecCommandEx(
         }
     }
 
-    bCreateRet = CreateProcess( NULL, ( cmdBuf.empty() ? (LPTSTR)TEXT(""): &cmdBuf[0] ), NULL, NULL, TRUE, 0, NULL, NULL, &si, &pi );
+    bCreateRet = CreateProcess( NULL, ( cmdBuf.empty() ? (LPTSTR)$T(""): &cmdBuf[0] ), NULL, NULL, TRUE, 0, NULL, NULL, &si, &pi );
     if ( !bCreateRet )
     {
         goto StdPipeError;
@@ -617,7 +617,7 @@ inline static void __MixedAppendToStringArray( Mixed const & mx, StringArray * a
         if ( !s.empty() )
         {
             StringArray tmpArr;
-            size_t n = StrSplit( s, TEXT(","), &tmpArr );
+            size_t n = StrSplit( s, $T(","), &tmpArr );
             for ( size_t i = 0; i < n; i++ )
             {
                 if ( !tmpArr[i].empty() )
@@ -733,7 +733,7 @@ CommandLineVars::CommandLineVars( int argc, winux::tchar const ** argv, Mixed co
                     }
                     else // 已经是最后一个，参数值只好认为是空
                     {
-                        _params[_desiredParams[iDesiredParam]] = TEXT("");
+                        _params[_desiredParams[iDesiredParam]] = $T("");
                     }
                 }
             }
@@ -757,7 +757,7 @@ CommandLineVars::CommandLineVars( int argc, winux::tchar const ** argv, Mixed co
                 else
                 {
                     optionName = arg;
-                    optionVal = TEXT("");
+                    optionVal = $T("");
                 }
 
                 if ( optionName == _desiredOptions[iDesiredOption] )
@@ -832,11 +832,12 @@ CommandLineVars::CommandLineVars( int argc, winux::tchar const ** argv, Mixed co
     }
 }
 
-// struct MutexLockObj_Data ---------------------------------------------------------------
-struct MutexLockObj_Data
+// struct MutexNative_Data --------------------------------------------------------------------
+struct MutexNative_Data
 {
 #if defined(OS_WIN)
-    HANDLE _mutex;
+    //HANDLE _mutex;
+    CRITICAL_SECTION _cs;
 #else
     pthread_mutex_t _mutex;
 #endif
@@ -845,10 +846,9 @@ struct MutexLockObj_Data
 // class MutexNative --------------------------------------------------------------------------
 MutexNative::MutexNative()
 {
-    _self.create(); //
-
 #if defined(OS_WIN)
-    _self->_mutex = CreateMutex( NULL, FALSE, NULL );
+    //_self->_mutex = CreateMutex( NULL, FALSE, NULL );
+    InitializeCriticalSection(&_self->_cs);
 #else
     pthread_mutex_init( &_self->_mutex, NULL );
 #endif
@@ -857,18 +857,18 @@ MutexNative::MutexNative()
 MutexNative::~MutexNative()
 {
 #if defined(OS_WIN)
-    CloseHandle(_self->_mutex);
+    //CloseHandle(_self->_mutex);
+    DeleteCriticalSection(&_self->_cs);
 #else
     pthread_mutex_destroy(&_self->_mutex);
 #endif
-
-    _self.destroy(); //
 }
 
 bool MutexNative::tryLock()
 {
 #if defined(OS_WIN)
-    return WaitForSingleObject( _self->_mutex, 0 ) == WAIT_OBJECT_0;
+    //return WaitForSingleObject( _self->_mutex, 0 ) == WAIT_OBJECT_0;
+    return TryEnterCriticalSection(&_self->_cs) == TRUE;
 #else
     return pthread_mutex_trylock(&_self->_mutex) == 0;
 #endif
@@ -877,7 +877,9 @@ bool MutexNative::tryLock()
 bool MutexNative::lock()
 {
 #if defined(OS_WIN)
-    return WaitForSingleObject( _self->_mutex, INFINITE ) == WAIT_OBJECT_0;
+    //return WaitForSingleObject( _self->_mutex, INFINITE ) == WAIT_OBJECT_0;
+    EnterCriticalSection(&_self->_cs);
+    return true;
 #else
     return pthread_mutex_lock(&_self->_mutex) == 0;
 #endif
@@ -886,7 +888,9 @@ bool MutexNative::lock()
 bool MutexNative::unlock()
 {
 #if defined(OS_WIN)
-    return ReleaseMutex(_self->_mutex) != 0;
+    //return ReleaseMutex(_self->_mutex) != 0;
+    LeaveCriticalSection(&_self->_cs);
+    return true;
 #else
     return pthread_mutex_unlock(&_self->_mutex) == 0;
 #endif
@@ -1006,6 +1010,115 @@ void (* DllLoader::funcAddr( AnsiString const & funcName ) )()
 #else
     return (void(*)())dlsym( _hDllModule, funcName.c_str() );
 #endif
+}
+
+// class Pipe ---------------------------------------------------------------------------------
+Pipe::Pipe()
+{
+#if defined(OS_WIN)
+    CreatePipe( &_pipeHandle[0], &_pipeHandle[1], nullptr, 0 );
+#else
+    pipe(_pipeHandle);
+#endif
+}
+
+Pipe::~Pipe()
+{
+    this->closeRead();
+    this->closeWrite();
+}
+
+Pipe::Pipe( Pipe && other )
+{
+    _pipeHandle[0] = other._pipeHandle[0];
+    _pipeHandle[1] = other._pipeHandle[1];
+
+    other.detachRead();
+    other.detachWrite();
+}
+
+Pipe & Pipe::operator = ( Pipe && other )
+{
+    if ( this != &other )
+    {
+        this->closeRead();
+        this->closeWrite();
+
+        _pipeHandle[0] = other._pipeHandle[0];
+        _pipeHandle[1] = other._pipeHandle[1];
+
+        other.detachRead();
+        other.detachWrite();
+    }
+    return *this;
+}
+
+void Pipe::closeRead()
+{
+#if defined(OS_WIN)
+    if ( _pipeHandle[0] != INVALID_HANDLE_VALUE )
+    {
+        CloseHandle(_pipeHandle[0]);
+        _pipeHandle[0] = INVALID_HANDLE_VALUE;
+    }
+#else
+    if ( _pipeHandle[0] != -1 )
+    {
+        close(_pipeHandle[0]);
+        _pipeHandle[0] = -1;
+    }
+#endif
+}
+
+void Pipe::closeWrite()
+{
+#if defined(OS_WIN)
+    if ( _pipeHandle[1] != INVALID_HANDLE_VALUE )
+    {
+        CloseHandle(_pipeHandle[1]);
+        _pipeHandle[1] = INVALID_HANDLE_VALUE;
+    }
+#else
+    if ( _pipeHandle[1] != -1 )
+    {
+        close(_pipeHandle[1]);
+        _pipeHandle[1] = -1;
+    }
+#endif
+}
+
+HPipe Pipe::detachRead()
+{
+    auto h = _pipeHandle[0];
+#if defined(OS_WIN)
+    if ( _pipeHandle[0] != INVALID_HANDLE_VALUE )
+    {
+        _pipeHandle[0] = INVALID_HANDLE_VALUE;
+    }
+#else
+    if ( _pipeHandle[0] != -1 )
+    {
+        _pipeHandle[0] = -1;
+    }
+#endif
+    return h;
+}
+
+HPipe Pipe::detachWrite()
+{
+    auto h = _pipeHandle[1];
+#if defined(OS_WIN)
+    if ( _pipeHandle[1] != INVALID_HANDLE_VALUE )
+    {
+        _pipeHandle[1] = INVALID_HANDLE_VALUE;
+    }
+#else
+    if ( _pipeHandle[1] != -1 )
+    {
+        _pipeHandle[1] = -1;
+    }
+#endif
+    return h;
 }
 
 // class FileMapping --------------------------------------------------------------------------

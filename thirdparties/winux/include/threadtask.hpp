@@ -61,6 +61,7 @@ struct TaskCtx
 
     /** \brief 尝试投递后续任务，如果有的话 */
     void tryPostNext();
+
 protected:
     TaskCtx() : mtxTask(true), cdtTask(true), status(taskPending), pool(nullptr), posted(false), aborted(false), prevTask(nullptr) { }
     virtual ~TaskCtx()
@@ -106,6 +107,7 @@ struct TaskCtxT : public TaskCtx
             this->aborted = true;
         }
     }
+
 protected:
     TaskCtxT( ThreadPool * pool, TaskCtx::TaskStatus status = TaskCtx::taskPending )
     {
@@ -147,6 +149,7 @@ struct TaskCtxT<void> : public TaskCtx
             this->aborted = true;
         }
     }
+
 protected:
     TaskCtxT( ThreadPool * pool, TaskCtx::TaskStatus status = TaskCtx::taskPending )
     {
@@ -172,6 +175,7 @@ public:
         this->startup(threadCount);
     }
 
+    /** \brief 析构函数 */
     virtual ~ThreadPool()
     {
         this->whenEmptyStopAndWait();
@@ -256,12 +260,14 @@ public:
         return _queueTask.size();
     }
 
+    /** \brief 增加任务链计数 */
     size_t incTaskChainCount()
     {
         ScopeGuard guard(_mtxPool);
         return ++_taskChainCount;
     }
 
+    /** \brief 减少任务链计数 */
     size_t decTaskChainCount()
     {
         ScopeGuard guard(_mtxPool);

@@ -15,15 +15,15 @@ enum ConsoleColorAttrFlags : winux::ushort
     fgBlack = 0,
     bgBlack = 0,
 
-    fgNavy = 0x0001,
-    fgAtrovirens = 0x0002,
+    fgNavy = 0x01,
+    fgAtrovirens = 0x02,
         fgTeal = fgNavy | fgAtrovirens,
-    fgMaroon = 0x0004,
+    fgMaroon = 0x04,
         fgPurple = fgNavy | fgMaroon,
         fgOlive = fgAtrovirens | fgMaroon,
         fgSilver = fgNavy | fgAtrovirens | fgMaroon,
 
-    fgIntensity = 0x0008,
+    fgIntensity = 0x08,
     fgGray = fgIntensity,
 
     fgBlue = fgIntensity | fgNavy,
@@ -35,15 +35,15 @@ enum ConsoleColorAttrFlags : winux::ushort
         fgWhite = fgIntensity | fgNavy | fgAtrovirens | fgMaroon,
 
 ////////////////////////////////////////////////////////////////
-    bgNavy = 0x0010,
-    bgAtrovirens = 0x0020,
+    bgNavy = 0x10,
+    bgAtrovirens = 0x20,
         bgTeal = bgNavy | bgAtrovirens,
-    bgMaroon = 0x0040,
+    bgMaroon = 0x40,
         bgPurple = bgNavy | bgMaroon,
         bgOlive = bgAtrovirens | bgMaroon,
         bgSilver = bgNavy | bgAtrovirens | bgMaroon,
 
-    bgIntensity = 0x0080,
+    bgIntensity = 0x80,
     bgGray = bgIntensity,
 
     bgBlue = bgIntensity | bgNavy,
@@ -72,15 +72,15 @@ enum ConsoleColorAttrFlags : winux::ushort
     fgYellow = 14,
     fgWhite = 15,
 
-    bgNavy = 0x0100,
-    bgAtrovirens = 0x0200,
-    bgTeal = 0x0300,
-    bgMaroon = 0x0400,
-    bgPurple = 0x0500,
-    bgOlive = 0x0600,
-    bgSilver = 0x0700,
-    bgBlack = 0x0800,
-    bgWhite = 0x0000,
+    bgBlack = 0x10,
+    bgNavy = 0x20,
+    bgAtrovirens = 0x30,
+    bgTeal = 0x40,
+    bgMaroon = 0x50,
+    bgPurple = 0x60,
+    bgOlive = 0x70,
+    bgSilver = 0x00,
+    bgWhite = 0x80,
     bgGray = bgSilver,
     bgBlue = bgNavy,
     bgGreen = bgAtrovirens,
@@ -89,14 +89,16 @@ enum ConsoleColorAttrFlags : winux::ushort
     bgFuchsia = bgPurple,
     bgYellow = bgOlive,
 #endif
-    ccaIgnore = 0x8000,
+    ccaIgnore = 0x8800,
+    bgIgnore = 0x8000,
+    fgIgnore = 0x0800
 };
 
 /** \brief 控制台属性类 */
 class WINUX_DLL ConsoleAttr
 {
 public:
-    ConsoleAttr( winux::ushort attr, bool isSetBgColor = false );
+    ConsoleAttr( winux::ushort attr );
 
     void modify() const;
     void resume() const;
@@ -109,7 +111,7 @@ private:
 #else
     winux::AnsiString _strAttr;
 #endif
-    bool _isSetBgColor;
+    winux::ushort _attr;
 };
 
 /** \brief 控制台属性类模板 */
@@ -117,7 +119,7 @@ template < typename _VarType >
 class ConsoleAttrT : public ConsoleAttr
 {
 public:
-    ConsoleAttrT( winux::ushort attr, _VarType const & v, bool isSetBgColor = false ) : ConsoleAttr( attr, isSetBgColor ), _v( const_cast<_VarType&>(v) )
+    ConsoleAttrT( winux::ushort attr, _VarType const & v ) : ConsoleAttr(attr), _v( const_cast<_VarType&>(v) )
     {
     }
 
@@ -165,9 +167,9 @@ inline std::wistream & operator >> ( std::wistream & in, ConsoleAttrT<_VarType> 
 
 /** \brief 控制台颜色函数 */
 template < typename _VarType >
-inline ConsoleAttrT<_VarType> ConsoleColor( winux::ushort attr, _VarType const & v, bool isSetBgColor = false )
+inline ConsoleAttrT<_VarType> ConsoleColor( winux::ushort attr, _VarType const & v )
 {
-    return ConsoleAttrT<_VarType>( attr, v, isSetBgColor );
+    return ConsoleAttrT<_VarType>( attr, v );
 }
 
 /** \brief 控制台输出ScopeGuard */
@@ -181,19 +183,16 @@ private:
     DISABLE_OBJECT_COPY(ConsoleOuputMutexScopeGuard)
 };
 
-inline static void OutputV()
+template < typename _ChTy >
+inline static void OutputV( std::basic_ostream<_ChTy> & out )
 {
 }
 
-template < typename _Ty, typename... _ArgType >
-inline static void OutputV( _Ty&& a, _ArgType&& ... arg )
+template < typename _ChTy, typename _Ty, typename... _ArgType >
+inline static void OutputV( std::basic_ostream<_ChTy> & out, _Ty&& a, _ArgType&& ... arg )
 {
-#if defined(_UNICODE) || defined(UNICODE)
-    std::wcout << a;
-#else
-    std::cout << a;
-#endif
-    OutputV( std::forward<_ArgType>(arg)... );
+    out << std::forward<_Ty>(a);
+    OutputV<_ChTy>( out, std::forward<_ArgType>(arg)... );
 }
 
 template < typename... _ArgType >
@@ -201,7 +200,11 @@ inline static void ColorOutputLine( winux::ConsoleAttr const & ca, _ArgType&& ..
 {
     ConsoleOuputMutexScopeGuard guard;
     ca.modify();
-    OutputV( std::forward<_ArgType>(arg)... );
+#if defined(_UNICODE) || defined(UNICODE)
+    OutputV( std::wcout, std::forward<_ArgType>(arg)... );
+#else
+    OutputV( std::cout, std::forward<_ArgType>(arg)... );
+#endif
     ca.resume();
 #if defined(_UNICODE) || defined(UNICODE)
     std::wcout << std::endl;
@@ -215,7 +218,11 @@ inline static void ColorOutput( winux::ConsoleAttr const & ca, _ArgType&& ... ar
 {
     ConsoleOuputMutexScopeGuard guard;
     ca.modify();
-    OutputV( std::forward<_ArgType>(arg)... );
+#if defined(_UNICODE) || defined(UNICODE)
+    OutputV( std::wcout, std::forward<_ArgType>(arg)... );
+#else
+    OutputV( std::cout, std::forward<_ArgType>(arg)... );
+#endif
     ca.resume();
 }
 

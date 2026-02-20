@@ -6,19 +6,9 @@
 
 namespace winux
 {
-
 /** \brief 配置文件类 */
 class WINUX_DLL Configure
 {
-private:
-    String _configFile;
-    StringStringMap _rawParams; //!< 未StripSlashes处理的数据集合
-
-    static int _FindConfigRef( String const & str, int offset, int * length, String * name );
-    String _expandVarNoStripSlashes( String const & name, StringArray * chains ) const;
-
-    //返回加载的配置变量个数
-    int _load( String const & configFile, StringStringMap * rawParams, StringArray * loadFileChains );
 public:
     static String const ConfigVarsSlashChars;
 
@@ -64,6 +54,20 @@ public:
 
     /** \brief 取得内部StringStringMap引用 */
     StringStringMap const & getAll() const { return _rawParams; }
+
+private:
+    String _configFile; //!< 配置文件
+    StringStringMap _rawParams; //!< 未StripSlashes处理的数据集合
+
+    // 查找配置引用变量
+    static int _FindConfigRef( String const & str, int offset, int * length, String * name );
+    // 展开指定名称引用变量的值
+    String _expandVarNoStripSlashes( String const & name, StringArray * chains ) const;
+    // 展开指定值中的引用变量的值
+    String _expandValNoStripSlashes( String const & val, StringArray * chains ) const;
+
+    // 返回加载的配置变量个数
+    int _load( String const & configFile, StringStringMap * rawParams, StringArray * loadFileChains );
 };
 
 /** \brief 更强大的配置文件类
@@ -76,21 +80,23 @@ public:
      *
      *  如果需要设置配置文件的外部变量，必须先调用set()，然后才load()配置文件。
      *  \param settingsFile 配置文件路径 */
-    ConfigureSettings( String const & settingsFile = TEXT("") );
+    ConfigureSettings( String const & settingsFile = $T("") );
     ~ConfigureSettings();
     ConfigureSettings( ConfigureSettings const & other );
     ConfigureSettings( ConfigureSettings && other );
     ConfigureSettings & operator = ( ConfigureSettings const & other );
     ConfigureSettings & operator = ( ConfigureSettings && other );
 
-    /** \brief 加载设置文件 */
+    /** \brief 加载设置文件
+     *
+     *  \return 返回顶层KeyName数 */
     size_t load( String const & settingsFile );
 
     /** \brief 更新表达式并计算结果。（当你修改表达式后应该执行这个函数一次）
      *
      *  \param multiname 此参数不是表达式，而是一系列键名。可以用任何表达式可以识别的符号隔开（例如 > , . ），如果键名含空格应该用引号包起来。
      *  \param updateExprStr 更新的表达式，为空表示不更改表达式，只重新计算更新值 */
-    Mixed & update( String const & multiname, String const & updateExprStr = TEXT("") );
+    Mixed & update( String const & multiname, String const & updateExprStr = $T("") );
 
     /** \brief 以根变量场景执行表达式并返回引用，如果不能执行则返回内部一个引用 */
     Mixed & execRef( String const & exprStr ) const;
@@ -121,11 +127,20 @@ public:
     /** \brief 表达式 */
     Mixed & expr();
 
-private:
+    /** \brief 获取设置文件目录 */
+    String getSettingsDir() const;
 
+private:
     size_t _load( String const & settingsFile, winux::Mixed * collAsVal, winux::Mixed * collAsExpr, StringArray * loadFileChains );
 
-    MembersWrapper<struct ConfigureSettings_Data> _self;
+    String _settingsFile; // 设置文件
+    Mixed _collectionVal; // 存储值
+    Mixed _collectionExpr; // 存储表达式串
+#if defined(OS_WIN)
+    PlainMembers<struct ConfigureSettings_Data, 96> _self;
+#else
+    PlainMembers<struct ConfigureSettings_Data, 136> _self;
+#endif
 };
 
 /** \brief CSV文件写入器 */
@@ -142,7 +157,6 @@ public:
 private:
     IFile * _outputFile;
 };
-
 
 /** \brief CSV文件读取器 */
 class WINUX_DLL CsvReader
@@ -168,10 +182,6 @@ public:
 private:
     Mixed _columns; // 第一行列名代表的索引
     Mixed _records;
-
-    void _readRecord( String const & str, int & i, Mixed & record );
-
-    void _readString( String const & str, int & i, String & valStr );
 };
 
 /** \brief 文本文档类。可载入文本文件自动识别BOM文件编码，转换为指定编码。\n
@@ -253,9 +263,7 @@ public:
      *  \param mbsEncoding 多字节编码 */
     void load( winux::IFile * f, bool isConvert, winux::AnsiString const & targetEncoding = "", winux::AnsiString const & mbsEncoding = "" )
     {
-        size_t n;
-        void * buf = f->entire(&n);
-        this->load( winux::Buffer( buf, n, true ), isConvert, targetEncoding, mbsEncoding );
+        this->load( f->buffer(true), isConvert, targetEncoding, mbsEncoding );
     }
 
     /** \brief 载入指定内容
@@ -380,7 +388,7 @@ public:
      *  \param fileEncoding 文件编码 */
     void saveEx( winux::Buffer const & content, winux::AnsiString const & encoding, winux::String const & filePath, FileEncoding fileEncoding )
     {
-        winux::File file( filePath, TEXT("wb") );
+        winux::File file( filePath, $T("wb") );
         this->saveEx( content, encoding, &file, fileEncoding );
     }
 

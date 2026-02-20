@@ -400,7 +400,7 @@ public:
         MyBase::attachNew( p, (_Ty2*)0, dt );
     }
 
-    /** \brief 把指针由_Ty转换成_Ty2类型
+    /** \brief 把指针由_Ty转换(dynamic_cast)成_Ty2类型
      *
      *  通常_Ty为基类，_Ty2为派生类，并且_Ty指针所指的是_Ty2类型的对象。\n
      *  如果转换失败，返回空指针，自身改不变。如果转换成功，自身放弃所有权，置零。 */
@@ -418,7 +418,7 @@ public:
         return r;
     }
 
-    /** \brief 把指针由_Ty转换成_Ty2类型
+    /** \brief 把指针由_Ty转换(static_cast)成_Ty2类型
      *
      *  通常_Ty为基类，_Ty2为派生类，并且_Ty指针所指的必须是_Ty2类型的对象，才能使用这个函数。\n
      *  自身放弃所有权，置零。\n
@@ -446,6 +446,14 @@ WINUX_FUNC_DECL(long) LongAtomicIncrement( long volatile * p );
 WINUX_FUNC_DECL(long) LongAtomicDecrement( long volatile * p );
 /** \brief 原子化操作，*p若和comparand相等，就把*p赋成exchange，返回值是初始的*p值 */
 WINUX_FUNC_DECL(long) LongAtomicCompareExchange( long volatile * p,  long exchange, long comparand );
+
+class ILockObj;
+/** \brief 原子化使一个Long型变量+1，返回值是+1后的*p值 */
+WINUX_FUNC_DECL(long) LongAtomicIncrement( ILockObj & lockObj, long volatile * p );
+/** \brief 原子化使一个Long型变量-1，返回值是-1后的*p值 */
+WINUX_FUNC_DECL(long) LongAtomicDecrement( ILockObj & lockObj, long volatile * p );
+/** \brief 原子化操作，*p若和comparand相等，就把*p赋成exchange，返回值是初始的*p值 */
+WINUX_FUNC_DECL(long) LongAtomicCompareExchange( ILockObj & lockObj, long volatile * p,  long exchange, long comparand );
 
 // 前向声明
 template < typename _HTy >
@@ -509,6 +517,9 @@ protected:
     virtual void _deleteThis() = 0;
 
 public:
+    /** \brief 显式删除`SharedHandle#detach()`出来的`SharedDeleterContext`对象 */
+    void delThis() { this->_deleteThis(); }
+
     /** \brief 如果引用计数不是0，则增加引用计数。成功则返回true。
      *
      *  用于`WeakHandle`创建`SharedHandle`时检测所持资源的计数是否不为0，即还有效。*/
@@ -517,46 +528,48 @@ public:
         for ( ; ; )
         {
             // loop until state is known
-            long count = (long volatile &)_uses;
+            long count = _uses.load(std::memory_order_relaxed);
             if ( count == 0 ) return false;
-            if ( LongAtomicCompareExchange( &_uses, count + 1, count ) == count ) return true;
+            if ( _uses.compare_exchange_weak( count, count + 1, std::memory_order_acq_rel, std::memory_order_relaxed ) ) return true;
         }
     }
     /** \brief 增加引用计数 */
-    void incRef() { LongAtomicIncrement(&_uses); }
+    void incRef() { _uses.fetch_add( 1, std::memory_order_acq_rel ); }
     /** \brief 减少引用计数。当引用计数为0时销毁资源，并且销毁资源时减少弱引用计数。 */
     void decRef()
     {
-        if ( LongAtomicDecrement(&_uses) == 0 )
+        if ( _uses.fetch_sub( 1, std::memory_order_acq_rel ) == 1 )
         {
+            std::atomic_thread_fence(std::memory_order_acquire);
             this->_destroy();
             this->decWRef();
         }
     }
 
     /** \brief 增加弱引用计数 */
-    void incWRef() { LongAtomicIncrement(&_weaks); }
+    void incWRef() { _weaks.fetch_add( 1, std::memory_order_acq_rel ); }
     /** \brief 减少弱引用计数，当弱引用计数为0时销毁删除器场景对象 */
     void decWRef()
     {
-        if ( LongAtomicDecrement(&_weaks) == 0 )
+        if ( _weaks.fetch_sub( 1, std::memory_order_acq_rel ) == 1 )
         {
+            std::atomic_thread_fence(std::memory_order_acquire);
             this->_deleteThis();
         }
     }
 
     /** \brief 资源引用计数 */
-    long useCount() const { return (_uses); }
+    long useCount() const { return _uses.load(std::memory_order_relaxed); }
 
     /** \brief 资源是否已过期 */
-    bool expired() const { return ( _uses == 0 ); }
+    bool expired() const { return _uses.load(std::memory_order_relaxed) == 0; }
 
     /** \brief 弱引用计数 */
-    long weakCount() const { return (_weaks); }
+    long weakCount() const { return _weaks.load(std::memory_order_relaxed); }
 
 private:
-    long volatile _uses;
-    long volatile _weaks;
+    std::atomic<long> _uses;
+    std::atomic<long> _weaks;
 
     DISABLE_OBJECT_COPY(SharedDeleterContext)
 };
@@ -986,7 +999,7 @@ public:
         _EnableSharedFromThis( *this, p );
     }
 
-    /** \brief 把指针由_Ty转换成_Ty2类型
+    /** \brief 把指针由_Ty转换(dynamic_cast)成_Ty2类型
      *
      *  通常_Ty为基类，_Ty2为派生类，并且_Ty指针所指的是_Ty2类型的对象。\n
      *  如果转换失败，返回空指针。如果转换成功，引用计数增加。 */
@@ -1000,7 +1013,7 @@ public:
         return r;
     }
 
-    /** \brief 把指针由_Ty转换成_Ty2类型
+    /** \brief 把指针由_Ty转换(static_cast)成_Ty2类型
      *
      *  通常_Ty为基类，_Ty2为派生类，并且_Ty指针所指的必须是_Ty2类型的对象，才能使用这个函数。\n
      *  你必须担保转换成功，否则将产生灾难。 */
@@ -1217,7 +1230,7 @@ private:
     friend class SharedPointer;
 };
 
-
+/** \brief 能从this指针获得`SharedPointer` */
 template < typename _Ty >
 class EnableSharedFromThis
 {
@@ -1279,6 +1292,13 @@ inline SimplePointer<_Ty> MakeSimple( _Ty * newObj, _Dt dt )
     return SimplePointer<_Ty>( newObj, dt );
 }
 
+/** \brief 创建一个`SimplePointer`来管理新对象资源 */
+template < typename _Ty, typename... _ArgType >
+inline SimplePointer<_Ty> MakeSimpleNew( _ArgType&& ... arg )
+{
+    return SimplePointer<_Ty>( new _Ty( std::forward<_ArgType>(arg)... ) );
+}
+
 /** \brief 创建一个`SharedPointer`来管理新对象资源 */
 template < typename _Ty >
 inline SharedPointer<_Ty> MakeShared( _Ty * newObj )
@@ -1291,6 +1311,13 @@ template < typename _Ty, typename _Dt >
 inline SharedPointer<_Ty> MakeShared( _Ty * newObj, _Dt dt )
 {
     return SharedPointer<_Ty>( newObj, dt );
+}
+
+/** \brief 创建一个`SharedPointer`来管理新对象资源 */
+template < typename _Ty, typename... _ArgType >
+inline SharedPointer<_Ty> MakeSharedNew( _ArgType&& ... arg )
+{
+    return SharedPointer<_Ty>( new _Ty( std::forward<_ArgType>(arg)... ) );
 }
 
 

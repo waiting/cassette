@@ -94,7 +94,7 @@ public:
     /** \brief 仅是文本上判断是否有解析为操作符的可能性 */
     static bool Possibility( ExprPackage const * package, winux::String const & str );
 
-    ExprOperator( winux::String const & oprStr = TEXT(""), bool isUnary = false, bool isRight = false, short level = 0, OperatorFunction oprFn = NULL );
+    ExprOperator( winux::String const & oprStr = $T(""), bool isUnary = false, bool isRight = false, short level = 0, OperatorFunction oprFn = NULL );
     virtual ~ExprOperator();
 
     virtual ExprAtom * clone() const override;

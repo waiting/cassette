@@ -8,6 +8,7 @@
 #include "archives.hpp"
 
 #include "eienexpr.hpp"
+#include "eienexpr_errstrs.inl"
 
 #if defined(OS_WIN) // IS_WINDOWS
     #include <mbstring.h>
@@ -90,7 +91,7 @@ inline static winux::ulong NumberStringToNumber( const tchar * number, int base 
 }
 
 // class Configure -----------------------------------------------------------------------------
-String const Configure::ConfigVarsSlashChars = TEXT("\n\r\t\v\a\\\'\"$()");
+String const Configure::ConfigVarsSlashChars = $T("\n\r\t\v\a\\\'\"$()");
 
 Configure::Configure()
 {
@@ -104,8 +105,8 @@ Configure::Configure( String const & configFile )
 
 int Configure::_FindConfigRef( String const & str, int offset, int * length, String * name )
 {
-    String ldelim = TEXT("$(");
-    String rdelim = TEXT(")");
+    String ldelim = $T("$(");
+    String rdelim = $T(")");
     *length = 0;
     int pos1 = (int)str.find( ldelim, offset );
     if ( pos1 == -1 ) return -1;
@@ -118,29 +119,35 @@ int Configure::_FindConfigRef( String const & str, int offset, int * length, Str
 
 String Configure::_expandVarNoStripSlashes( String const & name, StringArray * chains ) const
 {
-    if ( !this->has(name) ) return TEXT("");
+    if ( !this->has(name) ) return $T("");
     chains->push_back(name);
-    String configVal = _rawParams.at(name);
+    String res = _expandValNoStripSlashes( _rawParams.at(name), chains );
+    chains->pop_back();
+    return res;
+}
+
+String Configure::_expandValNoStripSlashes( String const & val, StringArray * chains ) const
+{
+    if ( val.empty() ) return $T("");
     String res;
     int len;
     String varName;
     int offset = 0;
     int pos;
-    while ( ( pos = _FindConfigRef( configVal, offset, &len, &varName ) ) != -1 )
+    while ( ( pos = _FindConfigRef( val, offset, &len, &varName ) ) != -1 )
     {
-        res += configVal.substr( offset, pos - offset );
+        res += val.substr( offset, pos - offset );
         offset = pos + len;
-        res += !ValueIsInArray( *chains, varName ) ? _expandVarNoStripSlashes( varName, chains ) : TEXT("");
+        res += !ValueIsInArray( *chains, varName ) ? _expandVarNoStripSlashes( varName, chains ) : $T("");
     }
-    res += configVal.substr(offset);
-    chains->pop_back();
+    res += val.substr(offset);
     return res;
 }
 
 inline static bool __GetLine( IFile * f, String * line )
 {
     String tmpLine = f->getLine();
-    *line = tmpLine.empty() ? TEXT("") : ( tmpLine[tmpLine.length() - 1] == '\n' ? tmpLine.substr( 0, tmpLine.length() - 1 ) : tmpLine );
+    *line = tmpLine.empty() ? $T("") : ( tmpLine[tmpLine.length() - 1] == '\n' ? tmpLine.substr( 0, tmpLine.length() - 1 ) : tmpLine );
     return !tmpLine.empty();
 }
 
@@ -151,7 +158,7 @@ int Configure::_load( String const & configFile, StringStringMap * rawParams, St
     int varsCount = 0;
     try
     {
-        File fin( configFile, TEXT("r") );
+        File fin( configFile, $T("r") );
         if ( !fin ) return varsCount;
         String line;
         while ( __GetLine( &fin, &line ) )
@@ -169,17 +176,19 @@ int Configure::_load( String const & configFile, StringStringMap * rawParams, St
                 if ( pos == -1 )
                 {
                     commandName = tmp.substr(1); // 偏移1是为了 skip '@'
-                    commandParam = TEXT("");
+                    commandParam = $T("");
                 }
                 else
                 {
                     commandName = tmp.substr( 1, pos - 1 );
                     commandParam = tmp.substr( pos + 1 );
                 }
-                if ( commandName == TEXT("import") ) // 导入外部配置
+                if ( commandName == $T("import") ) // 导入外部配置
                 {
                     String dirPath = FilePath(configFile);
-                    String confPath = commandParam;
+                    StringArray callChains;
+                    // 展开值中引用的变量值
+                    String confPath = StripSlashes( _expandValNoStripSlashes( commandParam, &callChains ), ConfigVarsSlashChars );
                     confPath = IsAbsPath(confPath) ? confPath : CombinePath( dirPath, confPath );
                     if ( !ValueIsInArray( *loadFileChains, RealPath(confPath), true ) )
                     {
@@ -191,7 +200,7 @@ int Configure::_load( String const & configFile, StringStringMap * rawParams, St
 
             int delimPos = (int)line.find('=');
             if ( delimPos == -1 ) // 找不到'='分隔符,就把整行当成参数名
-                (*rawParams)[line] = TEXT("");
+                (*rawParams)[line] = $T("");
             else
                 (*rawParams)[ line.substr( 0, delimPos ) ] = line.substr( delimPos + 1 );
 
@@ -223,7 +232,7 @@ String Configure::get( String const & name, bool stripslashes, bool expand ) con
     }
     else
     {
-        value = this->has(name) ? _rawParams.at(name) : TEXT("");
+        value = this->has(name) ? _rawParams.at(name) : $T("");
     }
 
     if ( stripslashes )
@@ -234,7 +243,7 @@ String Configure::get( String const & name, bool stripslashes, bool expand ) con
 
 String Configure::operator [] ( String const & name ) const
 {
-    return this->has(name) ? StripSlashes( _rawParams.at(name), ConfigVarsSlashChars ) : TEXT("");
+    return this->has(name) ? StripSlashes( _rawParams.at(name), ConfigVarsSlashChars ) : $T("");
 }
 
 String Configure::operator () ( String const & name ) const
@@ -268,27 +277,80 @@ void Configure::clear()
     _rawParams.clear();
 }
 
-// struct ConfigureSettings_Data ----------------------------------------------------------
+// additional operators -----------------------------------------------------------------------
+// operator @ ---------------------------------------------------------------------------------
+static bool __OprFile( Expression const * e, ExprOperand * arOperands[], short n, winux::SimplePointer<ExprOperand> * outRetValue, void * data )
+{
+    outRetValue->attachNew(NULL);
+    if ( n == 1 )
+    {
+        auto & confSettings = *reinterpret_cast<ConfigureSettings *>(data);
+        String path, nl;
+        size_t i = 0;
+        // 只读取第一行作路径
+        StrGetLine( &path, arOperands[0]->val().to<String>(), &i, &nl );
+        // 基于配置文件目录计算路径
+        path = IsAbsPath(path) ? path : CombinePath( confSettings.getSettingsDir(), path );
+
+        ExprLiteral * ret = new ExprLiteral();
+        ret->getValue().createString( FileGetString( path, feMultiByte ) );
+        outRetValue->attachNew(ret);
+        return true;
+    }
+    return false;
+}
+
+// additional functions -----------------------------------------------------------------------
+// file( path[, textmode = true] ) path:文件路径，textmode:文本模式 默认true即默认文本模式
+static bool __FuncFile( Expression * e, std::vector<Expression *> const & params, winux::SimplePointer<ExprOperand> * outRetValue, void * data )
+{
+    outRetValue->attachNew(NULL);
+    if ( params.size() > 0 )
+    {
+        auto & confSettings = *reinterpret_cast<ConfigureSettings *>(data);
+        String path, nl;
+        size_t i = 0;
+        // 只读取第一行作路径
+        StrGetLine( &path, params[0]->val().to<String>(), &i, &nl );
+        // 基于配置文件目录计算路径
+        path = IsAbsPath(path) ? path : CombinePath( confSettings.getSettingsDir(), path );
+        // 文本模式
+        bool textmode = params.size() > 1 ? params[1]->val().to<bool>() : true;
+
+        ExprLiteral * ret = new ExprLiteral();
+        if ( textmode )
+            ret->getValue().createString( FileGetString( path, feMultiByte ) );
+        else
+            ret->getValue().assign( FileGetContentsEx( path, false ) );
+        outRetValue->attachNew(ret);
+        return true;
+    }
+    else
+    {
+        throw ExprError( ExprError::eeFuncParamCountError, EXPRERRSTR_NOT_ENOUGH_PARAMETERS("file") );
+    }
+    return false;
+}
+
+// struct ConfigureSettings_Data --------------------------------------------------------------
 struct ConfigureSettings_Data
 {
-    String settingsFile; // 设置文件
-    Mixed collectionVal; // 存储值
-    Mixed collectionExpr; // 存储表达式串
     ExprPackage package; // 表达式语言包，包含自定义函数和算符
     VarContext rootCtx; // 根变量场景
 
     ConfigureSettings_Data()
     {
-        this->collectionVal.createCollection();
-        this->collectionExpr.createCollection();
-        this->rootCtx.setMixedCollection(&collectionVal);
+        this->package.setFunc( $T("file"), __FuncFile );
+        this->package.addOpr( $T("@"), true, true, 1000, __OprFile );
     }
 };
 
-// class ConfigureSettings ----------------------------------------------------------------
+// class ConfigureSettings --------------------------------------------------------------------
 ConfigureSettings::ConfigureSettings( String const & settingsFile )
 {
-    _self.create(); //
+    this->_collectionVal.createCollection();
+    this->_collectionExpr.createCollection();
+    _self->rootCtx.setMixedCollection(&this->_collectionVal);
 
     if ( !settingsFile.empty() )
     {
@@ -298,15 +360,10 @@ ConfigureSettings::ConfigureSettings( String const & settingsFile )
 
 ConfigureSettings::~ConfigureSettings()
 {
-
-
-    _self.destroy(); //
 }
 
 ConfigureSettings::ConfigureSettings( ConfigureSettings const & other )
 {
-    _self.create(); //
-
     _self = other._self;
 }
 
@@ -458,7 +515,7 @@ static void ConfigureSettings_ParseString( std::vector<ConfigureSettings_ParseCo
 {
     winux::String::value_type quote = str[i];
 
-    v->assign( TEXT("") );
+    v->assign( $T("") );
     winux::String & result = *v;
 
     i++; // skip left quote
@@ -489,7 +546,7 @@ static void ConfigureSettings_ParseName( std::vector<ConfigureSettings_ParseCont
 {
     int start = i;
 
-    v->assign( TEXT("") );
+    v->assign( $T("") );
     winux::String & result = *v;
 
     while ( i < (int)str.length() )
@@ -525,7 +582,7 @@ static void ConfigureSettings_ParseExpr( std::vector<ConfigureSettings_ParseCont
     i++; // skip '('
     int brackets = 1; // 括号配对。0时表示一个表达式结束
 
-    v->assign( TEXT("") );
+    v->assign( $T("") );
 
     while ( i < (int)str.length() )
     {
@@ -577,8 +634,8 @@ static void _StoreValue( winux::String const & oneValue, OneValueType oneValueTy
 {
     if ( oneValue.empty() )
     {
-        arr.add( TEXT("") );
-        arrExpr.add( TEXT("\"\"") );
+        arr.add( $T("") );
+        arrExpr.add( $T("\"\"") );
     }
     else
     {
@@ -605,13 +662,13 @@ static void _StoreValue( winux::String const & oneValue, OneValueType oneValueTy
             else
             {
                 arr.add(oneValue);
-                arrExpr.add( TEXT("\"") + AddCSlashes(oneValue) + TEXT("\"") );
+                arrExpr.add( $T("\"") + AddCSlashes(oneValue) + $T("\"") );
             }
             break;
         case ovtString:
             {
                 arr.add(oneValue);
-                arrExpr.add( TEXT("\"") + AddCSlashes(oneValue) + TEXT("\"") );
+                arrExpr.add( $T("\"") + AddCSlashes(oneValue) + $T("\"") );
             }
             break;
         case ovtExpr:
@@ -629,7 +686,7 @@ static void _StoreValue( winux::String const & oneValue, OneValueType oneValueTy
                 }
 
                 arr.add(r);
-                arrExpr.add( TEXT("(") + oneValue + TEXT(")") );
+                arrExpr.add( $T("(") + oneValue + $T(")") );
             }
         }
     }
@@ -647,7 +704,7 @@ static void ConfigureSettings_ParseValue( std::vector<ConfigureSettings_ParseCon
     winux::String oneValue; // 单个值串
     OneValueType oneValueType = ovtAuto; // 值串类型 0:自动判断数字或字符串  1:字符串  2:表达式串
 
-    oneValue.assign( TEXT("") );
+    oneValue.assign( $T("") );
 
     while ( i < (int)str.length() )
     {
@@ -658,13 +715,13 @@ static void ConfigureSettings_ParseValue( std::vector<ConfigureSettings_ParseCon
             if ( !oneValue.empty() )
             {
                 _StoreValue( oneValue, oneValueType, exprCtx, arr, arrExpr );
-                oneValue.assign( TEXT("") );
+                oneValue.assign( $T("") );
                 oneValueType = ovtAuto;
             }
             else if ( oneValue.empty() && arr._pArr->size() == 0 ) // 遇到了结束分号却依旧没有读取到值，就加个空Mixed作值
             {
                 _StoreValue( oneValue, oneValueType, exprCtx, arr, arrExpr );
-                oneValue.assign( TEXT("") );
+                oneValue.assign( $T("") );
                 oneValueType = ovtAuto;
             }
 
@@ -676,7 +733,7 @@ static void ConfigureSettings_ParseValue( std::vector<ConfigureSettings_ParseCon
             if ( !oneValue.empty() )
             {
                 _StoreValue( oneValue, oneValueType, exprCtx, arr, arrExpr );
-                oneValue.assign( TEXT("") );
+                oneValue.assign( $T("") );
                 oneValueType = ovtAuto;
             }
 
@@ -719,7 +776,7 @@ static void ConfigureSettings_ParseValue( std::vector<ConfigureSettings_ParseCon
             arr.add(value);
             arrExpr.add(valExpr);
 
-            oneValue.assign( TEXT("") );
+            oneValue.assign( $T("") );
             oneValueType = ovtAuto;
 
             // 如果是"}\n"，也说明值结束
@@ -751,7 +808,7 @@ static void ConfigureSettings_ParseValue( std::vector<ConfigureSettings_ParseCon
     if ( !oneValue.empty() )
     {
         _StoreValue( oneValue, oneValueType, exprCtx, arr, arrExpr );
-        oneValue.assign( TEXT("") );
+        oneValue.assign( $T("") );
         oneValueType = ovtAuto;
     }
 
@@ -761,7 +818,7 @@ static void ConfigureSettings_ParseValue( std::vector<ConfigureSettings_ParseCon
     }
     else if ( arr.getCount() == 0 )
     {
-        value->assign( TEXT("") );
+        value->assign( $T("") );
     }
     else
     {
@@ -774,7 +831,7 @@ static void ConfigureSettings_ParseValue( std::vector<ConfigureSettings_ParseCon
     }
     else if ( arrExpr.getCount() == 0 )
     {
-        valExpr->assign( TEXT("") );
+        valExpr->assign( $T("") );
     }
     else
     {
@@ -835,7 +892,7 @@ static void ConfigureSettings_ParseCollection( std::vector<ConfigureSettings_Par
                     exprCtx->getVarContext()->set( name, value );
                     (*collAsExpr)[name] = valExpr;
 
-                    name.assign( TEXT("") );
+                    name.assign( $T("") );
                     value.free();
                     valExpr.free();
                     currIsName = true;
@@ -846,7 +903,7 @@ static void ConfigureSettings_ParseCollection( std::vector<ConfigureSettings_Par
                     exprCtx->getVarContext()->set( name, winux::mxNull );
                     (*collAsExpr)[name] = valExpr;
 
-                    name.assign( TEXT("") );
+                    name.assign( $T("") );
                     value.free();
                     valExpr.free();
                     currIsName = true;
@@ -884,7 +941,7 @@ size_t ConfigureSettings::_load( String const & settingsFile, winux::Mixed * col
         if ( !collAsExpr->isCollection() ) collAsExpr->createCollection();
 
         VarContext varCtx(collAsVal);
-        Expression exprCtx( &_self->package, &varCtx, nullptr, nullptr );
+        Expression exprCtx( &_self->package, &varCtx, nullptr, this );
 
         int i = 0;
         ConfigureSettings_ParseCollection( cpc, settingsContent, i, &exprCtx, collAsVal, collAsExpr );
@@ -894,16 +951,16 @@ size_t ConfigureSettings::_load( String const & settingsFile, winux::Mixed * col
 
     //loadFileChains->pop_back(); //注释掉这句，则每一个文件只载入一次
 
-    _self->rootCtx.setMixedCollection(&_self->collectionVal); // 每次载入完设置后重新设置Root变量场景
+    _self->rootCtx.setMixedCollection(&this->_collectionVal); // 每次载入完设置后重新设置Root变量场景
 
-    return _self->collectionVal.getCount();
+    return this->_collectionVal.getCount();
 }
 
 size_t ConfigureSettings::load( String const & settingsFile )
 {
-    _self->settingsFile = settingsFile;
+    this->_settingsFile = settingsFile;
     StringArray loadFileChains;
-    return this->_load( settingsFile, &_self->collectionVal, &_self->collectionExpr, &loadFileChains );
+    return this->_load( settingsFile, &this->_collectionVal, &this->_collectionExpr, &loadFileChains );
 }
 
 static void _Update( struct ConfigureSettings_Data & sd, Expression * parent, Mixed & collVal, Mixed & collExpr, StringArray const & names, String const & updateExprStr, Mixed * * v )
@@ -978,7 +1035,7 @@ Mixed & ConfigureSettings::update( String const & multiname, String const & upda
     }
 
     Mixed * v = nullptr;
-    _Update( _self, nullptr, _self->collectionVal, _self->collectionExpr, names, updateExprStr, &v );
+    _Update( _self, nullptr, this->_collectionVal, this->_collectionExpr, names, updateExprStr, &v );
     return *v;
 }
 
@@ -1023,44 +1080,49 @@ Mixed const & ConfigureSettings::operator [] ( String const & name ) const
 
 Mixed & ConfigureSettings::operator [] ( String const & name )
 {
-    return _self->collectionVal[name];
+    return this->_collectionVal[name];
 }
 
 bool ConfigureSettings::has( String const & name ) const
 {
-    return _self->collectionVal.has(name);
+    return this->_collectionVal.has(name);
 }
 
 winux::Mixed const & ConfigureSettings::get( String const & name ) const
 {
     thread_local Mixed const inner;
-    return _self->collectionVal.has(name) ? _self->collectionVal[name] : inner;
+    return this->_collectionVal.has(name) ? this->_collectionVal[name] : inner;
 }
 
 ConfigureSettings & ConfigureSettings::set( String const & name, Mixed const & value )
 {
-    _self->collectionVal[name] = value;
+    this->_collectionVal[name] = value;
     return *this;
 }
 
 Mixed const & ConfigureSettings::val() const
 {
-    return _self->collectionVal;
+    return this->_collectionVal;
 }
 
 Mixed & ConfigureSettings::val()
 {
-    return _self->collectionVal;
+    return this->_collectionVal;
 }
 
 Mixed const & ConfigureSettings::expr() const
 {
-    return _self->collectionExpr;
+    return this->_collectionExpr;
 }
 
 Mixed & ConfigureSettings::expr()
 {
-    return _self->collectionExpr;
+    return this->_collectionExpr;
+}
+
+String ConfigureSettings::getSettingsDir() const
+{
+    return FilePath(this->_settingsFile);
 }
 
 // class CsvWriter ------------------------------------------------------------------------
@@ -1076,7 +1138,7 @@ inline static String __JudgeAddQuotes( String const & valStr )
     }
     if ( it != valStr.end() )
     {
-        return TEXT("\"") + AddQuotes( valStr, Literal<String::value_type>::quoteChar ) + TEXT("\"");
+        return $T("\"") + AddQuotes( valStr, Literal<String::value_type>::quoteChar ) + $T("\"");
     }
     else
     {
@@ -1116,10 +1178,10 @@ void CsvWriter::writeRecord( Mixed const & record )
         String strRecord;
         for ( i = 0; i < n; i++ )
         {
-            if ( i != 0 ) strRecord += TEXT(",");
+            if ( i != 0 ) strRecord += $T(",");
             strRecord += __JudgeAddQuotes(record[i]);
         }
-        _outputFile->puts( strRecord + TEXT("\n") );
+        _outputFile->puts( strRecord + $T("\n") );
     }
     else if ( record.isCollection() )
     {
@@ -1127,14 +1189,14 @@ void CsvWriter::writeRecord( Mixed const & record )
         String strRecord;
         for ( i = 0; i < n; i++ )
         {
-            if ( i != 0 ) strRecord += TEXT(",");
+            if ( i != 0 ) strRecord += $T(",");
             strRecord += __JudgeAddQuotes( record.getPair(i).second );
         }
-        _outputFile->puts( strRecord + TEXT("\n") );
+        _outputFile->puts( strRecord + $T("\n") );
     }
     else // 只有1列
     {
-        _outputFile->puts( (String)__JudgeAddQuotes(record) + TEXT("\n") );
+        _outputFile->puts( __JudgeAddQuotes(record) + $T("\n") );
     }
 }
 
@@ -1149,44 +1211,52 @@ CsvReader::CsvReader( String const & content, bool hasColumnHeaders )
     if ( !content.empty() ) this->read( content, hasColumnHeaders );
 }
 
-void CsvReader::read( String const & content, bool hasColumnHeaders )
+inline static void _ReadString( String const & str, size_t * pI, String * valStr )
 {
-    int i = 0;
-    if ( hasColumnHeaders )
+    size_t & i = *pI;
+    ++i; // skip '\"'
+    while ( i < str.length() )
     {
-        Mixed hdrs;
-        _readRecord( content, i, hdrs );
-        _columns.createCollection();
-        for ( size_t i = 0, n = hdrs.getCount(); i < n; ++i )
+        String::value_type ch = str[i];
+        if ( ch == '\"' )
         {
-            _columns[ hdrs[i] ] = i;
+            if ( i + 1 < str.length() && str[i + 1] == '\"' ) // double '\"' 解析成一个'\"'
+            {
+                *valStr += '\"';
+                i++; // skip "
+                i++; // skip "
+            }
+            else
+            {
+                i++; // skip 作为字符串结束的尾"
+                break;
+            }
         }
-    }
-
-    _records.createArray();
-    while ( i < (int)content.length() )
-    {
-        Mixed & record = _records[ _records.add(mxNull) ];
-        _readRecord( content, i, record );
+        else
+        {
+            *valStr += ch;
+            i++;
+        }
     }
 }
 
-void CsvReader::_readRecord( String const & str, int & i, Mixed & record )
+inline static void _ReadRecord( String const & str, size_t * pI, Mixed * record )
 {
-    record.createArray();
+    size_t & i = *pI;
+    record->createArray();
     String valStr;
-    while ( i < (int)str.length() )
+    while ( i < str.length() )
     {
         String::value_type ch = str[i];
         if ( ch == '\n' ) // 结束一条记录
         {
-            record.add(valStr);
+            record->add(valStr);
             i++; // skip '\n'
             break;
         }
         else if ( ch == ',' ) // 结束一个值
         {
-            record.add(valStr);
+            record->add(valStr);
             valStr.clear();
             i++; // skip ','
         }
@@ -1196,11 +1266,11 @@ void CsvReader::_readRecord( String const & str, int & i, Mixed & record )
             if ( StrTrim(valStr).empty() )
             {
                 valStr.clear(); // 去除之前可能获得的空白字符
-                _readString( str, i, valStr );
+                _ReadString( str, &i, &valStr );
                 //record.add(valStr);
                 //valStr.clear();
                 // 跳过','以避免再次加入这个值,或者跳过换行符
-                //while ( i < (int)str.length() && str[i] != ',' && str[i] != '\n' ) i++;
+                //while ( i < str.length() && str[i] != ',' && str[i] != '\n' ) i++;
             }
             else
             {
@@ -1217,35 +1287,29 @@ void CsvReader::_readRecord( String const & str, int & i, Mixed & record )
 
     if ( str.length() > 0 && '\n' != str[i - 1] ) // 最后一个字符不是换行符
     {
-        record.add(valStr);
+        record->add(valStr);
     }
 }
 
-void CsvReader::_readString( String const & str, int & i, String & valStr )
+void CsvReader::read( String const & content, bool hasColumnHeaders )
 {
-    ++i; // skip '\"'
-    while ( i < (int)str.length() )
+    size_t i = 0;
+    if ( hasColumnHeaders )
     {
-        String::value_type ch = str[i];
-        if ( ch == '\"' )
+        Mixed hdrs;
+        _ReadRecord( content, &i, &hdrs );
+        _columns.createCollection();
+        for ( size_t i = 0, n = hdrs.getCount(); i < n; ++i )
         {
-            if ( i + 1 < (int)str.length() && str[i+1] == '\"' ) // double '\"' 解析成一个'\"'
-            {
-                valStr += '\"';
-                i++; // skip "
-                i++; // skip "
-            }
-            else
-            {
-                i++; // skip 作为字符串结束的尾"
-                break;
-            }
+            _columns[ hdrs[i] ] = i;
         }
-        else
-        {
-            valStr += ch;
-            i++;
-        }
+    }
+
+    _records.createArray();
+    while ( i < content.length() )
+    {
+        Mixed & record = _records[ _records.add(mxNull) ];
+        _ReadRecord( content, &i, &record );
     }
 }
 

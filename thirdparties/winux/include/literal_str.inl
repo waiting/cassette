@@ -25,6 +25,7 @@
     sc( lt, "<" ) \
     sc( gt, ">" ) \
     sc( eq, "=" ) \
+    sc( question, "?" ) \
     sc( LBRK, "(" ) sc( RBRK, ")" ) \
     sc( LSquareBRK, "[" ) sc( RSquareBRK, "]" ) \
     sc( LCurlyBRK, "{" ) sc( RCurlyBRK, "}" ) \

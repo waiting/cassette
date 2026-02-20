@@ -28,5 +28,25 @@ WINUX_FUNC_IMPL(long) LongAtomicCompareExchange( long volatile * p, long exchang
     return t;
 }
 
+WINUX_FUNC_IMPL(long) LongAtomicIncrement( ILockObj & lockObj, long volatile * p )
+{
+    ScopeGuard guard(lockObj);
+    return ++*p;
+}
+
+WINUX_FUNC_IMPL(long) LongAtomicDecrement( ILockObj & lockObj, long volatile * p )
+{
+    ScopeGuard guard(lockObj);
+    return --*p;
+}
+
+WINUX_FUNC_IMPL(long) LongAtomicCompareExchange( ILockObj & lockObj, long volatile * p, long exchange, long comparand )
+{
+    ScopeGuard guard(lockObj);
+    long t = *p;
+    if ( *p == comparand ) *p = exchange;
+    return t;
+}
+
 
 } // namespace winux

@@ -27,9 +27,9 @@ public:
 #endif
 
 /** \brief 获取当前进程ID */
-WINUX_FUNC_DECL(uint) GetPid();
+WINUX_FUNC_DECL(uint) GetPid( void );
 /** \brief 获取当前线程ID */
-WINUX_FUNC_DECL(uint) GetTid();
+WINUX_FUNC_DECL(uint) GetTid( void );
 
 WINUX_FUNC_DECL(size_t) CommandLineToArgvA( AnsiString const & cmd, AnsiStringArray * argv );
 WINUX_FUNC_DECL(size_t) CommandLineToArgvW( UnicodeString const & cmd, UnicodeStringArray * argv );
@@ -85,7 +85,7 @@ WINUX_FUNC_DECL(int) ExecCommand(
  *  \return String 标准输出的内容 */
 WINUX_FUNC_DECL(String) GetExec(
     String const & cmd,
-    String const & stdinStr = TEXT(""),
+    String const & stdinStr = $T(""),
     String * stderrStr = NULL,
     bool closeStdinIfStdinStrEmpty = true
 );
@@ -117,7 +117,7 @@ public:
         Mixed const & desiredParams,
         Mixed const & desiredOptions,
         Mixed const & desiredFlags,
-        Mixed const & optionSymbols = TEXT("=,:")
+        Mixed const & optionSymbols = $T("=,:")
     );
 
     /** \brief 获取参数个数 */
@@ -139,9 +139,9 @@ public:
     bool hasValue( String const & value ) const { return _values.has(value); }
 
     /** \brief 获取指定名字的参数 */
-    Mixed const & getParam( String const & name, Mixed const & defValue = TEXT("") ) const { return this->hasParam(name) ? _params[name] : defValue; }
+    Mixed const & getParam( String const & name, Mixed const & defValue = $T("") ) const { return this->hasParam(name) ? _params[name] : defValue; }
     /** \brief 获取指定名字的选项 */
-    Mixed const & getOption( String const & name, Mixed const & defValue = TEXT("") ) const { return this->hasOption(name) ? _options[name] : defValue; }
+    Mixed const & getOption( String const & name, Mixed const & defValue = $T("") ) const { return this->hasOption(name) ? _options[name] : defValue; }
     /** \brief 获取指定索引的旗标 */
     Mixed const & getFlag( size_t i ) const { return _flags[i]; }
     /** \brief 获取指定索引的值 */
@@ -170,10 +170,10 @@ public:
     {
         CommandLineVars * p = const_cast<CommandLineVars *>(this);
         return $c{
-            { TEXT("params"), p->getParams() },
-            { TEXT("options"), p->getOptions() },
-            { TEXT("flags"), p->getFlags() },
-            { TEXT("values"), p->getValues() },
+            { $T("params"), p->getParams() },
+            { $T("options"), p->getOptions() },
+            { $T("flags"), p->getFlags() },
+            { $T("values"), p->getValues() },
         };
     }
 
@@ -231,6 +231,24 @@ private:
     DISABLE_OBJECT_COPY(ScopeGuard)
 };
 
+/** \brief 作用域范围不保护 */
+class WINUX_DLL ScopeUnguard
+{
+public:
+    ScopeUnguard( ILockObj & lockObj ) : _lockObj(lockObj)
+    {
+        _lockObj.unlock();
+    }
+    ~ScopeUnguard()
+    {
+        _lockObj.lock();
+    }
+
+private:
+    ILockObj & _lockObj;
+    DISABLE_OBJECT_COPY(ScopeUnguard)
+};
+
 /** \brief 原生互斥锁
  *
  *  Windows平台用win32api实现，Linux用pthread实现 */
@@ -244,7 +262,7 @@ public:
     virtual bool unlock() override;
 
 private:
-    MembersWrapper<struct MutexLockObj_Data> _self;
+    PlainMembers<struct MutexNative_Data, 40> _self;
 
     DISABLE_OBJECT_COPY(MutexNative)
 };
@@ -337,6 +355,44 @@ private:
     DISABLE_OBJECT_COPY(DllLoader)
 };
 
+/** \brief 匿名管道 */
+class WINUX_DLL Pipe
+{
+public:
+    /** \brief 构造函数0 */
+    Pipe();
+
+    /** \brief 析构函数 */
+    ~Pipe();
+
+    /** \brief 移动构造 */
+    Pipe( Pipe && other );
+
+    /** \brief 移动赋值 */
+    Pipe & operator = ( Pipe && other );
+
+    /** \brief 关闭读端句柄 */
+    void closeRead();
+
+    /** \brief 关闭写端句柄 */
+    void closeWrite();
+
+    /** \brief 读端脱离管理 */
+    HPipe detachRead();
+
+    /** \brief 写端脱离管理 */
+    HPipe detachWrite();
+
+    /** \brief 读端句柄 */
+    HPipe getReadHandle() const { return _pipeHandle[0]; }
+    /** \brief 写端句柄 */
+    HPipe getWriteHandle() const { return _pipeHandle[1]; }
+
+private:
+    HPipe _pipeHandle[2];
+    DISABLE_OBJECT_COPY(Pipe)
+};
+
 /** \brief 文件映射旗标 */
 enum FileMappingFlag
 {
@@ -350,7 +406,7 @@ enum FileMappingFlag
 };
 
 /** \brief 文件映射。可以用来读写大文件 */
-class FileMapping
+class WINUX_DLL FileMapping
 {
 public:
     /** \brief 构造函数0 */

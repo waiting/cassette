@@ -127,27 +127,27 @@
     wv[h] = t1 + t2;                                        \
 }
 
-uint32 sha224_h0[8] =
+static uint32 sha224_h0[8] =
             {0xc1059ed8, 0x367cd507, 0x3070dd17, 0xf70e5939,
              0xffc00b31, 0x68581511, 0x64f98fa7, 0xbefa4fa4};
 
-uint32 sha256_h0[8] =
+static uint32 sha256_h0[8] =
             {0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
              0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19};
 
-uint64 sha384_h0[8] =
+static uint64 sha384_h0[8] =
             {li_64(cbbb9d5dc1059ed8), li_64(629a292a367cd507),
              li_64(9159015a3070dd17), li_64(152fecd8f70e5939),
              li_64(67332667ffc00b31), li_64(8eb44a8768581511),
              li_64(db0c2e0d64f98fa7), li_64(47b5481dbefa4fa4)};
 
-uint64 sha512_h0[8] =
+static uint64 sha512_h0[8] =
             {li_64(6a09e667f3bcc908), li_64(bb67ae8584caa73b),
              li_64(3c6ef372fe94f82b), li_64(a54ff53a5f1d36f1),
              li_64(510e527fade682d1), li_64(9b05688c2b3e6c1f),
              li_64(1f83d9abfb41bd6b), li_64(5be0cd19137e2179)};
 
-uint32 sha256_k[64] =
+static uint32 sha256_k[64] =
             {0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5,
              0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
              0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3,
@@ -165,7 +165,7 @@ uint32 sha256_k[64] =
              0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208,
              0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2};
 
-uint64 sha512_k[80] =
+static uint64 sha512_k[80] =
             {li_64(428a2f98d728ae22), li_64(7137449123ef65cd),
              li_64(b5c0fbcfec4d3b2f), li_64(e9b5dba58189dbbc),
              li_64(3956c25bf348b538), li_64(59f111f1b605d019),

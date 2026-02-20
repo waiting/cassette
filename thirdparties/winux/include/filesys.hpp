@@ -13,29 +13,29 @@
 
 namespace winux
 {
-// 特殊平台变量 -------------------------------------------------------------
-String const DirSep_WIN = TEXT("\\"); //!< Windows目录分割符
-String const LineSep_WIN = TEXT("\r\n"); //!< Windows行分割符
-String const PathEnvSep_WIN = TEXT(";"); //!< Windows PATH环境变量路径分割符
-String const DirSep_UNIX = TEXT("/"); //!< Unix目录分割符
-String const LineSep_UNIX = TEXT("\n"); //!< Unix行分割符
-String const PathEnvSep_UNIX = TEXT(":"); //!< Unix PATH环境变量路径分割符
-String const DirSep_DARWIN = TEXT("/"); //!< Apple系统目录分割符
-String const LineSep_DARWIN = TEXT("\r"); //!< Apple系统行分割符
-String const PathEnvSep_DARWIN = TEXT(":"); //!< Apple系统PATH环境变量路径分割符
+// 特殊平台变量 ---------------------------------------------------------------------------------
+String const DirSep_WIN = $T("\\"); //!< Windows目录分割符
+String const LineSep_WIN = $T("\r\n"); //!< Windows行分割符
+String const PathEnvSep_WIN = $T(";"); //!< Windows PATH环境变量路径分割符
+String const DirSep_UNIX = $T("/"); //!< Unix目录分割符
+String const LineSep_UNIX = $T("\n"); //!< Unix行分割符
+String const PathEnvSep_UNIX = $T(":"); //!< Unix PATH环境变量路径分割符
+String const DirSep_DARWIN = $T("/"); //!< Apple系统目录分割符
+String const LineSep_DARWIN = $T("\r"); //!< Apple系统行分割符
+String const PathEnvSep_DARWIN = $T(":"); //!< Apple系统PATH环境变量路径分割符
 
 #if defined(OS_WIN)
-String const DirSep = TEXT("\\"); //!< 目录分割符
-String const LineSep = TEXT("\r\n"); //!< 行分割符
-String const PathEnvSep = TEXT(";"); //!< PATH环境变量路径分割符
+String const DirSep = $T("\\"); //!< 目录分割符
+String const LineSep = $T("\r\n"); //!< 行分割符
+String const PathEnvSep = $T(";"); //!< PATH环境变量路径分割符
 #elif defined(OS_DARWIN)
-String const DirSep = TEXT("/"); //!< 目录分割符
-String const LineSep = TEXT("\r"); //!< 行分割符
-String const PathEnvSep = TEXT(":"); //!< PATH环境变量路径分割符
+String const DirSep = $T("/"); //!< 目录分割符
+String const LineSep = $T("\r"); //!< 行分割符
+String const PathEnvSep = $T(":"); //!< PATH环境变量路径分割符
 #else
-String const DirSep = TEXT("/"); //!< 目录分割符
-String const LineSep = TEXT("\n"); //!< 行分割符
-String const PathEnvSep = TEXT(":"); //!< PATH环境变量路径分割符
+String const DirSep = $T("/"); //!< 目录分割符
+String const LineSep = $T("\n"); //!< 行分割符
+String const PathEnvSep = $T(":"); //!< PATH环境变量路径分割符
 #endif
 
 /** \brief 获取可执行文件的全路径 */
@@ -50,16 +50,17 @@ WINUX_FUNC_DECL(String) FilePath( String const & fullPath, String * fileName = N
 
 /** \brief 获取文件标题
  *
- * \param fileName String const& 文件名
- * \param extName String* 返回扩展名（不包括'.'）
+ * \param fileName 文件名
+ * \param extName 返回扩展名（不包括'.'）
+ * \param leftToRight 从左往右搜'.'，默认false从右往左搜
  * \return String */
-WINUX_FUNC_DECL(String) FileTitle( String const & fileName, String * extName = NULL );
+WINUX_FUNC_DECL(String) FileTitle( String const & fileName, String * extName = nullptr, bool leftToRight = false );
 
 /** \brief 判断是否为绝对路径 */
 WINUX_FUNC_DECL(bool) IsAbsPath( String const & path );
 
 /** \brief 使路径规则化(末尾不带路径分割符) */
-WINUX_FUNC_DECL(String) NormalizePath( String const & path );
+WINUX_FUNC_DECL(String) NormalizePath( String const & path, String const & dirSep = DirSep );
 
 /** \brief 根据当前工作目录计算绝对路径，不会检查存在性 */
 WINUX_FUNC_DECL(String) RealPath( String const & path );
@@ -241,7 +242,7 @@ WINUX_FUNC_DECL(bool) FilePutContentsEx( String const & filename, Buffer const &
  *  \param bakDir 备份文件存放的目录（相对于`filePath`）
  *  \param fmt %f是文件标题，%v是版本编号，%e是扩展名（不包含'.'），%E是扩展名（包含'.'）
  *  \return String 备份成功返回文件路径，备份失败返回空串 */
-WINUX_FUNC_DECL(String) BackupFile( String const & filePath, String const & bakDir = TEXT(""), String const & fmt = TEXT("%f_v%v%E") );
+WINUX_FUNC_DECL(String) BackupFile( String const & filePath, String const & bakDir = $T(""), String const & fmt = $T("%f_v%v%E") );
 
 
 /** \brief 文件系统错误类 */
@@ -266,7 +267,7 @@ public:
     /** \brief 构造函数
      *
      *  \param[in] path 路径 */
-    DirIterator( String const & path, String const & pattern = TEXT("*") );
+    DirIterator( String const & path, String const & pattern = $T("*") );
     /** \brief 析构函数 */
     ~DirIterator();
     /** \brief 取得路径 */
@@ -360,12 +361,12 @@ interface WINUX_DLL IFile
     virtual bool eof();
     /** \brief 文件大小 */
     virtual size_t size();
-    /** \brief 读取整个文件内容，取得数据大小
+    /** \brief 读取整个文件内容，返回缓冲区
      *
-     *  \param size 输出数据大小
-     *  \return 数据指针
+     *  \param isPeek 是否为窥探模式，默认true
+     *  \return Buffer
      *  \attention 由于文本模式可能存在字符转换，数据大小并不一定等于文件大小 */
-    virtual void * entire( size_t * size );
+    virtual Buffer buffer( bool isPeek = true );
     /** \brief 读取整个文件内容作字符串
      *
      *  \param encoding 文件编码。默认为`feMultiByte`
@@ -389,15 +390,11 @@ public:
     /** \brief 构造函数2
      *
      *  \param[in] buf 数据缓冲区对象
-     *  \param[in] isPeek 是否为窥探模式 */
+     *  \param[in] isPeek 是否为窥探模式
+     *  \attention `buf`是窥探模式或`isPeek`为true，`MemoryFile`都会作为窥探模式 */
     MemoryFile( Buffer const & buf, bool isPeek = false );
-    /** \brief 构造函数3
-     *
-     *  \param[in] content 内容
-     *  \param[in] isPeek 是否为窥探模式 */
-    MemoryFile( AnsiString const & content, bool isPeek = false );
 
-    /** \brief 以字符串内容以内存文件的方式读写
+    /** \brief 字符串内容（不会进行编码转换）以内存文件的方式读写
      *
      *  与IFile接口定义时不同，内存式文件open()方法的第一个参数指定内存内容。
      *  \param[in] content 字符串内容
@@ -410,14 +407,14 @@ public:
     virtual bool seek( offset_t offset, SeekType origin = seekSet ) override;
     virtual size_t tell() override;
     virtual String getLine() override;
+    /** \brief 输出字符串（不会进行编码转换） */
     virtual int puts( String const & str ) override;
     virtual bool eof() override;
     virtual size_t size() override;
-    virtual void * entire( size_t * size ) override;
+    virtual Buffer buffer( bool isPeek = true ) override;
 
     using IFile::read;
     using IFile::write;
-    using IFile::entire;
 
 protected:
     GrowBuffer _buf;
@@ -444,11 +441,10 @@ public:
     virtual String getLine() override;
     virtual bool eof() override;
     virtual size_t size() override;
-    virtual void * entire( size_t * size ) override;
+    virtual Buffer buffer( bool isPeek = true ) override;
 
     using IFile::read;
     using IFile::write;
-    using IFile::entire;
 
     /** \brief 流式文件API指针 */
     FILE * get() const { return _fp; }
@@ -467,7 +463,7 @@ public:
     operator bool() const { return _fp != NULL; }
 
 protected:
-    FILE * _fp;         //!< FILE*指针
+    FILE * _fp; //!< FILE*指针
 
     DISABLE_OBJECT_COPY(File)
 };

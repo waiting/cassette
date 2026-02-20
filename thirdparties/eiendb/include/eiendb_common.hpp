@@ -5,7 +5,6 @@
 
 namespace eiendb
 {
-
 /** \brief 内存结果集
  *
  *  主要用于兼容接口方法。\n

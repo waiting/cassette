@@ -436,7 +436,7 @@ WINUX_FUNC_IMPL(String) UrlEncodeString( String const & str, bool asUtf8 )
 #else
     if ( asUtf8 )
     {
-        return UrlEncode( LocalToUtf8(str) );
+        return UrlEncode( LOCAL_TO_UTF8(str) );
     }
     else
     {
@@ -460,7 +460,7 @@ WINUX_FUNC_IMPL(String) UrlDecodeString( String const & encodedStr, bool isUtf8 
 #else
     if ( isUtf8 )
     {
-        return LocalFromUtf8(r);
+        return LOCAL_FROM_UTF8(r);
     }
     else
     {
@@ -483,7 +483,7 @@ WINUX_FUNC_IMPL(String) UriComponentEncodeString( String const & str, bool asUtf
 #else
     if ( asUtf8 )
     {
-        return UriComponentEncode( LocalToUtf8(str) );
+        return UriComponentEncode( LOCAL_TO_UTF8(str) );
     }
     else
     {
@@ -507,7 +507,7 @@ WINUX_FUNC_IMPL(String) UriComponentDecodeString( String const & encodedStr, boo
 #else
     if ( isUtf8 )
     {
-        return LocalFromUtf8(r);
+        return LOCAL_FROM_UTF8(r);
     }
     else
     {
@@ -519,13 +519,13 @@ WINUX_FUNC_IMPL(String) UriComponentDecodeString( String const & encodedStr, boo
 
 WINUX_FUNC_IMPL(String) HtmlEncode( String const & str )
 {
-    thread_local MultiMatch mm( { TEXT("&amp;"), TEXT("&lt;"), TEXT("&gt;"), TEXT("&nbsp;") }, { TEXT("&"), TEXT("<"), TEXT(">"), TEXT(" ") } );
+    thread_local MultiMatch mm( { $T("&amp;"), $T("&lt;"), $T("&gt;"), $T("&nbsp;") }, { $T("&"), $T("<"), $T(">"), $T(" ") } );
     return mm.replace(str);
 }
 
 WINUX_FUNC_IMPL(String) HtmlDecode( String const & str )
 {
-    thread_local MultiMatch mm( { TEXT("&amp;"), TEXT("&lt;"), TEXT("&gt;"), TEXT("&nbsp;") }, { TEXT("&"), TEXT("<"), TEXT(">"), TEXT(" ") } );
+    thread_local MultiMatch mm( { $T("&amp;"), $T("&lt;"), $T("&gt;"), $T("&nbsp;") }, { $T("&"), $T("<"), $T(">"), $T(" ") } );
     return mm.replace(str);
 }
 

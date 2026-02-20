@@ -159,8 +159,8 @@ public:
 
 private:
     BROWSEINFO _bi;
-    String _strPath;
-    String _strDisplay;
+    String _szPath;
+    String _szDisplay;
     LPCTSTR _lpszWindowTitle;
     LPCTSTR _lpszSelectionDir;
     // 回调函数

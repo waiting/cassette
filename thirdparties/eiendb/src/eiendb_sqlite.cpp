@@ -155,21 +155,21 @@ static winux::String __GetTypeAffinity( winux::String typeDeclare )
     winux::StrMakeLower(&typeDeclare);
     if ( typeDeclare.find("int") != winux::String::npos )
     {
-        return TEXT("integer");
+        return $T("integer");
     }
     else if ( typeDeclare.find("char") != winux::String::npos || typeDeclare.find("clob") != winux::String::npos || typeDeclare.find("text") != winux::String::npos )
     {
-        return TEXT("text");
+        return $T("text");
     }
     else if ( typeDeclare == "blob" || typeDeclare.empty() )
     {
-        return TEXT("none");
+        return $T("none");
     }
     else if ( typeDeclare.find("real") != winux::String::npos || typeDeclare.find("floa") != winux::String::npos || typeDeclare.find("doub") != winux::String::npos )
     {
-        return TEXT("real");
+        return $T("real");
     }
-    return TEXT("numeric");
+    return $T("numeric");
 }
 
 // class SqliteConnection -------------------------------------------------------------------
@@ -259,7 +259,7 @@ bool SqliteConnection::connect()
     _path = winux::NormalizePath(_path); // 正规化路径
     if ( !_path.empty() )
     {
-        if ( _path == TEXT(":memory:") )
+        if ( _path == $T(":memory:") )
         {
             _database = _path;
             return this->selectDb(_database);
@@ -384,7 +384,7 @@ winux::String SqliteConnection::escape( void const * buf, size_t size, winux::St
         r += "X\'";
         for ( i = 0; i < size; ++i )
         {
-            r += winux::FormatEx( 10, TEXT("%02X"), *( (winux::byte *)buf + i ) );
+            r += winux::FormatEx( 10, $T("%02X"), *( (winux::byte *)buf + i ) );
         }
         r += "\'";
     }
@@ -483,7 +483,7 @@ winux::SharedPointer<IDbResult> SqliteConnection::listTables()
 {
     winux::String fields[] = { "Tables" };
     MemoryResult * p = new MemoryResult(fields);
-    winux::String sql = TEXT("SELECT name FROM sqlite_master WHERE type = \'table\' AND substr( name, 1, 7 ) <> \'sqlite_\' ORDER BY name;");
+    winux::String sql = $T("SELECT name FROM sqlite_master WHERE type = \'table\' AND substr( name, 1, 7 ) <> \'sqlite_\' ORDER BY name;");
     winux::SharedPointer<IDbResult> rs = this->query(sql);
     winux::MixedArray f;
     while ( rs->fetchArray(&f) )
@@ -575,7 +575,7 @@ winux::String SqliteConnection::sqliteStrToString( char const * s )
     {
         if ( _linkCharset.empty() )
         {
-            return winux::LocalFromUtf8(s);
+            return LOCAL_FROM_UTF8(s);
         }
         else if ( _linkCharset == "utf-8" )
         {
@@ -587,7 +587,7 @@ winux::String SqliteConnection::sqliteStrToString( char const * s )
             return conv.convert< winux::String, winux::AnsiString >(s);
         }
     }
-    return TEXT("");
+    return $T("");
 }
 
 // winux::String转到SQLite字符串
@@ -595,7 +595,7 @@ winux::AnsiString SqliteConnection::stringToSqliteStr( winux::String const & s )
 {
     if ( _linkCharset.empty() )
     {
-        return winux::LocalToUtf8(s);
+        return LOCAL_TO_UTF8(s);
     }
     else if ( _linkCharset == "utf-8" )
     {
@@ -925,7 +925,7 @@ size_t SqliteResult::rowsCount()
     size_t pos = sql.find("from");
     if ( pos != winux::String::npos )
     {
-        winux::SharedPointer<SqliteStatement> stmtRowsCount( new SqliteStatement( _stmt->getCnn(), TEXT("select count(*) ") + _stmt->getSql().substr(pos) ) );
+        winux::SharedPointer<SqliteStatement> stmtRowsCount( new SqliteStatement( _stmt->getCnn(), $T("select count(*) ") + _stmt->getSql().substr(pos) ) );
         for ( auto it = _stmt->_bindingParams.begin(); it != _stmt->_bindingParams.end(); ++it )
         {
             stmtRowsCount->bind( it->first, it->second );

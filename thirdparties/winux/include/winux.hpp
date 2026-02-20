@@ -15,5 +15,6 @@
 #include "encoding.hpp"
 #include "threads.hpp"
 #include "threadtask.hpp"
+#include "safecontainer.hpp"
 
 #endif // __WINUX_HPP__

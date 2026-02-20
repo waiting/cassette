@@ -21,12 +21,14 @@
 
 #include <functional>
 
-#if defined(OS_WIN)
+#if defined(OS_WIN) // Microsoft
     #include <sys/utime.h>
     #include <direct.h>
     #include <io.h>
     #include <process.h>
     #include <tchar.h>
+#elif defined(OS_DARWIN) // Apple
+    #include <mach-o/dyld.h>
 #else
     #include <utime.h>
     #include <unistd.h>
@@ -104,6 +106,20 @@ WINUX_FUNC_IMPL(String) GetExecutablePath( void )
         path.resize(n);
     #if defined(OS_WIN)
         nGet = GetModuleFileName( NULL, &path[0], (DWORD)path.size() );
+    #elif defined(OS_DARWIN)
+        uint32_t size = (uint32_t)n;
+        if ( _NSGetExecutablePath( &path[0], &size ) != 0 )
+        {
+            path.resize(size);
+            _NSGetExecutablePath( &path[0], &size );
+        }
+
+        nGet = strlen( path.c_str() );
+        break;
+    #elif defined(OS_BSD4) || defined(OS_BSDI)
+        nGet = readlink( "/proc/curproc/file", &path[0], path.size() );
+    #elif defined(OS_SOLARIS)
+        nGet = readlink( "/proc/self/path/a.out", &path[0], path.size() );
     #else
         nGet = readlink( "/proc/self/exe", &path[0], path.size() );
     #endif
@@ -122,16 +138,16 @@ WINUX_FUNC_IMPL(String) FilePath( String const & fullPath, String * fileName )
     }
     else
     {
-        path = TEXT("");
+        path = $T("");
         if ( fileName != NULL ) *fileName = fullPath;
     }
     return path;
 }
 
-WINUX_FUNC_IMPL(String) FileTitle( String const & fileName, String * extName )
+WINUX_FUNC_IMPL(String) FileTitle( String const & fileName, String * extName, bool leftToRight )
 {
     String fileTitle;
-    String::size_type pos = fileName.rfind('.');
+    String::size_type pos = leftToRight ? fileName.find('.') : fileName.rfind('.');
     if ( pos != String::npos )
     {
         fileTitle = fileName.substr( 0, pos );
@@ -140,7 +156,7 @@ WINUX_FUNC_IMPL(String) FileTitle( String const & fileName, String * extName )
     else
     {
         fileTitle = fileName;
-        if ( extName != NULL ) *extName = TEXT("");
+        if ( extName != NULL ) *extName = $T("");
     }
     return fileTitle;
 }
@@ -154,14 +170,14 @@ WINUX_FUNC_IMPL(bool) IsAbsPath( String const & path )
 #endif
 }
 
-WINUX_FUNC_IMPL(String) NormalizePath( String const & path )
+WINUX_FUNC_IMPL(String) NormalizePath( String const & path, String const & dirSep )
 {
     StringArray pathSubs;
-    size_t n = StrSplit( path, TEXT("/\\"), &pathSubs );
+    size_t n = StrSplit( path, $T("/\\"), &pathSubs );
     size_t i, c = n;
     for ( i = 0; i < c; )
     {
-        if ( i > 0 && pathSubs[i - 1] != TEXT("..") && !IsAbsPath( pathSubs[i - 1] + DirSep ) && pathSubs[i] == TEXT("..") )
+        if ( i > 0 && pathSubs[i - 1] != $T("..") && !IsAbsPath( pathSubs[i - 1] + dirSep ) && pathSubs[i] == $T("..") )
         {
             size_t k;
             for ( k = i + 1; k < c; k++ )
@@ -171,7 +187,7 @@ WINUX_FUNC_IMPL(String) NormalizePath( String const & path )
             c -= 2;
             --i;
         }
-        else if ( pathSubs[i] == TEXT(".") )
+        else if ( pathSubs[i] == $T(".") )
         {
             size_t k;
             for ( k = i + 1; k < c; k++ )
@@ -190,11 +206,11 @@ WINUX_FUNC_IMPL(String) NormalizePath( String const & path )
         r += pathSubs[i];
         if ( i != c - 1 )
         {
-            r += DirSep;
+            r += dirSep;
         }
     }
 
-    if ( r.length() > 1 && r[r.length() - 1] == DirSep[0] )
+    if ( r.length() > 1 && r[r.length() - 1] == dirSep[0] )
     {
         r = r.substr( 0, r.length() - 1 );
     }
@@ -476,7 +492,7 @@ WINUX_FUNC_IMPL(void) FolderData( String const & path, StringArray * fileArr, St
     while ( iter.next() )
     {
         String const & name = iter.getName();
-        if ( name == TEXT(".") || name == TEXT("..") ) continue;
+        if ( name == $T(".") || name == $T("..") ) continue;
 
         if ( iter.isDir() )
         {
@@ -606,7 +622,7 @@ WINUX_FUNC_IMPL(size_t) CommonDelete( String const & path )
 WINUX_FUNC_IMPL(bool) MakeDirExists( String const & path, int mode )
 {
     StringArray subPaths;
-    size_t const n = StrSplit( path, TEXT("/\\"), &subPaths );
+    size_t const n = StrSplit( path, $T("/\\"), &subPaths );
     size_t i;
     String existsPath;
     for ( i = 0; i < n; ++i )
@@ -986,7 +1002,7 @@ static String _ContentGetString( Buffer const & content, FileEncoding encoding, 
         #if defined(_UNICODE) || defined(UNICODE)
             return UnicodeConverter(str).toUnicode();
         #else
-            return LocalFromUtf8(str);
+            return LOCAL_FROM_UTF8(str);
         #endif
         }
         break;
@@ -997,7 +1013,7 @@ static String _ContentGetString( Buffer const & content, FileEncoding encoding, 
         #if defined(_UNICODE) || defined(UNICODE)
             return UnicodeConverter(str).toUnicode();
         #else
-            return LocalFromUtf8(str);
+            return LOCAL_FROM_UTF8(str);
         #endif
         }
         break;
@@ -1077,6 +1093,108 @@ static String _ContentGetString( Buffer const & content, FileEncoding encoding, 
     return String();
 }
 
+static void _ContentPutString( GrowBuffer * output, String const & content, FileEncoding encoding, bool convertNewline )
+{
+    switch ( encoding )
+    {
+    case winux::feUnspec:
+    case winux::feMultiByte:
+        {
+        #if defined(_UNICODE) || defined(UNICODE)
+            AnsiString str = UnicodeToLocal(content);
+            output->appendString( convertNewline ? NewlineToFile( str.c_str(), str.length(), false ) : str );
+        #else
+            output->appendString( convertNewline ? NewlineToFile( content.c_str(), content.length(), false ) : content );
+        #endif
+        }
+        break;
+    case winux::feUtf8:
+        {
+        #if defined(_UNICODE) || defined(UNICODE)
+            AnsiString str = UnicodeConverter(content).toUtf8();
+            output->appendString( convertNewline ? NewlineToFile( str.c_str(), str.length(), false ) : str );
+        #else
+            AnsiString str = LOCAL_TO_UTF8(content);
+            output->appendString( convertNewline ? NewlineToFile( str.c_str(), str.length(), false ) : str );
+        #endif
+        }
+        break;
+    case winux::feUtf8Bom:
+        {
+        #if defined(_UNICODE) || defined(UNICODE)
+            AnsiString str = UnicodeConverter(content).toUtf8();
+            output->appendType( { '\xef', '\xbb', '\xbf' } );
+            output->appendString( convertNewline ? NewlineToFile( str.c_str(), str.length(), false ) : str );
+        #else
+            AnsiString str = LOCAL_TO_UTF8(content);
+            output->appendType( { '\xef', '\xbb', '\xbf' } );
+            output->appendString( convertNewline ? NewlineToFile( str.c_str(), str.length(), false ) : str );
+        #endif
+        }
+        break;
+    case winux::feUtf16Le:
+        {
+        #if defined(_UNICODE) || defined(UNICODE)
+            Utf16String str = UnicodeConverter(content).toUtf16();
+        #else
+            Utf16String str = UnicodeConverter( LocalToUnicode(content) ).toUtf16();
+        #endif
+            if ( IsBigEndian() )
+            {
+                if ( str.length() > 0 ) InvertByteOrderArray( &str[0], str.length() );
+            }
+            output->appendType( { '\xff', '\xfe' } );
+            output->appendString( convertNewline ? NewlineToFile( str.c_str(), str.length(), IsBigEndian() ) : str );
+        }
+        break;
+    case winux::feUtf16Be:
+        {
+        #if defined(_UNICODE) || defined(UNICODE)
+            Utf16String str = UnicodeConverter(content).toUtf16();
+        #else
+            Utf16String str = UnicodeConverter( LocalToUnicode(content) ).toUtf16();
+        #endif
+            if ( IsLittleEndian() )
+            {
+                if ( str.length() > 0 ) InvertByteOrderArray( &str[0], str.length() );
+            }
+            output->appendType( { '\xfe', '\xff' } );
+            output->appendString( convertNewline ? NewlineToFile( str.c_str(), str.length(), IsLittleEndian() ) : str );
+        }
+        break;
+    case winux::feUtf32Le:
+        {
+        #if defined(_UNICODE) || defined(UNICODE)
+            Utf32String str = UnicodeConverter(content).toUtf32();
+        #else
+            Utf32String str = UnicodeConverter( LocalToUnicode(content) ).toUtf32();
+        #endif
+            if ( IsBigEndian() )
+            {
+                if ( str.length() > 0 ) InvertByteOrderArray( &str[0], str.length() );
+            }
+            output->appendType( { '\xff', '\xfe', '\0', '\0' } );
+            output->appendString( convertNewline ? NewlineToFile( str.c_str(), str.length(), IsBigEndian() ) : str );
+        }
+        break;
+    case winux::feUtf32Be:
+        {
+        #if defined(_UNICODE) || defined(UNICODE)
+            Utf32String str = UnicodeConverter(content).toUtf32();
+        #else
+            Utf32String str = UnicodeConverter( LocalToUnicode(content) ).toUtf32();
+        #endif
+            if ( IsLittleEndian() )
+            {
+                if ( str.length() > 0 ) InvertByteOrderArray( &str[0], str.length() );
+            }
+            output->appendType( { '\0', '\0', '\xfe', '\xff' } );
+            output->appendString( convertNewline ? NewlineToFile( str.c_str(), str.length(), IsLittleEndian() ) : str );
+        }
+        break;
+    }
+}
+
 WINUX_FUNC_IMPL(String) FileGetString( String const & filename, FileEncoding encoding )
 {
     Buffer content = FileGetContentsEx( filename, false );
@@ -1151,108 +1269,6 @@ WINUX_FUNC_IMPL(Buffer) FileGetContentsEx( String const & filename, bool textMod
     {
     }
     return content;
-}
-
-static void _ContentPutString( GrowBuffer * output, String const & content, FileEncoding encoding, bool convertNewline )
-{
-    switch ( encoding )
-    {
-    case winux::feUnspec:
-    case winux::feMultiByte:
-        {
-        #if defined(_UNICODE) || defined(UNICODE)
-            AnsiString str = UnicodeToLocal(content);
-            output->appendString( convertNewline ? NewlineToFile( str.c_str(), str.length(), false ) : str );
-        #else
-            output->appendString( convertNewline ? NewlineToFile( content.c_str(), content.length(), false ) : content );
-        #endif
-        }
-        break;
-    case winux::feUtf8:
-        {
-        #if defined(_UNICODE) || defined(UNICODE)
-            AnsiString str = UnicodeConverter(content).toUtf8();
-            output->appendString( convertNewline ? NewlineToFile( str.c_str(), str.length(), false ) : str );
-        #else
-            AnsiString str = LocalToUtf8(content);
-            output->appendString( convertNewline ? NewlineToFile( str.c_str(), str.length(), false ) : str );
-        #endif
-        }
-        break;
-    case winux::feUtf8Bom:
-        {
-        #if defined(_UNICODE) || defined(UNICODE)
-            AnsiString str = UnicodeConverter(content).toUtf8();
-            output->appendType( { '\xef', '\xbb', '\xbf' } );
-            output->appendString( convertNewline ? NewlineToFile( str.c_str(), str.length(), false ) : str );
-        #else
-            AnsiString str = LocalToUtf8(content);
-            output->appendType( { '\xef', '\xbb', '\xbf' } );
-            output->appendString( convertNewline ? NewlineToFile( str.c_str(), str.length(), false ) : str );
-        #endif
-        }
-        break;
-    case winux::feUtf16Le:
-        {
-        #if defined(_UNICODE) || defined(UNICODE)
-            Utf16String str = UnicodeConverter(content).toUtf16();
-        #else
-            Utf16String str = UnicodeConverter( LocalToUnicode(content) ).toUtf16();
-        #endif
-            if ( IsBigEndian() )
-            {
-                if ( str.length() > 0 ) InvertByteOrderArray( &str[0], str.length() );
-            }
-            output->appendType( { '\xff', '\xfe' } );
-            output->appendString( convertNewline ? NewlineToFile( str.c_str(), str.length(), IsBigEndian() ) : str );
-        }
-        break;
-    case winux::feUtf16Be:
-        {
-        #if defined(_UNICODE) || defined(UNICODE)
-            Utf16String str = UnicodeConverter(content).toUtf16();
-        #else
-            Utf16String str = UnicodeConverter( LocalToUnicode(content) ).toUtf16();
-        #endif
-            if ( IsLittleEndian() )
-            {
-                if ( str.length() > 0 ) InvertByteOrderArray( &str[0], str.length() );
-            }
-            output->appendType( { '\xfe', '\xff' } );
-            output->appendString( convertNewline ? NewlineToFile( str.c_str(), str.length(), IsLittleEndian() ) : str );
-        }
-        break;
-    case winux::feUtf32Le:
-        {
-        #if defined(_UNICODE) || defined(UNICODE)
-            Utf32String str = UnicodeConverter(content).toUtf32();
-        #else
-            Utf32String str = UnicodeConverter( LocalToUnicode(content) ).toUtf32();
-        #endif
-            if ( IsBigEndian() )
-            {
-                if ( str.length() > 0 ) InvertByteOrderArray( &str[0], str.length() );
-            }
-            output->appendType( { '\xff', '\xfe', '\0', '\0' } );
-            output->appendString( convertNewline ? NewlineToFile( str.c_str(), str.length(), IsBigEndian() ) : str );
-        }
-        break;
-    case winux::feUtf32Be:
-        {
-        #if defined(_UNICODE) || defined(UNICODE)
-            Utf32String str = UnicodeConverter(content).toUtf32();
-        #else
-            Utf32String str = UnicodeConverter( LocalToUnicode(content) ).toUtf32();
-        #endif
-            if ( IsLittleEndian() )
-            {
-                if ( str.length() > 0 ) InvertByteOrderArray( &str[0], str.length() );
-            }
-            output->appendType( { '\0', '\0', '\xfe', '\xff' } );
-            output->appendString( convertNewline ? NewlineToFile( str.c_str(), str.length(), IsLittleEndian() ) : str );
-        }
-        break;
-    }
 }
 
 WINUX_FUNC_IMPL(bool) FilePutString( String const & filename, String const & content, FileEncoding encoding )
@@ -1397,11 +1413,11 @@ WINUX_FUNC_IMPL(String) BackupFile( String const & filePath, String const & bakD
                         i++;
                         break;
                     case 'E':
-                        bakFileName += extName.empty() ? TEXT("") : TEXT(".") + extName;
+                        bakFileName += extName.empty() ? $T("") : $T(".") + extName;
                         i++;
                         break;
                     case 'v':
-                        bakFileName += Format( TEXT("%u"), v );
+                        bakFileName += Format( $T("%u"), v );
                         i++;
                         break;
                     case '%':
@@ -1615,21 +1631,17 @@ size_t IFile::size()
     throw FileSysError( FileSysError::fseNotImplemented, "This method is not implemented" );
 }
 
-void * IFile::entire( size_t * size )
+Buffer IFile::buffer( bool isPeek )
 {
-    //throw FileSysError( FileSysError::fseNotImplemented, "This method is not implemented" );
-    *size = 0;
-    return nullptr;
+    return Buffer( nullptr, 0, isPeek );
 }
 
 String IFile::entire( FileEncoding encoding, bool convertNewline )
 {
-    size_t len;
-    void * buf = this->entire(&len);
-    return _ContentGetString( Buffer( buf, len, true ), encoding, convertNewline );
+    return _ContentGetString( this->buffer(true), encoding, convertNewline );
 }
 
-// class MemoryFile -----------------------------------------------------------------------
+// class MemoryFile ---------------------------------------------------------------------------
 MemoryFile::MemoryFile() : _p(nullptr)
 {
 }
@@ -1643,12 +1655,6 @@ MemoryFile::MemoryFile( void const * data, size_t size, bool isPeek ) : _p(nullp
 MemoryFile::MemoryFile( Buffer const & buf, bool isPeek ) : _p(nullptr)
 {
     _buf.setBuf( buf.getBuf(), buf.getSize(), isPeek || buf.isPeek() );
-    _p = _buf.begin();
-}
-
-MemoryFile::MemoryFile( AnsiString const & content, bool isPeek ) : _p(nullptr)
-{
-    _buf.setBuf( content.c_str(), content.size(), isPeek );
     _p = _buf.begin();
 }
 
@@ -1757,10 +1763,9 @@ size_t MemoryFile::size()
     return _buf.getSize();
 }
 
-void * MemoryFile::entire( size_t * size )
+Buffer MemoryFile::buffer( bool isPeek )
 {
-    ASSIGN_PTR(size) = _buf.getSize();
-    return _buf.getBuf();
+    return Buffer( _buf.getBuf(), _buf.getSize(), isPeek );
 }
 
 // class File ---------------------------------------------------------------------------------
@@ -1882,17 +1887,13 @@ size_t File::size()
     return (size_t)st.st_size;
 }
 
-void * File::entire( size_t * size )
+Buffer File::buffer( bool isPeek )
 {
-    size_t fileSize = this->size();
-
     thread_local Buffer buf; // 用于加载文件数据的缓冲区
-
-    buf.alloc(fileSize);
-    *size = this->read( buf.getBuf(), buf.getSize() );
+    buf.alloc( this->size() );
+    this->read( buf.getBuf(), buf.getSize() );
     this->rewind();
-
-    return buf.getBuf();
+    return Buffer( buf.getBuf(), buf.getSize(), isPeek );
 }
 
 int File::getFd() const
@@ -1930,8 +1931,8 @@ bool BlockOutFile::nextBlock()
 {
     this->close(); // 关闭先前的那块
     bool r = this->open(
-        CombinePath( _dirname, _filetitle + TEXT("_") + (String)Mixed(_fileno) + TEXT(".") + _extname ),
-        ( _isTextMode ? TEXT("w") : TEXT("wb") )
+        CombinePath( _dirname, _filetitle + $T("_") + (String)Mixed(_fileno) + $T(".") + _extname ),
+        ( _isTextMode ? $T("w") : $T("wb") )
     );
     if ( r )
     {
@@ -1995,7 +1996,7 @@ BlockInFile::BlockInFile( String const & filename, bool isTextMode ) : _index(0)
         int i;
         for ( i = 1; i <= maxFileNo; ++i )
         {
-            String curFileName = CombinePath( _dirname, _filetitle + (String)Mixed(i) + TEXT(".") + _extname );
+            String curFileName = CombinePath( _dirname, _filetitle + (String)Mixed(i) + $T(".") + _extname );
             if ( DetectPath(curFileName) )
             {
                 _blockFiles.push_back(curFileName);
@@ -2004,7 +2005,7 @@ BlockInFile::BlockInFile( String const & filename, bool isTextMode ) : _index(0)
         bool flag = true;
         for ( ; flag; ++i )
         {
-            String curFileName = CombinePath( _dirname, _filetitle + (String)Mixed(i) + TEXT(".") + _extname );
+            String curFileName = CombinePath( _dirname, _filetitle + (String)Mixed(i) + $T(".") + _extname );
             if ( ( flag = DetectPath(curFileName) ) )
             {
                 _blockFiles.push_back(curFileName);
@@ -2018,7 +2019,7 @@ BlockInFile::BlockInFile( String const & filename, bool isTextMode ) : _index(0)
         _filetitle = fileTitle;
         for ( ; flag; ++i )
         {
-            String curFileName = CombinePath( _dirname, _filetitle + TEXT("_") + (String)Mixed(i) + TEXT(".") + _extname );
+            String curFileName = CombinePath( _dirname, _filetitle + $T("_") + (String)Mixed(i) + $T(".") + _extname );
             if ( ( flag = DetectPath(curFileName) ) )
             {
                 _blockFiles.push_back(curFileName);
@@ -2035,7 +2036,7 @@ bool BlockInFile::nextBlock()
     {
         return false;
     }
-    bool r = this->open( _blockFiles[_index], ( _isTextMode ? TEXT("r") : TEXT("rb") ) );
+    bool r = this->open( _blockFiles[_index], ( _isTextMode ? $T("r") : $T("rb") ) );
     if ( r )
     {
         _index++;

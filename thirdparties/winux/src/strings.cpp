@@ -1991,7 +1991,7 @@ MultiMatch::MatchResult MultiMatch::commonSearch( String const & str, ssize_t of
 String MultiMatch::replace( String const & str, ssize_t offset, SearchFuncType fnSearch ) const
 {
     ssize_t start = 0;
-    String s = TEXT("");
+    String s = $T("");
     MatchResult r = (this->*fnSearch)( str, start + offset );
     while ( r.pos != -1 )
     {
@@ -2313,7 +2313,7 @@ SZInput & SZInput::operator = ( wchar_t const * pwstr )
 struct Conv_Data
 {
 #if defined(__GNUC__) || defined(HAVE_ICONV)
-    //转换句柄
+    // 转换句柄
     iconv_t _cd;
 #else
     uint _fromCP;
@@ -2334,6 +2334,9 @@ static struct __ConvLangCodePage
         _convLangCP["CHAR"] = CP_ACP;
         _convLangCP["UTF-7"] = CP_UTF7;
         _convLangCP["UTF-8"] = CP_UTF8;
+        _convLangCP["SHIFT_JIS"] = 932;
+        _convLangCP["GBK"] = 936;
+        _convLangCP["BIG5"] = 950;
         _convLangCP["WCHAR_T"] = 1200;
         _convLangCP["UCS-2LE"] = 1200;
         _convLangCP["UTF-16LE"] = 1200;
@@ -2341,9 +2344,12 @@ static struct __ConvLangCodePage
         _convLangCP["UTF-16"] = 1201;
         _convLangCP["UCS-2BE"] = 1201;
         _convLangCP["UTF-16BE"] = 1201;
-        _convLangCP["GBK"] = 936;
-        _convLangCP["SHIFT_JIS"] = 932;
-        _convLangCP["BIG5"] = 950;
+        _convLangCP["UCS-4LE"] = 12000;
+        _convLangCP["UTF-32LE"] = 12000;
+        _convLangCP["UCS-4"] = 12001;
+        _convLangCP["UTF-32"] = 12001;
+        _convLangCP["UCS-4BE"] = 12001;
+        _convLangCP["UTF-32BE"] = 12001;
     }
 
     // 根据语言串获取代码页编码
@@ -2535,8 +2541,6 @@ static size_t __StrConvert( uint cp1, char const * str1, size_t size1, uint cp2,
 
 Conv::Conv( AnsiString const & fromCode, AnsiString const & toCode )
 {
-    _self.create(); //
-
 #if defined(__GNUC__) || defined(HAVE_ICONV)
     _self->_cd = iconv_open( toCode.c_str(), fromCode.c_str() );
 
@@ -2561,8 +2565,6 @@ Conv::~Conv()
 #if defined(__GNUC__) || defined(HAVE_ICONV)
     iconv_close(_self->_cd);
 #endif
-
-    _self.destroy(); //
 }
 
 size_t Conv::convert( char const * srcBuf, size_t srcSize, char * * destBuf )
@@ -3387,6 +3389,7 @@ size_t UnicodeConverter::calcUtf32Length() const
     }
 }
 
+#if defined(OS_WIN) || defined(LOCAL_ISNT_UTF8)
 WINUX_FUNC_IMPL(AnsiString) LocalFromUtf8( AnsiString const & str )
 {
     ConvFrom<AnsiString> conv("UTF-8");
@@ -3398,6 +3401,7 @@ WINUX_FUNC_IMPL(AnsiString) LocalToUtf8( AnsiString const & str )
     ConvTo<AnsiString> conv("UTF-8");
     return conv(str);
 }
+#endif
 
 
 } // namespace winux

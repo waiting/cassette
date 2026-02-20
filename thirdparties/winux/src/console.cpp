@@ -13,34 +13,39 @@ static char const * __TerminalFgColorAttrs[] = {
 };
 
 static char const * __TerminalBgColorAttrs[] = {
-    "", "44", "42", "46", "41", "45", "43", "47", "40", "48",
+    "", "40", "44", "42", "46", "41", "45", "43", "47",
 };
 
-// class ConsoleAttr ----------------------------------------------------------------------
-ConsoleAttr::ConsoleAttr( winux::ushort attr, bool isSetBgColor ) : _isSetBgColor(isSetBgColor)
+// class ConsoleAttr --------------------------------------------------------------------------
+ConsoleAttr::ConsoleAttr( winux::ushort attr ) : _attr(attr)
 {
 #if defined(OS_WIN)
-    _wAttributes = attr;
-
     CONSOLE_SCREEN_BUFFER_INFO csbi = { 0 };
     _hStdHandle = GetStdHandle(STD_OUTPUT_HANDLE);
     GetConsoleScreenBufferInfo( _hStdHandle, &csbi );
     _wPrevAttributes = csbi.wAttributes;
-#else
-    if ( ( attr & 0x8000 ) == 0 )
+    _wAttributes = _wPrevAttributes;
+    if ( ( _attr & fgIgnore ) != fgIgnore ) // 若不忽略前景色
     {
-        union
+        _wAttributes = ( _wAttributes & 0xF0 ) | ( _attr & 0x0F );
+    }
+    if ( ( _attr & bgIgnore ) != bgIgnore ) // 若不忽略背景色
+    {
+        _wAttributes = ( _wAttributes & 0x0F ) | ( _attr & 0xF0 );
+    }
+#else
+    winux::byte fg = ( _attr & 0x0F );
+    winux::byte bg = ( ( _attr >> 4 ) & 0x0F );
+    if ( ( _attr & fgIgnore ) != fgIgnore ) // 若不忽略前景色
+    {
+        this->_strAttr = __TerminalFgColorAttrs[fg];
+    }
+    if ( ( _attr & bgIgnore ) != bgIgnore ) // 若不忽略背景色
+    {
+        if ( bg )
         {
-            winux::byte bAttr[2];
-            winux::ushort usAttr;
-        } tmp;
-        tmp.usAttr = attr;
-
-        this->_strAttr = __TerminalFgColorAttrs[tmp.bAttr[0]];
-        if ( tmp.bAttr[1] )
-        {
-            this->_strAttr += ";";
-            this->_strAttr += __TerminalBgColorAttrs[tmp.bAttr[1]];
+            if ( !this->_strAttr.empty() ) this->_strAttr += ";";
+            this->_strAttr += __TerminalBgColorAttrs[bg];
         }
     }
 #endif
@@ -49,8 +54,8 @@ ConsoleAttr::ConsoleAttr( winux::ushort attr, bool isSetBgColor ) : _isSetBgColo
 void ConsoleAttr::modify() const
 {
 #if defined(OS_WIN)
-    if ( ( _wAttributes & 0x8000 ) == 0 )
-        SetConsoleTextAttribute( _hStdHandle, _wAttributes | ( _wPrevAttributes & ( _isSetBgColor ? 0xFF00 : 0xFFF0 ) ) );
+    if ( ( _wAttributes & ccaIgnore ) != ccaIgnore )
+        SetConsoleTextAttribute( _hStdHandle, _wAttributes );
 #else
     if ( !this->_strAttr.empty() ) std::cout << "\033[" << this->_strAttr << "m";
 #endif
@@ -59,7 +64,7 @@ void ConsoleAttr::modify() const
 void ConsoleAttr::resume() const
 {
 #if defined(OS_WIN)
-    if ( ( _wAttributes & 0x8000 ) == 0 )
+    if ( ( _wAttributes & ccaIgnore ) != ccaIgnore )
         SetConsoleTextAttribute( _hStdHandle, _wPrevAttributes );
 #else
     if ( !this->_strAttr.empty() ) std::cout << "\033[0m";

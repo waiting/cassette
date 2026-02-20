@@ -63,7 +63,7 @@ public:
     ZRESULT getMemory( void * * buf, unsigned long * size );
 
 private:
-    MembersWrapper<struct Zip_Data> _self;
+    Members<struct Zip_Data> _self;
 
     DISABLE_OBJECT_COPY(Zip)
 };
@@ -106,12 +106,12 @@ public:
 
     ZRESULT unzipEntry( int index, String const & outFilename );
     ZRESULT unzipEntry( int index, void * buf, uint32 size );
-    void unzipAll( String const & dirPath = TEXT("") );
+    void unzipAll( String const & dirPath = $T("") );
 
     ZRESULT setUnzipBaseDir( String const & dirPath );
 
 private:
-    MembersWrapper<struct Unzip_Data> _self;
+    Members<struct Unzip_Data> _self;
 
     DISABLE_OBJECT_COPY(Unzip)
 };

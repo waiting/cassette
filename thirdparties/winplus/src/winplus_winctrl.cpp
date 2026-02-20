@@ -463,10 +463,10 @@ WINPLUS_FUNC_IMPL(UINT) MOD_to_HOTKEYF( UINT mod )
 FolderDialog::FolderDialog( HWND hWndOwner, LPCTSTR lpszWindowTitle, LPCTSTR lpszPromptText, BOOL bIncludedFiles )
 {
     ZeroMemory( &_bi, sizeof(_bi) );
-    _strPath.resize(MAX_PATH);
-    _strDisplay.resize(MAX_PATH);
+    _szPath.resize(MAX_PATH);
+    _szDisplay.resize(MAX_PATH);
     
-    _bi.pszDisplayName = &_strDisplay[0];
+    _bi.pszDisplayName = &_szDisplay[0];
     _bi.ulFlags = BIF_RETURNONLYFSDIRS | BIF_USENEWUI | BIF_STATUSTEXT | BIF_UAHINT | BIF_NEWDIALOGSTYLE;
     if ( bIncludedFiles )
     {
@@ -506,7 +506,7 @@ BOOL FolderDialog::doModal( LPCTSTR lpszRootDir, LPCTSTR lpszSelectionDir )
     
     if ( pItemIDList != NULL )
     {
-        SHGetPathFromIDList( pItemIDList, &_strPath[0] );
+        SHGetPathFromIDList( pItemIDList, &_szPath[0] );
 
         if ( pMalloc != NULL )
             pMalloc->Free(pItemIDList);
@@ -528,12 +528,12 @@ BOOL FolderDialog::doModal( LPCTSTR lpszRootDir, LPCTSTR lpszSelectionDir )
 
 String FolderDialog::getPath() const
 {
-    return _strPath.c_str();
+    return _szPath.c_str();
 }
 
 String FolderDialog::getDisplayName() const
 {
-    return _strDisplay.c_str();
+    return _szDisplay.c_str();
 }
 
 int CALLBACK FolderDialog::BrowseCallback( HWND hwnd, UINT uMsg, LPARAM lParam, LPARAM lpData )
@@ -583,7 +583,6 @@ FileDialog::FileDialog( HWND hwndOwner, BOOL bOpenDialog, LPCTSTR lpszWindowTitl
     }
     _ofn.Flags |= dwAdditionalFlags;
     _ofn.Flags &= ~dwRemoveFlags;
-
 }
 
 BOOL FileDialog::doModal( LPCTSTR lpszInitialDir, LPCTSTR lpFilter )

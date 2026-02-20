@@ -93,7 +93,7 @@ winux::String MemoryResult::fieldType( size_t fieldIndex )
         switch ( _dataRows[0][fieldIndex]._type )
         {
         case winux::Mixed::MT_NULL:
-            return TEXT("null");
+            return $T("null");
         case winux::Mixed::MT_BOOLEAN:
         case winux::Mixed::MT_BYTE:
         case winux::Mixed::MT_SHORT:
@@ -104,19 +104,19 @@ winux::String MemoryResult::fieldType( size_t fieldIndex )
         case winux::Mixed::MT_ULONG:
         case winux::Mixed::MT_INT64:
         case winux::Mixed::MT_UINT64:
-            return TEXT("integer");
+            return $T("integer");
         case winux::Mixed::MT_FLOAT:
         case winux::Mixed::MT_DOUBLE:
-            return TEXT("real");
+            return $T("real");
         case winux::Mixed::MT_ANSI:
         case winux::Mixed::MT_UNICODE:
-            return TEXT("text");
+            return $T("text");
         case winux::Mixed::MT_ARRAY:
         case winux::Mixed::MT_BINARY:
-            return TEXT("blob");
+            return $T("blob");
         }
     }
-    return TEXT("");
+    return $T("");
 }
 
 // class SqlScript ---------------------------------------------------------------

@@ -75,7 +75,19 @@ public:
     operator DbHandle() const;
 
 private:
-    winux::MembersWrapper<struct PgsqlConnection_Data> _self;
+    winux::String _host;        // 主机（可多个，逗号分隔）
+    winux::String _port;        // 端口（可多个，逗号分隔）
+    winux::String _user;        // 用户名
+    winux::String _pwd;         // 密码
+    winux::String _dbName;      // 数据库名
+    winux::String _linkCharset; // 连接校验字符集
+    winux::String _schema;      // 模式名
+    winux::String _options;     // 发送给服务器的命令行选项 eg. "-c geqo=off"
+    size_t _affectedRows;       // 受影响的行数
+    size_t _insertId;           // 最后插入的ID
+    winux::Mixed * _dbConfig;   // 数据库特有配置 { single_row(单行查询模式): 0=默认多行模式 1=保持单行模式 2=一次单行模式 }
+
+    winux::PlainMembers<struct PgsqlConnection_Data, 32> _self;
     friend class PgsqlResult;
     friend class PgsqlModifier;
     DISABLE_OBJECT_COPY(PgsqlConnection)
@@ -112,7 +124,12 @@ public:
     operator bool() const;
 
 private:
-    winux::MembersWrapper<struct PgsqlResult_Data> _self;
+    winux::SharedPointer<PgsqlStatement> _stmt;
+    size_t _curRowIndex; // 多行模式的当前行
+    size_t _rowsCount; // 多行模式的行数
+    bool _singleRow; // 是否单行模式
+    bool _hadFetch; // 是否完成fetch。单行模式必须fetch完成才可以进行下次查询
+    winux::PlainMembers<struct PgsqlResult_Data, 16> _self;
     DISABLE_OBJECT_COPY(PgsqlResult)
 };
 

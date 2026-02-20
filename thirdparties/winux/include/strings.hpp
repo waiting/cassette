@@ -935,9 +935,10 @@ private:
     DISABLE_OBJECT_COPY(Locale)
 };
 
-/** \brief 返回一个本地字符串里有多少个实际的字符(by local CodePage),用于mbstowcs */
+
+/** \brief 返回一个本地字符串里有多少个实际的字符(by local CodePage)，用于mbstowcs */
 WINUX_FUNC_DECL(size_t) LocalCharsCount( AnsiString const & local );
-/** \brief 返回一个unicode字符串转换为多字节字符串最少需要多少字节(by local CodePage),用于wcstombs */
+/** \brief 返回一个unicode字符串转换为多字节字符串最少需要多少字节(by local CodePage)，用于wcstombs */
 WINUX_FUNC_DECL(size_t) UnicodeMinLength( UnicodeString const & unicode );
 /** \brief Unicode转换到本地Ansi */
 WINUX_FUNC_DECL(AnsiString) UnicodeToLocal( UnicodeString const & unicode );
@@ -1046,7 +1047,7 @@ public:
     }
 
 private:
-    MembersWrapper<struct Conv_Data> _self;
+    PlainMembers<struct Conv_Data, 8> _self;
 
     DISABLE_OBJECT_COPY(Conv)
 };
@@ -1131,11 +1132,32 @@ private:
     } _type;
 };
 
+/** \brief `UnicodeConverter`简单别名 */
+using UC = UnicodeConverter;
+// 定义一些转换宏
+#define $u8(s) winux::UnicodeConverter(s).toUtf8()
+#define $L(s) winux::UnicodeConverter(s).toUnicode()
+#define $u(s) winux::UnicodeConverter(s).toUtf16()
+#define $U(s) winux::UnicodeConverter(s).toUtf32()
+
 // UTF-8编码转换
+// Windows平台默认local就不是utf8，因此不用设置LOCAL_ISNT_UTF8。若设置LOCAL_IS_UTF8，则认为local是utf8
+// Unix-like平台默认local就是utf8，因此不用设置LOCAL_IS_UTF8。若设置LOCAL_ISNT_UTF8，则认为local不是utf8
+#if defined(OS_WIN) && !defined(LOCAL_IS_UTF8) || defined(LOCAL_ISNT_UTF8)
 /** \brief 从utf-8转到本地编码 */
 WINUX_FUNC_DECL(AnsiString) LocalFromUtf8( AnsiString const & str );
 /** \brief 从本地编码转到utf-8 */
 WINUX_FUNC_DECL(AnsiString) LocalToUtf8( AnsiString const & str );
+#define LOCAL_FROM_UTF8(s) winux::LocalFromUtf8(s)
+#define LOCAL_TO_UTF8(s) winux::LocalToUtf8(s)
+#else
+/** \brief 从utf-8转到本地编码 */
+inline static AnsiString LocalFromUtf8( AnsiString const & str ) { return str; }
+/** \brief 从本地编码转到utf-8 */
+inline static AnsiString LocalToUtf8( AnsiString const & str ) { return str; }
+#define LOCAL_FROM_UTF8(s) s
+#define LOCAL_TO_UTF8(s) s
+#endif
 
 
 } // namespace winux

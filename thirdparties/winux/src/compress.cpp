@@ -33,29 +33,21 @@ String Zip::Message( ZRESULT code )
 
 Zip::Zip()
 {
-    _self.create(); //
-
 }
 
 Zip::Zip( String const & filename, char const * password /*= NULL */ )
 {
-    _self.create(); //
-
     this->create( filename, password );
 }
 
 Zip::Zip( void * buf, uint32 size, char const * password /*= NULL */ )
 {
-    _self.create(); //
-
     this->create( buf, size, password );
 }
 
 Zip::~Zip()
 {
     this->close();
-
-    _self.destroy(); //
 }
 
 bool Zip::create( String const & filename, char const * password /*= NULL */ )
@@ -111,7 +103,7 @@ static void __ZipAll( Zip * z, String const & dirPath, String const & dstPath )
     DirIterator di(dirPath);
     while ( di.next() )
     {
-        if ( di.getName() == TEXT(".") || di.getName() == TEXT("..") )
+        if ( di.getName() == $T(".") || di.getName() == $T("..") )
         {
             continue;
         }
@@ -169,29 +161,21 @@ String Unzip::Message( ZRESULT code /*= ZR_RECENT */ )
 
 Unzip::Unzip()
 {
-    _self.create(); //
-
 }
 
 Unzip::Unzip( String const & filename, char const * password /*= NULL */ )
 {
-    _self.create(); //
-
     this->open( filename, password );
 }
 
 Unzip::Unzip( void * zipbuf, uint32 size, char const * password /*= NULL */ )
 {
-    _self.create(); //
-
     this->open( zipbuf, size, password );
 }
 
 Unzip::~Unzip()
 {
     this->close();
-
-    _self.destroy(); //
 }
 
 bool Unzip::open( String const & filename, char const * password /*= NULL */ )
